@@ -27,34 +27,35 @@ const auth0ClientId = process.env.AUTH0_CLIENT_ID || '';
 try {
   let html = fs.readFileSync(indexPath, 'utf8');
 
-  // Create script tag with injected values
+  // Create script tag with injected values (wrapped in stable markers)
+  const markerStart = '<!-- Auth0 Configuration - Inject environment variables for production -->';
+  const markerEnd = '<!-- /Auth0 Configuration -->';
   const scriptTag = `
+  ${markerStart}
     <script>
       // Auth0 credentials injected at build time
       window.AUTH0_DOMAIN = ${auth0Domain ? `'${auth0Domain}'` : 'null'};
       window.AUTH0_CLIENT_ID = ${auth0ClientId ? `'${auth0ClientId}'` : 'null'};
       ${auth0Domain && auth0ClientId ? 'console.log("[Auth0] Production credentials loaded");' : ''}
-    </script>`;
+    </script>
+  ${markerEnd}`;
 
-  // Find and replace the placeholder script
-  const placeholderPattern = /<!-- Auth0 Configuration - Inject environment variables for production -->[\s\S]*?<script>[\s\S]*?window\.AUTH0_DOMAIN = window\.AUTH0_DOMAIN \|\| null;[\s\S]*?<\/script>/;
+  // Remove any existing Auth0 injection blocks (including legacy duplicates)
+  const markerBlockPattern = new RegExp(
+    `${markerStart}[\\s\\S]*?${markerEnd}`,
+    'g'
+  );
+  const legacyBlockPattern = /<script>\s*\/\/ Auth0 credentials injected at build time[\s\S]*?window\.AUTH0_CLIENT_ID[\s\S]*?<\/script>/g;
 
-  if (placeholderPattern.test(html)) {
-    html = html.replace(
-      placeholderPattern,
-      `<!-- Auth0 Configuration - Inject environment variables for production -->${scriptTag}`
-    );
+  html = html.replace(markerBlockPattern, '');
+  html = html.replace(legacyBlockPattern, '');
+
+  // Insert single block before closing head
+  if (html.includes('</head>')) {
+    html = html.replace('</head>', `  ${scriptTag}\n</head>`);
   } else {
-    // Fallback: insert before Auth0 SPA SDK comment
-    const insertPoint = html.indexOf('<!-- Auth0 SPA SDK -->');
-    if (insertPoint !== -1) {
-      html = html.slice(0, insertPoint) + 
-             `<!-- Auth0 Configuration - Inject environment variables for production -->${scriptTag}\n    ` +
-             html.slice(insertPoint);
-    } else {
-      console.warn('⚠️  Could not find injection point, adding to head');
-      html = html.replace('</head>', `  ${scriptTag}\n</head>`);
-    }
+    console.warn('⚠️  Could not find </head> tag, appending Auth0 config to end of file');
+    html = `${html}\n${scriptTag}\n`;
   }
 
   fs.writeFileSync(indexPath, html);

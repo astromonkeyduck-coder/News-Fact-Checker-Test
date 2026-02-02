@@ -60,7 +60,8 @@ export class EarthquakePanel extends BasePanel {
       return;
     }
 
-    const content = this.earthquakes.slice(0, 10).map(eq => {
+    // Limit to 3 earthquakes max for clean display (both desktop and mobile)
+    const content = this.earthquakes.slice(0, 3).map(eq => {
       const magnitude = eq.magnitude.toFixed(1);
       const time = formatTime(eq.time);
       const preciseTime = formatPreciseTime(eq.time); // Show precise timestamp with milliseconds

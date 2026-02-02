@@ -1034,9 +1034,9 @@ async function sendEmailAlert(earthquake, imageUrl, logger) {
     return false;
   }
   
-  // Send email only for magnitude 6.0+ earthquakes
-  if (magnitude < 6.0) {
-    logger.info('Skipping email: magnitude below 6.0 threshold', {
+  // Send email only for magnitude 5.0+ earthquakes
+  if (magnitude < 5.0) {
+    logger.info('Skipping email: magnitude below 5.0 threshold', {
       magnitude,
       canonical_id: earthquake.canonical_id,
       location: earthquake.location_display
@@ -1766,7 +1766,7 @@ async function processEarthquake(feature, logger, forceEmail = false) {
     }
   }
   
-  // Send email alert only for earthquakes with magnitude 6.0 or higher
+  // Send email alert only for earthquakes with magnitude 5.0 or higher
   // Send if: magnitude >= 6.0 AND (it's new, OR alert hasn't been sent yet, OR if we just generated a new image)
   // CRITICAL: forceEmail should ONLY send if it's a NEW earthquake, not re-send for existing ones
   // Use the hasNewImage flag from storeEvent which compares BEFORE updating
@@ -1778,12 +1778,12 @@ async function processEarthquake(feature, logger, forceEmail = false) {
   // 3. Alert hasn't been sent yet (!storedEvent.alert_sent) - forceEmail ensures we check this
   // 4. There's a new image (hasNewImage)
   // CRITICAL: Never send if alert_sent is true UNLESS there's a new image
-  const shouldSendEmail = magnitude >= 6.0 && (isNew || !storedEvent.alert_sent || hasNewImage);
+  const shouldSendEmail = magnitude >= 5.0 && (isNew || !storedEvent.alert_sent || hasNewImage);
   
   logger.info('Checking email alert conditions', {
     canonical_id: canonicalId,
     magnitude,
-    meets_magnitude_threshold: magnitude >= 6.0,
+    meets_magnitude_threshold: magnitude >= 5.0,
     alert_sent: storedEvent.alert_sent,
     isNew,
     forceEmail,

@@ -215,9 +215,25 @@ body.situation-monitor-page {
   min-height: 100vh;
   margin: 0;
   padding: 0;
-  padding-top: 80px !important; /* Space for fixed header */
+  --sitmon-header-height: 60px;
+  --sitmon-ticker-height: 34px;
+  --sitmon-top-offset: calc(var(--sitmon-header-height) + var(--sitmon-ticker-height) + 16px);
+  padding-top: var(--sitmon-top-offset) !important; /* Space for header + ticker */
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   line-height: 1.6;
+  overflow-x: hidden !important;
+}
+
+body.situation-monitor-page a,
+body.situation-monitor-page a:visited {
+  color: #7db7ff;
+  text-decoration: none;
+}
+
+body.situation-monitor-page a:hover,
+body.situation-monitor-page a:focus {
+  color: #a7d1ff;
+  text-decoration: underline;
 }
 
 /* Animated background overlay for depth */
@@ -237,7 +253,7 @@ body.situation-monitor-page::before {
 }
 
 body.situation-monitor-page main.situation-monitor-page {
-  padding-top: 80px !important; /* Keep space for fixed header */
+  padding-top: 0 !important;
   margin-top: 0 !important;
   background: transparent !important;
   color: white !important;
@@ -246,7 +262,7 @@ body.situation-monitor-page main.situation-monitor-page {
   opacity: 1 !important;
   position: relative !important;
   z-index: 1 !important;
-  min-height: calc(100vh - 80px) !important;
+  min-height: calc(100vh - var(--sitmon-top-offset)) !important;
 }
 
 .situation-monitor-page {
@@ -262,13 +278,13 @@ body.situation-monitor-page main.situation-monitor-page {
 body.situation-monitor-page main {
   background: transparent !important;
   color: white !important;
-  min-height: calc(100vh - 80px) !important;
+  min-height: calc(100vh - var(--sitmon-top-offset)) !important;
   position: relative !important;
   z-index: 1 !important;
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
-  padding-top: 80px !important; /* Space for fixed header */
+  padding-top: 0 !important;
 }
 
 /* OSINT Control Room Layout - High Density, 12-Column Grid */
@@ -285,6 +301,7 @@ body.situation-monitor-page main {
   z-index: 1 !important;
   isolation: isolate;
   background: rgba(3, 8, 18, 0.95); /* Darker base for operational feel */
+  overflow-x: hidden;
 }
 
 /* OSINT Scanline Effect - Page Wrapper */
@@ -311,15 +328,17 @@ body.situation-monitor-page main {
 .sitmon-page-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px; /* Tighter spacing */
-  padding: 8px 12px; /* Compact padding */
+  align-items: flex-start;
+  margin-bottom: 12px;
+  padding: 12px 16px;
   background: rgba(5, 12, 28, 0.85);
-  border-radius: 6px; /* Tighter radius */
+  border-radius: 6px;
   border: 1px solid rgba(34, 211, 238, 0.2);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(4px);
-  min-height: auto;
+  min-height: 80px;
+  position: relative;
+  overflow: visible;
 }
 
 .sitmon-header-left {
@@ -346,25 +365,50 @@ body.situation-monitor-page main {
 }
 
 .sitmon-status-chip {
-  display: inline-block;
-  padding: 2px 6px; /* Tighter */
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
   background: rgba(34, 211, 238, 0.15);
   border: 1px solid rgba(34, 211, 238, 0.3);
-  border-radius: 4px; /* Tighter */
-  font-size: 0.7rem; /* Smaller */
+  border-radius: 999px;
+  font-size: 0.7rem;
   font-weight: 600;
   color: #22d3ee;
   font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  position: relative;
 }
 
 .sitmon-header-right {
   display: flex;
-  gap: 8px; /* Tighter gap */
+  gap: 10px;
   align-items: center;
-  flex-shrink: 0;
+  flex: 1 1 auto;
   flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* Fix for auto-refresh toggle label being squashed */
+.sitmon-auto-refresh-toggle {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 6px !important;
+  white-space: nowrap !important;
+  min-width: 110px !important;
+  flex-shrink: 0 !important;
+  padding: 6px 10px;
+  background: rgba(34, 211, 238, 0.1);
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.sitmon-auto-refresh-toggle span {
+  white-space: nowrap !important;
+  display: inline !important;
 }
 
 /* Music Controls */
@@ -598,18 +642,30 @@ body.situation-monitor-page main {
 }
 
 .sitmon-auto-refresh-toggle {
-  display: flex;
-  align-items: center;
-  gap: 4px; /* Tighter */
-  font-size: 0.7rem; /* Smaller */
-  color: rgba(255, 255, 255, 0.7); /* Dimmer */
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 4px !important;
+  font-size: 0.7rem !important;
+  color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
   user-select: none;
-  white-space: nowrap;
+  white-space: nowrap !important;
   height: auto;
   line-height: 1;
   min-height: auto;
   font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  writing-mode: horizontal-tb !important;
+  min-width: max-content !important;
+  flex-shrink: 0 !important;
+  width: auto !important;
+}
+
+.sitmon-auto-refresh-toggle span {
+  white-space: nowrap !important;
+  writing-mode: horizontal-tb !important;
+  display: inline !important;
+  width: auto !important;
 }
 
 .sitmon-auto-refresh-toggle input[type="checkbox"] {
@@ -660,17 +716,27 @@ body.situation-monitor-page main {
   overflow: visible; /* Allow HUD overlays to be positioned */
 }
 
+/* Grid column positioning - applied only on desktop */
+@media (min-width: 769px) {
+  .sitmon-grid-col-1-8 {
+    grid-column: 1 / 8 !important;
+  }
+  .sitmon-grid-col-8-13 {
+    grid-column: 8 / 13 !important;
+  }
+}
+
 .sitmon-map-container {
   position: relative;
   width: 100%;
-  height: clamp(480px, 55vh, 720px); /* Slightly reduced - tactical node, not hero */
-  min-height: clamp(480px, 55vh, 720px);
-  border-radius: 6px; /* Tighter radius */
-  overflow: hidden; /* Clip map SVG, but HUDs are positioned absolutely within */
+  height: clamp(550px, 65vh, 850px); /* BIGGER map */
+  min-height: clamp(550px, 65vh, 850px);
+  border-radius: 12px;
+  overflow: hidden;
   background: linear-gradient(135deg, rgba(5, 15, 35, 0.95) 0%, rgba(7, 21, 42, 0.95) 100%);
-  border: 1px solid rgba(34, 211, 238, 0.25); /* Thinner border */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), inset 0 0 60px rgba(34, 211, 238, 0.03);
-  isolation: isolate; /* Create stacking context to contain HUDs */
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), inset 0 0 80px rgba(34, 211, 238, 0.04);
+  isolation: isolate;
   /* Subtle scanline texture */
   background-image: 
     repeating-linear-gradient(
@@ -1284,23 +1350,23 @@ body.situation-monitor-page main {
 /* Panel Card Base */
 /* Panel Surface - OSINT Data Surface (not card) */
 .sitmon-panel-card {
-  background: rgba(5, 12, 28, 0.85); /* Less gradient, more surface */
-  border-radius: 6px; /* Tighter radius */
-  border: 1px solid rgba(34, 211, 238, 0.15); /* Thinner border */
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); /* Minimal shadow */
-  backdrop-filter: blur(4px); /* Reduced blur */
+  background: rgba(5, 12, 28, 0.9);
+  border-radius: 12px;
+  border: 1px solid rgba(34, 211, 238, 0.25);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex !important;
   flex-direction: column !important;
-  position: relative; /* Required for absolute positioned resize handle */
-  overflow: hidden !important;
+  position: relative;
+  overflow: visible !important;
   z-index: 1;
-  max-height: 800px;
+  min-height: 450px !important; /* MUCH BIGGER - easier to see */
+  max-height: none;
   isolation: isolate;
-  contain: layout style paint;
+  contain: layout paint;
   width: 100%;
   box-sizing: border-box;
-  position: relative;
   /* Subtle grid texture */
   background-image: 
     linear-gradient(rgba(34, 211, 238, 0.01) 1px, transparent 1px),
@@ -1362,22 +1428,25 @@ body.situation-monitor-page main {
 /* Panels in the stack should be smaller and scroll independently */
 .sitmon-panels-stack > .sitmon-panel-card {
   flex: 1 1 0 !important; /* Equal distribution of space */
-  min-height: 0 !important; /* Critical for flex shrinking */
+  min-height: 120px !important; /* Minimum usable height */
   max-height: none !important; /* Remove max-height constraint, let flex handle it */
-  height: 100% !important; /* Fill available space in stack */
+  height: auto !important; /* Let content + flex determine height */
   position: relative;
   z-index: 1;
   isolation: isolate; /* Create new stacking context */
-  overflow: hidden !important;
-  contain: layout style paint;
+  overflow: visible !important; /* Allow resize handle to be interactive */
+  contain: layout paint; /* Removed 'style' for better resize behavior */
   width: 100%;
   box-sizing: border-box;
 }
 
 /* Override flex constraints when panel is manually resized */
+.sitmon-panels-stack > .sitmon-panel-card.sitmon-manually-resized,
 .sitmon-panels-stack > .sitmon-panel-card[style*="height"] {
-  flex: 0 0 auto !important; /* Disable flex when manually resized */
-  height: auto !important; /* Allow manual height to take precedence */
+  flex: none !important; /* Completely disable flex sizing */
+  min-height: 120px !important;
+  max-height: none !important;
+  /* Height is controlled by inline style */
 }
 
 /* Ensure card body in stacked panels can scroll */
@@ -1389,17 +1458,17 @@ body.situation-monitor-page main {
   overflow-x: hidden !important;
 }
 
-/* Secondary grid panels can be taller - DOUBLED */
+/* Secondary grid panels - MUCH BIGGER for visibility */
 .sitmon-secondary-grid > .sitmon-panel-card {
-  max-height: 1000px !important; /* Set max height so scrolling works - DOUBLED */
-  min-height: 640px !important; /* DOUBLED from 320px - RESTORED ORIGINAL SIZE */
+  max-height: none !important;
+  min-height: 550px !important; /* BIGGER minimum for readability */
   height: auto !important;
-  flex-shrink: 0 !important; /* Prevent secondary panels from shrinking */
+  flex-shrink: 0 !important;
   position: relative;
   z-index: 1;
-  isolation: isolate; /* Create new stacking context */
-  overflow: hidden !important;
-  contain: layout style paint;
+  isolation: isolate;
+  overflow: visible !important;
+  contain: layout paint;
   width: 100%;
   box-sizing: border-box;
 }
@@ -1423,9 +1492,12 @@ body.situation-monitor-page main {
 }
 
 /* Override constraints when panel is manually resized */
+.sitmon-secondary-grid > .sitmon-panel-card.sitmon-manually-resized,
 .sitmon-secondary-grid > .sitmon-panel-card[style*="height"] {
   max-height: none !important; /* Allow resizing beyond default max */
-  min-height: 320px !important; /* Keep reasonable minimum */
+  min-height: 150px !important; /* Keep reasonable minimum */
+  flex: none !important; /* Disable flex sizing */
+  /* Height is controlled by inline style */
 }
 
 /* Ensure card body in secondary grid can scroll */
@@ -1444,9 +1516,9 @@ body.situation-monitor-page main {
 }
 
 .sitmon-card-header {
-  padding: 8px 12px; /* Tighter padding */
-  background: linear-gradient(180deg, rgba(7, 21, 42, 0.5) 0%, rgba(5, 12, 28, 0.4) 100%);
-  border-bottom: 1px solid rgba(74, 158, 255, 0.15);
+  padding: 14px 18px; /* BIGGER padding */
+  background: linear-gradient(180deg, rgba(7, 21, 42, 0.6) 0%, rgba(5, 12, 28, 0.5) 100%);
+  border-bottom: 1px solid rgba(74, 158, 255, 0.2);
   flex-shrink: 0 !important;
   position: relative;
   z-index: 2;
@@ -1470,41 +1542,45 @@ body.situation-monitor-page main {
 /* Resize handle for panels - Enhanced visibility and functionality */
 .sitmon-panel-resize-handle {
   position: absolute;
-  bottom: 0;
+  bottom: -4px; /* Extend slightly below panel for easier grabbing */
   left: 0;
   right: 0;
-  height: 12px; /* Increased from 8px for better usability */
+  height: 20px; /* Larger hit area */
   cursor: ns-resize;
-  background: transparent;
-  z-index: 10;
-  transition: all 0.2s ease;
-  border-top: 1px solid transparent;
+  background: linear-gradient(to bottom, transparent 0%, rgba(34, 211, 238, 0.08) 50%, rgba(34, 211, 238, 0.15) 100%);
+  z-index: 100; /* Higher z-index to ensure it's above content */
+  transition: all 0.15s ease;
+  border-top: 2px solid rgba(34, 211, 238, 0.25);
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
 }
 
 .sitmon-panel-resize-handle:hover {
-  background: rgba(34, 211, 238, 0.15);
-  border-top-color: rgba(34, 211, 238, 0.4);
-  height: 14px; /* Slightly expand on hover */
+  background: linear-gradient(to bottom, transparent 0%, rgba(34, 211, 238, 0.15) 30%, rgba(34, 211, 238, 0.3) 100%);
+  border-top-color: rgba(34, 211, 238, 0.6);
+  height: 24px;
+  bottom: -6px;
 }
 
 .sitmon-panel-resize-handle::before {
-  content: '⋮⋮';
+  content: '⋮⋮⋮';
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 60px;
-  height: 6px;
-  background: rgba(34, 211, 238, 0.4);
-  border-radius: 3px;
-  transition: all 0.2s ease;
+  width: 80px;
+  height: 10px;
+  background: rgba(34, 211, 238, 0.5);
+  border-radius: 5px;
+  transition: all 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 8px;
-  color: rgba(34, 211, 238, 0.8);
-  letter-spacing: 2px;
+  font-size: 10px;
+  color: rgba(34, 211, 238, 1);
+  letter-spacing: 3px;
   line-height: 1;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 .sitmon-panel-resize-handle::after {
@@ -1514,26 +1590,27 @@ body.situation-monitor-page main {
   left: 50%;
   transform: translateX(-50%);
   margin-bottom: 8px;
-  padding: 4px 8px;
-  background: rgba(5, 12, 28, 0.95);
-  border: 1px solid rgba(34, 211, 238, 0.3);
-  border-radius: 4px;
-  font-size: 0.65rem;
-  color: rgba(230, 240, 255, 0.9);
+  padding: 6px 12px;
+  background: rgba(5, 12, 28, 0.98);
+  border: 1px solid rgba(34, 211, 238, 0.4);
+  border-radius: 6px;
+  font-size: 0.7rem;
+  color: rgba(230, 240, 255, 0.95);
   white-space: nowrap;
   pointer-events: none;
   z-index: 1000;
   font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
   opacity: 0;
   transition: opacity 0.2s ease;
 }
 
 .sitmon-panel-resize-handle:hover::before {
-  background: rgba(34, 211, 238, 0.7);
-  color: #22d3ee;
-  width: 70px;
-  box-shadow: 0 0 8px rgba(34, 211, 238, 0.3);
+  background: rgba(34, 211, 238, 0.85);
+  color: #fff;
+  width: 100px;
+  height: 12px;
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.5), 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 .sitmon-panel-resize-handle:hover::after {
@@ -1541,16 +1618,18 @@ body.situation-monitor-page main {
 }
 
 .sitmon-panel-resize-handle:active {
-  background: rgba(34, 211, 238, 0.25);
+  background: linear-gradient(to bottom, transparent 0%, rgba(34, 211, 238, 0.25) 20%, rgba(34, 211, 238, 0.4) 100%);
   border-top-color: #22d3ee;
-  height: 16px;
+  height: 28px;
+  bottom: -8px;
 }
 
 .sitmon-panel-resize-handle:active::before {
   background: #22d3ee;
-  color: rgba(3, 8, 18, 0.9);
-  box-shadow: 0 0 12px rgba(34, 211, 238, 0.6);
-  width: 80px;
+  color: rgba(3, 8, 18, 0.95);
+  box-shadow: 0 0 16px rgba(34, 211, 238, 0.8), 0 2px 8px rgba(0, 0, 0, 0.4);
+  width: 120px;
+  height: 14px;
 }
 
 /* Visual feedback during resize */
@@ -1561,6 +1640,7 @@ body.resizing-panel {
 
 body.resizing-panel * {
   cursor: ns-resize !important;
+  user-select: none !important;
 }
 
 /* Panel resizing state */
@@ -1571,39 +1651,52 @@ body.resizing-panel * {
 }
 
 .sitmon-panel-resize-handle.sitmon-resize-active {
-  background: rgba(34, 211, 238, 0.3);
-  border-top-color: #22d3ee;
-  height: 16px;
+  background: linear-gradient(to bottom, transparent 0%, rgba(34, 211, 238, 0.3) 20%, rgba(34, 211, 238, 0.5) 100%) !important;
+  border-top-color: #22d3ee !important;
+  height: 28px !important;
+  bottom: -8px !important;
 }
 
 .sitmon-panel-resize-handle.sitmon-resize-active::before {
-  background: #22d3ee;
-  color: rgba(3, 8, 18, 0.9);
-  box-shadow: 0 0 12px rgba(34, 211, 238, 0.6);
-  width: 80px;
+  background: #22d3ee !important;
+  color: rgba(3, 8, 18, 0.95) !important;
+  box-shadow: 0 0 16px rgba(34, 211, 238, 0.8), 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+  width: 120px !important;
+  height: 14px !important;
+}
+
+/* CRITICAL: Manually resized panels - override ALL flex and height constraints */
+.sitmon-panel-card.sitmon-manually-resized {
+  flex: none !important;
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+  max-height: none !important;
+  min-height: 150px !important;
+  /* Height is set via inline style */
 }
 
 
 .sitmon-card-title {
-  font-size: 0.75rem; /* Smaller, more operational */
+  font-size: 1rem; /* BIGGER for visibility */
   font-weight: 700;
   color: #22d3ee;
   margin: 0;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   font-family: 'Inter', -apple-system, sans-serif;
 }
 
 .sitmon-card-body {
-  padding: 8px 12px; /* Tighter padding */
+  padding: 16px 20px; /* More padding for readability */
   flex: 1 1 0 !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
-  min-height: 0 !important;
+  min-height: 350px !important; /* Bigger minimum content area */
   max-height: none !important;
   height: auto !important;
   min-width: 0 !important;
-  line-height: 1.4; /* Tighter line height */
+  line-height: 1.6; /* Better line height for readability */
+  font-size: 0.95rem; /* Slightly larger text */
   word-break: break-word;
   overflow-wrap: break-word;
   position: relative;
@@ -2512,13 +2605,20 @@ body > .sitmon-tooltip {
 
   .sitmon-page-header {
     flex-direction: column;
-    gap: 1rem;
-    align-items: flex-start;
+    gap: 0.75rem;
+    align-items: stretch;
+    padding: 0.75rem !important;
+  }
+  
+  .sitmon-header-left {
+    text-align: center !important;
   }
 
   .sitmon-header-right {
     width: 100%;
-    justify-content: space-between;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 0.5rem !important;
   }
 
   .sitmon-tooltip {
@@ -2683,22 +2783,7 @@ body.situation-monitor-page ol,
   overflow: hidden;
 }
 
-.sitmon-panel-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.1), transparent);
-  transition: left 0.5s ease;
-  pointer-events: none;
-  z-index: 0; /* Behind content */
-}
-
-.sitmon-panel-card:hover::before {
-  left: 100%;
-}
+/* Panel card hover shimmer removed to prevent overflow glow */
 
 .sitmon-panel-card:hover {
   transform: translateY(-2px);
@@ -3084,23 +3169,9 @@ body.situation-monitor-page ol,
 /* Enhanced Status Chip */
 .sitmon-status-chip {
   position: relative;
-  overflow: hidden;
 }
 
-.sitmon-status-chip::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.3), transparent);
-  transition: left 0.5s ease;
-}
-
-.sitmon-status-chip:hover::after {
-  left: 100%;
-}
+/* Status chip hover effect removed to prevent overflow glow */
 
 /* Smooth Panel Content Updates */
 .sitmon-card-body > * {
@@ -3135,7 +3206,7 @@ body.situation-monitor-page ol,
 /* OSINT Signal Surfaces - Ticker, Status Strip, Telemetry */
 .sitmon-osint-ticker {
   position: fixed;
-  top: 0;
+  top: var(--sitmon-header-height);
   left: 0;
   right: 0;
   min-height: 32px;
@@ -3143,7 +3214,7 @@ body.situation-monitor-page ol,
   background: linear-gradient(180deg, rgba(3, 8, 18, 0.98) 0%, rgba(5, 12, 28, 0.95) 100%);
   border-bottom: 1px solid rgba(34, 211, 238, 0.25);
   padding: 4px 16px;
-  z-index: 1000;
+  z-index: 900;
   overflow-y: auto;
   overflow-x: hidden;
   font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
@@ -3352,5 +3423,2448 @@ body.situation-monitor-page ol,
   .sitmon-ticker-line {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+/* ============================================
+   Consumer-Ready Polish (Simplified)
+   ============================================ */
+.sitmon-modern {
+  background: transparent;
+}
+
+.sitmon-modern .sitmon-page-wrapper::before,
+.sitmon-modern .sitmon-osint-grid::before,
+.sitmon-modern .sitmon-hud::before,
+.sitmon-modern .sitmon-hud-card::after,
+.sitmon-modern .sitmon-panel-card::after,
+.sitmon-modern .sitmon-osint-status-strip::before,
+.sitmon-modern .sitmon-osint-ticker::after {
+  background: none !important;
+}
+
+.sitmon-intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  gap: 2rem;
+  margin: 0 0 2rem;
+  padding: 2rem 2.5rem;
+  border-radius: 16px;
+  background: rgba(10, 20, 38, 0.9);
+  border: 1px solid rgba(70, 180, 255, 0.25);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+  position: relative;
+  overflow: hidden;
+  min-height: 200px;
+}
+
+.sitmon-intro-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.sitmon-intro-eyebrow {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.sitmon-intro-title {
+  margin: 0;
+  font-size: clamp(1.8rem, 2.6vw, 2.3rem);
+  color: #e6f6ff;
+}
+
+.sitmon-intro-description {
+  margin: 0;
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.6;
+}
+
+.sitmon-intro-footnote {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.sitmon-intro-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+  align-content: start;
+}
+
+.sitmon-intro-stat {
+  padding: 0.85rem;
+  border-radius: 12px;
+  background: rgba(6, 14, 28, 0.7);
+  border: 1px solid rgba(70, 180, 255, 0.18);
+}
+
+.sitmon-intro-stat-label {
+  display: block;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.35rem;
+}
+
+.sitmon-intro-stat-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #e6f6ff;
+}
+
+.sitmon-intro-stat-value.critical {
+  color: #ff8b8b;
+}
+
+.sitmon-intro-stat-value.high {
+  color: #ffc66b;
+}
+
+.sitmon-intro-stat-value.online {
+  color: #4ade80;
+}
+
+.sitmon-intro-stat-value.offline {
+  color: #ff6b6b;
+}
+
+.sitmon-page-header {
+  margin-bottom: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 14px;
+  background: rgba(8, 18, 34, 0.75);
+  border: 1px solid rgba(70, 180, 255, 0.2);
+}
+
+.sitmon-page-title {
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-size: 1.1rem;
+  margin-bottom: 0.25rem;
+}
+
+.sitmon-page-subtitle {
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.sitmon-status-chip {
+  border-radius: 999px;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(34, 211, 238, 0.18);
+  position: relative;
+}
+
+.sitmon-card-title,
+.sitmon-hud-title {
+  text-transform: none;
+  letter-spacing: 0.03em;
+}
+
+.sitmon-hud-card,
+.sitmon-panel-card,
+.sitmon-map-container {
+  border-radius: 14px;
+}
+
+.sitmon-hud-card,
+.sitmon-panel-card {
+  background: rgba(8, 18, 34, 0.82);
+  border-color: rgba(70, 180, 255, 0.18);
+}
+
+.sitmon-osint-ticker {
+  min-height: 28px;
+  padding: 6px 16px;
+  background: rgba(6, 14, 28, 0.92);
+  border-bottom: 1px solid rgba(70, 180, 255, 0.2);
+}
+
+.sitmon-osint-status-strip {
+  height: 28px;
+  background: rgba(6, 14, 28, 0.92);
+  border-top: 1px solid rgba(70, 180, 255, 0.2);
+}
+
+.sitmon-filter-label {
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+.sitmon-auto-refresh-toggle {
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.sitmon-refresh-btn {
+  border-radius: 12px;
+}
+
+@media (max-width: 900px) {
+  .sitmon-intro {
+    grid-template-columns: 1fr;
+    padding: 1.25rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .sitmon-intro {
+    padding: 1rem;
+  }
+}
+
+/* ============================================
+   PROFESSIONAL VISUAL POLISH - ENHANCED
+   ============================================ */
+
+/* ----- Custom Font Import ----- */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+/* ----- CSS Custom Properties for Theme ----- */
+:root {
+  --sitmon-cyan: #22d3ee;
+  --sitmon-cyan-dim: rgba(34, 211, 238, 0.6);
+  --sitmon-cyan-glow: rgba(34, 211, 238, 0.4);
+  --sitmon-blue: #4A90E2;
+  --sitmon-blue-dim: rgba(74, 144, 226, 0.6);
+  --sitmon-critical: #ff6b6b;
+  --sitmon-critical-glow: rgba(255, 107, 107, 0.4);
+  --sitmon-high: #ffaa00;
+  --sitmon-high-glow: rgba(255, 170, 0, 0.4);
+  --sitmon-success: #4ade80;
+  --sitmon-success-glow: rgba(74, 222, 128, 0.4);
+  --sitmon-bg-dark: rgba(3, 8, 18, 0.98);
+  --sitmon-bg-card: rgba(8, 18, 34, 0.85);
+  --sitmon-border: rgba(70, 180, 255, 0.18);
+  --sitmon-border-glow: rgba(70, 180, 255, 0.35);
+  --sitmon-font-mono: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Consolas', monospace;
+  --sitmon-font-display: 'Space Grotesk', 'Inter', -apple-system, sans-serif;
+  --sitmon-anim-fast: 0.15s;
+  --sitmon-anim-medium: 0.3s;
+  --sitmon-anim-slow: 0.6s;
+}
+
+/* ============================================
+   1. HERO SECTION - ENHANCED
+   ============================================ */
+
+/* Animated gradient background */
+.sitmon-intro {
+  position: relative;
+  overflow: hidden;
+  background: 
+    linear-gradient(135deg, rgba(10, 20, 38, 0.95) 0%, rgba(15, 30, 50, 0.9) 50%, rgba(10, 20, 38, 0.95) 100%);
+  border: 1px solid var(--sitmon-border);
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.4),
+    0 0 60px rgba(34, 211, 238, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  animation: heroFadeIn 0.8s ease-out;
+}
+
+/* Animated gradient pulse overlay */
+.sitmon-intro::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: 
+    radial-gradient(ellipse at 30% 20%, rgba(34, 211, 238, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 80%, rgba(74, 144, 226, 0.06) 0%, transparent 50%);
+  animation: heroGradientPulse 8s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Corner accent lines */
+.sitmon-intro::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 16px;
+  background: 
+    linear-gradient(90deg, var(--sitmon-cyan) 0%, transparent 30%) top left / 80px 1px no-repeat,
+    linear-gradient(180deg, var(--sitmon-cyan) 0%, transparent 30%) top left / 1px 80px no-repeat,
+    linear-gradient(270deg, var(--sitmon-cyan) 0%, transparent 30%) top right / 80px 1px no-repeat,
+    linear-gradient(180deg, var(--sitmon-cyan) 0%, transparent 30%) top right / 1px 80px no-repeat,
+    linear-gradient(90deg, var(--sitmon-cyan) 0%, transparent 30%) bottom left / 80px 1px no-repeat,
+    linear-gradient(0deg, var(--sitmon-cyan) 0%, transparent 30%) bottom left / 1px 80px no-repeat,
+    linear-gradient(270deg, var(--sitmon-cyan) 0%, transparent 30%) bottom right / 80px 1px no-repeat,
+    linear-gradient(0deg, var(--sitmon-cyan) 0%, transparent 30%) bottom right / 1px 80px no-repeat;
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 1;
+}
+
+@keyframes heroFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes heroGradientPulse {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 0.6;
+  }
+  25% {
+    transform: translate(5%, 5%) rotate(2deg);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translate(-3%, 3%) rotate(-1deg);
+    opacity: 0.7;
+  }
+  75% {
+    transform: translate(2%, -3%) rotate(1deg);
+    opacity: 0.9;
+  }
+}
+
+/* Hero content positioning */
+.sitmon-intro-copy,
+.sitmon-intro-stats {
+  position: relative;
+  z-index: 2;
+}
+
+/* Enhanced eyebrow */
+.sitmon-intro-eyebrow {
+  font-family: var(--sitmon-font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  color: var(--sitmon-cyan);
+  text-shadow: 0 0 20px var(--sitmon-cyan-glow);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Live indicator dot */
+.sitmon-intro-eyebrow::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  background: var(--sitmon-success);
+  border-radius: 50%;
+  box-shadow: 0 0 10px var(--sitmon-success-glow), 0 0 20px var(--sitmon-success-glow);
+  animation: livePulse 2s ease-in-out infinite;
+}
+
+@keyframes livePulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 10px var(--sitmon-success-glow), 0 0 20px var(--sitmon-success-glow);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.85);
+    box-shadow: 0 0 5px var(--sitmon-success-glow);
+  }
+}
+
+/* Enhanced title */
+.sitmon-intro-title {
+  font-family: var(--sitmon-font-display);
+  font-size: clamp(2rem, 3vw, 2.8rem);
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  background: linear-gradient(135deg, #ffffff 0%, #e6f6ff 50%, #ffffff 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: titleShimmer 4s ease-in-out infinite;
+  background-size: 200% 100%;
+}
+
+@keyframes titleShimmer {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Enhanced description */
+.sitmon-intro-description {
+  font-family: var(--sitmon-font-display);
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.8);
+  max-width: 500px;
+}
+
+/* Enhanced footnote/timestamp */
+.sitmon-intro-footnote {
+  font-family: var(--sitmon-font-mono);
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.5);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sitmon-intro-footnote::before {
+  content: '◉';
+  color: var(--sitmon-cyan-dim);
+  font-size: 0.6rem;
+}
+
+/* ============================================
+   GLASSMORPHISM STAT CARDS
+   ============================================ */
+
+.sitmon-intro-stat {
+  position: relative;
+  padding: 1rem 1.1rem;
+  border-radius: 14px;
+  background: 
+    linear-gradient(135deg, rgba(15, 30, 50, 0.6) 0%, rgba(10, 25, 45, 0.4) 100%);
+  border: 1px solid var(--sitmon-border);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(15px);
+  overflow: hidden;
+  transition: 
+    transform var(--sitmon-anim-medium) cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow var(--sitmon-anim-medium) ease,
+    border-color var(--sitmon-anim-medium) ease;
+  animation: statCardFadeIn 0.6s ease-out backwards;
+}
+
+.sitmon-intro-stat:nth-child(1) { animation-delay: 0.1s; }
+.sitmon-intro-stat:nth-child(2) { animation-delay: 0.2s; }
+.sitmon-intro-stat:nth-child(3) { animation-delay: 0.3s; }
+.sitmon-intro-stat:nth-child(4) { animation-delay: 0.4s; }
+
+@keyframes statCardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Stat card glow effect on hover */
+.sitmon-intro-stat::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 14px;
+  background: radial-gradient(ellipse at 50% 0%, var(--sitmon-cyan-glow) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity var(--sitmon-anim-medium) ease;
+  pointer-events: none;
+}
+
+.sitmon-intro-stat:hover {
+  transform: translateY(-2px);
+  border-color: var(--sitmon-border-glow);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.3),
+    0 0 30px rgba(34, 211, 238, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.sitmon-intro-stat:hover::before {
+  opacity: 0.3;
+}
+
+/* Stat label */
+.sitmon-intro-stat-label {
+  font-family: var(--sitmon-font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.55);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.5rem;
+}
+
+/* Stat value with counter animation */
+.sitmon-intro-stat-value {
+  font-family: var(--sitmon-font-mono);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+  transition: color var(--sitmon-anim-fast) ease;
+}
+
+/* Animated value update effect */
+.sitmon-intro-stat-value.updated {
+  animation: statValuePulse 0.6s ease-out;
+}
+
+@keyframes statValuePulse {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.15);
+    text-shadow: 0 0 20px currentColor;
+  }
+  100% {
+    transform: scale(1);
+    text-shadow: none;
+  }
+}
+
+/* Critical stat styling */
+.sitmon-intro-stat-value.critical {
+  color: var(--sitmon-critical);
+  text-shadow: 0 0 15px var(--sitmon-critical-glow);
+}
+
+/* High priority stat styling */
+.sitmon-intro-stat-value.high {
+  color: var(--sitmon-high);
+  text-shadow: 0 0 15px var(--sitmon-high-glow);
+}
+
+/* Online status styling */
+.sitmon-intro-stat-value.online {
+  color: var(--sitmon-success);
+  text-shadow: 0 0 15px var(--sitmon-success-glow);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.sitmon-intro-stat-value.online::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  background: var(--sitmon-success);
+  border-radius: 50%;
+  animation: livePulse 2s ease-in-out infinite;
+}
+
+/* Offline status styling */
+.sitmon-intro-stat-value.offline {
+  color: var(--sitmon-critical);
+  text-shadow: 0 0 15px var(--sitmon-critical-glow);
+}
+
+/* Stat card with critical events gets special border */
+.sitmon-intro-stat:has(.critical) {
+  border-color: rgba(255, 107, 107, 0.3);
+  animation: criticalStatBorder 3s ease-in-out infinite;
+}
+
+@keyframes criticalStatBorder {
+  0%, 100% {
+    border-color: rgba(255, 107, 107, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), 0 0 20px rgba(255, 107, 107, 0.1);
+  }
+  50% {
+    border-color: rgba(255, 107, 107, 0.4);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), 0 0 30px rgba(255, 107, 107, 0.2);
+  }
+}
+
+/* ============================================
+   2. PANEL CARDS - ENHANCED
+   ============================================ */
+
+/* Enhanced panel card base */
+.sitmon-panel-card {
+  position: relative;
+  background: 
+    linear-gradient(180deg, rgba(12, 25, 45, 0.9) 0%, rgba(8, 18, 34, 0.85) 100%);
+  border: 1px solid var(--sitmon-border);
+  border-radius: 16px !important;
+  box-shadow: 
+    0 10px 40px rgba(0, 0, 0, 0.25),
+    0 0 1px rgba(70, 180, 255, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  overflow: hidden;
+  transition: 
+    transform var(--sitmon-anim-medium) cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow var(--sitmon-anim-medium) ease,
+    border-color var(--sitmon-anim-medium) ease;
+}
+
+/* Gradient border effect using pseudo-element */
+.sitmon-panel-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent 0%,
+    var(--sitmon-cyan) 20%,
+    var(--sitmon-blue) 50%,
+    var(--sitmon-cyan) 80%,
+    transparent 100%
+  );
+  opacity: 0.6;
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* Shimmer loading effect */
+.sitmon-panel-card.loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(34, 211, 238, 0.05),
+    transparent
+  );
+  animation: shimmerLoading 1.5s ease-in-out infinite;
+  z-index: 2;
+  pointer-events: none;
+}
+
+@keyframes shimmerLoading {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Panel hover effects */
+.sitmon-panel-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--sitmon-border-glow);
+  box-shadow: 
+    0 15px 50px rgba(0, 0, 0, 0.35),
+    0 0 40px rgba(34, 211, 238, 0.08),
+    0 0 1px rgba(70, 180, 255, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* Panel hover glow effect */
+.sitmon-panel-card:hover::before {
+  opacity: 1;
+}
+
+/* Staggered reveal animation */
+.sitmon-secondary-grid > .sitmon-panel-card {
+  animation: panelReveal 0.6s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+
+.sitmon-secondary-grid > .sitmon-panel-card:nth-child(1) { animation-delay: 0.1s; }
+.sitmon-secondary-grid > .sitmon-panel-card:nth-child(2) { animation-delay: 0.15s; }
+.sitmon-secondary-grid > .sitmon-panel-card:nth-child(3) { animation-delay: 0.2s; }
+.sitmon-secondary-grid > .sitmon-panel-card:nth-child(4) { animation-delay: 0.25s; }
+.sitmon-secondary-grid > .sitmon-panel-card:nth-child(5) { animation-delay: 0.3s; }
+.sitmon-secondary-grid > .sitmon-panel-card:nth-child(6) { animation-delay: 0.35s; }
+
+.sitmon-panels-stack > .sitmon-panel-card {
+  animation: panelRevealRight 0.5s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+
+.sitmon-panels-stack > .sitmon-panel-card:nth-child(1) { animation-delay: 0.2s; }
+.sitmon-panels-stack > .sitmon-panel-card:nth-child(2) { animation-delay: 0.3s; }
+.sitmon-panels-stack > .sitmon-panel-card:nth-child(3) { animation-delay: 0.4s; }
+.sitmon-panels-stack > .sitmon-panel-card:nth-child(4) { animation-delay: 0.5s; }
+
+@keyframes panelReveal {
+  from {
+    opacity: 0;
+    transform: translateY(25px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes panelRevealRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+/* Enhanced card header */
+.sitmon-card-header {
+  background: linear-gradient(180deg, rgba(15, 30, 55, 0.7) 0%, rgba(10, 22, 42, 0.5) 100%);
+  border-bottom: 1px solid rgba(70, 180, 255, 0.12);
+  padding: 0.9rem 1.1rem;
+  position: relative;
+  z-index: 2;
+}
+
+/* Card title with subtle glow */
+.sitmon-card-title {
+  font-family: var(--sitmon-font-display);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Panel with critical content gets alert border */
+.sitmon-panel-card.has-critical {
+  border-color: rgba(255, 107, 107, 0.35);
+  animation: criticalPanelPulse 3s ease-in-out infinite;
+}
+
+.sitmon-panel-card.has-critical::before {
+  background: linear-gradient(90deg,
+    transparent 0%,
+    var(--sitmon-critical) 20%,
+    var(--sitmon-high) 50%,
+    var(--sitmon-critical) 80%,
+    transparent 100%
+  );
+  opacity: 0.8;
+}
+
+@keyframes criticalPanelPulse {
+  0%, 100% {
+    border-color: rgba(255, 107, 107, 0.25);
+    box-shadow: 
+      0 10px 40px rgba(0, 0, 0, 0.25),
+      0 0 30px rgba(255, 107, 107, 0.08);
+  }
+  50% {
+    border-color: rgba(255, 107, 107, 0.45);
+    box-shadow: 
+      0 10px 40px rgba(0, 0, 0, 0.25),
+      0 0 50px rgba(255, 107, 107, 0.15);
+  }
+}
+
+/* Loading skeleton shimmer for panel body */
+.sitmon-card-body .sitmon-panel-loading {
+  position: relative;
+  min-height: 150px;
+}
+
+.sitmon-card-body .sitmon-panel-loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    linear-gradient(90deg,
+      rgba(30, 50, 80, 0.3) 0%,
+      rgba(50, 80, 120, 0.4) 50%,
+      rgba(30, 50, 80, 0.3) 100%
+    );
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+@keyframes skeletonShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Enhanced spinner */
+.sitmon-spinner {
+  width: 44px;
+  height: 44px;
+  border: 3px solid rgba(34, 211, 238, 0.15);
+  border-top-color: var(--sitmon-cyan);
+  border-radius: 50%;
+  animation: spinnerRotate 0.8s linear infinite;
+  position: relative;
+}
+
+.sitmon-spinner::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  bottom: -3px;
+  border: 3px solid transparent;
+  border-top-color: rgba(74, 144, 226, 0.5);
+  border-radius: 50%;
+  animation: spinnerRotate 1.2s linear infinite reverse;
+}
+
+@keyframes spinnerRotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================
+   3. MAP CONTAINER - ENHANCED
+   ============================================ */
+
+/* Map container with corner crosshairs */
+.sitmon-map-container {
+  position: relative;
+  background: 
+    linear-gradient(135deg, rgba(5, 12, 28, 0.98) 0%, rgba(8, 18, 38, 0.95) 100%);
+  border: 1px solid var(--sitmon-border);
+  border-radius: 16px;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.4),
+    inset 0 0 100px rgba(34, 211, 238, 0.02);
+  overflow: hidden;
+}
+
+/* Corner crosshairs/brackets */
+.sitmon-map-container::before,
+.sitmon-map-container::after {
+  content: '';
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.sitmon-map-container::before {
+  top: 12px;
+  left: 12px;
+  border-left: 2px solid var(--sitmon-cyan);
+  border-top: 2px solid var(--sitmon-cyan);
+  opacity: 0.7;
+  animation: cornerPulse 3s ease-in-out infinite;
+}
+
+.sitmon-map-container::after {
+  bottom: 12px;
+  right: 12px;
+  border-right: 2px solid var(--sitmon-cyan);
+  border-bottom: 2px solid var(--sitmon-cyan);
+  opacity: 0.7;
+  animation: cornerPulse 3s ease-in-out infinite 0.5s;
+}
+
+@keyframes cornerPulse {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Additional corner brackets */
+.sitmon-intel-wall::before,
+.sitmon-intel-wall::after {
+  content: '';
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.sitmon-intel-wall::before {
+  top: 12px;
+  right: 12px;
+  border-right: 2px solid var(--sitmon-cyan);
+  border-top: 2px solid var(--sitmon-cyan);
+  opacity: 0.5;
+}
+
+.sitmon-intel-wall::after {
+  bottom: 12px;
+  left: 12px;
+  border-left: 2px solid var(--sitmon-cyan);
+  border-bottom: 2px solid var(--sitmon-cyan);
+  opacity: 0.5;
+}
+
+/* Enhanced tooltip */
+.sitmon-tooltip {
+  background: rgba(8, 18, 38, 0.95) !important;
+  border: 1px solid var(--sitmon-border-glow) !important;
+  border-radius: 10px !important;
+  padding: 0.75rem 1rem !important;
+  box-shadow: 
+    0 10px 40px rgba(0, 0, 0, 0.5),
+    0 0 30px rgba(34, 211, 238, 0.1) !important;
+  backdrop-filter: blur(15px);
+  font-family: var(--sitmon-font-display);
+  animation: tooltipFadeIn 0.2s ease-out;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Enhanced event markers */
+.event-marker circle {
+  transition: 
+    r 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    fill-opacity 0.3s ease;
+}
+
+.event-marker:hover circle {
+  fill-opacity: 0.9;
+}
+
+/* Critical event marker pulse */
+.event-marker[data-severity="5"] circle:first-child {
+  animation: criticalMarkerPulse 2s ease-in-out infinite;
+}
+
+@keyframes criticalMarkerPulse {
+  0%, 100% {
+    r: 8;
+    fill-opacity: 0.7;
+  }
+  50% {
+    r: 12;
+    fill-opacity: 0.5;
+  }
+}
+
+/* HUD cards enhanced */
+.sitmon-hud-card {
+  background: rgba(8, 18, 38, 0.92);
+  border: 1px solid var(--sitmon-border);
+  border-radius: 14px;
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(15px);
+  animation: hudCardFadeIn 0.4s ease-out backwards;
+}
+
+.sitmon-hud-left .sitmon-hud-card:nth-child(1) { animation-delay: 0.2s; }
+.sitmon-hud-left .sitmon-hud-card:nth-child(2) { animation-delay: 0.3s; }
+.sitmon-hud-right .sitmon-hud-card:nth-child(1) { animation-delay: 0.25s; }
+.sitmon-hud-right .sitmon-hud-card:nth-child(2) { animation-delay: 0.35s; }
+
+@keyframes hudCardFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* HUD header enhanced */
+.sitmon-hud-header {
+  background: linear-gradient(180deg, rgba(15, 30, 55, 0.6) 0%, rgba(10, 22, 42, 0.4) 100%);
+  border-bottom: 1px solid rgba(70, 180, 255, 0.1);
+}
+
+.sitmon-hud-title {
+  font-family: var(--sitmon-font-display);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--sitmon-cyan);
+  text-shadow: 0 0 15px var(--sitmon-cyan-glow);
+}
+
+/* Badge enhanced */
+.sitmon-hud-badge {
+  font-family: var(--sitmon-font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: rgba(34, 211, 238, 0.15);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  color: var(--sitmon-cyan);
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+}
+
+/* ============================================
+   4. DATA FEED ANIMATIONS
+   ============================================ */
+
+/* Staggered list item animations */
+.sitmon-news-list,
+.sitmon-earthquakes-list,
+.sitmon-alerts-list,
+.sitmon-feed-list {
+  position: relative;
+}
+
+/* News item enhanced */
+.sitmon-news-item {
+  position: relative;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, rgba(12, 25, 45, 0.4) 0%, rgba(8, 18, 34, 0.3) 100%);
+  border-radius: 10px;
+  border-left: 3px solid var(--sitmon-cyan-dim);
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+  animation: listItemSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+  transition: 
+    transform var(--sitmon-anim-fast) ease,
+    background var(--sitmon-anim-fast) ease,
+    border-color var(--sitmon-anim-fast) ease,
+    box-shadow var(--sitmon-anim-fast) ease;
+}
+
+.sitmon-news-item:nth-child(1) { animation-delay: 0.05s; }
+.sitmon-news-item:nth-child(2) { animation-delay: 0.1s; }
+.sitmon-news-item:nth-child(3) { animation-delay: 0.15s; }
+.sitmon-news-item:nth-child(4) { animation-delay: 0.2s; }
+.sitmon-news-item:nth-child(5) { animation-delay: 0.25s; }
+.sitmon-news-item:nth-child(n+6) { animation-delay: 0.3s; }
+
+@keyframes listItemSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* News item hover effect */
+.sitmon-news-item:hover {
+  background: linear-gradient(135deg, rgba(18, 35, 60, 0.5) 0%, rgba(12, 25, 45, 0.4) 100%);
+  border-color: var(--sitmon-cyan);
+  transform: translateX(4px);
+  box-shadow: 0 4px 20px rgba(34, 211, 238, 0.1);
+}
+
+/* New item flash-in highlight */
+.sitmon-news-item.new-item {
+  animation: newItemFlash 0.8s ease-out;
+}
+
+@keyframes newItemFlash {
+  0% {
+    background: rgba(34, 211, 238, 0.3);
+    border-color: var(--sitmon-cyan);
+    box-shadow: 0 0 30px var(--sitmon-cyan-glow);
+  }
+  100% {
+    background: linear-gradient(135deg, rgba(12, 25, 45, 0.4) 0%, rgba(8, 18, 34, 0.3) 100%);
+    border-color: var(--sitmon-cyan-dim);
+    box-shadow: none;
+  }
+}
+
+/* Severity-based styling with glow */
+.sitmon-news-item[data-severity="5"] {
+  border-color: var(--sitmon-critical);
+  background: linear-gradient(135deg, rgba(40, 15, 20, 0.4) 0%, rgba(25, 10, 15, 0.3) 100%);
+  box-shadow: 0 0 20px rgba(255, 107, 107, 0.1);
+}
+
+.sitmon-news-item[data-severity="5"]:hover {
+  box-shadow: 0 4px 30px rgba(255, 107, 107, 0.2);
+}
+
+.sitmon-news-item[data-severity="4"] {
+  border-color: var(--sitmon-high);
+  background: linear-gradient(135deg, rgba(40, 30, 15, 0.4) 0%, rgba(25, 18, 10, 0.3) 100%);
+}
+
+/* Feed item enhanced */
+.sitmon-feed-item {
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  background: rgba(10, 22, 42, 0.3);
+  margin-bottom: 0.4rem;
+  cursor: pointer;
+  transition: 
+    background var(--sitmon-anim-fast) ease,
+    transform var(--sitmon-anim-fast) ease;
+  animation: feedItemFadeIn 0.3s ease-out backwards;
+}
+
+.sitmon-feed-item:nth-child(1) { animation-delay: 0.05s; }
+.sitmon-feed-item:nth-child(2) { animation-delay: 0.08s; }
+.sitmon-feed-item:nth-child(3) { animation-delay: 0.11s; }
+.sitmon-feed-item:nth-child(4) { animation-delay: 0.14s; }
+.sitmon-feed-item:nth-child(n+5) { animation-delay: 0.17s; }
+
+@keyframes feedItemFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sitmon-feed-item:hover {
+  background: rgba(20, 40, 70, 0.4);
+  transform: translateX(3px);
+}
+
+.sitmon-feed-item.critical {
+  border-left: 3px solid var(--sitmon-critical);
+  background: rgba(40, 15, 20, 0.3);
+}
+
+/* Earthquake item enhanced */
+.sitmon-earthquake-item {
+  position: relative;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, rgba(40, 15, 25, 0.35) 0%, rgba(25, 10, 18, 0.25) 100%);
+  border-radius: 10px;
+  border-left: 3px solid var(--sitmon-critical);
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+  animation: listItemSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+  transition: 
+    transform var(--sitmon-anim-fast) ease,
+    box-shadow var(--sitmon-anim-fast) ease;
+}
+
+.sitmon-earthquake-item:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 20px rgba(255, 107, 107, 0.15);
+}
+
+/* Earthquake magnitude styling */
+.sitmon-earthquake-magnitude {
+  font-family: var(--sitmon-font-mono);
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--sitmon-critical);
+  text-shadow: 0 0 15px var(--sitmon-critical-glow);
+}
+
+/* Weather alert item enhanced */
+.sitmon-alert-item {
+  position: relative;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+  animation: listItemSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+  transition: 
+    transform var(--sitmon-anim-fast) ease,
+    box-shadow var(--sitmon-anim-fast) ease;
+}
+
+.sitmon-alert-item:hover {
+  transform: translateX(4px);
+}
+
+.sitmon-alert-extreme {
+  background: linear-gradient(135deg, rgba(50, 15, 15, 0.4) 0%, rgba(30, 10, 10, 0.3) 100%);
+  border-left: 3px solid #ff3333;
+  box-shadow: 0 0 20px rgba(255, 51, 51, 0.1);
+}
+
+.sitmon-alert-severe {
+  background: linear-gradient(135deg, rgba(45, 20, 20, 0.35) 0%, rgba(28, 12, 12, 0.25) 100%);
+  border-left: 3px solid var(--sitmon-critical);
+}
+
+.sitmon-alert-moderate {
+  background: linear-gradient(135deg, rgba(45, 35, 15, 0.35) 0%, rgba(28, 22, 10, 0.25) 100%);
+  border-left: 3px solid var(--sitmon-high);
+}
+
+.sitmon-alert-minor {
+  background: linear-gradient(135deg, rgba(15, 30, 50, 0.35) 0%, rgba(10, 20, 35, 0.25) 100%);
+  border-left: 3px solid var(--sitmon-blue);
+}
+
+/* ============================================
+   5. TICKER REDESIGN
+   ============================================ */
+
+/* Enhanced ticker container */
+.sitmon-osint-ticker {
+  position: fixed;
+  top: var(--sitmon-header-height);
+  left: 0;
+  right: 0;
+  background: linear-gradient(180deg, rgba(5, 12, 28, 0.98) 0%, rgba(8, 18, 38, 0.95) 100%);
+  border-bottom: 1px solid var(--sitmon-border);
+  padding: 0;
+  z-index: 900;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Top accent line */
+.sitmon-osint-ticker::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent, 
+    var(--sitmon-cyan) 20%, 
+    var(--sitmon-cyan) 80%, 
+    transparent
+  );
+  opacity: 0.5;
+}
+
+/* Ticker feed container */
+.sitmon-ticker-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+  max-height: 120px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(34, 211, 238, 0.3) transparent;
+}
+
+.sitmon-ticker-feed::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sitmon-ticker-feed::-webkit-scrollbar-thumb {
+  background: rgba(34, 211, 238, 0.3);
+  border-radius: 2px;
+}
+
+/* Ticker line item */
+.sitmon-ticker-line {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.4rem 1rem;
+  font-family: var(--sitmon-font-mono);
+  font-size: 0.72rem;
+  white-space: nowrap;
+  border-bottom: 1px solid rgba(70, 180, 255, 0.06);
+  transition: background var(--sitmon-anim-fast) ease;
+  animation: tickerLineSlide 0.3s ease-out backwards;
+}
+
+.sitmon-ticker-line:nth-child(1) { animation-delay: 0.05s; }
+.sitmon-ticker-line:nth-child(2) { animation-delay: 0.1s; }
+.sitmon-ticker-line:nth-child(3) { animation-delay: 0.15s; }
+.sitmon-ticker-line:nth-child(n+4) { animation-delay: 0.2s; }
+
+@keyframes tickerLineSlide {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.sitmon-ticker-line:hover {
+  background: rgba(34, 211, 238, 0.08);
+}
+
+.sitmon-ticker-line:last-child {
+  border-bottom: none;
+}
+
+/* Ticker time */
+.sitmon-ticker-time {
+  color: var(--sitmon-cyan);
+  font-weight: 600;
+  min-width: 50px;
+  text-shadow: 0 0 10px var(--sitmon-cyan-glow);
+}
+
+/* Ticker category */
+.sitmon-ticker-category {
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.65rem;
+  min-width: 70px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Ticker severity indicator */
+.sitmon-ticker-severity {
+  font-weight: 700;
+  min-width: 45px;
+  text-align: center;
+}
+
+/* Ticker title */
+.sitmon-ticker-title {
+  flex: 1;
+  color: rgba(255, 255, 255, 0.85);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Severity-based styling */
+.sitmon-ticker-line[data-severity="5"] {
+  background: rgba(255, 107, 107, 0.08);
+}
+
+.sitmon-ticker-line[data-severity="5"] .sitmon-ticker-title {
+  color: var(--sitmon-critical);
+  font-weight: 600;
+  text-shadow: 0 0 10px var(--sitmon-critical-glow);
+}
+
+.sitmon-ticker-line[data-severity="5"] .sitmon-ticker-severity {
+  color: var(--sitmon-critical);
+}
+
+.sitmon-ticker-line[data-severity="4"] .sitmon-ticker-title {
+  color: var(--sitmon-high);
+}
+
+.sitmon-ticker-line[data-severity="4"] .sitmon-ticker-severity {
+  color: var(--sitmon-high);
+}
+
+/* Ticker age */
+.sitmon-ticker-age {
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 0.65rem;
+  min-width: 55px;
+  text-align: right;
+}
+
+/* ============================================
+   6. MICRO-INTERACTIONS
+   ============================================ */
+
+/* Button base styles */
+.sitmon-refresh-btn,
+.sitmon-retry-btn,
+.sitmon-tab-btn,
+.sitmon-filter-btn,
+.sitmon-pinned-btn {
+  position: relative;
+  overflow: hidden;
+  font-family: var(--sitmon-font-display);
+  font-weight: 600;
+  cursor: pointer;
+  transition: 
+    transform var(--sitmon-anim-fast) ease,
+    background var(--sitmon-anim-fast) ease,
+    border-color var(--sitmon-anim-fast) ease,
+    box-shadow var(--sitmon-anim-fast) ease;
+}
+
+/* Ripple effect container */
+.sitmon-refresh-btn::after,
+.sitmon-tab-btn::after,
+.sitmon-filter-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  transform: translate(-50%, -50%);
+  transition: width 0.5s ease, height 0.5s ease, opacity 0.5s ease;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.sitmon-refresh-btn:active::after,
+.sitmon-tab-btn:active::after,
+.sitmon-filter-btn:active::after {
+  width: 200px;
+  height: 200px;
+  opacity: 0;
+  transition: width 0s, height 0s, opacity 0.5s ease;
+}
+
+/* Refresh button enhanced */
+.sitmon-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.1rem;
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.15) 0%, rgba(74, 144, 226, 0.1) 100%);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  border-radius: 10px;
+  color: #fff;
+  font-size: 0.82rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.sitmon-refresh-btn:hover {
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.25) 0%, rgba(74, 144, 226, 0.18) 100%);
+  border-color: var(--sitmon-cyan);
+  transform: translateY(-2px);
+  box-shadow: 
+    0 6px 20px rgba(0, 0, 0, 0.25),
+    0 0 20px rgba(34, 211, 238, 0.15);
+}
+
+.sitmon-refresh-btn:active {
+  transform: translateY(0);
+}
+
+/* Refresh button loading state */
+.sitmon-refresh-btn.loading {
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+.sitmon-refresh-btn.loading .sitmon-icon {
+  animation: iconSpin 0.8s linear infinite;
+}
+
+@keyframes iconSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Tab button enhanced */
+.sitmon-tab-btn {
+  padding: 0.5rem 0.9rem;
+  background: rgba(20, 40, 70, 0.4);
+  border: 1px solid rgba(70, 180, 255, 0.2);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.78rem;
+}
+
+.sitmon-tab-btn:hover {
+  background: rgba(30, 55, 90, 0.5);
+  border-color: var(--sitmon-cyan-dim);
+  transform: translateY(-1px);
+}
+
+.sitmon-tab-btn.active {
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.2) 0%, rgba(74, 144, 226, 0.15) 100%);
+  border-color: var(--sitmon-cyan);
+  color: var(--sitmon-cyan);
+  box-shadow: 0 0 15px var(--sitmon-cyan-glow);
+}
+
+/* Filter button enhanced */
+.sitmon-filter-btn {
+  padding: 0.45rem 0.7rem;
+  background: rgba(15, 30, 55, 0.5);
+  border: 1px solid rgba(70, 180, 255, 0.15);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.75rem;
+}
+
+.sitmon-filter-btn:hover {
+  background: rgba(25, 45, 75, 0.6);
+  border-color: rgba(70, 180, 255, 0.3);
+}
+
+.sitmon-filter-btn.active {
+  background: rgba(34, 211, 238, 0.15);
+  border-color: var(--sitmon-cyan);
+  color: var(--sitmon-cyan);
+}
+
+/* Focus states with animated outline */
+.sitmon-refresh-btn:focus-visible,
+.sitmon-tab-btn:focus-visible,
+.sitmon-filter-btn:focus-visible,
+.sitmon-music-btn:focus-visible {
+  outline: none;
+  box-shadow: 
+    0 0 0 2px rgba(3, 8, 18, 0.9),
+    0 0 0 4px var(--sitmon-cyan);
+}
+
+/* Status chip enhanced */
+.sitmon-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  background: rgba(34, 211, 238, 0.12);
+  border: 1px solid rgba(34, 211, 238, 0.25);
+  border-radius: 999px;
+  font-family: var(--sitmon-font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--sitmon-cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* Live indicator in status chip */
+.sitmon-status-chip::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  min-width: 6px;
+  min-height: 6px;
+  flex-shrink: 0;
+  background: var(--sitmon-success);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--sitmon-success-glow);
+  animation: livePulse 2s ease-in-out infinite;
+}
+
+/* Status chip updating state */
+.sitmon-status-chip.updating {
+  background: rgba(255, 170, 0, 0.12);
+  border-color: rgba(255, 170, 0, 0.25);
+  color: var(--sitmon-high);
+}
+
+.sitmon-status-chip.updating::before {
+  background: var(--sitmon-high);
+  animation: none;
+}
+
+/* Panel resize handle styles defined earlier - see main resize handle section */
+/* This section intentionally left empty to avoid duplicate styles */
+
+/* Music button enhanced */
+.sitmon-music-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: rgba(20, 40, 70, 0.4);
+  border: 1px solid rgba(70, 180, 255, 0.2);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: 
+    background var(--sitmon-anim-fast) ease,
+    border-color var(--sitmon-anim-fast) ease,
+    transform var(--sitmon-anim-fast) ease;
+}
+
+.sitmon-music-btn:hover {
+  background: rgba(30, 55, 90, 0.5);
+  border-color: var(--sitmon-cyan-dim);
+  transform: scale(1.05);
+}
+
+.sitmon-music-btn:active {
+  transform: scale(0.95);
+}
+
+/* ============================================
+   7. TYPOGRAPHY REFINEMENTS
+   ============================================ */
+
+/* Apply custom fonts globally */
+body.situation-monitor-page {
+  font-family: var(--sitmon-font-display);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Monospace elements */
+.sitmon-telemetry,
+.sitmon-timestamp,
+.sitmon-count,
+.sitmon-earthquake-time,
+.sitmon-news-time,
+.sitmon-alert-severity,
+.sitmon-ticker-time,
+.sitmon-ticker-category,
+.sitmon-ticker-age {
+  font-family: var(--sitmon-font-mono);
+}
+
+/* Headings */
+.sitmon-page-title,
+.sitmon-intro-title,
+.sitmon-card-title,
+.sitmon-hud-title {
+  font-family: var(--sitmon-font-display);
+  letter-spacing: -0.01em;
+}
+
+/* Data values */
+.sitmon-stat-value,
+.sitmon-intro-stat-value,
+.sitmon-earthquake-magnitude {
+  font-family: var(--sitmon-font-mono);
+  font-feature-settings: 'tnum' 1; /* Tabular numbers for alignment */
+}
+
+/* Improved line heights */
+.sitmon-news-title,
+.sitmon-alert-headline,
+.sitmon-pinned-summary {
+  line-height: 1.45;
+}
+
+.sitmon-news-description,
+.sitmon-earthquake-details,
+.sitmon-alert-areas {
+  line-height: 1.5;
+}
+
+/* Font sizing scale */
+.sitmon-card-body {
+  font-size: 0.88rem;
+}
+
+.sitmon-news-header,
+.sitmon-earthquake-header,
+.sitmon-alert-header {
+  font-size: 0.72rem;
+}
+
+.sitmon-news-source,
+.sitmon-earthquake-time,
+.sitmon-alert-severity {
+  font-size: 0.68rem;
+  letter-spacing: 0.03em;
+}
+
+/* ============================================
+   8. STATUS INDICATORS ENHANCED
+   ============================================ */
+
+/* OSINT status strip enhanced */
+.sitmon-osint-status-strip {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 28px;
+  background: linear-gradient(180deg, rgba(5, 12, 28, 0.95) 0%, rgba(3, 8, 18, 0.98) 100%);
+  border-top: 1px solid rgba(70, 180, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
+  z-index: 10;
+  font-family: var(--sitmon-font-mono);
+  font-size: 0.68rem;
+}
+
+/* Status items */
+.sitmon-osint-status-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sitmon-osint-status-label {
+  color: rgba(255, 255, 255, 0.45);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.62rem;
+}
+
+.sitmon-osint-status-value {
+  color: var(--sitmon-cyan);
+  font-weight: 600;
+}
+
+.sitmon-osint-status-value.online {
+  color: var(--sitmon-success);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.sitmon-osint-status-value.online::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--sitmon-success);
+  border-radius: 50%;
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
+@keyframes statusPulse {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 6px var(--sitmon-success-glow);
+  }
+  50% {
+    opacity: 0.5;
+    box-shadow: 0 0 2px var(--sitmon-success-glow);
+  }
+}
+
+.sitmon-osint-status-value.offline {
+  color: var(--sitmon-critical);
+}
+
+/* ============================================
+   9. REDUCED MOTION SUPPORT
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .sitmon-intro::before,
+  .sitmon-intro-title,
+  .sitmon-status-chip::before,
+  .sitmon-intro-eyebrow::before,
+  .sitmon-osint-status-value.online::before,
+  .sitmon-spinner,
+  .sitmon-spinner::before {
+    animation: none !important;
+  }
+}
+
+/* ============================================
+   10. RESPONSIVE POLISH
+   ============================================ */
+
+@media (max-width: 1200px) {
+  .sitmon-intro {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+  
+  .sitmon-intro-stats {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .sitmon-intro-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .sitmon-intro-stat {
+    padding: 0.85rem;
+  }
+  
+  .sitmon-intro-stat-value {
+    font-size: 1.4rem;
+  }
+  
+  .sitmon-ticker-line {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.68rem;
+  }
+  
+  .sitmon-ticker-category {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .sitmon-intro {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+  
+  .sitmon-intro-title {
+    font-size: 1.6rem;
+  }
+  
+  .sitmon-intro-stat-value {
+    font-size: 1.2rem;
+  }
+  
+  .sitmon-ticker-severity {
+    display: none;
+  }
+  
+  .sitmon-ticker-age {
+    display: none;
+  }
+}
+
+/* ============================================
+   LIVE CAMS PANEL - CRITICAL VISIBILITY FIX
+   Must be at END of file to override conflicts
+   ============================================ */
+
+/* Live Cams panel container - full width, proper height */
+#sitmon-panel-livecams {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  grid-column: 1 / -1 !important;
+  min-height: 85vh !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  position: relative !important;
+  z-index: 5 !important;
+}
+
+/* When shown, ensure it's truly visible */
+#sitmon-panel-livecams[style*="display: block"] {
+  display: block !important;
+}
+
+/* Live Cams card body - override the min-height: 0 rule */
+#sitmon-panel-livecams > .sitmon-card-body,
+#sitmon-panel-livecams .sitmon-card-body {
+  min-height: 80vh !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+
+/* The actual livecams-container must fill the space */
+#sitmon-panel-livecams .livecams-container,
+#sitmon-panel-livecams-body .livecams-container {
+  min-height: 78vh !important;
+  height: auto !important;
+  max-height: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: visible !important;
+}
+
+/* Live Cams layout grid needs proper height */
+#sitmon-panel-livecams .livecams-layout {
+  min-height: 60vh !important;
+  height: auto !important;
+  flex: 1 1 auto !important;
+  overflow: visible !important;
+}
+
+/* Ensure left panel and view panel have reasonable heights */
+#sitmon-panel-livecams .livecams-left-panel {
+  min-height: 55vh !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+}
+
+#sitmon-panel-livecams .livecams-view-panel {
+  min-height: 55vh !important;
+  height: auto !important;
+  max-height: none !important;
+}
+
+/* Grid cells in multi-camera view */
+#sitmon-panel-livecams .livecams-grid-view {
+  min-height: 50vh !important;
+}
+
+/* Player display needs to be visible */
+#sitmon-panel-livecams .livecams-player-display {
+  min-height: 300px !important;
+}
+
+/* When Live Cams is shown, hide other secondary panels for focus */
+.sitmon-secondary-grid:has(#sitmon-panel-livecams[style*="display: block"]) > .sitmon-panel-card:not(#sitmon-panel-livecams) {
+  display: none !important;
+}
+
+/* Mobile responsive for Live Cams */
+@media (max-width: 1200px) {
+  #sitmon-panel-livecams .livecams-layout {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+  
+  #sitmon-panel-livecams .livecams-left-panel {
+    max-height: 40vh !important;
+    min-height: 300px !important;
+  }
+  
+  #sitmon-panel-livecams .livecams-view-panel {
+    min-height: 50vh !important;
+  }
+}
+
+@media (max-width: 768px) {
+  #sitmon-panel-livecams {
+    min-height: 100vh !important;
+  }
+  
+  #sitmon-panel-livecams .livecams-container {
+    min-height: 95vh !important;
+  }
+}
+
+/* ============================================
+   OSINT TICKER - LIMIT TO 3 LINES MAX
+   ============================================ */
+
+/* Desktop: max 3 lines */
+.sitmon-osint-ticker {
+  max-height: 72px !important; /* ~24px per line x 3 */
+  overflow: hidden !important;
+}
+
+.sitmon-ticker-feed {
+  max-height: 68px;
+  overflow: hidden;
+}
+
+/* Only show first 3 ticker items via CSS */
+.sitmon-ticker-line:nth-child(n+4) {
+  display: none !important;
+}
+
+/* Only show first 3 earthquake items via CSS */
+.sitmon-earthquakes-list .sitmon-earthquake-item:nth-child(n+4) {
+  display: none !important;
+}
+
+/* ============================================
+   MOBILE RESPONSIVE OVERHAUL
+   ============================================ */
+
+/* Tablet breakpoint */
+@media (max-width: 1024px) {
+  /* Grid adjustments */
+  .sitmon-secondary-grid {
+    grid-template-columns: repeat(6, 1fr) !important;
+    gap: 12px !important;
+  }
+  
+  .sitmon-secondary-grid > .sitmon-panel-card:nth-child(1),
+  .sitmon-secondary-grid > .sitmon-panel-card:nth-child(2),
+  .sitmon-secondary-grid > .sitmon-panel-card:nth-child(3),
+  .sitmon-secondary-grid > .sitmon-panel-card:nth-child(4) {
+    grid-column: span 3 !important;
+  }
+  
+  .sitmon-secondary-grid > .sitmon-panel-card:nth-child(5),
+  .sitmon-secondary-grid > .sitmon-panel-card:nth-child(6) {
+    grid-column: span 6 !important;
+  }
+  
+  /* HUD panels - make them smaller */
+  .sitmon-hud-left,
+  .sitmon-hud-right {
+    width: 240px !important;
+  }
+}
+
+/* Mobile breakpoint - complete overhaul */
+@media (max-width: 768px) {
+  /* Root level fixes */
+  .sitmon-page-wrapper {
+    padding: 0.5rem !important;
+    padding-top: calc(var(--sitmon-header-height) + 70px) !important; /* Account for ticker */
+    overflow-x: hidden !important;
+  }
+  
+  /* Ticker - smaller on mobile */
+  .sitmon-osint-ticker {
+    max-height: 60px !important;
+    padding: 4px 8px !important;
+    font-size: 0.6rem !important;
+  }
+  
+  .sitmon-ticker-line {
+    gap: 6px !important;
+    font-size: 0.6rem !important;
+    padding: 1px 0 !important;
+  }
+  
+  .sitmon-ticker-time {
+    font-size: 0.55rem !important;
+    min-width: 40px !important;
+  }
+  
+  /* Hide HUD overlays on mobile - they obscure too much */
+  .sitmon-hud-left,
+  .sitmon-hud-right {
+    display: none !important;
+  }
+  
+  /* OSINT Grid - single column on mobile */
+  .sitmon-osint-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+  }
+  
+  .sitmon-intel-wall {
+    width: 100% !important;
+    grid-column: unset !important;
+    margin-bottom: 0.75rem !important;
+  }
+  
+  /* Map - full width, reasonable height */
+  .sitmon-map-container {
+    width: 100% !important;
+    min-height: 280px !important;
+    max-height: 350px !important;
+    height: 280px !important;
+    border-radius: 8px !important;
+  }
+  
+  .sitmon-map {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 280px !important;
+  }
+  
+  .sitmon-map-card {
+    margin-bottom: 1rem !important;
+  }
+  
+  .sitmon-map-card .sitmon-card-body {
+    min-height: 250px !important;
+    max-height: 300px !important;
+  }
+  
+  /* Intro section - stack everything */
+  .sitmon-intro {
+    padding: 0.75rem !important;
+    gap: 0.75rem !important;
+  }
+  
+  .sitmon-intro-title {
+    font-size: 1.25rem !important;
+    line-height: 1.3 !important;
+  }
+  
+  .sitmon-intro-desc {
+    font-size: 0.8rem !important;
+    line-height: 1.4 !important;
+  }
+  
+  /* Stats grid - 2x2 on mobile */
+  .sitmon-intro-stats {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+  
+  .sitmon-stat-card {
+    padding: 0.75rem !important;
+  }
+  
+  .sitmon-stat-value {
+    font-size: 1.5rem !important;
+  }
+  
+  .sitmon-stat-label {
+    font-size: 0.65rem !important;
+  }
+  
+  /* Secondary grid - single column stack */
+  .sitmon-secondary-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+  }
+  
+  .sitmon-secondary-grid > .sitmon-panel-card {
+    grid-column: unset !important;
+    width: 100% !important;
+    min-height: 200px !important;
+    max-height: 350px !important;
+  }
+  
+  /* Panels stack - fix for mobile: full width, no grid positioning */
+  .sitmon-panels-stack {
+    grid-column: unset !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+  }
+  
+  .sitmon-panels-stack > .sitmon-panel-card {
+    flex: none !important;
+    min-height: 180px !important;
+    max-height: 300px !important;
+    height: auto !important;
+    width: 100% !important;
+  }
+  
+  /* Panel cards - mobile optimized */
+  .sitmon-panel-card {
+    border-radius: 10px !important;
+  }
+  
+  .sitmon-card-header {
+    padding: 0.6rem 0.75rem !important;
+  }
+  
+  .sitmon-card-title {
+    font-size: 0.8rem !important;
+  }
+  
+  .sitmon-card-body {
+    padding: 0.5rem !important;
+    font-size: 0.75rem !important;
+  }
+  
+  /* Toolbar - stack vertically on mobile */
+  .sitmon-toolbar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.5rem !important;
+    padding: 0.5rem !important;
+  }
+  
+  .sitmon-toolbar-left {
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 0.5rem !important;
+  }
+  
+  .sitmon-toolbar-right {
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 0.5rem !important;
+  }
+  
+  /* Auto-refresh toggle - fix vertical text issue on mobile */
+  .sitmon-auto-refresh-toggle {
+    display: inline-flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    white-space: nowrap !important;
+    font-size: 0.65rem !important;
+    gap: 4px !important;
+    writing-mode: horizontal-tb !important;
+    text-orientation: mixed !important;
+    min-width: 100px !important;
+    width: auto !important;
+    flex-shrink: 0 !important;
+    flex-wrap: nowrap !important;
+  }
+  
+  .sitmon-auto-refresh-toggle span {
+    display: inline !important;
+    writing-mode: horizontal-tb !important;
+    text-orientation: mixed !important;
+    white-space: nowrap !important;
+    word-break: keep-all !important;
+  }
+  
+  /* Force horizontal layout for header right controls on mobile */
+  .sitmon-header-right {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  .sitmon-header-right > * {
+    flex-shrink: 0 !important;
+    min-width: auto !important;
+  }
+  
+  /* Fix the page header layout for mobile */
+  .sitmon-page-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.75rem !important;
+    padding: 0.75rem !important;
+  }
+  
+  .sitmon-page-header .sitmon-header-left {
+    text-align: center !important;
+    margin-bottom: 0.5rem !important;
+  }
+  
+  .sitmon-page-header .sitmon-header-right {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+  
+  .sitmon-page-header .sitmon-music-controls {
+    width: 100% !important;
+    justify-content: center !important;
+    order: 1 !important;
+  }
+  
+  .sitmon-page-header .sitmon-refresh-btn,
+  .sitmon-page-header .sitmon-tab-btn {
+    justify-content: center !important;
+    text-align: center !important;
+    flex-shrink: 0 !important;
+  }
+  
+  /* HIDE auto-refresh toggle on mobile - it's already checked by default */
+  .sitmon-page-header .sitmon-auto-refresh-toggle,
+  .sitmon-auto-refresh-toggle,
+  label.sitmon-auto-refresh-toggle,
+  .sitmon-header-right .sitmon-auto-refresh-toggle,
+  [class*="auto-refresh"] {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    position: absolute !important;
+    left: -9999px !important;
+  }
+  
+  /* Also hide the Map Pins button on mobile to simplify */
+  #sitmon-toggle-cam-layer {
+    display: none !important;
+  }
+  
+  /* Buttons - touch friendly */
+  .sitmon-tab-btn,
+  .sitmon-filter-btn,
+  .sitmon-icon-btn {
+    min-height: 36px !important;
+    min-width: 36px !important;
+    padding: 0.4rem 0.6rem !important;
+    font-size: 0.7rem !important;
+  }
+  
+  /* Music controls - smaller */
+  .sitmon-music-controls {
+    gap: 0.25rem !important;
+  }
+  
+  .sitmon-music-controls button {
+    padding: 0.25rem !important;
+  }
+  
+  .sitmon-music-controls input[type="range"] {
+    width: 50px !important;
+  }
+  
+  /* Form inputs */
+  .sitmon-input,
+  .sitmon-select {
+    font-size: 16px !important; /* Prevents iOS zoom */
+    padding: 0.6rem !important;
+    min-height: 44px !important;
+  }
+  
+  /* Event drawer - full screen on mobile */
+  .sitmon-event-drawer {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    left: 0 !important;
+    right: 0 !important;
+    border-radius: 0 !important;
+  }
+  
+  /* Toast notifications */
+  .sitmon-toast-container {
+    left: 10px !important;
+    right: 10px !important;
+    max-width: none !important;
+  }
+  
+  .sitmon-toast {
+    font-size: 0.75rem !important;
+    padding: 0.6rem 0.75rem !important;
+  }
+  
+  /* Earthquake items */
+  .sitmon-earthquake-item {
+    padding: 0.5rem !important;
+    gap: 0.5rem !important;
+  }
+  
+  .sitmon-earthquake-mag {
+    font-size: 1rem !important;
+    min-width: 40px !important;
+    height: 40px !important;
+  }
+  
+  .sitmon-earthquake-location {
+    font-size: 0.75rem !important;
+  }
+  
+  /* News items */
+  .sitmon-news-item {
+    padding: 0.5rem !important;
+  }
+  
+  .sitmon-news-title {
+    font-size: 0.75rem !important;
+    line-height: 1.3 !important;
+  }
+  
+  /* Weather items */
+  .sitmon-weather-item {
+    padding: 0.5rem !important;
+  }
+  
+  /* Hide resize handles on mobile */
+  .sitmon-panel-resize-handle {
+    display: none !important;
+  }
+  
+  /* Keyboard hints - hide on mobile */
+  .sitmon-keyboard-hint {
+    display: none !important;
+  }
+}
+
+/* Small mobile breakpoint */
+@media (max-width: 480px) {
+  .sitmon-page-wrapper {
+    padding: 0.25rem !important;
+  }
+  
+  /* Ticker - even smaller */
+  .sitmon-osint-ticker {
+    max-height: 54px !important;
+    font-size: 0.55rem !important;
+  }
+  
+  .sitmon-ticker-line:nth-child(n+3) {
+    display: none !important; /* Only show 2 lines on very small screens */
+  }
+  
+  /* Stats - still 2x2 but smaller */
+  .sitmon-stat-card {
+    padding: 0.5rem !important;
+  }
+  
+  .sitmon-stat-value {
+    font-size: 1.25rem !important;
+  }
+  
+  /* Intro */
+  .sitmon-intro-title {
+    font-size: 1.1rem !important;
+  }
+  
+  /* Panels - shorter */
+  .sitmon-secondary-grid > .sitmon-panel-card {
+    min-height: 180px !important;
+    max-height: 300px !important;
+  }
+  
+  /* Map even smaller */
+  .sitmon-map-card .sitmon-card-body {
+    min-height: 200px !important;
+    max-height: 250px !important;
+  }
+  
+  /* Buttons */
+  .sitmon-tab-btn {
+    padding: 0.3rem 0.5rem !important;
+    font-size: 0.65rem !important;
+  }
+  
+  /* Auto-refresh label - hide text, show only checkbox */
+  .sitmon-auto-refresh-label span {
+    display: none !important;
+  }
+}
+
+/* Landscape mobile - special handling */
+@media (max-width: 900px) and (orientation: landscape) {
+  .sitmon-page-wrapper {
+    padding-top: calc(var(--sitmon-header-height) + 50px) !important;
+  }
+  
+  .sitmon-osint-ticker {
+    max-height: 48px !important;
+  }
+  
+  .sitmon-ticker-line:nth-child(n+3) {
+    display: none !important;
+  }
+  
+  .sitmon-map-card .sitmon-card-body {
+    min-height: 180px !important;
+    max-height: 220px !important;
+  }
+  
+  .sitmon-secondary-grid > .sitmon-panel-card {
+    min-height: 150px !important;
+    max-height: 250px !important;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  /* Larger touch targets */
+  .sitmon-tab-btn,
+  .sitmon-filter-btn,
+  .sitmon-icon-btn,
+  .sitmon-severity-btn {
+    min-height: 44px !important;
+    min-width: 44px !important;
+  }
+  
+  /* Remove hover effects that cause sticky states on touch */
+  .sitmon-ticker-line:hover,
+  .sitmon-panel-card:hover,
+  .sitmon-hud-card:hover {
+    background-color: inherit;
+    border-color: inherit;
+    box-shadow: inherit;
+  }
+  
+  /* Disable complex animations that can lag on mobile */
+  .sitmon-spinner {
+    animation-duration: 1.5s !important;
   }
 }

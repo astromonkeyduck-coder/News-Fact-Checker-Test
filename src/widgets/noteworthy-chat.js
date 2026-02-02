@@ -19,6 +19,17 @@ class NoteworthyChat extends HTMLElement {
     const openOnLoad = this.getAttribute('data-open') === 'true';
     const initialAudioState = localStorage.getItem('noteworthy-ai-audio') === 'true';
     
+    // Compute base path for assets - handles both file:// and http(s):// protocols
+    const basePath = (() => {
+      // Get the document's base URL
+      const baseUrl = document.baseURI || window.location.href;
+      // Extract the directory path (everything before the last /)
+      const lastSlash = baseUrl.lastIndexOf('/');
+      return lastSlash > 0 ? baseUrl.substring(0, lastSlash + 1) : '';
+    })();
+    // Full path to the logo image
+    const logoPath = basePath + 'actualNWlogo!USETHIS.png';
+    
     // Feature flag: Enable/disable ElevenLabs voices in UI
     // Set to true to show ElevenLabs voice options, false to hide them
     // Backend code remains functional regardless of this setting
@@ -3023,7 +3034,7 @@ class NoteworthyChat extends HTMLElement {
       </style>
       
       <button class="launcher" aria-label="Open Noteworthy AI">
-        <span class="launcher-icon"><img src="/IMG_5794.PNG" alt="Noteworthy News" /></span>
+        <span class="launcher-icon"><img src="${logoPath}" alt="Noteworthy News" /></span>
         Noteworthy AI
       </button>
       
@@ -3031,7 +3042,7 @@ class NoteworthyChat extends HTMLElement {
         <div class="head">
           <div class="head-left">
             <div class="logo" aria-hidden="true">
-              <img src="/SantalogoEdited.png" alt="Noteworthy News" />
+              <img src="${logoPath}" alt="Noteworthy News" />
             </div>
             <div class="title-group">
               <div class="title">Noteworthy AI</div>
@@ -3323,7 +3334,7 @@ class NoteworthyChat extends HTMLElement {
           <div class="orb-processing-ring" id="orbProcessingRing" style="display: none;"></div>
           <!-- Inner core with NW logo -->
           <div class="orb-core" id="orbCore">
-            <img src="SantalogoEdited.png" alt="Noteworthy News" class="orb-logo" id="orbLogo" />
+            <img src="${logoPath}" alt="Noteworthy News" class="orb-logo" id="orbLogo" />
             <div class="orb-inner-glow"></div>
           </div>
           <!-- Listening halo -->
@@ -4876,7 +4887,7 @@ class NoteworthyChat extends HTMLElement {
       err.innerHTML = `<strong><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor; display: inline-block; vertical-align: middle; margin-right: 0.25rem;"><path d="M12 2L2 22h20L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/><path d="M12 9v4M12 17h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Error</strong><p>${message}</p>`;
       errorGroup.innerHTML = `
         <div class="message-avatar">
-          <img src="/SantalogoEdited.png" alt="Noteworthy News" />
+          <img src="${logoPath}" alt="Noteworthy News" />
         </div>
         <div class="message-content"></div>
       `;
@@ -4996,7 +5007,7 @@ class NoteworthyChat extends HTMLElement {
       thinking.className = 'message-group ai-msg-group';
       thinking.innerHTML = `
         <div class="message-avatar">
-          <img src="/SantalogoEdited.png" alt="Noteworthy News" />
+          <img src="${logoPath}" alt="Noteworthy News" />
         </div>
         <div class="message-content">
           <div class="thinking">
@@ -5058,7 +5069,7 @@ class NoteworthyChat extends HTMLElement {
         searchGroup.className = 'message-group ai-msg-group search-indicator-group';
         searchGroup.innerHTML = `
           <div class="message-avatar">
-            <img src="/SantalogoEdited.png" alt="Noteworthy News" />
+            <img src="${logoPath}" alt="Noteworthy News" />
           </div>
           <div class="message-content">
             <div class="thinking searching">
@@ -5420,7 +5431,7 @@ class NoteworthyChat extends HTMLElement {
 
         aiGroup.innerHTML = `
           <div class="message-avatar">
-            <img src="/SantalogoEdited.png" alt="Noteworthy News" />
+            <img src="${logoPath}" alt="Noteworthy News" />
           </div>
           <div class="message-content"></div>
         `;
@@ -5600,7 +5611,7 @@ class NoteworthyChat extends HTMLElement {
         
         aiGroup.innerHTML = `
           <div class="message-avatar">
-            <img src="/SantalogoEdited.png" alt="Noteworthy News" />
+            <img src="${logoPath}" alt="Noteworthy News" />
           </div>
           <div class="message-content"></div>
         `;
@@ -7506,7 +7517,7 @@ class NoteworthyChat extends HTMLElement {
             successGroup.className = 'message-group ai-msg-group';
             successGroup.innerHTML = `
               <div class="message-avatar">
-                <img src="/SantalogoEdited.png" alt="Noteworthy News" />
+                <img src="${logoPath}" alt="Noteworthy News" />
               </div>
               <div class="message-content">
                 <div class="reply">
@@ -9371,7 +9382,7 @@ class NoteworthyChat extends HTMLElement {
                     const prompt = (output.revised_prompt || 'Generated image').replace(/'/g, "\\'");
                     aiGroup.innerHTML = `
                       <div class="message-avatar">
-                        <img src="/SantalogoEdited.png" alt="Noteworthy News" />
+                        <img src="${logoPath}" alt="Noteworthy News" />
                       </div>
                       <div class="message-content">
                         <div class="reply">

@@ -86,6 +86,42 @@ function escapeSVGText(text) {
 }
 
 /**
+ * Format location for image display.
+ * Converts "19 km NNE of Indio, CA" into "Indio, CA (19 km north-northeast)".
+ */
+function formatLocationForImage(locationText) {
+  if (!locationText || typeof locationText !== 'string') return locationText;
+  const trimmed = locationText.trim();
+  const match = trimmed.match(/^(\d+(?:\.\d+)?)\s*(km|mi|miles?)\s+([NSEW]{1,3})\s+of\s+(.+)$/i);
+  if (!match) return trimmed;
+  const distance = match[1];
+  const unitRaw = match[2].toLowerCase();
+  const direction = match[3].toUpperCase();
+  const place = match[4].trim();
+  const unit = unitRaw.startsWith('mi') ? 'miles' : 'km';
+  const directionMap = {
+    N: 'north',
+    NNE: 'north-northeast',
+    NE: 'northeast',
+    ENE: 'east-northeast',
+    E: 'east',
+    ESE: 'east-southeast',
+    SE: 'southeast',
+    SSE: 'south-southeast',
+    S: 'south',
+    SSW: 'south-southwest',
+    SW: 'southwest',
+    WSW: 'west-southwest',
+    W: 'west',
+    WNW: 'west-northwest',
+    NW: 'northwest',
+    NNW: 'north-northwest',
+  };
+  const directionWords = directionMap[direction] || direction.toLowerCase();
+  return `${place} (${distance} ${unit} ${directionWords})`;
+}
+
+/**
  * Estimate text width for Roboto font
  */
 function estimateTextWidth(text, fontSize) {
@@ -1778,6 +1814,7 @@ async function generateImage(magnitude, location, eventId, templateType = 'stand
   
   // Format magnitude text
   const magnitudeText = `M${magnitude.toFixed(1)}`;
+  const displayLocation = formatLocationForImage(location);
   
   // Load template
   const possiblePaths = [
@@ -1918,17 +1955,18 @@ async function generateImage(magnitude, location, eventId, templateType = 'stand
   // Extract coordinates for timestamp calculation (lat and lon already declared at line 1750-1751)
   const coordArray = (lat != null && lon != null) ? [lon, lat] : null;
   
-  const svgString = createDynamicTextSVG(magnitudeText, location, outputWidth, outputHeight, scaleFactor, earthquakeTimestamp, coordArray);
+  const svgString = createDynamicTextSVG(magnitudeText, displayLocation, outputWidth, outputHeight, scaleFactor, earthquakeTimestamp, coordArray);
   
   // CRITICAL: Log SVG content to verify text is included
+  const locationTextUpper = displayLocation ? displayLocation.toUpperCase() : '';
   console.log(`[generate-earthquake-image] 📝 SVG Text Overlay Content:`, {
     magnitudeText: magnitudeText,
-    locationText: location.toUpperCase(),
+    locationText: locationTextUpper,
     svgLength: svgString.length,
     containsMagnitude: svgString.includes(magnitudeText),
     containsBreaking: svgString.includes(BREAKING_TEXT),
     containsEarthquakeNear: svgString.includes(EARTHQUAKE_NEAR_TEXT),
-    containsLocation: svgString.includes(location.toUpperCase()),
+    containsLocation: displayLocation ? svgString.includes(locationTextUpper) : false,
     containsFontFace: svgString.includes('@font-face'),
     containsRoboto: svgString.includes('Roboto'),
     svgPreview: svgString.substring(0, 500) + '...'

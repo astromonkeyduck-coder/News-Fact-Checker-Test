@@ -23,7 +23,8 @@ function isCacheableUrl(url) {
 const STATIC_ASSETS = [
   '/',
   '/index.html',
-  '/styles.css',
+  '/styles/responsive.css',  // Modern responsive foundation
+  '/styles.css',             // Legacy (for other pages)
   '/script.js',
   '/game.html',
   '/geography-game.html',

@@ -7830,9 +7830,9 @@ function initNewsletterSubscription() {
         const images = document.querySelectorAll('.welcome-bg-img, .hero-logo-image');
         return Array.from(images).filter(img => {
             const src = img.src || img.getAttribute('src') || '';
-            // CHRISTMAS TEMP: Added SantalogoEdited.png and santabodynwbest.png check
+            // CHRISTMAS TEMP: Added actualNWlogo!USETHIS.png and santabodynwbest.png check
             return src.includes('7680cb96-729f-4344-b08a-4f9a2aa314f8') || 
-                   src.includes('SantalogoEdited') ||
+                   src.includes('actualNWlogo!USETHIS') ||
                    src.includes('santabodynwbest') ||
                    src.includes('e2e66fe2-12c0-428b-ba44-0ff07b895551');
         });
@@ -8044,6 +8044,8 @@ function initNewsletterSubscription() {
     const remainingDisplay = document.getElementById('spotlight-remaining');
     
     if (!spotlightContainer) return; // Exit if section doesn't exist
+    
+    const isLocalSpotlightHost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
     
     let currentCountry = null;
     let spotlightMusic = null;
@@ -8797,6 +8799,13 @@ function initNewsletterSubscription() {
     
     // Setup Intersection Observer to detect when spotlight is visible
     let visibilityChangeTimeout = null;
+    function isSpotlightInView(section) {
+        if (!section) return false;
+        const rect = section.getBoundingClientRect();
+        const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+        return rect.top < viewportHeight * 0.85 && rect.bottom > viewportHeight * 0.15;
+    }
+    
     function setupSpotlightVisibilityObserver() {
         const spotlightSection = document.getElementById('country-spotlight-section');
         if (!spotlightSection) return;
@@ -8812,7 +8821,8 @@ function initNewsletterSubscription() {
                 // Debounce rapid visibility changes
                 visibilityChangeTimeout = setTimeout(() => {
                     const wasVisible = isSpotlightVisible;
-                    isSpotlightVisible = entry.isIntersecting && entry.intersectionRatio > 0.3;
+                    const sectionVisible = entry.isIntersecting && isSpotlightInView(entry.target);
+                    isSpotlightVisible = sectionVisible;
                     
                     // Only act if visibility state actually changed and we're not transitioning
                     if (wasVisible !== isSpotlightVisible && !isTransitioning) {
@@ -8823,7 +8833,8 @@ function initNewsletterSubscription() {
                             // Spotlight is now visible - only play music if generation was successful
                             console.log('[Spotlight] Section became visible, checking if generation succeeded');
                             // Only play music if generation was successful
-                            if (spotlightGenerationSuccessful && currentCountry && countryMusicMap[currentCountry.name]) {
+                            const shouldAllowMusic = spotlightGenerationSuccessful || isLocalSpotlightHost;
+                            if (shouldAllowMusic && currentCountry && countryMusicMap[currentCountry.name]) {
                                 console.log('[Spotlight] Generation succeeded, switching to country music');
                                 // Save background music state BEFORE pausing
                                 saveBackgroundMusicState();
@@ -8888,7 +8899,7 @@ function initNewsletterSubscription() {
                 }, 150); // Debounce rapid changes
             });
         }, {
-            threshold: [0.3], // Single threshold to reduce rapid firing
+            threshold: [0, 0.1], // Use low threshold for tall sections on small viewports
             rootMargin: '0px'
         });
         
@@ -9871,6 +9882,16 @@ function initNewsletterSubscription() {
             spotlightLoading.style.display = 'none';
             spotlightContent.style.display = 'block';
             
+            // Local dev fallback: allow music even if AI/image endpoints are unavailable
+            if (isLocalSpotlightHost && currentCountry && countryMusicMap[currentCountry.name]) {
+                spotlightGenerationSuccessful = true;
+                if (isSpotlightVisible) {
+                    saveBackgroundMusicState();
+                    pauseBackgroundMusic();
+                    playCountryMusic(currentCountry.name, true);
+                }
+            }
+            
             // Ensure images container is visible when content is shown (reuse existing variable)
             if (imagesContainer) {
                 imagesContainer.style.display = 'block';
@@ -9953,23 +9974,25 @@ function initNewsletterSubscription() {
             const generateImagesAfterTextSuccess = () => {
                 const imagePromises = [];
                 
-                // Set placeholders now that we know text succeeded
-                if (!hasFlagImage && flagWrapper) {
-                    const existingImg = flagWrapper.querySelector('img');
-                    if (!existingImg || !existingImg.src || existingImg.src.includes('placeholder')) {
-                        flagWrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
+                // Set placeholders now that we know text succeeded (only on desktop)
+                if (!isMobile) {
+                    if (!hasFlagImage && flagWrapper) {
+                        const existingImg = flagWrapper.querySelector('img');
+                        if (!existingImg || !existingImg.src || existingImg.src.includes('placeholder')) {
+                            flagWrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
+                        }
                     }
-                }
-                if (!hasCulture1Image && culture1Wrapper) {
-                    const existingImg = culture1Wrapper.querySelector('img');
-                    if (!existingImg || !existingImg.src || existingImg.src.includes('placeholder')) {
-                        culture1Wrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
+                    if (!hasCulture1Image && culture1Wrapper) {
+                        const existingImg = culture1Wrapper.querySelector('img');
+                        if (!existingImg || !existingImg.src || existingImg.src.includes('placeholder')) {
+                            culture1Wrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
+                        }
                     }
-                }
-                if (!hasCulture2Image && culture2Wrapper) {
-                    const existingImg = culture2Wrapper.querySelector('img');
-                    if (!existingImg || !existingImg.src || existingImg.src.includes('placeholder')) {
-                        culture2Wrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
+                    if (!hasCulture2Image && culture2Wrapper) {
+                        const existingImg = culture2Wrapper.querySelector('img');
+                        if (!existingImg || !existingImg.src || existingImg.src.includes('placeholder')) {
+                            culture2Wrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
+                        }
                     }
                 }
                 
@@ -10029,6 +10052,8 @@ function initNewsletterSubscription() {
                     console.log('[Spotlight] Mobile detected - skipping flag image generation');
                 }
                 
+                // Culture1 image - skip on mobile
+                if (!isMobile) {
                 if (!hasCulture1Image) {
                     console.log('[Spotlight] Generating culture1 image for', currentCountry.name);
                     // More specific prompt to avoid content policy violations - focus on positive cultural aspects
@@ -10072,7 +10097,16 @@ function initNewsletterSubscription() {
                     const existingUrl = culture1Wrapper.querySelector('img').src;
                     imagePromises.push(Promise.resolve({ type: 'culture1', url: existingUrl }));
                 }
+                } else {
+                    // On mobile, hide culture1 wrapper and skip generation
+                    if (culture1Wrapper) {
+                        culture1Wrapper.closest('.spotlight-image-card').style.display = 'none';
+                    }
+                    console.log('[Spotlight] Mobile detected - skipping culture1 image generation');
+                }
                 
+                // Culture2 image - skip on mobile
+                if (!isMobile) {
                 if (!hasCulture2Image) {
                     console.log('[Spotlight] Generating culture2 image for', currentCountry.name);
                     // More specific prompt to avoid content policy violations - emphasize positive cultural elements
@@ -10115,6 +10149,13 @@ function initNewsletterSubscription() {
                     console.log('Culture2 image already exists, skipping generation');
                     const existingUrl = culture2Wrapper.querySelector('img').src;
                     imagePromises.push(Promise.resolve({ type: 'culture2', url: existingUrl }));
+                }
+                } else {
+                    // On mobile, hide culture2 wrapper and skip generation
+                    if (culture2Wrapper) {
+                        culture2Wrapper.closest('.spotlight-image-card').style.display = 'none';
+                    }
+                    console.log('[Spotlight] Mobile detected - skipping culture2 image generation');
                 }
                 
                 return imagePromises;
@@ -10679,9 +10720,7 @@ Write in a sophisticated, analytical style. Be comprehensive (600-800 words), nu
             };
             
             // Check if section is already visible on page load
-            const rect = spotlightSection.getBoundingClientRect();
-            const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
-            const isSignificantlyVisible = rect.top < window.innerHeight * 0.7 && rect.bottom > window.innerHeight * 0.3;
+            const isSignificantlyVisible = isSpotlightInView(spotlightSection);
             
             if (isSignificantlyVisible) {
                 // Section is already visible - load immediately
@@ -10692,14 +10731,14 @@ Write in a sophisticated, analytical style. Be comprehensive (600-800 words), nu
                 const loadObserver = new IntersectionObserver((entries) => {
                     entries.forEach(entry => {
                         // Only load once when section becomes visible (at least 30% visible)
-                        if (entry.isIntersecting && entry.intersectionRatio >= 0.3 && !spotlightLoaded) {
+                        if (entry.isIntersecting && isSpotlightInView(entry.target) && !spotlightLoaded) {
                             triggerLoadSpotlight();
                         // Disconnect observer after first load
                         loadObserver.disconnect();
                     }
                 });
             }, {
-                threshold: [0.3],
+                threshold: [0, 0.1],
                 rootMargin: '0px'
             });
             

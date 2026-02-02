@@ -7,55 +7,45 @@
     'use strict';
     
     // ========================================
-    // Mobile Desktop Notice Modal
+    // Mobile Desktop Notice - Non-intrusive Banner
     // ========================================
     const mobileDesktopNotice = document.getElementById('mobileDesktopNotice');
-    const mobileNoticeClose = document.getElementById('mobileNoticeClose');
-    const mobileNoticeBtn = document.getElementById('mobileNoticeBtn');
     
-    // Show notice on first visit (check localStorage)
+    // Show notice on first visit (check localStorage) - auto-dismiss after 5 seconds
     function showMobileNotice() {
         if (!mobileDesktopNotice) return;
         
         const hasSeenNotice = localStorage.getItem('mobileNoticeDismissed');
         if (!hasSeenNotice) {
-            mobileDesktopNotice.classList.add('show');
-            document.body.style.overflow = 'hidden';
+            // Small delay before showing for smoother UX
+            setTimeout(function() {
+                mobileDesktopNotice.classList.add('show');
+                
+                // Auto-dismiss after 5 seconds (matches progress bar animation)
+                setTimeout(function() {
+                    hideMobileNotice();
+                }, 5000);
+            }, 500);
         }
     }
     
-    // Hide notice and save to localStorage
+    // Hide notice with fade-out animation
     function hideMobileNotice() {
         if (!mobileDesktopNotice) return;
         
-        mobileDesktopNotice.classList.remove('show');
-        document.body.style.overflow = '';
-        localStorage.setItem('mobileNoticeDismissed', 'true');
+        mobileDesktopNotice.classList.add('fade-out');
+        
+        // Wait for animation to complete before hiding
+        setTimeout(function() {
+            mobileDesktopNotice.classList.remove('show', 'fade-out');
+            localStorage.setItem('mobileNoticeDismissed', 'true');
+        }, 400);
     }
     
-    // Event listeners for notice
-    if (mobileNoticeClose) {
-        mobileNoticeClose.addEventListener('click', hideMobileNotice);
-        mobileNoticeClose.addEventListener('touchend', function(e) {
-            e.preventDefault();
-            hideMobileNotice();
-        });
-    }
-    
-    if (mobileNoticeBtn) {
-        mobileNoticeBtn.addEventListener('click', hideMobileNotice);
-        mobileNoticeBtn.addEventListener('touchend', function(e) {
-            e.preventDefault();
-            hideMobileNotice();
-        });
-    }
-    
-    // Close on backdrop click
+    // Allow tapping to dismiss early (optional convenience)
     if (mobileDesktopNotice) {
-        mobileDesktopNotice.addEventListener('click', function(e) {
-            if (e.target === mobileDesktopNotice) {
-                hideMobileNotice();
-            }
+        mobileDesktopNotice.addEventListener('click', function() {
+            hideMobileNotice();
         });
     }
     

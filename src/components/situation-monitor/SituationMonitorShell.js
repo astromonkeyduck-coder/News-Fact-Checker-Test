@@ -95,20 +95,63 @@ export class SituationMonitorShell {
     
     // Create layout - OSINT Control Room
     container.innerHTML = `
+      <!-- Mobile-specific style overrides (inline to ensure they work) -->
+      <style>
+        @media (max-width: 768px) {
+          .sitmon-auto-refresh-toggle,
+          #sitmon-auto-refresh-label,
+          #sitmon-toggle-cam-layer {
+            display: none !important;
+          }
+        }
+      </style>
+      
       <!-- OSINT Ticker (Top) - Horizontal Feed Lines -->
       <div class="sitmon-osint-ticker" id="sitmon-osint-ticker">
         <div class="sitmon-ticker-feed" id="sitmon-ticker-content">
-          <div class="sitmon-ticker-line">LIVE: Monitoring global intelligence feeds...</div>
+          <div class="sitmon-ticker-line">Live updates: monitoring global sources...</div>
         </div>
       </div>
       
-      <div class="sitmon-page-wrapper" style="display: block !important; visibility: visible !important; opacity: 1 !important; position: relative !important; z-index: 1 !important; padding-top: 130px;">
+      <div class="sitmon-page-wrapper sitmon-modern" style="display: block !important; visibility: visible !important; opacity: 1 !important; position: relative !important; z-index: 1 !important;">
+        <!-- Intro -->
+        <section class="sitmon-intro">
+          <div class="sitmon-intro-copy">
+            <div class="sitmon-intro-eyebrow">Live Global Monitor</div>
+            <h1 class="sitmon-intro-title">Situation Monitor</h1>
+            <p class="sitmon-intro-description">
+              Clear, everyday visibility into breaking news, severe weather, earthquakes, and market signals.
+            </p>
+            <div class="sitmon-intro-footnote">
+              <span id="sitmon-hero-updated">Updated just now</span>
+            </div>
+          </div>
+          <div class="sitmon-intro-stats">
+            <div class="sitmon-intro-stat">
+              <span class="sitmon-intro-stat-label">Active events</span>
+              <span class="sitmon-intro-stat-value" id="sitmon-hero-events">0</span>
+            </div>
+            <div class="sitmon-intro-stat">
+              <span class="sitmon-intro-stat-label">Critical alerts</span>
+              <span class="sitmon-intro-stat-value critical" id="sitmon-hero-critical">0</span>
+            </div>
+            <div class="sitmon-intro-stat">
+              <span class="sitmon-intro-stat-label">High priority</span>
+              <span class="sitmon-intro-stat-value high" id="sitmon-hero-high">0</span>
+            </div>
+            <div class="sitmon-intro-stat">
+              <span class="sitmon-intro-stat-label">Sources</span>
+              <span class="sitmon-intro-stat-value online" id="sitmon-hero-sources">Online</span>
+            </div>
+          </div>
+        </section>
+
         <!-- Page Header -->
         <div class="sitmon-page-header" style="display: flex !important; visibility: visible !important; opacity: 1 !important;">
           <div class="sitmon-header-left">
-            <h1 class="sitmon-page-title">Situation Monitor</h1>
-            <p class="sitmon-page-subtitle">Global Intelligence Dashboard</p>
-            <div class="sitmon-status-chip" id="sitmon-status-chip">Updated</div>
+            <h2 class="sitmon-page-title">Live Controls</h2>
+            <p class="sitmon-page-subtitle">Customize your view</p>
+            <div class="sitmon-status-chip" id="sitmon-status-chip">Live</div>
           </div>
           <div class="sitmon-header-right">
             <!-- Music Controls -->
@@ -141,20 +184,23 @@ export class SituationMonitorShell {
               </svg>
               Refresh
             </button>
-            <label class="sitmon-auto-refresh-toggle">
+            <label class="sitmon-auto-refresh-toggle" id="sitmon-auto-refresh-label" style="display: var(--show-auto-refresh, inline-flex);">
               <input type="checkbox" id="sitmon-auto-refresh" checked>
-              <span>Auto-refresh (5min)</span>
+              <span>Auto</span>
             </label>
             <button class="sitmon-tab-btn" id="sitmon-tab-livecams" aria-label="Live Cams">
-              📹 LIVE CAMS
+              📹 Live Cams
+            </button>
+            <button class="sitmon-tab-btn" id="sitmon-toggle-cam-layer" aria-label="Toggle camera pins on map" title="Show/hide camera pins on map">
+              🗺️ Map Pins
             </button>
           </div>
         </div>
 
         <!-- OSINT Grid Layout -->
         <div class="sitmon-osint-grid">
-          <!-- Map: Columns 1-7 (Tactical Node, not hero) -->
-          <div class="sitmon-intel-wall" style="grid-column: 1 / 8;">
+          <!-- Map: Columns 1-7 (Tactical Node, not hero) - grid-column applied via CSS only -->
+          <div class="sitmon-intel-wall sitmon-grid-col-1-8">
           <!-- Map Container (Full Canvas) -->
           <div class="sitmon-map-container">
             <div id="sitmon-map" class="sitmon-map"></div>
@@ -163,7 +209,7 @@ export class SituationMonitorShell {
             <div class="sitmon-hud sitmon-hud-left">
               <div class="sitmon-hud-card">
                 <div class="sitmon-hud-header">
-                  <h3 class="sitmon-hud-title">STATS</h3>
+                  <h3 class="sitmon-hud-title">Overview</h3>
                 </div>
                 <div class="sitmon-hud-body" id="sitmon-hud-stats">
                   <div class="sitmon-stat-item">
@@ -183,7 +229,7 @@ export class SituationMonitorShell {
 
               <div class="sitmon-hud-card">
                 <div class="sitmon-hud-header">
-                  <h3 class="sitmon-hud-title">FILTERS</h3>
+                  <h3 class="sitmon-hud-title">Filters</h3>
                 </div>
                 <div class="sitmon-hud-body" id="sitmon-hud-filters">
                   <div class="sitmon-filter-group">
@@ -212,7 +258,7 @@ export class SituationMonitorShell {
               <!-- Live Feed -->
               <div class="sitmon-hud-card">
                 <div class="sitmon-hud-header">
-                  <h3 class="sitmon-hud-title">LIVE FEED</h3>
+                  <h3 class="sitmon-hud-title">Live Updates</h3>
                   <span class="sitmon-hud-badge" id="sitmon-feed-count">0</span>
                 </div>
                 <div class="sitmon-hud-body sitmon-feed-list" id="sitmon-hud-feed">
@@ -223,7 +269,7 @@ export class SituationMonitorShell {
               <!-- Pinned Event Detail -->
               <div class="sitmon-hud-card" id="sitmon-pinned-event" style="display: none;">
                 <div class="sitmon-hud-header">
-                  <h3 class="sitmon-hud-title">EVENT DETAIL</h3>
+                  <h3 class="sitmon-hud-title">Event Details</h3>
                   <button class="sitmon-hud-close" id="sitmon-pinned-close">×</button>
                 </div>
                 <div class="sitmon-hud-body" id="sitmon-pinned-content">
@@ -256,35 +302,35 @@ export class SituationMonitorShell {
           </div>
           </div>
           
-          <!-- Right Stack: Columns 8-12 (Micro-panels) -->
-          <div class="sitmon-panels-stack" style="grid-column: 8 / 13;">
-            <div class="sitmon-panel-card" id="sitmon-panel-intel">
+          <!-- Right Stack: Columns 8-12 (Micro-panels) - grid-column applied via CSS only -->
+          <div class="sitmon-panels-stack sitmon-grid-col-8-13">
+              <div class="sitmon-panel-card" id="sitmon-panel-intel">
               <div class="sitmon-card-header">
-                <h2 class="sitmon-card-title">Main Characters</h2>
+                  <h2 class="sitmon-card-title">Key People & Entities</h2>
               </div>
               <div class="sitmon-card-body" id="sitmon-panel-intel-body"></div>
               <div class="sitmon-panel-resize-handle" data-panel-id="sitmon-panel-intel"></div>
             </div>
 
-            <div class="sitmon-panel-card" id="sitmon-panel-correlation">
+              <div class="sitmon-panel-card" id="sitmon-panel-correlation">
               <div class="sitmon-card-header">
-                <h2 class="sitmon-card-title">Correlations</h2>
+                  <h2 class="sitmon-card-title">Connections</h2>
               </div>
               <div class="sitmon-card-body" id="sitmon-panel-correlation-body"></div>
               <div class="sitmon-panel-resize-handle" data-panel-id="sitmon-panel-correlation"></div>
             </div>
 
-            <div class="sitmon-panel-card" id="sitmon-panel-narrative">
+              <div class="sitmon-panel-card" id="sitmon-panel-narrative">
               <div class="sitmon-card-header">
-                <h2 class="sitmon-card-title">Narrative Signals</h2>
+                  <h2 class="sitmon-card-title">Narratives & Trends</h2>
               </div>
               <div class="sitmon-card-body" id="sitmon-panel-narrative-body"></div>
               <div class="sitmon-panel-resize-handle" data-panel-id="sitmon-panel-narrative"></div>
             </div>
 
-            <div class="sitmon-panel-card" id="sitmon-panel-monitors">
+              <div class="sitmon-panel-card" id="sitmon-panel-monitors">
               <div class="sitmon-card-header">
-                <h2 class="sitmon-card-title">Custom Monitors</h2>
+                  <h2 class="sitmon-card-title">Custom Alerts</h2>
               </div>
               <div class="sitmon-card-body" id="sitmon-panel-monitors-body"></div>
               <div class="sitmon-panel-resize-handle" data-panel-id="sitmon-panel-monitors"></div>
@@ -296,7 +342,7 @@ export class SituationMonitorShell {
         <div class="sitmon-secondary-grid" style="display: grid !important; visibility: visible !important; opacity: 1 !important;">
           <div class="sitmon-panel-card" id="sitmon-panel-news">
             <div class="sitmon-card-header">
-              <h2 class="sitmon-card-title">News Feed</h2>
+              <h2 class="sitmon-card-title">Top Stories</h2>
             </div>
             <div class="sitmon-card-body" id="sitmon-panel-news-body"></div>
             <div class="sitmon-panel-resize-handle" data-panel-id="sitmon-panel-news"></div>
@@ -328,17 +374,17 @@ export class SituationMonitorShell {
 
           <div class="sitmon-panel-card" id="sitmon-panel-rss">
             <div class="sitmon-card-header">
-              <h2 class="sitmon-card-title">RSS Intelligence</h2>
+              <h2 class="sitmon-card-title">Source Monitor</h2>
             </div>
             <div class="sitmon-card-body" id="sitmon-panel-rss-body"></div>
             <div class="sitmon-panel-resize-handle" data-panel-id="sitmon-panel-rss"></div>
           </div>
           
-          <div class="sitmon-panel-card" id="sitmon-panel-livecams" style="display: none; grid-column: 1 / -1; min-height: calc(100vh - 200px); height: auto; max-height: none;">
+          <div class="sitmon-panel-card" id="sitmon-panel-livecams" style="display: none;">
             <div class="sitmon-card-header">
-              <h2 class="sitmon-card-title">LIVE CAMS</h2>
+              <h2 class="sitmon-card-title">📹 Live Surveillance Network</h2>
             </div>
-            <div class="sitmon-card-body" id="sitmon-panel-livecams-body" style="padding: 0; height: auto; min-height: calc(100vh - 250px); overflow: visible;"></div>
+            <div class="sitmon-card-body" id="sitmon-panel-livecams-body"></div>
           </div>
         </div>
       </div>
@@ -360,6 +406,20 @@ export class SituationMonitorShell {
 
     // Setup controls
     this.setupControls();
+    
+    // MOBILE: Immediately hide auto-refresh toggle to prevent vertical text
+    if (window.innerWidth <= 768) {
+      const hideForMobile = () => {
+        const toggle = document.querySelector('.sitmon-auto-refresh-toggle');
+        const camBtn = document.getElementById('sitmon-toggle-cam-layer');
+        if (toggle) toggle.style.cssText = 'display: none !important; visibility: hidden !important;';
+        if (camBtn) camBtn.style.cssText = 'display: none !important;';
+      };
+      hideForMobile();
+      // Run again after a short delay in case of late rendering
+      setTimeout(hideForMobile, 100);
+      setTimeout(hideForMobile, 500);
+    }
     
     setLoaderProgress(0.60);
     
@@ -401,6 +461,14 @@ export class SituationMonitorShell {
 
     // Setup auto-refresh
     this.setupAutoRefresh();
+    
+    // MOBILE: Hide auto-refresh toggle and map pins button on mobile
+    if (window.innerWidth <= 768) {
+      const autoRefreshLabel = document.getElementById('sitmon-auto-refresh-label');
+      const camLayerBtn = document.getElementById('sitmon-toggle-cam-layer');
+      if (autoRefreshLabel) autoRefreshLabel.style.display = 'none';
+      if (camLayerBtn) camLayerBtn.style.display = 'none';
+    }
     
     // Show keyboard hint only after successful initialization
     this.initKeyboardHint();
@@ -512,7 +580,6 @@ export class SituationMonitorShell {
               <stop offset="100%" style="stop-color:#22d3ee;stop-opacity:0.3" />
             </linearGradient>
           </defs>
-          <circle cx="50" cy="50" r="45" fill="url(#mapPlaceholderGradient)"/>
           <ellipse cx="50" cy="30" rx="35" ry="8" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
           <ellipse cx="50" cy="50" rx="40" ry="10" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
           <ellipse cx="50" cy="70" rx="35" ry="8" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
@@ -549,7 +616,6 @@ export class SituationMonitorShell {
                 <stop offset="100%" style="stop-color:#ff6b6b;stop-opacity:0.3" />
               </linearGradient>
             </defs>
-            <circle cx="50" cy="50" r="45" fill="url(#mapErrorGradient)"/>
             <ellipse cx="50" cy="30" rx="35" ry="8" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
             <ellipse cx="50" cy="50" rx="40" ry="10" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
             <ellipse cx="50" cy="70" rx="35" ry="8" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
@@ -587,7 +653,6 @@ export class SituationMonitorShell {
                 <stop offset="100%" style="stop-color:#ff6b6b;stop-opacity:0.3" />
               </linearGradient>
             </defs>
-            <circle cx="50" cy="50" r="45" fill="url(#mapErrorGradient)"/>
             <ellipse cx="50" cy="30" rx="35" ry="8" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
             <ellipse cx="50" cy="50" rx="40" ry="10" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
             <ellipse cx="50" cy="70" rx="35" ry="8" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
@@ -768,6 +833,7 @@ export class SituationMonitorShell {
       });
     }
     
+    
     // Store status chip reference
     this.statusChip = statusChip;
     
@@ -784,6 +850,39 @@ export class SituationMonitorShell {
     } else {
       console.warn('[SituationMonitorShell] Live Cams button NOT FOUND - button may not be in DOM');
     }
+    
+    // Camera map layer toggle button
+    const camLayerToggle = document.getElementById('sitmon-toggle-cam-layer');
+    if (camLayerToggle) {
+      camLayerToggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.toggleCameraMapLayer();
+      });
+    }
+  }
+  
+  /**
+   * Toggle camera pins on the main map
+   */
+  toggleCameraMapLayer() {
+    if (!this.liveCams || !this.liveCams.mapLayer) {
+      // If Live Cams isn't initialized yet, show a message
+      this.showToast('Open Live Cams first to load camera data', 'info');
+      return;
+    }
+    
+    const isVisible = this.liveCams.mapLayer.toggle();
+    const btn = document.getElementById('sitmon-toggle-cam-layer');
+    
+    if (btn) {
+      btn.classList.toggle('active', isVisible);
+    }
+    
+    this.showToast(
+      isVisible ? 'Camera pins shown on map' : 'Camera pins hidden',
+      'info'
+    );
   }
   
   initPanelResize() {
@@ -794,7 +893,6 @@ export class SituationMonitorShell {
       let startY = 0;
       let startHeight = 0;
       let panel = null;
-      let originalHeight = null;
       
       const panelId = handle.getAttribute('data-panel-id');
       if (!panelId) return;
@@ -805,17 +903,12 @@ export class SituationMonitorShell {
       // Add tooltip data attribute
       handle.setAttribute('data-tooltip', 'Drag to resize • Double-click to reset');
       
-      // Store original height for reset
-      originalHeight = panel.offsetHeight;
-      
       // Load saved height from localStorage
       const savedHeight = localStorage.getItem(`sitmon-panel-height-${panelId}`);
       if (savedHeight) {
         const height = parseInt(savedHeight, 10);
         if (height > 0) {
-          panel.style.height = `${height}px`;
-          panel.style.maxHeight = 'none';
-          panel.style.flexShrink = '0';
+          this.applyPanelHeight(panel, height);
         }
       }
       
@@ -827,13 +920,19 @@ export class SituationMonitorShell {
         // Remove saved height
         localStorage.removeItem(`sitmon-panel-height-${panelId}`);
         
-        // Reset to default (remove inline height)
+        // Reset to default (remove inline styles and manual class)
         panel.style.height = '';
         panel.style.maxHeight = '';
+        panel.style.minHeight = '';
         panel.style.flexShrink = '';
+        panel.style.flexGrow = '';
+        panel.style.flexBasis = '';
+        panel.style.flex = '';
+        panel.classList.remove('sitmon-manually-resized');
         
         // Show brief feedback
         handle.style.background = 'rgba(34, 211, 238, 0.4)';
+        this.showToast('Panel reset to default size', 'info');
         setTimeout(() => {
           handle.style.background = '';
         }, 300);
@@ -860,17 +959,13 @@ export class SituationMonitorShell {
         const deltaY = currentY - startY;
         
         // Calculate new height with min/max constraints
-        // Minimum: 320px, Maximum: 90vh or 2500px (whichever is smaller)
-        const minHeight = 320;
+        // Minimum: 150px (usable), Maximum: 90vh or 2500px (whichever is smaller)
+        const minHeight = 150;
         const maxHeight = Math.min(window.innerHeight * 0.9, 2500);
         const newHeight = Math.max(minHeight, Math.min(maxHeight, startHeight + deltaY));
         
-        // Apply height and override flex constraints
-        panel.style.height = `${newHeight}px`;
-        panel.style.maxHeight = 'none';
-        panel.style.flexShrink = '0';
-        panel.style.flexGrow = '0';
-        panel.style.flexBasis = 'auto';
+        // Apply height
+        this.applyPanelHeight(panel, newHeight);
         
         // Prevent default to avoid scrolling
         e.preventDefault();
@@ -919,6 +1014,25 @@ export class SituationMonitorShell {
       }, { passive: false, capture: true });
       document.addEventListener('touchend', stopResize, true);
     });
+  }
+  
+  /**
+   * Apply height to a panel with all necessary style overrides
+   */
+  applyPanelHeight(panel, height) {
+    // Add class to indicate manual resize (CSS uses this for specificity)
+    panel.classList.add('sitmon-manually-resized');
+    
+    // Apply height with !important via cssText to ensure it takes precedence
+    panel.style.cssText = `
+      height: ${height}px !important;
+      max-height: none !important;
+      min-height: 150px !important;
+      flex: none !important;
+      flex-shrink: 0 !important;
+      flex-grow: 0 !important;
+      flex-basis: ${height}px !important;
+    `;
   }
   
   setupHUD() {
@@ -996,31 +1110,51 @@ export class SituationMonitorShell {
     const totalEl = document.getElementById('sitmon-stat-events');
     const criticalEl = document.getElementById('sitmon-stat-critical');
     const highEl = document.getElementById('sitmon-stat-high');
+    const heroTotalEl = document.getElementById('sitmon-hero-events');
+    const heroCriticalEl = document.getElementById('sitmon-hero-critical');
+    const heroHighEl = document.getElementById('sitmon-hero-high');
     
-    // Animate value changes
-    const animateValueChange = (el, newValue, oldValue) => {
-      if (el && newValue !== oldValue) {
-        el.classList.add('updated');
-        setTimeout(() => el.classList.remove('updated'), 600);
-      }
+    // Animated counter function with easing
+    const animateCounter = (el, targetValue, duration = 600) => {
+      if (!el) return;
+      
+      const startValue = parseInt(el.textContent) || 0;
+      if (startValue === targetValue) return;
+      
+      const startTime = performance.now();
+      const diff = targetValue - startValue;
+      
+      // Add visual feedback class
+      el.classList.add('updated');
+      
+      const updateCounter = (currentTime) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Ease out cubic for smooth deceleration
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        const currentValue = Math.round(startValue + diff * easeOut);
+        
+        el.textContent = currentValue;
+        
+        if (progress < 1) {
+          requestAnimationFrame(updateCounter);
+        } else {
+          el.textContent = targetValue;
+          setTimeout(() => el.classList.remove('updated'), 200);
+        }
+      };
+      
+      requestAnimationFrame(updateCounter);
     };
     
-    const oldTotal = totalEl ? parseInt(totalEl.textContent) || 0 : 0;
-    const oldCritical = criticalEl ? parseInt(criticalEl.textContent) || 0 : 0;
-    const oldHigh = highEl ? parseInt(highEl.textContent) || 0 : 0;
-    
-    if (totalEl) {
-      totalEl.textContent = total;
-      animateValueChange(totalEl, total, oldTotal);
-    }
-    if (criticalEl) {
-      criticalEl.textContent = critical;
-      animateValueChange(criticalEl, critical, oldCritical);
-    }
-    if (highEl) {
-      highEl.textContent = high;
-      animateValueChange(highEl, high, oldHigh);
-    }
+    // Animate all stat values
+    animateCounter(totalEl, total);
+    animateCounter(criticalEl, critical);
+    animateCounter(highEl, high);
+    animateCounter(heroTotalEl, total);
+    animateCounter(heroCriticalEl, critical);
+    animateCounter(heroHighEl, high);
     
     // Mark panels with critical events
     const panels = document.querySelectorAll('.sitmon-panel-card');
@@ -1062,10 +1196,11 @@ export class SituationMonitorShell {
       .slice(0, 5);
     
     // Combine and deduplicate
+    // Limit to 3 events max for clean ticker display (both desktop and mobile)
     const allEvents = [...criticalEvents, ...recentEvents]
       .filter((event, index, self) => index === self.findIndex(e => e.id === event.id))
       .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
-      .slice(0, 8);
+      .slice(0, 3);
     
     if (allEvents.length === 0) {
       tickerContent.innerHTML = '<div class="sitmon-ticker-line">LIVE: Monitoring global intelligence feeds...</div>';
@@ -1239,10 +1374,10 @@ export class SituationMonitorShell {
       // Fetch from all sources and normalize
       const events = [];
       
-      // Fetch earthquakes
+      // Fetch earthquakes - limit to 3 for clean ticker display
       if (this.panels.earthquakes && typeof this.panels.earthquakes.getEarthquakes === 'function') {
         try {
-          const eqs = this.panels.earthquakes.getEarthquakes() || [];
+          const eqs = (this.panels.earthquakes.getEarthquakes() || []).slice(0, 3);
           for (const eq of eqs) {
             events.push(normalizeEarthquake(eq));
           }
@@ -1296,17 +1431,29 @@ export class SituationMonitorShell {
       
       // Update status
       const sourcesEl = document.getElementById('sitmon-status-sources');
+      const heroSourcesEl = document.getElementById('sitmon-hero-sources');
       if (sourcesEl) {
         sourcesEl.textContent = 'ONLINE';
         sourcesEl.className = 'sitmon-osint-status-value sitmon-telemetry online';
+      }
+      if (heroSourcesEl) {
+        heroSourcesEl.textContent = 'Online';
+        heroSourcesEl.classList.remove('offline');
+        heroSourcesEl.classList.add('online');
       }
       
     } catch (error) {
       console.error('[SituationMonitorShell] Error fetching events:', error);
       const sourcesEl = document.getElementById('sitmon-status-sources');
+      const heroSourcesEl = document.getElementById('sitmon-hero-sources');
       if (sourcesEl) {
         sourcesEl.textContent = 'OFFLINE';
         sourcesEl.className = 'sitmon-osint-status-value sitmon-telemetry offline';
+      }
+      if (heroSourcesEl) {
+        heroSourcesEl.textContent = 'Offline';
+        heroSourcesEl.classList.remove('online');
+        heroSourcesEl.classList.add('offline');
       }
     }
   }
@@ -1322,6 +1469,7 @@ export class SituationMonitorShell {
     console.log('[SituationMonitorShell] toggleLiveCams() called');
     const liveCamsPanel = document.getElementById('sitmon-panel-livecams');
     const liveCamsTab = document.getElementById('sitmon-tab-livecams');
+    const secondaryGrid = document.querySelector('.sitmon-secondary-grid');
     
     if (!liveCamsPanel) {
       console.error('[SituationMonitorShell] Live Cams panel NOT FOUND in DOM');
@@ -1334,7 +1482,19 @@ export class SituationMonitorShell {
     if (!isVisible) {
       // Show Live Cams panel
       console.log('[SituationMonitorShell] Showing Live Cams panel...');
+      
+      // Hide other secondary panels for full focus on Live Cams
+      if (secondaryGrid) {
+        const otherPanels = secondaryGrid.querySelectorAll('.sitmon-panel-card:not(#sitmon-panel-livecams)');
+        otherPanels.forEach(panel => {
+          panel.style.display = 'none';
+        });
+      }
+      
       liveCamsPanel.style.display = 'block';
+      liveCamsPanel.style.visibility = 'visible';
+      liveCamsPanel.style.opacity = '1';
+      
       if (liveCamsTab) {
         liveCamsTab.classList.add('active');
       }
@@ -1342,14 +1502,31 @@ export class SituationMonitorShell {
       // Initialize Live Cams if not already initialized
       if (!this.liveCams) {
         console.log('[SituationMonitorShell] Initializing Live Cams...');
+        this.showToast('Loading Live Surveillance Network...', 'info');
         await this.initLiveCams();
+        this.showToast('Live Cams ready', 'success');
       } else {
         console.log('[SituationMonitorShell] Live Cams already initialized');
       }
+      
+      // Scroll to Live Cams panel
+      setTimeout(() => {
+        liveCamsPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+      
     } else {
-      // Hide Live Cams panel
+      // Hide Live Cams panel and restore other panels
       console.log('[SituationMonitorShell] Hiding Live Cams panel');
       liveCamsPanel.style.display = 'none';
+      
+      // Restore other secondary panels
+      if (secondaryGrid) {
+        const otherPanels = secondaryGrid.querySelectorAll('.sitmon-panel-card:not(#sitmon-panel-livecams)');
+        otherPanels.forEach(panel => {
+          panel.style.display = '';
+        });
+      }
+      
       if (liveCamsTab) {
         liveCamsTab.classList.remove('active');
       }
@@ -1750,7 +1927,8 @@ export class SituationMonitorShell {
       
       const earthquakes = this.panels.earthquakes.getEarthquakes();
       if (earthquakes && this.mapView) {
-        earthquakes.slice(0, 20).forEach(eq => {
+        // Limit to 3 earthquakes to match the panel display
+        earthquakes.slice(0, 3).forEach(eq => {
           this.mapView.addEarthquake(eq.lat, eq.lon, eq.magnitude);
         });
       }
@@ -1762,6 +1940,13 @@ export class SituationMonitorShell {
         const now = new Date();
         const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
         statusChip.title = `Last updated: ${timeStr}`;
+      }
+      
+      const heroUpdatedEl = document.getElementById('sitmon-hero-updated');
+      if (heroUpdatedEl) {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        heroUpdatedEl.textContent = `Updated at ${timeStr}`;
       }
       
       if (refreshBtn) {

@@ -4,8 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Situation Monitor - Global Intelligence Dashboard | Noteworthy News</title>
+    <meta name="description" content="Real-time global intelligence dashboard. Monitor breaking news, earthquakes, weather alerts, and market signals worldwide.">
+    <meta name="theme-color" content="#07152a">
+    
+    <!-- Preconnect for fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Custom fonts for professional typography -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap">
+    
     <link rel="icon" type="image/png" href="IMG_5794.PNG">
     <link rel="shortcut icon" href="IMG_5794.PNG">
+    <link rel="stylesheet" href="styles/responsive.css">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="src/styles/situation-monitor.css">
     <link rel="stylesheet" href="src/styles/rss-intelligence.css">
@@ -15,6 +26,118 @@
     <!-- D3.js and TopoJSON for map (must load before modules) -->
     <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/topojson@3/dist/topojson.min.js"></script>
+    
+    <!-- Mobile fixes + Limit ticker/earthquake to 3 items max -->
+    <style>
+      :root {
+        --show-auto-refresh: inline-flex;
+      }
+      
+      /* LIMIT TICKER AND EARTHQUAKES TO 3 ITEMS MAX (desktop + mobile) */
+      .sitmon-ticker-line:nth-child(n+4) {
+        display: none !important;
+      }
+      .sitmon-earthquakes-list .sitmon-earthquake-item:nth-child(n+4) {
+        display: none !important;
+      }
+      
+      @media (max-width: 768px) {
+        :root {
+          --show-auto-refresh: none !important;
+        }
+        .sitmon-auto-refresh-toggle,
+        #sitmon-auto-refresh-label,
+        label.sitmon-auto-refresh-toggle,
+        [class*="auto-refresh"],
+        #sitmon-toggle-cam-layer {
+          display: none !important;
+          visibility: hidden !important;
+          width: 0 !important;
+          height: 0 !important;
+          overflow: hidden !important;
+        }
+        
+        /* CRITICAL: Hide HUD overlays on mobile - they appear as vertical text */
+        .sitmon-hud,
+        .sitmon-hud-left,
+        .sitmon-hud-right,
+        .sitmon-hud-card {
+          display: none !important;
+          visibility: hidden !important;
+          width: 0 !important;
+          height: 0 !important;
+          overflow: hidden !important;
+          position: absolute !important;
+          left: -9999px !important;
+          pointer-events: none !important;
+        }
+        
+        /* FIX: OSINT Grid becomes flex column on mobile */
+        .sitmon-osint-grid {
+          display: flex !important;
+          flex-direction: column !important;
+          gap: 1rem !important;
+        }
+        
+        /* Intel Wall (map) - full width block on mobile */
+        .sitmon-intel-wall,
+        .sitmon-grid-col-1-8 {
+          width: 100% !important;
+          min-width: 100% !important;
+          max-width: 100% !important;
+          display: block !important;
+          order: 1 !important; /* Map shows first */
+        }
+        
+        .sitmon-map-container {
+          width: 100% !important;
+          min-width: 100% !important;
+          height: 250px !important;
+          min-height: 250px !important;
+          max-height: 250px !important;
+          display: block !important;
+          position: relative !important;
+        }
+        
+        .sitmon-map {
+          width: 100% !important;
+          min-width: 100% !important;
+          height: 100% !important;
+          position: relative !important;
+        }
+        
+        #sitmon-map {
+          width: 100% !important;
+          height: 100% !important;
+        }
+        
+        #sitmon-map svg {
+          width: 100% !important;
+          height: 100% !important;
+        }
+        
+        /* Panels stack - full width on mobile */
+        .sitmon-panels-stack,
+        .sitmon-grid-col-8-13 {
+          width: 100% !important;
+          min-width: 100% !important;
+          display: flex !important;
+          flex-direction: column !important;
+          gap: 0.75rem !important;
+          order: 2 !important; /* Panels show after map */
+          height: auto !important;
+          max-height: none !important;
+        }
+        
+        /* Hide map decorative corners on mobile */
+        .sitmon-intel-wall::before,
+        .sitmon-intel-wall::after,
+        .sitmon-map-container::before,
+        .sitmon-map-container::after {
+          display: none !important;
+        }
+      }
+    </style>
 </head>
 <body class="situation-monitor-page">
     <!-- Professional Header (matching home page, without scheduled maintenance) -->

@@ -11,7 +11,7 @@ import { CamerasGrid } from './components/CamerasGrid.js';
 import { PlayerPanel } from './components/PlayerPanel.js';
 import { Watchlist } from './components/Watchlist.js';
 import { TopLiveStrip } from './components/TopLiveStrip.js';
-import { CameraMapLayer } from './map-layer.js';
+import { LiveCamsMapLayer } from './map-layer.js';
 
 // Hotspot presets
 const HOTSPOT_PRESETS = {
@@ -232,7 +232,27 @@ export class LiveCams {
     
     // Map Layer (if mapView available)
     if (this.mapView) {
-      this.mapLayer = new CameraMapLayer(this.mapView, this.state);
+      this.mapLayer = new LiveCamsMapLayer(this.mapView, {
+        onCameraClick: (camera) => {
+          this.state.selectCamera(camera);
+        }
+      });
+      
+      // Update map layer when results change
+      this.state.subscribe(() => {
+        if (this.mapLayer) {
+          this.mapLayer.updateCameras(this.state.results);
+        }
+      });
+      
+      // Listen for show-on-map events
+      window.addEventListener('livecams-show-on-map', (e) => {
+        if (e.detail?.camera && this.mapLayer) {
+          this.mapLayer.setVisible(true);
+          this.mapLayer.highlightCamera(e.detail.camera.id);
+          this.mapLayer.zoomToCamera(e.detail.camera);
+        }
+      });
     }
   }
   
