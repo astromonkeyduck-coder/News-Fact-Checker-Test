@@ -1128,8 +1128,19 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
   try {
     let data = null;
     
-    // PRIORITY 1: Check if prefetched data is available (for instant loading)
-    if (window.__BREAKING_NEWS_DATA_RESOLVED__) {
+    // Helper to check if data actually has posts
+    const hasValidPosts = (d) => {
+      if (!d) return false;
+      // Handle array format
+      if (Array.isArray(d) && d.length > 0) return true;
+      // Handle object format with posts/data property
+      if (d.posts && Array.isArray(d.posts) && d.posts.length > 0) return true;
+      if (d.data && Array.isArray(d.data) && d.data.length > 0) return true;
+      return false;
+    };
+    
+    // PRIORITY 1: Check if prefetched data is available AND has actual posts
+    if (window.__BREAKING_NEWS_DATA_RESOLVED__ && hasValidPosts(window.__BREAKING_NEWS_DATA_RESOLVED__)) {
       data = window.__BREAKING_NEWS_DATA_RESOLVED__;
       console.log('[Enhanced Feed] Using prefetched data for instant load');
     }
@@ -1139,24 +1150,29 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
         const timeoutPromise = new Promise((_, reject) => 
           setTimeout(() => reject(new Error('Timeout')), 1000)
         );
-        data = await Promise.race([window.__BREAKING_NEWS_DATA__, timeoutPromise]);
-        if (data && Array.isArray(data) && data.length > 0) {
+        const prefetchedData = await Promise.race([window.__BREAKING_NEWS_DATA__, timeoutPromise]);
+        if (hasValidPosts(prefetchedData)) {
+          data = prefetchedData;
           window.__BREAKING_NEWS_DATA_RESOLVED__ = data;
           console.log('[Enhanced Feed] Used prefetched promise for instant load');
         } else {
+          console.log('[Enhanced Feed] Prefetched data is empty, falling back to direct fetch');
           data = null;
         }
       } catch (e) {
         // Timeout or error - fall through to direct fetch
+        console.log('[Enhanced Feed] Prefetch timeout/error, falling back to direct fetch');
         data = null;
       }
     }
     
-    // PRIORITY 3: Fetch directly if no prefetched data
+    // PRIORITY 3: Fetch directly if no valid prefetched data
     if (!data) {
+      console.log('[Enhanced Feed] Fetching posts directly from API...');
       const response = await fetch(`${endpoint}?limit=${limit}`);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       data = await response.json();
+      console.log('[Enhanced Feed] Direct fetch result:', Array.isArray(data) ? data.length + ' posts' : (data?.posts?.length || data?.data?.length || 0) + ' posts');
     }
     
     // Handle both array response and object with posts property
