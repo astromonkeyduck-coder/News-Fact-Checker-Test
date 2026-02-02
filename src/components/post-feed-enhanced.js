@@ -14,6 +14,10 @@
  * - Better visual hierarchy
  */
 
+// #region agent log
+console.log('[Enhanced Feed] 🚀 Script starting to load...');
+// #endregion
+
 const ENHANCED_CACHE_KEY = 'noteworthy-posts-cache-enhanced';
 const ENHANCED_CACHE_EXPIRY = 2 * 60 * 1000; // 2 minutes
 const ENHANCED_CACHE_VERSION = '2'; // Increment this to invalidate all caches
@@ -1755,7 +1759,7 @@ function initEnhancedFeed(containerId = 'articlesTrack', endpoint = '/.netlify/f
 // Export for use
 if (typeof window !== 'undefined') {
   // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'post-feed-enhanced.js:1737',message:'Script loaded, registering window.renderPostFeedEnhanced',data:{},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1'})}).catch(()=>{});
+  console.log('[Enhanced Feed] ✅ Script fully loaded, registering window.renderPostFeedEnhanced');
   // #endregion
   window.renderPostFeedEnhanced = initEnhancedFeed;
   // Also export skeleton function for immediate use
@@ -1766,5 +1770,8 @@ if (typeof window !== 'undefined') {
     console.log('[Enhanced Feed] Cache cleared. Refresh the page to see updated posts.');
     return true;
   };
+  // #region agent log
+  console.log('[Enhanced Feed] ✅ window.renderPostFeedEnhanced is now:', typeof window.renderPostFeedEnhanced);
+  // #endregion
 }
 
