@@ -645,7 +645,7 @@ function renderEnhancedPostCard(post) {
   
   // Use November 23rd card design style (from post-feed-v2.js)
   return `
-    <article class="feed-post-card" role="listitem" data-post-type="${post.postType || 'text'}" data-post-id="${post.id || ''}" style="background: transparent; min-height: 520px; padding: 1.5rem; margin: 0; border-bottom: 1px solid rgba(255,255,255,0.1); transition: background 0.2s ease; display: grid; grid-template-rows: auto 1fr auto; box-sizing: border-box; cursor: pointer;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'" onclick="window.location.href='${articleLink}'">
+    <article class="feed-post-card" role="listitem" data-post-type="${post.postType || 'text'}" data-post-id="${post.id || ''}" style="background: transparent; min-height: 520px; padding: 1.5rem; margin: 0; border-bottom: 1px solid rgba(255,255,255,0.1); transition: background 0.2s ease; display: block; width: 100%; max-width: 100%; box-sizing: border-box; cursor: pointer;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'" onclick="window.location.href='${articleLink}'"
       <div style="display: flex; gap: 0.75rem; margin-bottom: 0.75rem; align-items: flex-start;">
         <!-- Avatar -->
         <a href="https://x.com/newsnoteworthy" target="_blank" rel="noopener noreferrer" style="flex-shrink: 0; text-decoration: none; display: block;" onclick="event.stopPropagation();">
