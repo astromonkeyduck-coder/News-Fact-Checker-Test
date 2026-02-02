@@ -142,8 +142,9 @@
     <!-- Animation System -->
     <link rel="stylesheet" href="styles/animations.css">
     
-    <!-- Command Center - Beast Mode -->
+    <!-- Command Center - Beast Mode (TEMPORARILY DISABLED)
     <link rel="stylesheet" href="styles/command-center.css">
+    -->
     
     <!-- Christmas Theme - Easy to toggle on/off -->
     <script src="christmas-config.js"></script>
@@ -5753,6 +5754,7 @@
         }
         
         /* CHRISTMAS TEMP: Ensure Santa logo is always in front, move down 10px, and faster fade-in */
+        /* Animation synced with santa body (tiltBackAndForth 6s) so they move together */
         .hero-logo-image[src*="actualNWlogo!USETHIS"] {
             z-index: 101 !important;
             position: relative;
@@ -5760,7 +5762,8 @@
             max-width: 460px;
             max-height: 300px;
             width: 80vw;
-            animation: fadeInUp 0.3s ease-out 0s forwards, subtleWiggle 4s ease-in-out 0.5s infinite !important;
+            animation: fadeInUp 0.3s ease-out 0s forwards, tiltBackAndForth 6s ease-in-out infinite !important;
+            transform-origin: center center;
         }
         
         .hero-logo-clickable {
@@ -20709,9 +20712,10 @@
     <script src="src/components/notification-preferences.js"></script>
     <script src="src/components/notification-bell.js"></script>
     
-    <!-- Command Center - Beast Mode (Ctrl/Cmd+K or click floating button) -->
+    <!-- Command Center - Beast Mode (TEMPORARILY DISABLED)
     <script src="src/components/command-center/Achievements.js"></script>
     <script src="src/components/command-center/CommandCenter.js?v=2"></script>
+    -->
     
 </body>
 </html>
