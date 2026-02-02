@@ -29,10 +29,10 @@
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@ffmpeg/util": "^0.12.2",
     "@netlify/blobs": "8.2.0",
-    "ffmpeg-static": "^5.2.0",
     "@netlify/functions": "^2.6.0",
     "@resvg/resvg-js": "^2.6.2",
     "@supabase/supabase-js": "^2.39.0",
+    "ffmpeg-static": "^5.2.0",
     "gifenc": "^1.0.3",
     "heic-convert": "^1.2.4",
     "ioredis": "^5.3.2",
@@ -40,7 +40,8 @@
     "puppeteer": "^21.0.0",
     "resend": "^3.0.0",
     "rss-parser": "^3.13.0",
-    "sharp": "^0.33.0"
+    "sharp": "^0.33.0",
+    "web-push": "^3.6.7"
   },
   "keywords": [
     "news",

@@ -181,6 +181,10 @@
   # Also include JavaScript functions
   directory = "netlify/functions"
 
+# article-preview function needs access to article.html template
+[functions."article-preview"]
+  included_files = ["article.html"]
+
 # Configure process-job as background function (longer timeout for ffmpeg processing)
 # Background functions can run up to 15 minutes (vs 26 seconds for regular functions)
 [functions."process-job"]

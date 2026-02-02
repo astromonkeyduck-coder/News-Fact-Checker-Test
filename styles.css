@@ -1955,7 +1955,7 @@ html, body {
     }
     
     /* Hide Engagements card on mobile */
-    .hero-stat-card[data-number="863.2K+"] {
+    .hero-stat-card[data-number="889.2K+"] {
         display: none !important;
     }
     
@@ -1976,19 +1976,19 @@ html, body {
         z-index: 2 !important; /* Ensure it's above other stat cards and animated layers */
     }
     
-    .hero-stat-card[data-number="29.9M"] .hero-stat-number-small {
+    .hero-stat-card[data-number="30.5M+"] .hero-stat-number-small {
         font-size: 1.5rem !important;
         font-weight: 700 !important;
         color: #4FACFE !important;
     }
     
-    .hero-stat-card[data-number="29.9M"] .hero-stat-label-small {
+    .hero-stat-card[data-number="30.5M+"] .hero-stat-label-small {
         font-size: 0.813rem !important;
         font-weight: 600 !important;
     }
     
     /* 2x2 Grid for Other Metrics (Likes, Shares, Reposts, Followers) */
-    .hero-stat-card:not([data-number="29.9M"]):not([data-number="863.2K+"]) {
+    .hero-stat-card:not([data-number="30.5M+"]):not([data-number="889.2K+"]) {
         flex: 0 0 calc(50% - 0.375rem) !important;
         width: calc(50% - 0.375rem) !important;
         background: rgba(255, 255, 255, 0.05) !important;

@@ -134,7 +134,16 @@
       }
     }
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <!-- Typography: Sora for headlines, Source Serif 4 for body -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;0,8..60,700;1,8..60,400&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Animation System -->
+    <link rel="stylesheet" href="styles/animations.css">
+    
+    <!-- Command Center - Beast Mode -->
+    <link rel="stylesheet" href="styles/command-center.css">
     
     <!-- Christmas Theme - Easy to toggle on/off -->
     <script src="christmas-config.js"></script>
@@ -1575,7 +1584,48 @@
                 margin: 0;
                 padding: 0;
                 line-height: normal;
-                overflow: visible !important;
+                overflow: hidden !important;
+                position: relative;
+                border-radius: 0;
+                box-shadow: 0 4px 20px rgba(29, 161, 242, 0.3), 
+                            0 0 40px rgba(29, 161, 242, 0.1);
+                animation: bannerPulse 3s ease-in-out infinite;
+            }
+            
+            /* Shimmer sweep effect */
+            .x-banner-mobile::after {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(
+                    90deg,
+                    transparent 0%,
+                    rgba(255, 255, 255, 0.1) 25%,
+                    rgba(255, 255, 255, 0.3) 50%,
+                    rgba(255, 255, 255, 0.1) 75%,
+                    transparent 100%
+                );
+                animation: bannerShimmer 4s ease-in-out infinite;
+                pointer-events: none;
+            }
+            
+            @keyframes bannerShimmer {
+                0% { left: -100%; }
+                50%, 100% { left: 100%; }
+            }
+            
+            @keyframes bannerPulse {
+                0%, 100% { 
+                    box-shadow: 0 4px 20px rgba(29, 161, 242, 0.3), 
+                                0 0 40px rgba(29, 161, 242, 0.1);
+                }
+                50% { 
+                    box-shadow: 0 4px 30px rgba(29, 161, 242, 0.5), 
+                                0 0 60px rgba(29, 161, 242, 0.2);
+                }
             }
             
             .x-banner-image {
@@ -2666,6 +2716,11 @@
             .header-logo a {
                 display: flex;
                 align-items: center;
+            }
+            
+            /* Hide brand name text on small mobile to prevent hamburger overlap */
+            .brand-info {
+                display: none !important;
             }
             
             .brand-info h1 {
@@ -11105,12 +11160,8 @@
             scroll-margin: 0 !important;
         }
         
-        .articles-track {
-            display: flex !important;
-            flex-wrap: nowrap !important;
-            width: fit-content !important;
-            touch-action: pan-x !important;
-        }
+        /* Articles track grid layout - handled by earlier CSS rules */
+        /* Removed problematic flex override that was causing 18px card widths */
         /* Ensure images always use full space and are properly centered */
         .article-image img[src*="GylNceyWcAA1PDI.jpeg"],
         .article-image img[src*="data:image/svg+xml"],
@@ -14268,7 +14319,7 @@
     <!-- Fixed Floating Tip Submission Button (mirrors AI chat position) -->
     <button class="tip-submit-btn" id="tipSubmitBtn" title="Submit a Tip">
         <span class="icon-inline"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor;"><path d="M12 2C8.13 2 5 5.13 5 9c0 2.38 1.19 4.47 3 5.74V17a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.87-3.13-7-7-7z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/><path d="M9 21h6M10 18h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
-        <span>Submit Tip</span>
+        <span>Tip</span>
     </button>
     
     <!-- Tip Submission Modal -->
@@ -14408,7 +14459,7 @@
                 <li><a href="#about-section" class="nav-link">About</a></li>
                 <li><a href="#ai-assistant-section" class="nav-link">AI Chat</a></li>
                 <li><a href="profile.html" class="nav-link" id="mobileProfileLink" style="display: none;">Profile</a></li>
-                <li><a href="#" class="nav-link" id="mobileTipSubmitBtn">Submit Tip</a></li>
+                <li><a href="#" class="nav-link" id="mobileTipSubmitBtn">Tip</a></li>
                 <li><a href="contact.html" class="nav-link">Feedback</a></li>
                 </ul>
         </nav>
@@ -14458,41 +14509,41 @@
     <div class="container" id="main-content">
         <!-- Hero Section - FIXED STRUCTURE -->
         <div class="hero-section">
-            <div class="flags-background" id="flagsBackground"></div>
-            <div class="welcome-background-image">
+            <div class="flags-background parallax-slow" id="flagsBackground"></div>
+            <div class="welcome-background-image parallax-medium">
                 <!-- CHRISTMAS TEMP: Replaced with Santa body - hidden until logo loads -->
                 <img src="santabodynwbest.png" alt="Welcome Background" class="welcome-bg-img welcome-bg-desktop" id="santa-body-image" style="opacity: 0; transition: opacity 0.5s ease-in;">
                 <!-- CHRISTMAS TEMP: Replaced with Santa logo -->
                 <img src="actualNWlogo!USETHIS.png" alt="Welcome Background" class="welcome-bg-img welcome-bg-mobile">
             </div>
-            <div class="rough-terrain-background">
+            <div class="rough-terrain-background parallax-slow">
                 <img src="Rough terrain.png" alt="Rough Terrain" class="rough-terrain-img">
             </div>
-            <div class="hero-logo" aria-hidden="true">
+            <div class="hero-logo hero-logo-entrance" aria-hidden="true">
                 <!-- CHRISTMAS TEMP: Replaced with Santa logo - preloaded to show first -->
                 <img src="actualNWlogo!USETHIS.png" alt="Noteworthy News Logo" class="hero-logo-image" id="santa-logo-image">
             </div>
             
             <!-- Left Side Welcome Image -->
-                    <div class="welcome-left-image" id="welcomeLeftImage">
+                    <div class="welcome-left-image scroll-reveal-left" id="welcomeLeftImage">
             <img src="cameramenimageleft.png" alt="Cameramen">
         </div>
         
-        <div class="welcome-right-image" id="welcomeRightImage">
+        <div class="welcome-right-image scroll-reveal-right" id="welcomeRightImage">
             <img src="5E8FA510-BF0B-447B-B597-6D91A49AF1D6 2.PNG" alt="Right Side Image">
         </div>
             
-            <h1 class="hero-title">
+            <h1 class="hero-title hero-title-entrance">
                 <div class="welcome-text-container">
-                    <span class="welcome-text gradient-text" id="welcomeText">Noteworthy News</span>
+                    <span class="welcome-text gradient-text accent-text" id="welcomeText">Noteworthy News</span>
                 </div>
                 <div class="welcome-location" id="welcomeLocation"></div>
             </h1>
                         <!-- HERO: Latest Breaking News -->
-        <div class="hero-module-container glass-card glow-border" id="heroModuleContainer" role="button" tabindex="0" aria-label="Latest breaking news">
+        <div class="hero-module-container glass-card glow-border hero-entrance glow-pulse" id="heroModuleContainer" role="button" tabindex="0" aria-label="Latest breaking news">
             <!-- Status Row -->
             <div class="hero-module-status">
-                <span class="hero-module-label" id="heroModuleLabel">LATEST BREAKING NEWS</span>
+                <span class="hero-module-label breaking-badge" id="heroModuleLabel">LATEST BREAKING NEWS</span>
                 <span class="hero-module-updated">Updated <span class="hero-module-time" id="heroModuleTime">--:-- --</span></span>
             </div>
             
@@ -17555,7 +17606,7 @@
     <script src="/src/components/post-feed-v2.js?v=1.0" defer></script>
     
     <!-- Enhanced Posts Feed - Premium features -->
-    <script src="/src/components/post-feed-enhanced.js?v=1.5.1738464000" defer></script>
+    <script src="/src/components/post-feed-enhanced.js?v=1.7.1738465000" defer></script>
     
     <!-- Global Coverage Globe -->
     <script src="/src/components/CiaMissionGlobe-cdn.js" defer></script>
@@ -20514,7 +20565,7 @@
         })();
     </script>
     
-    <!-- Scroll Animation Observer - Dynamic Visual Enhancements -->
+    <!-- Enhanced Scroll Animation Observer - Dynamic Visual Enhancements -->
     <script>
     (function() {
         'use strict';
@@ -20524,7 +20575,7 @@
         
         if (prefersReducedMotion) {
             // If user prefers reduced motion, mark all as revealed immediately
-            document.querySelectorAll('.reveal-on-scroll, .stagger-children').forEach(el => {
+            document.querySelectorAll('.reveal-on-scroll, .stagger-children, .scroll-reveal, .scroll-reveal-up, .scroll-reveal-left, .scroll-reveal-right, .scroll-reveal-scale, .stagger-fast').forEach(el => {
                 el.classList.add('revealed');
             });
             return;
@@ -20547,9 +20598,36 @@
             });
         }, observerOptions);
         
+        // Parallax scroll handler
+        let ticking = false;
+        function handleParallax() {
+            const scrollY = window.scrollY;
+            
+            // Parallax for slow elements (0.3x scroll speed)
+            document.querySelectorAll('.parallax-slow').forEach(el => {
+                const speed = 0.3;
+                el.style.transform = `translateY(${scrollY * speed}px)`;
+            });
+            
+            // Parallax for medium elements (0.5x scroll speed)
+            document.querySelectorAll('.parallax-medium').forEach(el => {
+                const speed = 0.5;
+                el.style.transform = `translateY(${scrollY * speed}px)`;
+            });
+            
+            ticking = false;
+        }
+        
+        window.addEventListener('scroll', () => {
+            if (!ticking) {
+                requestAnimationFrame(handleParallax);
+                ticking = true;
+            }
+        }, { passive: true });
+        
         // Observe elements when DOM is ready
         function initScrollAnimations() {
-            // Add reveal-on-scroll class to key sections if not already present
+            // Add scroll-reveal-up class to key sections
             const sectionsToAnimate = [
                 '.news-section',
                 '.fact-checker-section',
@@ -20563,8 +20641,8 @@
             
             sectionsToAnimate.forEach(selector => {
                 document.querySelectorAll(selector).forEach(el => {
-                    if (!el.classList.contains('reveal-on-scroll')) {
-                        el.classList.add('reveal-on-scroll');
+                    if (!el.classList.contains('scroll-reveal-up') && !el.classList.contains('reveal-on-scroll')) {
+                        el.classList.add('scroll-reveal-up');
                     }
                 });
             });
@@ -20578,21 +20656,28 @@
             
             staggerContainers.forEach(selector => {
                 document.querySelectorAll(selector).forEach(el => {
-                    if (!el.classList.contains('stagger-children')) {
-                        el.classList.add('stagger-children');
+                    if (!el.classList.contains('stagger-children') && !el.classList.contains('stagger-fast')) {
+                        el.classList.add('stagger-fast');
                     }
                 });
             });
             
-            // Add hover-lift to cards
+            // Add card-glow effect to cards for hover interactions
             document.querySelectorAll('.feed-post-card, .article-card, .feature-card, .hero-stat-card').forEach(el => {
-                if (!el.classList.contains('hover-lift')) {
-                    el.classList.add('hover-lift');
+                if (!el.classList.contains('card-glow') && !el.classList.contains('hover-lift')) {
+                    el.classList.add('card-glow');
                 }
             });
             
-            // Observe all reveal elements
-            document.querySelectorAll('.reveal-on-scroll, .stagger-children').forEach(el => {
+            // Add card-image-zoom to cards with images
+            document.querySelectorAll('.feed-post-card, .article-card').forEach(el => {
+                if (!el.classList.contains('card-image-zoom')) {
+                    el.classList.add('card-image-zoom');
+                }
+            });
+            
+            // Observe all reveal elements (both old and new classes)
+            document.querySelectorAll('.reveal-on-scroll, .stagger-children, .scroll-reveal, .scroll-reveal-up, .scroll-reveal-left, .scroll-reveal-right, .scroll-reveal-scale, .stagger-fast').forEach(el => {
                 revealObserver.observe(el);
             });
             
@@ -20600,6 +20685,10 @@
             const heroSection = document.querySelector('.hero-section');
             if (heroSection) {
                 heroSection.classList.add('revealed');
+                // Also reveal immediate children
+                heroSection.querySelectorAll('.scroll-reveal-left, .scroll-reveal-right').forEach(el => {
+                    el.classList.add('revealed');
+                });
             }
         }
         
@@ -20614,6 +20703,15 @@
         setTimeout(initScrollAnimations, 1000);
     })();
     </script>
+    
+    <!-- Push Notifications System -->
+    <script src="src/utils/push-notifications.js"></script>
+    <script src="src/components/notification-preferences.js"></script>
+    <script src="src/components/notification-bell.js"></script>
+    
+    <!-- Command Center - Beast Mode (Ctrl/Cmd+K or click floating button) -->
+    <script src="src/components/command-center/Achievements.js"></script>
+    <script src="src/components/command-center/CommandCenter.js?v=2"></script>
     
 </body>
 </html>

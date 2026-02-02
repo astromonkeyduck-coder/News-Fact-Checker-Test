@@ -1015,6 +1015,47 @@ async function generateBrandedImage(magnitude, location, usgsImages, eventId, lo
 }
 
 /**
+ * Send push notification for earthquake alert
+ * Sends to all users subscribed to earthquake notifications
+ */
+async function sendPushNotificationForEarthquake(earthquake, imageUrl, logger) {
+  try {
+    const { sendPushNotification } = require('../send-push-notification');
+    
+    // Format magnitude
+    const magnitude = earthquake.magnitude || earthquake.assets?.magnitude || earthquake.raw?.properties?.mag || 'N/A';
+    const location = earthquake.location_display || earthquake.title || 'Unknown Location';
+    
+    // Create notification
+    const result = await sendPushNotification({
+      type: 'earthquake',
+      title: `🌍 M${magnitude} Earthquake`,
+      body: `${location}`,
+      url: earthquake.source_url || '/situation-monitor.html',
+      image: imageUrl || null,
+      tag: `earthquake-${earthquake.canonical_id || earthquake.event_id}`,
+      mapUrl: '/situation-monitor.html',
+      id: earthquake.canonical_id || earthquake.event_id,
+    });
+    
+    if (result.success) {
+      logger.info('📲 Push notification sent for earthquake', {
+        canonical_id: earthquake.canonical_id,
+        sent: result.sent,
+        failed: result.failed,
+      });
+    } else {
+      logger.warn('Push notification not sent:', result.error);
+    }
+    
+    return result;
+  } catch (error) {
+    logger.error('Error sending push notification:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
  * Send email alert for ALL earthquakes
  * Uses HTTP call to send-earthquake-alert function which handles image attachments
  */
@@ -1938,6 +1979,11 @@ async function processEarthquake(feature, logger, forceEmail = false) {
     
     // Phase 2: Send the email
     const alertSent = await sendEmailAlert(enrichedEvent, imageUrl, logger);
+    
+    // Phase 2b: Send push notification (non-blocking, fire-and-forget)
+    sendPushNotificationForEarthquake(enrichedEvent, imageUrl, logger).catch(err => {
+      logger.error('Push notification failed (non-blocking):', err.message);
+    });
     
     // Phase 3: Mark as sent only if email succeeded, otherwise rollback the lock
     if (alertSent) {

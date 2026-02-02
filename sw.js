@@ -291,28 +291,157 @@ async function syncNewsletter() {
   console.log('[Service Worker] Syncing newsletter subscriptions');
 }
 
-// Push notifications (if you add them later)
+// ===========================================
+// PUSH NOTIFICATIONS
+// ===========================================
+
+// Notification type configurations
+const NOTIFICATION_CONFIGS = {
+  'breaking-news': {
+    icon: '/IMG_5794.PNG',
+    badge: '/IMG_5794.PNG',
+    vibrate: [200, 100, 200, 100, 200], // Urgent pattern
+    requireInteraction: true,
+    actions: [
+      { action: 'read', title: 'Read Now' },
+      { action: 'dismiss', title: 'Dismiss' }
+    ]
+  },
+  'earthquake': {
+    icon: '/IMG_5794.PNG',
+    badge: '/IMG_5794.PNG',
+    vibrate: [300, 100, 300, 100, 300], // Very urgent pattern
+    requireInteraction: true,
+    actions: [
+      { action: 'read', title: 'View Details' },
+      { action: 'map', title: 'Open Map' }
+    ]
+  },
+  'weather': {
+    icon: '/IMG_5794.PNG',
+    badge: '/IMG_5794.PNG',
+    vibrate: [200, 100, 200],
+    requireInteraction: false,
+    actions: [
+      { action: 'read', title: 'View Alert' },
+      { action: 'dismiss', title: 'Dismiss' }
+    ]
+  },
+  'website-update': {
+    icon: '/IMG_5794.PNG',
+    badge: '/IMG_5794.PNG',
+    vibrate: [100],
+    requireInteraction: false,
+    actions: [
+      { action: 'read', title: 'See Updates' },
+      { action: 'dismiss', title: 'Later' }
+    ]
+  },
+  'default': {
+    icon: '/IMG_5794.PNG',
+    badge: '/IMG_5794.PNG',
+    vibrate: [100, 50, 100],
+    requireInteraction: false,
+    actions: []
+  }
+};
+
+// Push event handler - receives push notifications from server
 self.addEventListener('push', (event) => {
-  const data = event.data ? event.data.json() : {};
+  console.log('[Service Worker] Push received');
+  
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch (e) {
+    console.error('[Service Worker] Failed to parse push data:', e);
+    data = { title: 'Noteworthy News', body: event.data?.text() || 'New update available' };
+  }
+
+  const notificationType = data.type || 'default';
+  const config = NOTIFICATION_CONFIGS[notificationType] || NOTIFICATION_CONFIGS['default'];
+  
   const title = data.title || 'Noteworthy News';
   const options = {
     body: data.body || 'New breaking news update',
-    icon: '/IMG_5794.PNG',
-    badge: '/IMG_5794.PNG',
-    tag: data.tag || 'news-update',
-    data: data.url || '/'
+    icon: data.icon || config.icon,
+    badge: data.badge || config.badge,
+    tag: data.tag || `noteworthy-${notificationType}-${Date.now()}`,
+    vibrate: config.vibrate,
+    requireInteraction: config.requireInteraction,
+    actions: config.actions,
+    data: {
+      url: data.url || '/',
+      type: notificationType,
+      id: data.id || null,
+      mapUrl: data.mapUrl || null,
+      timestamp: Date.now()
+    },
+    // Rich notification features
+    image: data.image || null, // Large image for the notification
+    silent: data.silent || false
   };
+
+  // Remove null values
+  Object.keys(options).forEach(key => {
+    if (options[key] === null) delete options[key];
+  });
 
   event.waitUntil(
     self.registration.showNotification(title, options)
   );
 });
 
-// Notification click handler
+// Notification click handler - handles both notification body clicks and action clicks
 self.addEventListener('notificationclick', (event) => {
+  console.log('[Service Worker] Notification clicked:', event.action);
+  
   event.notification.close();
+  
+  const data = event.notification.data || {};
+  let targetUrl = data.url || '/';
+  
+  // Handle different actions
+  if (event.action === 'dismiss') {
+    // Just close, don't open anything
+    return;
+  } else if (event.action === 'map' && data.mapUrl) {
+    targetUrl = data.mapUrl;
+  } else if (event.action === 'read' || !event.action) {
+    // Default action - open the main URL
+    targetUrl = data.url || '/';
+  }
+
+  // Focus existing window or open new one
   event.waitUntil(
-    clients.openWindow(event.notification.data || '/')
+    clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then((windowClients) => {
+        // Check if there's already a window open with the target URL
+        for (const client of windowClients) {
+          if (client.url === targetUrl && 'focus' in client) {
+            return client.focus();
+          }
+        }
+        // Check if there's any Noteworthy News window open
+        for (const client of windowClients) {
+          if (client.url.includes('noteworthynews.co') && 'focus' in client) {
+            // Navigate to the target URL and focus
+            client.navigate(targetUrl);
+            return client.focus();
+          }
+        }
+        // Open new window
+        if (clients.openWindow) {
+          return clients.openWindow(targetUrl);
+        }
+      })
   );
 });
 
+// Notification close handler - track dismissals for analytics
+self.addEventListener('notificationclose', (event) => {
+  const data = event.notification.data || {};
+  console.log('[Service Worker] Notification closed:', data.type, data.id);
+  
+  // Could send analytics here if needed
+});

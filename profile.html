@@ -312,7 +312,21 @@
                         </p>
                         <button class="btn btn-secondary" onclick="window.auth0.logout()">Sign Out</button>
                     </div>
+                    
+                    <div class="profile-card" id="notification-preferences-container">
+                        <!-- Push notification preferences will be rendered here -->
+                        <div style="text-align: center; padding: 1rem; color: rgba(255,255,255,0.6);">
+                            Loading notification settings...
+                        </div>
+                    </div>
                 `;
+                
+                // Load notification preferences after profile renders
+                setTimeout(() => {
+                    if (window.NotificationPreferences) {
+                        window.NotificationPreferences.render('#notification-preferences-container', { showTestButton: true });
+                    }
+                }, 500);
                 
             } catch (error) {
                 console.error('Error loading profile:', error);
@@ -336,6 +350,10 @@
             setTimeout(loadProfile, 1000);
         }
     </script>
+    
+    <!-- Push Notifications -->
+    <script src="src/utils/push-notifications.js"></script>
+    <script src="src/components/notification-preferences.js"></script>
     
     <!-- Cookie Consent Banner -->
     <script src="src/components/cookie-banner.js"></script>

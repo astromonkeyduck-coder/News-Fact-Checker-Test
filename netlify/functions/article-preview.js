@@ -31,20 +31,255 @@ function getArticlePageShell() {
     return ARTICLE_PAGE_SHELL;
   } catch (error) {
     // Fallback to minimal template if file not found
+    // IMPORTANT: This template MUST include the same element IDs as article.html
+    // so that article-loader.js can find them (article-heading, article-body, etc.)
     console.warn('[article-preview] Could not load article.html, using minimal template:', error.message);
     ARTICLE_PAGE_SHELL = `<!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="article-page-active">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Article - Noteworthy News</title>
-    <link rel="stylesheet" href="styles.css">
+    <meta name="app-version" content="Feb 2, 2026">
+    
+    <!-- Dynamic Meta Tags - Updated by article-loader.js -->
+    <title id="article-title">Article - Noteworthy News</title>
+    <meta name="description" id="article-description" content="Breaking news story from Noteworthy News">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" id="article-canonical" href="https://noteworthynews.co/article.html">
+    
+    <!-- Open Graph -->
+    <meta property="og:type" content="article">
+    <meta property="og:url" id="og-url" content="https://noteworthynews.co/article.html">
+    <meta property="og:title" id="og-title" content="Article - Noteworthy News">
+    <meta property="og:description" id="og-description" content="Breaking news story">
+    <meta property="og:image" id="og-image" content="https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg">
+    <meta property="og:site_name" content="Noteworthy News">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" id="twitter-url" content="https://noteworthynews.co/article.html">
+    <meta name="twitter:title" id="twitter-title" content="Article - Noteworthy News">
+    <meta name="twitter:description" id="twitter-description" content="Breaking news story">
+    <meta name="twitter:image" id="twitter-image" content="https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg">
+    <meta name="twitter:site" content="@NoteworthyNews">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/IMG_5794.PNG">
+    <link rel="apple-touch-icon" href="/IMG_5794.PNG">
+    <meta name="theme-color" content="#ffffff">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Georgia&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="/styles.css">
+    <style>
+        /* Critical article page styles */
+        html.article-page-active, html.article-page-active body, body.article-page {
+            background: #ffffff !important;
+            color: #1a1a1a;
+            font-family: 'Georgia', serif;
+        }
+        .article-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 80px 20px 60px;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 320px;
+            gap: 60px;
+        }
+        @media (max-width: 1023px) {
+            .article-container { grid-template-columns: 1fr; padding-top: 70px; }
+        }
+        .article-main { width: 100%; }
+        .article-header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            line-height: 1.2;
+            color: #1a1a1a;
+            font-family: 'Inter', sans-serif;
+            margin: 0 0 24px 0;
+        }
+        @media (max-width: 768px) {
+            .article-header h1 { font-size: 1.75rem; }
+        }
+        .article-header-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            padding: 20px 0;
+            border-bottom: 1px solid #e5e5e5;
+            font-size: 0.875rem;
+            font-family: 'Inter', sans-serif;
+            color: #666;
+        }
+        .article-body {
+            line-height: 1.75;
+            font-size: 1.125rem;
+            color: #1a1a1a;
+            max-width: 650px;
+            font-family: 'Georgia', serif;
+        }
+        .article-body p { margin-bottom: 1.5em; }
+        .article-sidebar { display: flex; flex-direction: column; gap: 40px; }
+        .sidebar-card h2 {
+            font-size: 0.875rem;
+            font-weight: 700;
+            margin: 0 0 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e5e5e5;
+            font-family: 'Inter', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #1a1a1a;
+        }
+        .main-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #ffffff;
+            border-bottom: 1px solid #e5e5e5;
+            z-index: 1000;
+            padding: 12px 20px;
+        }
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 0%, #e0e0e0 50%, #f0f0f0 100%);
+            background-size: 200% 100%;
+            animation: skeleton 1.5s ease-in-out infinite;
+            border-radius: 4px;
+        }
+        @keyframes skeleton {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .utility-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: transparent;
+            border: 1px solid #d5d5d5;
+            border-radius: 2px;
+            color: #1a1a1a;
+            font-size: 0.875rem;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .utility-btn:hover { background: #f5f5f5; border-color: #1a1a1a; }
+    </style>
 </head>
 <body class="article-page">
-    <div id="article-content" class="article-container">
-        <div id="article-loader">Loading article...</div>
-    </div>
-    <script src="https://noteworthynews.co/src/components/article-loader.js"></script>
+    <!-- Professional News Header -->
+    <header class="main-header">
+        <div style="max-width: 1400px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between;">
+            <a href="/index.html" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
+                <img src="/IMG_5992.PNG" alt="Noteworthy News Logo" style="height: 28px; width: auto;">
+                <span style="font-weight: 700; color: #1a1a1a; font-family: 'Inter', sans-serif; font-size: 1.125rem;">Noteworthy News</span>
+            </a>
+            <a href="/index.html" style="color: #1a1a1a; text-decoration: none; font-weight: 500; font-family: 'Inter', sans-serif; font-size: 0.875rem;">← Back to Home</a>
+        </div>
+    </header>
+    
+    <!-- Main Article Content -->
+    <main class="article-container">
+        <article class="article-main">
+            <header class="article-header-panel">
+                <div class="article-header">
+                    <h1 id="article-heading" tabindex="-1">Loading article...</h1>
+                    <div class="article-header-meta">
+                        <div><span style="font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px;">By:</span> <span>Noteworthy News</span></div>
+                        <div><span style="font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px;">Published:</span> <span id="article-date">Loading...</span></div>
+                        <div><span style="font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px;">Read Time:</span> <span id="article-read-time">Loading...</span></div>
+                    </div>
+                    <div class="article-header-utility" style="display: flex; gap: 12px; margin-top: 20px;">
+                        <button class="utility-btn" id="copy-link-btn"><span>🔗</span><span>Copy Link</span></button>
+                        <button class="utility-btn" id="share-menu-btn"><span>📤</span><span>Share</span></button>
+                        <div class="share-menu" id="share-menu" style="display: none; position: absolute; background: #fff; border: 1px solid #d5d5d5; padding: 4px; min-width: 180px; z-index: 10001;">
+                            <a href="#" class="share-option" id="share-twitter" style="display: block; padding: 10px 14px; color: #1a1a1a; text-decoration: none;">𝕏 X (Twitter)</a>
+                            <a href="#" class="share-option" id="share-facebook" style="display: block; padding: 10px 14px; color: #1a1a1a; text-decoration: none;">Facebook</a>
+                            <a href="#" class="share-option" id="share-linkedin" style="display: block; padding: 10px 14px; color: #1a1a1a; text-decoration: none;">LinkedIn</a>
+                            <a href="#" class="share-option" id="share-email" style="display: block; padding: 10px 14px; color: #1a1a1a; text-decoration: none;">Email</a>
+                            <a href="#" class="share-option" id="share-reddit" style="display: block; padding: 10px 14px; color: #1a1a1a; text-decoration: none;">Reddit</a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            <div class="article-body-panel">
+                <div class="article-body" id="article-body">
+                    <div class="skeleton" style="height: 300px; margin-bottom: 20px;"></div>
+                    <div class="skeleton" style="height: 20px; margin-bottom: 12px; width: 100%;"></div>
+                    <div class="skeleton" style="height: 20px; margin-bottom: 12px; width: 95%;"></div>
+                    <div class="skeleton" style="height: 20px; margin-bottom: 12px; width: 90%;"></div>
+                    <div class="skeleton" style="height: 20px; width: 60%;"></div>
+                </div>
+                <div class="comments-section" style="margin-top: 64px; padding-top: 40px; border-top: 1px solid #e5e5e5;">
+                    <h3 style="font-size: 0.875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 24px; font-family: 'Inter', sans-serif;">Comments</h3>
+                    <div class="comment-section" data-article-id="" id="article-comments"></div>
+                </div>
+            </div>
+        </article>
+        
+        <aside class="article-sidebar">
+            <section class="sidebar-card">
+                <h2>Latest</h2>
+                <div id="latest-articles">
+                    <div class="skeleton" style="height: 60px; margin-bottom: 12px;"></div>
+                    <div class="skeleton" style="height: 60px; margin-bottom: 12px;"></div>
+                    <div class="skeleton" style="height: 60px;"></div>
+                </div>
+            </section>
+            <section class="sidebar-card">
+                <h2>Related Coverage</h2>
+                <div id="related-articles">
+                    <div class="skeleton" style="height: 60px; margin-bottom: 12px;"></div>
+                    <div class="skeleton" style="height: 60px; margin-bottom: 12px;"></div>
+                    <div class="skeleton" style="height: 60px;"></div>
+                </div>
+            </section>
+        </aside>
+        
+        <section class="more-coverage" style="grid-column: 1 / -1; margin-top: 80px; padding-top: 40px; border-top: 1px solid #e5e5e5;">
+            <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 32px; font-family: 'Inter', sans-serif;">More from Noteworthy News</h2>
+            <div id="more-coverage-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px;">
+                <div class="skeleton" style="height: 300px;"></div>
+                <div class="skeleton" style="height: 300px;"></div>
+                <div class="skeleton" style="height: 300px;"></div>
+            </div>
+        </section>
+    </main>
+    
+    <!-- Hidden elements for article-loader.js compatibility -->
+    <span id="category-chip" style="display: none;">BREAKING NEWS</span>
+    <span id="article-timestamp" style="display: none;"></span>
+    <span id="alert-pill" style="display: none;"></span>
+    <span id="article-timestamp-header" style="display: none;"></span>
+    <div id="article-tags" style="display: none;"></div>
+    
+    <!-- Article Loader Script -->
+    <script src="/src/components/article-loader.js"></script>
+    <script src="/src/components/news-card.js"></script>
+    <script src="/src/components/comment-section.js"></script>
+    
+    <script>
+        // Copy link functionality
+        document.getElementById('copy-link-btn')?.addEventListener('click', function() {
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                this.innerHTML = '<span>✓</span><span>Copied!</span>';
+                setTimeout(() => { this.innerHTML = '<span>🔗</span><span>Copy Link</span>'; }, 2000);
+            });
+        });
+        // Share menu toggle
+        const shareBtn = document.getElementById('share-menu-btn');
+        const shareMenu = document.getElementById('share-menu');
+        shareBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            shareMenu.style.display = shareMenu.style.display === 'none' ? 'block' : 'none';
+        });
+        document.addEventListener('click', () => { if (shareMenu) shareMenu.style.display = 'none'; });
+    </script>
 </body>
 </html>`;
     return ARTICLE_PAGE_SHELL;

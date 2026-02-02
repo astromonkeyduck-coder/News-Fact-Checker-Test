@@ -26,6 +26,49 @@ function isDryRun() {
 }
 
 /**
+ * Send push notification for severe weather alert
+ */
+async function sendPushNotificationForWeather(event, logger) {
+  try {
+    const { sendPushNotification } = require('../send-push-notification');
+    
+    // Get severity icon
+    const severityIcons = {
+      5: '🚨', // Extreme
+      4: '⛈️', // Severe
+      3: '🌧️', // Moderate
+      2: '☁️', // Minor
+      1: '📢', // Advisory
+    };
+    const icon = severityIcons[event.severity] || '⛈️';
+    
+    const result = await sendPushNotification({
+      type: 'weather',
+      title: `${icon} ${event.title || 'Weather Alert'}`,
+      body: event.summary || event.location_display || 'Severe weather alert in your area',
+      url: event.source_url || '/situation-monitor.html',
+      tag: `weather-${event.canonical_id}`,
+      id: event.canonical_id,
+    });
+    
+    if (result.success) {
+      logger.info('📲 Push notification sent for weather alert', {
+        canonical_id: event.canonical_id,
+        sent: result.sent,
+        failed: result.failed,
+      });
+    } else {
+      logger.warn('Push notification not sent:', result.error);
+    }
+    
+    return result;
+  } catch (error) {
+    logger.error('Error sending weather push notification:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
  * Fetch NWS active alerts
  */
 async function fetchNWSAlerts(logger) {
@@ -209,6 +252,13 @@ async function processAlert(feature, logger) {
     sendLocationAlertsForEvent(storedEvent, logger).catch(err => {
       logger.error('Error sending location alerts:', err);
     });
+    
+    // Send push notifications for severe weather (non-blocking)
+    if (normalizedSeverity >= 4) {
+      sendPushNotificationForWeather(storedEvent, logger).catch(err => {
+        logger.error('Error sending push notification for weather:', err);
+      });
+    }
   }
   
   // WEATHER ALERT EMAILS DISABLED - User requested no weather alert emails
