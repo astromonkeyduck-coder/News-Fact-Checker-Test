@@ -399,9 +399,24 @@ exports.handler = async (event, context) => {
         );
         
         // RSS ingestion logic (extracted from ingest-live-events.js)
-        const rssFeedsJson = process.env.RSS_FEEDS_JSON;
-        if (rssFeedsJson) {
-          const feeds = JSON.parse(rssFeedsJson);
+        // Try local config file first, then fall back to environment variable
+        let feeds = [];
+        try {
+          feeds = require('./rss-feeds-config.js');
+          if (feeds.length > 0) {
+            console.log('[ingest-all] Loaded RSS feeds from config file');
+          }
+        } catch (e) {
+          // Config file not found or empty, try env var
+        }
+        
+        // Fall back to environment variable if config file is empty
+        if (feeds.length === 0 && process.env.RSS_FEEDS_JSON) {
+          feeds = JSON.parse(process.env.RSS_FEEDS_JSON);
+          console.log('[ingest-all] Loaded RSS feeds from environment variable');
+        }
+        
+        if (feeds.length > 0) {
           const events = [];
           
           // Simple RSS parser function
@@ -552,7 +567,7 @@ exports.handler = async (event, context) => {
             };
           }
         } else {
-          console.log('[ingest-all] RSS_FEEDS_JSON not configured, skipping RSS ingestion');
+          console.log('[ingest-all] No RSS feeds configured (check rss-feeds-config.js or RSS_FEEDS_JSON env var)');
           results.rss_ingestion = {
             skipped: true,
             reason: 'not_configured'

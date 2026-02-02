@@ -74,102 +74,7 @@ function getArticlePageShell() {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Georgia&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="/styles.css">
-    <style>
-        /* Critical article page styles */
-        html.article-page-active, html.article-page-active body, body.article-page {
-            background: #ffffff !important;
-            color: #1a1a1a;
-            font-family: 'Georgia', serif;
-        }
-        .article-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 80px 20px 60px;
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) 320px;
-            gap: 60px;
-        }
-        @media (max-width: 1023px) {
-            .article-container { grid-template-columns: 1fr; padding-top: 70px; }
-        }
-        .article-main { width: 100%; }
-        .article-header h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            line-height: 1.2;
-            color: #1a1a1a;
-            font-family: 'Inter', sans-serif;
-            margin: 0 0 24px 0;
-        }
-        @media (max-width: 768px) {
-            .article-header h1 { font-size: 1.75rem; }
-        }
-        .article-header-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 16px;
-            padding: 20px 0;
-            border-bottom: 1px solid #e5e5e5;
-            font-size: 0.875rem;
-            font-family: 'Inter', sans-serif;
-            color: #666;
-        }
-        .article-body {
-            line-height: 1.75;
-            font-size: 1.125rem;
-            color: #1a1a1a;
-            max-width: 650px;
-            font-family: 'Georgia', serif;
-        }
-        .article-body p { margin-bottom: 1.5em; }
-        .article-sidebar { display: flex; flex-direction: column; gap: 40px; }
-        .sidebar-card h2 {
-            font-size: 0.875rem;
-            font-weight: 700;
-            margin: 0 0 16px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #e5e5e5;
-            font-family: 'Inter', sans-serif;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #1a1a1a;
-        }
-        .main-header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: #ffffff;
-            border-bottom: 1px solid #e5e5e5;
-            z-index: 1000;
-            padding: 12px 20px;
-        }
-        .skeleton {
-            background: linear-gradient(90deg, #f0f0f0 0%, #e0e0e0 50%, #f0f0f0 100%);
-            background-size: 200% 100%;
-            animation: skeleton 1.5s ease-in-out infinite;
-            border-radius: 4px;
-        }
-        @keyframes skeleton {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-        .utility-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 14px;
-            background: transparent;
-            border: 1px solid #d5d5d5;
-            border-radius: 2px;
-            color: #1a1a1a;
-            font-size: 0.875rem;
-            font-family: 'Inter', sans-serif;
-            cursor: pointer;
-            text-decoration: none;
-        }
-        .utility-btn:hover { background: #f5f5f5; border-color: #1a1a1a; }
-    </style>
+    <link rel="stylesheet" href="/css/article.css">
 </head>
 <body class="article-page">
     <!-- Professional News Header -->
@@ -258,28 +163,11 @@ function getArticlePageShell() {
     <span id="article-timestamp-header" style="display: none;"></span>
     <div id="article-tags" style="display: none;"></div>
     
-    <!-- Article Loader Script -->
+    <!-- Article Page Scripts -->
+    <script src="/js/article-page.js"></script>
     <script src="/src/components/article-loader.js"></script>
     <script src="/src/components/news-card.js"></script>
     <script src="/src/components/comment-section.js"></script>
-    
-    <script>
-        // Copy link functionality
-        document.getElementById('copy-link-btn')?.addEventListener('click', function() {
-            navigator.clipboard.writeText(window.location.href).then(() => {
-                this.innerHTML = '<span>✓</span><span>Copied!</span>';
-                setTimeout(() => { this.innerHTML = '<span>🔗</span><span>Copy Link</span>'; }, 2000);
-            });
-        });
-        // Share menu toggle
-        const shareBtn = document.getElementById('share-menu-btn');
-        const shareMenu = document.getElementById('share-menu');
-        shareBtn?.addEventListener('click', (e) => {
-            e.stopPropagation();
-            shareMenu.style.display = shareMenu.style.display === 'none' ? 'block' : 'none';
-        });
-        document.addEventListener('click', () => { if (shareMenu) shareMenu.style.display = 'none'; });
-    </script>
 </body>
 </html>`;
     return ARTICLE_PAGE_SHELL;

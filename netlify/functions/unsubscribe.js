@@ -12,21 +12,12 @@ const { Resend } = require('resend');
 // Resend Audience ID for newsletter subscribers
 const NEWSLETTER_AUDIENCE_ID = process.env.RESEND_AUDIENCE_ID || null;
 
-// Load email name mapping from environment variable
-let knownNamesMap = {};
-if (process.env.KNOWN_NAMES) {
-  try {
-    knownNamesMap = JSON.parse(process.env.KNOWN_NAMES);
-  } catch (parseError) {
-    console.warn('Failed to parse KNOWN_NAMES from environment:', parseError.message);
-  }
-}
+// Smart name inference from email addresses
+const { getFirstNameFromEmail } = require('./lib/name-inference.js');
 
 // Helper function to get name from email
 function getNameFromEmail(email) {
-  if (!email) return null;
-  const normalizedEmail = email.toLowerCase().trim();
-  return knownNamesMap[normalizedEmail] || null;
+  return getFirstNameFromEmail(email);
 }
 
 exports.handler = async (event, context) => {

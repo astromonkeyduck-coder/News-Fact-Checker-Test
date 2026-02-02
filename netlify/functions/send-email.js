@@ -15,64 +15,43 @@ try {
 // Load Resend module
 const { Resend } = require('resend');
 
-// Load email name mapping from environment variable or local file
-// Priority: KNOWN_NAMES env var > local file > empty mapping
-let emailNameMapping = null;
-let knownNamesMap = {};
+// Smart name inference from email addresses
+// Uses multiple strategies: direct match, leet normalization, skeleton matching, etc.
+const { getFirstNameFromEmail } = require('./lib/name-inference.js');
 
-// First, try to load from KNOWN_NAMES environment variable (for production)
-if (process.env.KNOWN_NAMES) {
-  try {
-    knownNamesMap = JSON.parse(process.env.KNOWN_NAMES);
-    console.log('Email name mapping loaded from KNOWN_NAMES environment variable');
-    console.log('Known names count:', Object.keys(knownNamesMap).length);
-    console.log('Sample keys:', Object.keys(knownNamesMap).slice(0, 3));
-  } catch (parseError) {
-    console.error('Failed to parse KNOWN_NAMES from environment:', parseError.message);
-    console.error('KNOWN_NAMES value (first 200 chars):', process.env.KNOWN_NAMES.substring(0, 200));
-  }
-} else {
-  console.warn('KNOWN_NAMES environment variable not set');
+// Legacy wrapper for backwards compatibility
+function extractNameFromEmail(email) {
+  return getFirstNameFromEmail(email);
 }
 
-// Second, try to load from local file (for development)
-if (Object.keys(knownNamesMap).length === 0) {
-  try {
-    emailNameMapping = require('./email-name-mapping.js');
-    console.log('Email name mapping loaded from local file');
-  } catch (e) {
-    console.warn('Email name mapping file not found:', e.message);
-  }
+// Try to load custom overrides from local file (for specific people)
+let emailNameMapping = null;
+try {
+  emailNameMapping = require('./email-name-mapping.js');
+  console.log('Email name mapping loaded from local file (for overrides)');
+} catch (e) {
+  // File not found - that's fine, we'll use smart extraction
 }
 
 // Create a unified mapping function
 const getEmailNameMapping = () => {
-  // If we have the env var mapping, use it
-  if (Object.keys(knownNamesMap).length > 0) {
-    return {
-      getNameFromEmail: (email) => {
-        if (!email) return null;
-        const normalizedEmail = email.toLowerCase().trim();
-        const result = knownNamesMap[normalizedEmail] || null;
-        if (result) {
-          console.log(`Found name for ${email}: ${result}`);
-        } else {
-          console.log(`No name found for ${email} in knownNamesMap. Available keys:`, Object.keys(knownNamesMap).slice(0, 5));
-        }
-        return result;
-      }
-    };
-  }
-  
-  // Otherwise, use the local file mapping if available
-  if (emailNameMapping && typeof emailNameMapping.getNameFromEmail === 'function') {
-    return emailNameMapping;
-  }
-  
-  // Return empty mapping if nothing is available
-  console.warn('No email name mapping available - returning empty mapping');
   return {
-    getNameFromEmail: () => null
+    getNameFromEmail: (email) => {
+      if (!email) return null;
+      const normalizedEmail = email.toLowerCase().trim();
+      
+      // First, check custom overrides (local file)
+      if (emailNameMapping && typeof emailNameMapping.getNameFromEmail === 'function') {
+        const override = emailNameMapping.getNameFromEmail(normalizedEmail);
+        if (override) {
+          console.log(`Found override name for ${email}: ${override}`);
+          return override;
+        }
+      }
+      
+      // Fall back to smart extraction from email
+      return extractNameFromEmail(email);
+    }
   };
 };
 
@@ -491,14 +470,12 @@ This is an automated notification from your website.`,
       }
     }
     
-    // If no name found from contact or mapping, extract from email as fallback
+    // If no name found from contact or mapping, use smart email inference
     if (!firstName || firstName === 'there') {
-      const emailPrefix = email.split('@')[0];
-      firstName = emailPrefix.split('.')[0] || emailPrefix.split('_')[0] || 'there';
-      
-      // Capitalize first letter and make rest lowercase
-      if (firstName && firstName !== 'there') {
-        firstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+      const inferredName = extractNameFromEmail(email);
+      if (inferredName) {
+        firstName = inferredName;
+        console.log('Using smart-inferred name from email:', firstName);
       }
     }
     
@@ -621,11 +598,20 @@ To unsubscribe from future emails, visit: ${unsubscribeUrl}`,
         const addContactWithRetry = async (retries = 3, delay = 1000) => {
           for (let attempt = 1; attempt <= retries; attempt++) {
             try {
-              const result = await resend.contacts.create({
+              // Include firstName if we have one (from smart inference)
+              const contactData = {
                 audienceId: NEWSLETTER_AUDIENCE_ID,
                 email: email,
                 unsubscribed: false, // Explicitly set as subscribed
-              });
+              };
+              
+              // Add firstName if we inferred one (so future emails can use it!)
+              if (firstName && firstName !== 'there') {
+                contactData.firstName = firstName;
+                console.log('Storing inferred name in Resend contact:', firstName);
+              }
+              
+              const result = await resend.contacts.create(contactData);
               
               // Check if it's a rate limit error
               if (result?.error?.name === 'rate_limit_exceeded' || 
