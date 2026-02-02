@@ -597,12 +597,18 @@
             if (verified && !isExpired) {
                 // Already verified and not expired, proceed
                 console.log('[SituationMonitor] Security check passed, initializing...');
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'situation-monitor.html:securityCheck',message:'Security check PASSED',data:{verified,isExpired,isMobile:/Mobi|Android/i.test(navigator.userAgent)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1'})}).catch(()=>{});
+                // #endregion
                 initSituationMonitor();
             } else {
                 // Not verified or expired, redirect to security check
                 const currentUrl = window.location.href;
                 const securityCheckUrl = `security-check.html?return=${encodeURIComponent(currentUrl)}`;
                 console.log('[SituationMonitor] Redirecting to security check:', securityCheckUrl);
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'situation-monitor.html:securityCheck',message:'Security check FAILED - redirecting',data:{verified,isExpired,isMobile:/Mobi|Android/i.test(navigator.userAgent)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1'})}).catch(()=>{});
+                // #endregion
                 window.location.href = securityCheckUrl;
             }
         })();
@@ -618,6 +624,9 @@
                     retryCount++;
                     if (retryCount > maxRetries) {
                         console.error('[SituationMonitor] D3/TopoJSON failed to load after', maxRetries * 100, 'ms');
+                        // #region agent log
+                        fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'situation-monitor.html:init',message:'D3/TopoJSON FAILED to load',data:{hasD3:typeof window.d3!=='undefined',hasTopoJSON:typeof window.topojson!=='undefined',retryCount},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H2'})}).catch(()=>{});
+                        // #endregion
                         const placeholder = document.getElementById('sitmon-loading-placeholder');
                         if (placeholder) {
                             placeholder.innerHTML = '<div style="text-align: center; color: #ff6b6b;"><p>Failed to load required libraries. Please refresh the page.</p></div>';
@@ -630,6 +639,8 @@
                 }
                 
                 console.log('[SituationMonitor] D3/TopoJSON loaded, importing Situation Monitor...');
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'situation-monitor.html:init',message:'D3/TopoJSON loaded successfully',data:{hasD3:true,hasTopoJSON:true,retryCount},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H2'})}).catch(()=>{});
                 
                 // Show a simple loading indicator immediately (before modules load)
                 const placeholder = document.getElementById('sitmon-loading-placeholder');
@@ -664,6 +675,9 @@
                     return import('./src/components/situation-monitor/SituationMonitorShell.js');
                 }).then(module => {
                     console.log('[SituationMonitor] Module loaded, creating shell...');
+                    // #region agent log
+                    fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'situation-monitor.html:moduleLoaded',message:'SituationMonitorShell module loaded',data:{hasShellClass:!!module.SituationMonitorShell},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3'})}).catch(()=>{});
+                    // #endregion
                     
                     // Remove loading placeholder
                     const placeholder = document.getElementById('sitmon-loading-placeholder');
@@ -675,6 +689,9 @@
                     const container = document.getElementById('situation-monitor-container');
                     if (!container) {
                         console.error('[SituationMonitor] Container not found!');
+                        // #region agent log
+                        fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'situation-monitor.html:moduleLoaded',message:'Container NOT found',data:{},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H4'})}).catch(()=>{});
+                        // #endregion
                         if (placeholder) {
                             placeholder.innerHTML = '<div style="text-align: center; color: #ff6b6b;"><p>Container not found. Please refresh the page.</p></div>';
                             placeholder.style.display = 'flex';
@@ -689,15 +706,23 @@
                                 console.log('[SituationMonitor] DOMContentLoaded fired, creating shell...');
                                 const shell = new module.SituationMonitorShell('situation-monitor-container');
                                 window.situationMonitor = shell;
+                                // #region agent log
+                                fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'situation-monitor.html:shellCreated',message:'Shell created successfully (DOMContentLoaded)',data:{hasShell:!!window.situationMonitor},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H4'})}).catch(()=>{});
+                                // #endregion
                             });
                         } else {
                             // DOM already loaded
                             console.log('[SituationMonitor] DOM already loaded, creating shell...');
                             const shell = new module.SituationMonitorShell('situation-monitor-container');
                             window.situationMonitor = shell;
+                            // #region agent log
+                            fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'situation-monitor.html:shellCreated',message:'Shell created successfully (DOM ready)',data:{hasShell:!!window.situationMonitor},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H4'})}).catch(()=>{});
+                            // #endregion
                         }
                     } catch (err) {
                         console.error('[SituationMonitor] Error creating shell:', err);
+                        // #region agent log
+                        fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'situation-monitor.html:shellError',message:'Error creating shell',data:{errorMessage:err.message,errorName:err.name},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H4'})}).catch(()=>{});
                         if (placeholder) {
                             placeholder.innerHTML = '<div style="text-align: center; color: #ff6b6b;"><p>Error initializing Situation Monitor. Please refresh the page.</p><p style="font-size: 0.8rem; margin-top: 0.5rem;">' + err.message + '</p></div>';
                             placeholder.style.display = 'flex';
@@ -705,6 +730,9 @@
                     }
                 }).catch(err => {
                     console.error('[SituationMonitor] Failed to load module:', err);
+                    // #region agent log
+                    fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'situation-monitor.html:moduleImportError',message:'Module import FAILED',data:{errorMessage:err.message,errorName:err.name,errorStack:err.stack?.substring(0,300)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3'})}).catch(()=>{});
+                    // #endregion
                     // Remove loading placeholder even on error
                     const placeholder = document.getElementById('sitmon-loading-placeholder');
                     if (placeholder) {
