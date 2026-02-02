@@ -58,3 +58,4 @@ copy_*.mp4
 # Analytics CSV files with personal data
 emailaccount_analytics_*.csv
 *analytics_content*.csv
+KONSCIOUS/
