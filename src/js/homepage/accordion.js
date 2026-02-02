@@ -51,9 +51,14 @@ function setupAccordion(section) {
     const titleText = title ? title.textContent : 'Section';
     toggle.textContent = titleText;
     
-    // Insert before section content
-    const content = section.querySelector('.section-content') || section;
-    section.insertBefore(toggle, content);
+    // Insert before section content (only if we found actual .section-content)
+    const content = section.querySelector('.section-content');
+    if (content) {
+      section.insertBefore(toggle, content);
+    } else {
+      // If no .section-content, prepend toggle at the beginning
+      section.insertBefore(toggle, section.firstChild);
+    }
   }
   
   // Mark content for collapsing
