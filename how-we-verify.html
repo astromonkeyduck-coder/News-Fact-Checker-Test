@@ -15,6 +15,10 @@
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
     
+    <!-- Resource Pages Styles -->
+    <link rel="stylesheet" href="styles/resource-pages.css">
+    <link rel="stylesheet" href="styles/interactive-components.css">
+    
     <!-- Styles -->
     <link rel="stylesheet" href="styles.css">
     
@@ -63,12 +67,28 @@
         }
         
         .pillar-content {
-            background: rgba(255, 255, 255, 0.03);
+            background: rgba(255, 255, 255, 0.08);
             backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             border-radius: 16px;
             padding: 40px;
             border: 1px solid rgba(74, 144, 226, 0.2);
             line-height: 1.8;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .pillar-content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(7, 21, 42, 0.3);
+            border-radius: 16px;
+            z-index: -1;
+            pointer-events: none;
         }
         
         .pillar-content h2 {
@@ -93,8 +113,9 @@
         
         .pillar-content p {
             margin-bottom: 20px;
-            color: rgba(255, 255, 255, 0.9);
+            color: rgba(255, 255, 255, 0.95);
             font-size: 1.1rem;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
         
         .pillar-content ul, .pillar-content ol {
@@ -104,7 +125,8 @@
         
         .pillar-content li {
             margin-bottom: 12px;
-            color: rgba(255, 255, 255, 0.9);
+            color: rgba(255, 255, 255, 0.95);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
         
         .verification-step {
@@ -178,9 +200,18 @@
         <article class="pillar-content">
             <p>At Noteworthy News, verification isn't just a step in our process—it's the foundation of everything we do. In an era of information overload and rapid news cycles, we believe that accuracy must never be sacrificed for speed. This document outlines our comprehensive verification methodology, the standards we uphold, and how we handle situations where verification isn't immediately possible.</p>
             
+            <!-- Table of Contents -->
+            <div class="table-of-contents fade-in" id="table-of-contents" style="margin: 40px 0;"></div>
+            
             <h2>Our Verification Process</h2>
             
             <p>Every breaking news story that appears on Noteworthy News goes through a rigorous, multi-step verification process designed to ensure accuracy, context, and reliability. We don't publish first—we verify first.</p>
+            
+            <!-- Verification Process Flowchart -->
+            <div class="visualization-container fade-in" id="verification-flowchart" style="margin: 40px 0;">
+                <h3>Our Verification Workflow</h3>
+                <!-- Flowchart will be rendered here by VisualizationEngine -->
+            </div>
             
             <div class="verification-step">
                 <h4>Step 1: Source Identification and Assessment</h4>
@@ -329,6 +360,48 @@
             <p>At Noteworthy News, verification is not optional—it's essential. We're committed to providing you with accurate, verified information you can trust. This process takes time and resources, but we believe it's the only way to maintain credibility and serve our readers effectively.</p>
             
             <p>If you have questions about our verification process, or if you believe we've made an error, please <a href="contact.html" style="color: #4A90E2;">contact us</a>. We take accuracy seriously and appreciate feedback that helps us improve.</p>
+            
+            <!-- Share Buttons -->
+            <div class="share-buttons fade-in" style="margin: 50px 0; padding: 30px; background: rgba(74, 144, 226, 0.1); border-radius: 15px; border: 2px solid rgba(74, 144, 226, 0.3);">
+                <h3 style="margin-bottom: 20px; color: #4A90E2;">Share this Page</h3>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <a href="https://twitter.com/intent/tweet?url=https://noteworthynews.co/how-we-verify.html&text=How%20We%20Verify%20News" target="_blank" rel="noopener noreferrer" class="share-btn" style="padding: 12px 24px; background: #1DA1F2; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; transition: all 0.3s ease;">
+                        Share on X
+                    </a>
+                    <a href="https://www.facebook.com/sharer/sharer.php?u=https://noteworthynews.co/how-we-verify.html" target="_blank" rel="noopener noreferrer" class="share-btn" style="padding: 12px 24px; background: #1877F2; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; transition: all 0.3s ease;">
+                        Share on Facebook
+                    </a>
+                    <a href="https://www.linkedin.com/sharing/share-offsite/?url=https://noteworthynews.co/how-we-verify.html" target="_blank" rel="noopener noreferrer" class="share-btn" style="padding: 12px 24px; background: #0A66C2; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; transition: all 0.3s ease;">
+                        Share on LinkedIn
+                    </a>
+                    <button onclick="navigator.clipboard.writeText(window.location.href); alert('Link copied to clipboard!');" class="share-btn" style="padding: 12px 24px; background: #4A90E2; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                        Copy Link
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Related Resources -->
+            <div class="related-resources fade-in" style="margin: 50px 0; padding: 30px; background: rgba(74, 144, 226, 0.1); border-radius: 15px; border: 2px solid rgba(74, 144, 226, 0.3);">
+                <h3 style="margin-bottom: 20px; color: #4A90E2;">Related Resources</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                    <a href="fact-checking-tips.html" style="display: block; padding: 20px; background: rgba(74, 144, 226, 0.15); border-radius: 10px; text-decoration: none; color: white; border: 2px solid rgba(74, 144, 226, 0.3); transition: all 0.3s ease;">
+                        <h4 style="color: #4A90E2; margin-bottom: 10px;">Fact-Checking Tips</h4>
+                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">Learn practical techniques for verifying information yourself.</p>
+                    </a>
+                    <a href="editorial-policy.html" style="display: block; padding: 20px; background: rgba(74, 144, 226, 0.15); border-radius: 10px; text-decoration: none; color: white; border: 2px solid rgba(74, 144, 226, 0.3); transition: all 0.3s ease;">
+                        <h4 style="color: #4A90E2; margin-bottom: 10px;">Editorial Policy</h4>
+                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">Read our complete editorial policy and journalism standards.</p>
+                    </a>
+                    <a href="critical-reading-guide.html" style="display: block; padding: 20px; background: rgba(74, 144, 226, 0.15); border-radius: 10px; text-decoration: none; color: white; border: 2px solid rgba(74, 144, 226, 0.3); transition: all 0.3s ease;">
+                        <h4 style="color: #4A90E2; margin-bottom: 10px;">Critical Reading Guide</h4>
+                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">Learn how to read news critically and evaluate sources.</p>
+                    </a>
+                    <a href="our-mission.html" style="display: block; padding: 20px; background: rgba(74, 144, 226, 0.15); border-radius: 10px; text-decoration: none; color: white; border: 2px solid rgba(74, 144, 226, 0.3); transition: all 0.3s ease;">
+                        <h4 style="color: #4A90E2; margin-bottom: 10px;">Our Mission</h4>
+                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">Learn about our mission and commitment to quality journalism.</p>
+                    </a>
+                </div>
+            </div>
         </article>
     </main>
     
@@ -344,6 +417,36 @@
             <p style="margin-top: 20px; color: rgba(255, 255, 255, 0.8);">Website built and maintained by Richard, Co-Founder of Noteworthy News.</p>
         </div>
     </footer>
+    
+    <!-- Resource Page Utilities -->
+    <script src="js/resource-page-utils.js"></script>
+    <script src="js/visualization-engine.js"></script>
+    
+    <!-- Verification Process Visualization -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize table of contents
+            new TableOfContents('table-of-contents');
+            new ReadingProgress();
+            
+            // Initialize verification process flowchart
+            const flowchartContainer = document.getElementById('verification-flowchart');
+            if (flowchartContainer) {
+                const steps = [
+                    { title: "Event Reported", description: "We receive reports of breaking events from multiple sources" },
+                    { title: "Initial Assessment", description: "Our team quickly assesses the credibility and urgency" },
+                    { title: "Source Verification", description: "We verify sources, check credentials, and cross-reference" },
+                    { title: "Multi-Source Confirmation", description: "We seek confirmation from independent, credible sources" },
+                    { title: "Fact-Checking", description: "We verify specific claims, dates, locations, and details" },
+                    { title: "Editorial Review", description: "Our editorial team reviews for accuracy and clarity" },
+                    { title: "Publication", description: "Verified information is published with source attribution" },
+                    { title: "Ongoing Updates", description: "We continue to monitor and update as new information emerges" }
+                ];
+                
+                flowchartContainer.dataset.steps = JSON.stringify(steps);
+            }
+        });
+    </script>
     
     <!-- Cookie Consent Banner -->
     <script src="src/components/cookie-banner.js"></script>

@@ -75,6 +75,16 @@ function getArticlePageShell() {
     
     <link rel="stylesheet" href="/styles.css">
     <link rel="stylesheet" href="/css/article.css">
+    
+    <!-- Critical: Ensure white background even if external CSS fails -->
+    <style>
+        html.article-page-active, html.article-page-active body, body.article-page {
+            background: #ffffff !important;
+            background-color: #ffffff !important;
+            background-image: none !important;
+        }
+        .starfield { display: none !important; }
+    </style>
 </head>
 <body class="article-page">
     <!-- Professional News Header -->
@@ -381,7 +391,7 @@ function generatePrerenderedHTML(post, articleId, userAgent, cardType = 'summary
   
   // Generate HTML
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="article-page-active">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">

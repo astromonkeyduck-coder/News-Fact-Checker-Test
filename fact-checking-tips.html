@@ -61,6 +61,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Resource Pages Styles -->
+    <link rel="stylesheet" href="styles/resource-pages.css">
+    <link rel="stylesheet" href="styles/interactive-components.css">
+    
     <!-- Favicon and Theme -->
     <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="32x32">
     <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="192x192">
@@ -1084,6 +1089,17 @@
             
             <h2 id="tools-techniques" class="fade-in"><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="toolsGrad1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#4A9EFF;stop-opacity:1" /><stop offset="100%" style="stop-color:#5BB5FF;stop-opacity:1" /></linearGradient></defs><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" stroke="url(#toolsGrad1)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Fact-Checking Tools and Techniques</h2>
             
+            <!-- Interactive Verification Tools -->
+            <div class="tool-container fade-in" id="source-checker-tool" style="margin: 40px 0;"></div>
+            <div class="tool-container fade-in" id="bias-detector-tool" style="margin: 40px 0;"></div>
+            <div class="tool-container fade-in" id="workflow-generator-tool" style="margin: 40px 0;"></div>
+            
+            <!-- Fact-Checking Process Visualization -->
+            <div class="visualization-container fade-in" style="margin: 40px 0;">
+                <h3>Fact-Checking Process Flow</h3>
+                <div class="flowchart-container" data-steps='[{"title":"Encounter Information","description":"You see a claim, image, or story that needs verification"},{"title":"Initial Assessment","description":"Quick check: Does this seem credible? Any red flags?"},{"title":"Source Verification","description":"Check the source: Who created this? What are their credentials?"},{"title":"Cross-Reference","description":"Search for the same information on multiple independent sources"},{"title":"Check Primary Sources","description":"If possible, find and verify original documents or statements"},{"title":"Image/Video Verification","description":"Use reverse image search or video verification tools"},{"title":"Final Decision","description":"Synthesize findings: Verified, Unverified, or Debunked"}]'></div>
+            </div>
+            
             <h3 class="fade-in">For News Articles</h3>
             <ul class="fade-in">
                 <li><strong>Fact-Checking Websites:</strong> Snopes, FactCheck.org, PolitiFact, AP News Fact Check</li>
@@ -1266,6 +1282,46 @@
             </div>
             
             <p class="fade-in">For more comprehensive guides, visit our <a href="media-literacy-guide.html">Media Literacy Guide</a>, <a href="critical-reading-guide.html">Critical Reading Guide</a>, and <a href="how-we-verify.html">How We Verify</a> pages.</p>
+            
+            <!-- Share Buttons -->
+            <div class="share-buttons fade-in" style="margin: 40px 0;">
+                <span style="margin-right: 10px; color: var(--text-secondary);">Share this guide:</span>
+                <a href="#" class="share-button" data-platform="twitter" aria-label="Share on Twitter">
+                    <span>🐦</span> Twitter
+                </a>
+                <a href="#" class="share-button" data-platform="facebook" aria-label="Share on Facebook">
+                    <span>📘</span> Facebook
+                </a>
+                <a href="#" class="share-button" data-platform="linkedin" aria-label="Share on LinkedIn">
+                    <span>💼</span> LinkedIn
+                </a>
+                <a href="#" class="share-button" data-platform="email" aria-label="Share via Email">
+                    <span>✉️</span> Email
+                </a>
+            </div>
+            
+            <!-- Related Resources -->
+            <div class="resource-card fade-in" style="margin-top: 40px;">
+                <h3>Related Resources</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 20px;">
+                    <a href="media-literacy-guide.html" style="display: block; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; text-decoration: none; color: var(--text-primary); transition: all 0.3s ease;">
+                        <strong>Media Literacy Guide</strong>
+                        <p style="margin: 5px 0 0 0; font-size: 0.9rem; color: var(--text-secondary);">Learn critical thinking skills</p>
+                    </a>
+                    <a href="critical-reading-guide.html" style="display: block; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; text-decoration: none; color: var(--text-primary); transition: all 0.3s ease;">
+                        <strong>Critical Reading Guide</strong>
+                        <p style="margin: 5px 0 0 0; font-size: 0.9rem; color: var(--text-secondary);">Develop reading skills</p>
+                    </a>
+                    <a href="how-we-verify.html" style="display: block; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; text-decoration: none; color: var(--text-primary); transition: all 0.3s ease;">
+                        <strong>How We Verify</strong>
+                        <p style="margin: 5px 0 0 0; font-size: 0.9rem; color: var(--text-secondary);">Our verification process</p>
+                    </a>
+                    <a href="educational-resources.html" style="display: block; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; text-decoration: none; color: var(--text-primary); transition: all 0.3s ease;">
+                        <strong>Educational Resources</strong>
+                        <p style="margin: 5px 0 0 0; font-size: 0.9rem; color: var(--text-secondary);">Tools and courses</p>
+                    </a>
+                </div>
+            </div>
             
             <div class="footer-link fade-in">
                 <a href="index.html">← Back to Home</a>
@@ -1509,6 +1565,35 @@
                 }, { once: true });
             }
         })();
+    </script>
+    
+    <!-- Resource Page Utilities -->
+    <script src="js/resource-page-utils.js"></script>
+    <script src="js/quiz-engine.js"></script>
+    <script src="js/verification-tool.js"></script>
+    <script src="js/visualization-engine.js"></script>
+    
+    <!-- Initialize Verification Tools -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize source checker
+            const sourceChecker = document.getElementById('source-checker-tool');
+            if (sourceChecker) {
+                new VerificationTool('source-checker-tool', 'source-checker');
+            }
+            
+            // Initialize bias detector
+            const biasDetector = document.getElementById('bias-detector-tool');
+            if (biasDetector) {
+                new VerificationTool('bias-detector-tool', 'bias-detector');
+            }
+            
+            // Initialize workflow generator
+            const workflowGen = document.getElementById('workflow-generator-tool');
+            if (workflowGen) {
+                new VerificationTool('workflow-generator-tool', 'workflow-generator');
+            }
+        });
     </script>
     
     <!-- Cookie Consent Banner -->

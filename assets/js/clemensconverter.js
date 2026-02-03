@@ -206,6 +206,12 @@ function addFiles(files) {
         let audioUrl = null;
         if (file.type.startsWith('audio/') || file.name.match(/\.(mp3|webm|wav|ogg|m4a)$/i)) {
             audioUrl = URL.createObjectURL(file);
+            
+            // Store audio blob in IndexedDB for persistence across page refreshes
+            storeAudioBlob(fileId, file).catch(error => {
+                console.warn(`[addFiles] Failed to store audio blob in IndexedDB for ${fileId}:`, error);
+                // Continue anyway - audio playback will work until page refresh
+            });
         }
         
         state.files.set(fileId, {
@@ -323,6 +329,136 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+/**
+ * IndexedDB helper functions for storing audio blobs
+ */
+const AUDIO_DB_NAME = 'clemens_converter_audio';
+const AUDIO_DB_VERSION = 1;
+const AUDIO_STORE_NAME = 'audio_blobs';
+
+/**
+ * Open IndexedDB database
+ */
+async function openAudioDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(AUDIO_DB_NAME, AUDIO_DB_VERSION);
+        
+        request.onerror = () => {
+            console.error('[IndexedDB] Failed to open database:', request.error);
+            reject(request.error);
+        };
+        
+        request.onsuccess = () => {
+            resolve(request.result);
+        };
+        
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains(AUDIO_STORE_NAME)) {
+                db.createObjectStore(AUDIO_STORE_NAME);
+            }
+        };
+    });
+}
+
+/**
+ * Store audio blob in IndexedDB
+ */
+async function storeAudioBlob(fileId, blob) {
+    try {
+        const db = await openAudioDB();
+        const transaction = db.transaction([AUDIO_STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(AUDIO_STORE_NAME);
+        
+        return new Promise((resolve, reject) => {
+            const request = store.put(blob, fileId);
+            request.onsuccess = () => {
+                console.log(`[IndexedDB] Stored audio blob for ${fileId}`);
+                resolve();
+            };
+            request.onerror = () => {
+                console.error(`[IndexedDB] Failed to store audio blob for ${fileId}:`, request.error);
+                reject(request.error);
+            };
+        });
+    } catch (error) {
+        console.error(`[IndexedDB] Error storing audio blob for ${fileId}:`, error);
+        // Don't throw - audio playback is optional
+        return;
+    }
+}
+
+/**
+ * Retrieve audio blob from IndexedDB
+ */
+async function getAudioBlob(fileId) {
+    try {
+        const db = await openAudioDB();
+        const transaction = db.transaction([AUDIO_STORE_NAME], 'readonly');
+        const store = transaction.objectStore(AUDIO_STORE_NAME);
+        
+        return new Promise((resolve, reject) => {
+            const request = store.get(fileId);
+            request.onsuccess = () => {
+                const blob = request.result;
+                if (blob) {
+                    console.log(`[IndexedDB] Retrieved audio blob for ${fileId}`);
+                    resolve(blob);
+                } else {
+                    resolve(null);
+                }
+            };
+            request.onerror = () => {
+                console.error(`[IndexedDB] Failed to retrieve audio blob for ${fileId}:`, request.error);
+                reject(request.error);
+            };
+        });
+    } catch (error) {
+        console.error(`[IndexedDB] Error retrieving audio blob for ${fileId}:`, error);
+        return null;
+    }
+}
+
+/**
+ * Delete audio blob from IndexedDB
+ */
+async function deleteAudioBlob(fileId) {
+    try {
+        const db = await openAudioDB();
+        const transaction = db.transaction([AUDIO_STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(AUDIO_STORE_NAME);
+        
+        return new Promise((resolve, reject) => {
+            const request = store.delete(fileId);
+            request.onsuccess = () => {
+                console.log(`[IndexedDB] Deleted audio blob for ${fileId}`);
+                resolve();
+            };
+            request.onerror = () => {
+                console.error(`[IndexedDB] Failed to delete audio blob for ${fileId}:`, request.error);
+                reject(request.error);
+            };
+        });
+    } catch (error) {
+        console.error(`[IndexedDB] Error deleting audio blob for ${fileId}:`, error);
+        // Don't throw - cleanup is optional
+        return;
+    }
+}
+
+/**
+ * Check if blob URL is still valid
+ */
+function isBlobUrlValid(blobUrl) {
+    if (!blobUrl || !blobUrl.startsWith('blob:')) {
+        return false;
+    }
+    // Blob URLs are valid until revoked or page unloads
+    // We can't really test if they're valid without trying to use them
+    // So we'll assume they're valid if they exist and are blob URLs
+    return true;
 }
 
 // Global functions for inline event handlers
@@ -1077,6 +1213,19 @@ async function resumeJobs() {
                 fileData.status = 'processing';
                 fileData.isLargeFile = true;
                 
+                // Try to restore audio blob from IndexedDB if audioUrl is missing or invalid
+                if (!fileData.audioUrl || !isBlobUrlValid(fileData.audioUrl)) {
+                    try {
+                        const audioBlob = await getAudioBlob(fileId);
+                        if (audioBlob) {
+                            fileData.audioUrl = URL.createObjectURL(audioBlob);
+                            console.log(`[resumeJobs] Restored audio blob URL for existing file ${fileId}`);
+                        }
+                    } catch (audioError) {
+                        console.warn(`[resumeJobs] Could not restore audio blob for existing file ${fileId}:`, audioError);
+                    }
+                }
+                
                 // Resume polling
                 pollJobStatus(jobId, fileId);
                 console.log(`[resumeJobs] Resumed job ${jobId} for file ${fileName}`);
@@ -1092,6 +1241,18 @@ async function resumeJobs() {
                     
                     if (statusResponse.ok) {
                         const jobStatus = await statusResponse.json();
+                        // Try to restore audio blob from IndexedDB if available
+                        let audioUrl = null;
+                        try {
+                            const audioBlob = await getAudioBlob(fileId);
+                            if (audioBlob) {
+                                audioUrl = URL.createObjectURL(audioBlob);
+                                console.log(`[resumeJobs] Restored audio blob URL for ${fileId}`);
+                            }
+                        } catch (audioError) {
+                            console.warn(`[resumeJobs] Could not restore audio blob for ${fileId}:`, audioError);
+                        }
+                        
                         state.files.set(fileId, {
                             id: fileId,
                             fileName: fileName,
@@ -1103,6 +1264,7 @@ async function resumeJobs() {
                             objectKey: null,
                             jobId: jobId,
                             isLargeFile: true,
+                            audioUrl: audioUrl, // Restored from IndexedDB if available
                         });
                         
                         // If job is still queued, try to trigger it
@@ -1192,15 +1354,39 @@ function getAuthHeaders() {
 }
 
 function showResult(fileId, fileData) {
+    // Validate that transcript data exists and is complete
+    if (!fileData) {
+        console.error('[showResult] fileData is missing for fileId:', fileId);
+        showError('Cannot display result: file data is missing');
+        return;
+    }
+    
+    if (!fileData.transcript) {
+        console.error('[showResult] transcript is missing for fileId:', fileId, 'fileData:', fileData);
+        showError('Cannot display result: transcript is not available yet. Please wait for transcription to complete.');
+        return;
+    }
+    
+    const transcript = fileData.transcript;
+    
+    // Validate transcript structure
+    if (!transcript.transcriptText && !transcript.text) {
+        console.error('[showResult] transcript text is missing for fileId:', fileId, 'transcript:', transcript);
+        showError('Cannot display result: transcript text is empty. Please try refreshing the page.');
+        return;
+    }
+    
     const resultDiv = document.createElement('div');
     resultDiv.className = 'result-item';
     resultDiv.id = `result-${fileId}`;
 
-    const transcript = fileData.transcript;
-    const transcriptText = transcript.transcriptText || '';
+    // Use transcriptText or fallback to text property
+    const transcriptText = transcript.transcriptText || transcript.text || '';
     const isCollapsed = transcriptText.length > 500;
     const hasSegments = transcript.segments && Array.isArray(transcript.segments) && transcript.segments.length > 0;
-    const hasAudio = fileData.audioUrl !== null;
+    
+    // Check if audioUrl exists (we'll verify validity and restore from IndexedDB if needed)
+    let hasAudio = fileData.audioUrl !== null && fileData.audioUrl !== undefined;
 
     // Build transcript HTML with word-level highlighting if segments available
     let transcriptHTML = '';
@@ -1231,7 +1417,7 @@ function showResult(fileId, fileData) {
                 <input type="checkbox" class="batch-checkbox" id="batchCheck-${escapeHtml(fileId)}" 
                        onclick="toggleBatchSelect('${escapedFileId}')" 
                        style="display: ${state.batchMode ? 'block' : 'none'};">
-                <div class="result-title">${escapeHtml(transcript.fileName)}</div>
+                <div class="result-title">${escapeHtml(transcript.fileName || fileData.fileName || 'Untitled')}</div>
                 <div class="result-tags" id="tags-${escapeHtml(fileId)}"></div>
             </div>
             <div class="result-actions">
@@ -1351,9 +1537,44 @@ function showResult(fileId, fileData) {
     }, 500);
 
     // Set up audio player if audio is available
-    if (hasAudio) {
-        setupAudioPlayer(fileId, fileData, hasSegments);
-    }
+    // First, try to restore audio from IndexedDB if audioUrl is missing or invalid
+    (async () => {
+        if (hasAudio && fileData.audioUrl && isBlobUrlValid(fileData.audioUrl)) {
+            // Audio URL is valid, set up player immediately
+            setupAudioPlayer(fileId, fileData, hasSegments);
+        } else {
+            // Try to restore from IndexedDB
+            try {
+                const audioBlob = await getAudioBlob(fileId);
+                if (audioBlob) {
+                    fileData.audioUrl = URL.createObjectURL(audioBlob);
+                    console.log(`[showResult] Restored audio blob URL for ${fileId} from IndexedDB`);
+                    
+                    // Update the audio source in the DOM if it exists
+                    const audioElement = document.getElementById(`audio-${fileId}`);
+                    if (audioElement) {
+                        const sourceElement = audioElement.querySelector('source');
+                        if (sourceElement) {
+                            sourceElement.src = fileData.audioUrl;
+                            audioElement.load(); // Reload the audio element
+                        }
+                    }
+                    
+                    // Now we have a valid audio URL, set up player
+                    setupAudioPlayer(fileId, fileData, hasSegments);
+                } else if (hasAudio && fileData.audioUrl) {
+                    // Audio URL exists but might be invalid, try to set up player anyway
+                    setupAudioPlayer(fileId, fileData, hasSegments);
+                }
+            } catch (error) {
+                console.warn(`[showResult] Could not restore audio blob for ${fileId}:`, error);
+                // If we had an audioUrl originally, try to set up player anyway
+                if (hasAudio && fileData.audioUrl) {
+                    setupAudioPlayer(fileId, fileData, hasSegments);
+                }
+            }
+        }
+    })();
 
     // Store analysis state
     if (!fileData.analysisState) {
@@ -1662,14 +1883,36 @@ window.analyzeTranscript = async (fileId) => {
         }
 
         if (!response.ok) {
-            const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-            throw new Error(error.error || `Analysis failed (${response.status})`);
+            let errorData;
+            try {
+                const responseText = await response.text();
+                errorData = responseText ? JSON.parse(responseText) : { error: 'Unknown error' };
+            } catch (parseError) {
+                console.error('[analyzeTranscript] Failed to parse error response:', parseError);
+                errorData = { error: `Analysis failed with status ${response.status}` };
+            }
+            const errorMessage = errorData.error || errorData.message || `Analysis failed (${response.status})`;
+            console.error('[analyzeTranscript] API error response:', errorData);
+            throw new Error(errorMessage);
         }
 
         const result = await response.json();
         
+        // Validate response structure
+        if (!result) {
+            throw new Error('Invalid response from server: empty response');
+        }
+        
+        // Check for analysis in response (could be result.analysis or result.success with analysis)
+        const analysis = result.analysis || (result.success && result.analysis) || null;
+        
+        if (!analysis) {
+            console.error('[analyzeTranscript] Invalid response structure:', result);
+            throw new Error('Server response missing analysis data. Response: ' + JSON.stringify(result).substring(0, 200));
+        }
+        
         fileData.analysisState.isAnalyzing = false;
-        fileData.analysisState.analysis = result.analysis;
+        fileData.analysisState.analysis = analysis;
         
         analyzeBtn.disabled = false;
         analyzeBtn.innerHTML = '<span class="analyze-icon">🎓</span><span class="analyze-text">AI Analysis</span>';
@@ -1678,6 +1921,11 @@ window.analyzeTranscript = async (fileId) => {
         showNotification('Analysis complete!');
     } catch (error) {
         console.error('[analyzeTranscript] Error:', error);
+        console.error('[analyzeTranscript] Error details:', {
+            message: error.message,
+            stack: error.stack,
+            fileId: fileId
+        });
         fileData.analysisState.isAnalyzing = false;
         analyzeBtn.disabled = false;
         analyzeBtn.innerHTML = '<span class="analyze-icon">🎓</span><span class="analyze-text">AI Analysis</span>';
@@ -2246,6 +2494,13 @@ async function startRecording() {
                 audioUrl: audioUrl, // Store blob URL for playback
             };
             state.files.set(fileId, fileData);
+            
+            // Store audio blob in IndexedDB for persistence across page refreshes
+            storeAudioBlob(fileId, audioBlob).catch(error => {
+                console.warn(`[startRecording] Failed to store audio blob in IndexedDB for ${fileId}:`, error);
+                // Continue anyway - audio playback will work until page refresh
+            });
+            
             updateQueueDisplay();
             processQueue();
             showNotification('Recording saved! Added to queue.');

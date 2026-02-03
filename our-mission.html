@@ -15,6 +15,10 @@
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
     
+    <!-- Resource Pages Styles -->
+    <link rel="stylesheet" href="styles/resource-pages.css">
+    <link rel="stylesheet" href="styles/interactive-components.css">
+    
     <!-- Styles -->
     <link rel="stylesheet" href="styles.css">
     
@@ -163,6 +167,9 @@
         
         <article class="pillar-content">
             <p>Noteworthy News was founded on a simple but essential principle: in an era of information overload, misinformation, and rapidly evolving news cycles, readers need a source they can trust. Our mission is to provide fact-checked journalism, comprehensive analysis, and media literacy education that helps readers make sense of the world around them.</p>
+            
+            <!-- Table of Contents -->
+            <div class="table-of-contents fade-in" id="table-of-contents" style="margin: 40px 0;"></div>
             
             <h2>Our Mission Statement</h2>
             
@@ -346,6 +353,48 @@
             <p>We believe that informed citizens are essential to a healthy democracy and society. By providing accurate information, comprehensive context, and media literacy education, we aim to contribute to a more informed public.</p>
             
             <p>Thank you for trusting Noteworthy News. If you have questions, feedback, or suggestions, please <a href="contact.html" style="color: #4A90E2;">contact us</a>. We value your input and are committed to continuous improvement.</p>
+            
+            <!-- Share Buttons -->
+            <div class="share-buttons fade-in" style="margin: 50px 0; padding: 30px; background: rgba(74, 144, 226, 0.1); border-radius: 15px; border: 2px solid rgba(74, 144, 226, 0.3);">
+                <h3 style="margin-bottom: 20px; color: #4A90E2;">Share this Page</h3>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <a href="https://twitter.com/intent/tweet?url=https://noteworthynews.co/our-mission.html&text=Noteworthy%20News%20Mission" target="_blank" rel="noopener noreferrer" class="share-btn" style="padding: 12px 24px; background: #1DA1F2; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; transition: all 0.3s ease;">
+                        Share on X
+                    </a>
+                    <a href="https://www.facebook.com/sharer/sharer.php?u=https://noteworthynews.co/our-mission.html" target="_blank" rel="noopener noreferrer" class="share-btn" style="padding: 12px 24px; background: #1877F2; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; transition: all 0.3s ease;">
+                        Share on Facebook
+                    </a>
+                    <a href="https://www.linkedin.com/sharing/share-offsite/?url=https://noteworthynews.co/our-mission.html" target="_blank" rel="noopener noreferrer" class="share-btn" style="padding: 12px 24px; background: #0A66C2; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; transition: all 0.3s ease;">
+                        Share on LinkedIn
+                    </a>
+                    <button onclick="navigator.clipboard.writeText(window.location.href); alert('Link copied to clipboard!');" class="share-btn" style="padding: 12px 24px; background: #4A90E2; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                        Copy Link
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Related Resources -->
+            <div class="related-resources fade-in" style="margin: 50px 0; padding: 30px; background: rgba(74, 144, 226, 0.1); border-radius: 15px; border: 2px solid rgba(74, 144, 226, 0.3);">
+                <h3 style="margin-bottom: 20px; color: #4A90E2;">Related Resources</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                    <a href="how-we-verify.html" style="display: block; padding: 20px; background: rgba(74, 144, 226, 0.15); border-radius: 10px; text-decoration: none; color: white; border: 2px solid rgba(74, 144, 226, 0.3); transition: all 0.3s ease;">
+                        <h4 style="color: #4A90E2; margin-bottom: 10px;">How We Verify</h4>
+                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">Learn about our verification process and editorial standards.</p>
+                    </a>
+                    <a href="editorial-policy.html" style="display: block; padding: 20px; background: rgba(74, 144, 226, 0.15); border-radius: 10px; text-decoration: none; color: white; border: 2px solid rgba(74, 144, 226, 0.3); transition: all 0.3s ease;">
+                        <h4 style="color: #4A90E2; margin-bottom: 10px;">Editorial Policy</h4>
+                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">Read our complete editorial policy and journalism standards.</p>
+                    </a>
+                    <a href="media-literacy-guide.html" style="display: block; padding: 20px; background: rgba(74, 144, 226, 0.15); border-radius: 10px; text-decoration: none; color: white; border: 2px solid rgba(74, 144, 226, 0.3); transition: all 0.3s ease;">
+                        <h4 style="color: #4A90E2; margin-bottom: 10px;">Media Literacy Guide</h4>
+                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">Build your media literacy skills and become a more informed news consumer.</p>
+                    </a>
+                    <a href="educational-resources.html" style="display: block; padding: 20px; background: rgba(74, 144, 226, 0.15); border-radius: 10px; text-decoration: none; color: white; border: 2px solid rgba(74, 144, 226, 0.3); transition: all 0.3s ease;">
+                        <h4 style="color: #4A90E2; margin-bottom: 10px;">Educational Resources</h4>
+                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">Explore our collection of educational resources and guides.</p>
+                    </a>
+                </div>
+            </div>
         </article>
     </main>
     
@@ -361,6 +410,17 @@
             <p style="margin-top: 20px; color: rgba(255, 255, 255, 0.8);">Website built and maintained by Richard, Co-Founder of Noteworthy News.</p>
         </div>
     </footer>
+    
+    <!-- Resource Page Utilities -->
+    <script src="js/resource-page-utils.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize table of contents
+            new TableOfContents('table-of-contents');
+            new ReadingProgress();
+        });
+    </script>
     
     <!-- Cookie Consent Banner -->
     <script src="src/components/cookie-banner.js"></script>

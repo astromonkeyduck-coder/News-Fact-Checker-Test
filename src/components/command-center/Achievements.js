@@ -13,9 +13,7 @@
 class AchievementsSystem {
   constructor() {
     this.achievements = [
-      // Visitor Achievements
-      { id: 'first_visit', name: 'First Steps', description: 'Visit Noteworthy News for the first time', icon: '👋', category: 'visitor', points: 10 },
-      { id: 'return_visitor', name: 'Welcome Back', description: 'Return to the site after your first visit', icon: '🔄', category: 'visitor', points: 15 },
+      // Visitor Achievements (time-based only)
       { id: 'night_owl', name: 'Night Owl', description: 'Read news between midnight and 5 AM', icon: '🦉', category: 'visitor', points: 25 },
       { id: 'early_bird', name: 'Early Bird', description: 'Read news between 5 AM and 7 AM', icon: '🐦', category: 'visitor', points: 25 },
       
@@ -279,19 +277,10 @@ class AchievementsSystem {
       this.unlock('early_bird');
     }
     
-    // First visit check
+    // Track visit time (no achievement notification)
     if (!this.stats.firstVisit) {
       this.stats.firstVisit = Date.now();
-      this.unlock('first_visit');
-      this.save();
-    } else if (!this.unlockedAchievements.has('return_visitor')) {
-      // Return visitor (came back after first visit)
-      const hoursSinceFirst = (Date.now() - this.stats.firstVisit) / (1000 * 60 * 60);
-      if (hoursSinceFirst > 1) {
-        this.unlock('return_visitor');
-      }
     }
-    
     this.stats.lastVisit = Date.now();
     this.save();
   }

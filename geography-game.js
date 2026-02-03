@@ -4514,12 +4514,6 @@ class GeographyGame {
     checkAchievements() {
         const newAchievements = [];
         
-        // First correct answer
-        if (this.correct === 1 && !this.achievements.has('first_correct')) {
-            this.achievements.add('first_correct');
-            newAchievements.push({ id: 'first_correct', name: 'First Steps', desc: 'Got your first correct answer!' });
-        }
-        
         // 10 correct answers
         if (this.correct === 10 && !this.achievements.has('ten_correct')) {
             this.achievements.add('ten_correct');

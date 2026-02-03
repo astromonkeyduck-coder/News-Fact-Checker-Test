@@ -35,6 +35,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Legal Pages Styles -->
+    <link rel="stylesheet" href="styles/legal-pages.css">
+    <link rel="stylesheet" href="styles/interactive-components.css">
+    
     <!-- Favicon and Theme -->
     <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="32x32">
     <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="192x192">
@@ -452,6 +457,9 @@
         </div>
         
         <div class="content">
+            <!-- Table of Contents -->
+            <div class="table-of-contents fade-in" id="table-of-contents" style="margin: 40px 0;"></div>
+            
             <h2 class="fade-in">1. Acceptance of Terms</h2>
             <p class="fade-in">By accessing and using Noteworthy News ("we," "us," or "our") website, services, and content, you agree to be bound by these Terms of Service. If you do not agree with any part of these terms, you must not use our services.</p>
             
@@ -627,6 +635,9 @@
             initScrollToTop();
             initReadingProgress();
             
+            // Initialize table of contents
+            new TableOfContents('table-of-contents');
+            
             // Use debounced scroll handler
             window.addEventListener('scroll', debouncedScrollHandler, { passive: true });
         });
@@ -707,6 +718,9 @@
             }
         })();
     </script>
+    
+    <!-- Resource Page Utilities -->
+    <script src="js/resource-page-utils.js"></script>
     
     <!-- Cookie Consent Banner -->
     <script src="src/components/cookie-banner.js"></script>

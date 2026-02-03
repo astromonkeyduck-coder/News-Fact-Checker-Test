@@ -35,6 +35,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Legal Pages Styles -->
+    <link rel="stylesheet" href="styles/legal-pages.css">
+    <link rel="stylesheet" href="styles/interactive-components.css">
+    
     <!-- Favicon and Theme -->
     <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="32x32">
     <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="192x192">
@@ -606,6 +611,9 @@
         <div class="content">
             <p class="fade-in">At Noteworthy News, we respect your privacy and are committed to protecting your personal information. This Privacy Policy explains how we collect, use, and safeguard your information when you visit our website.</p>
             
+            <!-- Table of Contents -->
+            <div class="table-of-contents fade-in" id="table-of-contents" style="margin: 40px 0;"></div>
+            
             <h2 class="fade-in">Information We Collect</h2>
             <p class="fade-in">We collect minimal information to provide you with the best possible experience:</p>
             <ul class="fade-in">
@@ -789,6 +797,9 @@
             initScrollToTop();
             initReadingProgress();
             
+            // Initialize table of contents
+            new TableOfContents('table-of-contents');
+            
             // Use debounced scroll handler
             window.addEventListener('scroll', debouncedScrollHandler, { passive: true });
         });
@@ -911,6 +922,9 @@
             }
         })();
     </script>
+    
+    <!-- Resource Page Utilities -->
+    <script src="js/resource-page-utils.js"></script>
     
     <!-- Cookie Consent Banner -->
     <script src="src/components/cookie-banner.js"></script>

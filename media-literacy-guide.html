@@ -62,6 +62,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     
+    <!-- Resource Pages Styles -->
+    <link rel="stylesheet" href="styles/resource-pages.css">
+    <link rel="stylesheet" href="styles/interactive-components.css">
+    
     <!-- Performance: Lazy load images -->
     <script>
         if ('loading' in HTMLImageElement.prototype) {
@@ -1043,6 +1047,22 @@
                 <li><strong>Logical Fallacies:</strong> Flawed reasoning patterns</li>
             </ul>
             
+            <!-- Interactive Quiz Section -->
+            <div class="quiz-container fade-in" id="media-literacy-quiz" style="margin: 60px 0;">
+                <!-- Quiz will be rendered here by QuizEngine -->
+            </div>
+            
+            <div class="key-takeaways fade-in">
+                <h3>Key Takeaways</h3>
+                <ul>
+                    <li>Media literacy is an essential skill for navigating today's information landscape</li>
+                    <li>Always verify information through multiple independent sources</li>
+                    <li>Recognize bias and perspective in all media messages</li>
+                    <li>Use critical thinking skills to evaluate information</li>
+                    <li>Practice media literacy habits daily</li>
+                </ul>
+            </div>
+            
             <h2 id="practical-habits" class="fade-in"><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="checkGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#2ECC71;stop-opacity:1" /><stop offset="100%" style="stop-color:#27AE60;stop-opacity:1" /></linearGradient></defs><path d="M20 6L9 17l-5-5" stroke="url(#checkGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span>7. Practical Media Literacy Habits</h2>
             
             <div class="tip-box fade-in">
@@ -1120,6 +1140,29 @@
             </div>
             
             <p class="fade-in">For more resources on developing your media literacy skills, visit our <a href="fact-checking-tips.html">Fact-Checking Tips</a>, <a href="critical-reading-guide.html">Critical Reading Guide</a>, and <a href="educational-resources.html">Educational Resources</a> pages.</p>
+            
+            <!-- Related Resources -->
+            <div class="resource-card fade-in" style="margin-top: 60px;">
+                <h3>Related Resources</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 20px;">
+                    <a href="fact-checking-tips.html" style="display: block; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; text-decoration: none; color: var(--text-primary); transition: all 0.3s ease;">
+                        <strong>Fact-Checking Tips</strong>
+                        <p style="margin: 5px 0 0 0; font-size: 0.9rem; color: var(--text-secondary);">Learn verification strategies</p>
+                    </a>
+                    <a href="critical-reading-guide.html" style="display: block; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; text-decoration: none; color: var(--text-primary); transition: all 0.3s ease;">
+                        <strong>Critical Reading Guide</strong>
+                        <p style="margin: 5px 0 0 0; font-size: 0.9rem; color: var(--text-secondary);">Develop reading skills</p>
+                    </a>
+                    <a href="educational-resources.html" style="display: block; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; text-decoration: none; color: var(--text-primary); transition: all 0.3s ease;">
+                        <strong>Educational Resources</strong>
+                        <p style="margin: 5px 0 0 0; font-size: 0.9rem; color: var(--text-secondary);">Tools and courses</p>
+                    </a>
+                    <a href="how-we-verify.html" style="display: block; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; text-decoration: none; color: var(--text-primary); transition: all 0.3s ease;">
+                        <strong>How We Verify</strong>
+                        <p style="margin: 5px 0 0 0; font-size: 0.9rem; color: var(--text-secondary);">Our verification process</p>
+                    </a>
+                </div>
+            </div>
             
             <div class="footer-link fade-in">
                 <a href="index.html">← Back to Home</a>
@@ -1328,6 +1371,90 @@
                 }, { once: true });
             }
         })();
+    </script>
+    
+    <!-- Resource Page Utilities -->
+    <script src="js/resource-page-utils.js"></script>
+    <script src="js/quiz-engine.js"></script>
+    <script src="js/visualization-engine.js"></script>
+    
+    <!-- Media Literacy Quiz -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const quizQuestions = [
+                {
+                    question: "What is the best way to verify information you see online?",
+                    options: [
+                        { text: "Share it immediately if it confirms your beliefs", correct: false },
+                        { text: "Check multiple independent sources", correct: true },
+                        { text: "Trust it if it has a lot of likes or shares", correct: false },
+                        { text: "Believe it if it's from a friend", correct: false }
+                    ],
+                    feedback: {
+                        correct: "Correct! Always verify information through multiple independent sources.",
+                        incorrect: "The best practice is to check multiple independent sources before believing information."
+                    }
+                },
+                {
+                    question: "What is confirmation bias?",
+                    options: [
+                        { text: "The tendency to favor information that confirms existing beliefs", correct: true },
+                        { text: "A type of news source", correct: false },
+                        { text: "A fact-checking method", correct: false },
+                        { text: "A social media platform", correct: false }
+                    ],
+                    feedback: {
+                        correct: "Exactly! Confirmation bias is our tendency to favor information that confirms what we already believe.",
+                        incorrect: "Confirmation bias is the psychological tendency to favor information that confirms our existing beliefs."
+                    }
+                },
+                {
+                    question: "Which of these is a primary source?",
+                    options: [
+                        { text: "A news article about a study", correct: false },
+                        { text: "The original research study itself", correct: true },
+                        { text: "A blog post summarizing news", correct: false },
+                        { text: "A social media post", correct: false }
+                    ],
+                    feedback: {
+                        correct: "Right! Primary sources are original documents, research studies, or eyewitness accounts.",
+                        incorrect: "Primary sources are original documents or materials, like the research study itself, not articles about it."
+                    }
+                },
+                {
+                    question: "What should you do if an image seems suspicious?",
+                    options: [
+                        { text: "Share it to warn others", correct: false },
+                        { text: "Use reverse image search to verify", correct: true },
+                        { text: "Ignore it", correct: false },
+                        { text: "Trust the caption", correct: false }
+                    ],
+                    feedback: {
+                        correct: "Correct! Reverse image search helps verify if an image is authentic and used in the correct context.",
+                        incorrect: "Use reverse image search tools to verify if images are authentic and used in the correct context."
+                    }
+                },
+                {
+                    question: "What is the purpose of media literacy?",
+                    options: [
+                        { text: "To create more news", correct: false },
+                        { text: "To help people critically analyze and evaluate media messages", correct: true },
+                        { text: "To promote specific viewpoints", correct: false },
+                        { text: "To replace traditional education", correct: false }
+                    ],
+                    feedback: {
+                        correct: "Exactly! Media literacy helps people develop critical thinking skills to analyze and evaluate media messages.",
+                        incorrect: "Media literacy aims to help people develop critical thinking skills to analyze and evaluate media messages."
+                    }
+                }
+            ];
+
+            // Initialize quiz if container exists
+            const quizContainer = document.getElementById('media-literacy-quiz');
+            if (quizContainer) {
+                new QuizEngine('media-literacy-quiz', quizQuestions);
+            }
+        });
     </script>
     
     <!-- Cookie Consent Banner -->
