@@ -14344,7 +14344,28 @@
          data-ad-format="auto"
          data-full-width-responsive="true"></ins>
     <script>
-         (adsbygoogle = window.adsbygoogle || []).push({});
+         // Only initialize ad if container is visible and has dimensions
+         (function() {
+             const adContainer = document.currentScript.previousElementSibling;
+             function initAd() {
+                 if (adContainer && adContainer.offsetWidth > 0 && adContainer.offsetHeight > 0) {
+                     try {
+                         (window.adsbygoogle = window.adsbygoogle || []).push({});
+                     } catch (e) {
+                         console.warn('AdSense initialization error (suppressed):', e.message);
+                     }
+                 } else {
+                     // Retry after a short delay if container isn't ready
+                     setTimeout(initAd, 100);
+                 }
+             }
+             // Wait for DOM to be ready
+             if (document.readyState === 'loading') {
+                 document.addEventListener('DOMContentLoaded', initAd);
+             } else {
+                 initAd();
+             }
+         })();
     </script>
     
     <!-- Fixed Floating Tip Submission Button (mirrors AI chat position) -->
@@ -15200,7 +15221,28 @@
                  data-ad-format="auto"
                  data-full-width-responsive="true"></ins>
             <script>
-                 (adsbygoogle = window.adsbygoogle || []).push({});
+                 // Only initialize ad if container is visible and has dimensions
+                 (function() {
+                     const adContainer = document.currentScript.previousElementSibling;
+                     function initAd() {
+                         if (adContainer && adContainer.offsetWidth > 0 && adContainer.offsetHeight > 0) {
+                             try {
+                                 (window.adsbygoogle = window.adsbygoogle || []).push({});
+                             } catch (e) {
+                                 console.warn('AdSense initialization error (suppressed):', e.message);
+                             }
+                         } else {
+                             // Retry after a short delay if container isn't ready
+                             setTimeout(initAd, 100);
+                         }
+                     }
+                     // Wait for DOM to be ready
+                     if (document.readyState === 'loading') {
+                         document.addEventListener('DOMContentLoaded', initAd);
+                     } else {
+                         initAd();
+                     }
+                 })();
             </script>
             
             <!-- X Timeline Widget (Hidden - posts loaded via API instead) -->
@@ -15267,7 +15309,28 @@
                  data-ad-format="auto"
                  data-full-width-responsive="true"></ins>
             <script>
-                 (adsbygoogle = window.adsbygoogle || []).push({});
+                 // Only initialize ad if container is visible and has dimensions
+                 (function() {
+                     const adContainer = document.currentScript.previousElementSibling;
+                     function initAd() {
+                         if (adContainer && adContainer.offsetWidth > 0 && adContainer.offsetHeight > 0) {
+                             try {
+                                 (window.adsbygoogle = window.adsbygoogle || []).push({});
+                             } catch (e) {
+                                 console.warn('AdSense initialization error (suppressed):', e.message);
+                             }
+                         } else {
+                             // Retry after a short delay if container isn't ready
+                             setTimeout(initAd, 100);
+                         }
+                     }
+                     // Wait for DOM to be ready
+                     if (document.readyState === 'loading') {
+                         document.addEventListener('DOMContentLoaded', initAd);
+                     } else {
+                         initAd();
+                     }
+                 })();
             </script>
         </div>
 
@@ -15386,7 +15449,28 @@
                  data-ad-format="auto"
                  data-full-width-responsive="true"></ins>
             <script>
-                 (adsbygoogle = window.adsbygoogle || []).push({});
+                 // Only initialize ad if container is visible and has dimensions
+                 (function() {
+                     const adContainer = document.currentScript.previousElementSibling;
+                     function initAd() {
+                         if (adContainer && adContainer.offsetWidth > 0 && adContainer.offsetHeight > 0) {
+                             try {
+                                 (window.adsbygoogle = window.adsbygoogle || []).push({});
+                             } catch (e) {
+                                 console.warn('AdSense initialization error (suppressed):', e.message);
+                             }
+                         } else {
+                             // Retry after a short delay if container isn't ready
+                             setTimeout(initAd, 100);
+                         }
+                     }
+                     // Wait for DOM to be ready
+                     if (document.readyState === 'loading') {
+                         document.addEventListener('DOMContentLoaded', initAd);
+                     } else {
+                         initAd();
+                     }
+                 })();
             </script>
         </div>
         
@@ -17950,11 +18034,29 @@
         if (window.adsbygoogle) {
             const originalPush = window.adsbygoogle.push;
             window.adsbygoogle.push = function(...args) {
-                const result = originalPush.apply(this, args);
-                setTimeout(hideEmptyAdContainers, 2000);
-                return result;
+                try {
+                    const result = originalPush.apply(this, args);
+                    setTimeout(hideEmptyAdContainers, 2000);
+                    return result;
+                } catch (e) {
+                    // Suppress AdSense errors in console
+                    if (e.message && e.message.includes('No slot size')) {
+                        console.warn('AdSense error suppressed (container not ready):', e.message);
+                        return;
+                    }
+                    throw e;
+                }
             };
         }
+        
+        // Suppress AdSense errors globally
+        window.addEventListener('error', function(e) {
+            if (e.message && e.message.includes('adsbygoogle') && e.message.includes('No slot size')) {
+                e.preventDefault();
+                console.warn('AdSense error suppressed:', e.message);
+                return false;
+            }
+        }, true);
     </script>
     
     <!-- X Widgets Script - Load after page content -->

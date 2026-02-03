@@ -206,27 +206,48 @@ export const handler: Handler = async (event) => {
 
       // Check for duplicates in storage
       let postExists = false;
+      let existingPost = null;
       try {
-        const existing = await store.get(`post-${tweetId}.json`);
+        const existing = await store.get(`post-${tweetId}.json`, { type: "json" });
         if (existing) {
           postExists = true;
+          existingPost = existing;
         }
       } catch {}
       
-      // If post doesn't exist, fetch and create it
-      if (!postExists) {
-        // Convert to Card format
-        const card = await oEmbedToCard(oembed, tweetUrl);
-
-        // Store post
-        await store.set(`post-${tweetId}.json`, JSON.stringify(card), {
-          contentType: "application/json",
-        });
-      } else {
-        // Post already exists - preserve its existing datePosted if we're just re-adding to index
-        // Don't overwrite with potentially incorrect date from oEmbed
-        console.log('[fetch-tweets-simple] Post already exists, preserving existing data:', tweetId);
+      // Always extract media (even for existing posts) to ensure media is up-to-date
+      // Convert to Card format (this includes media extraction)
+      const card = await oEmbedToCard(oembed, tweetUrl);
+      
+      // If post exists, merge with existing data (preserve datePosted and other fields)
+      if (postExists && existingPost) {
+        // Preserve existing datePosted (it's more accurate than oEmbed)
+        card.datePosted = existingPost.datePosted || card.datePosted;
+        // Preserve existing engagement stats if they're better
+        if (existingPost.views && (!card.views || existingPost.views > card.views)) {
+          card.views = existingPost.views;
+        }
+        if (existingPost.likes && (!card.likes || existingPost.likes > card.likes)) {
+          card.likes = existingPost.likes;
+        }
+        if (existingPost.reposts && (!card.reposts || existingPost.reposts > card.reposts)) {
+          card.reposts = existingPost.reposts;
+        }
+        if (existingPost.replies && (!card.replies || existingPost.replies > card.replies)) {
+          card.replies = existingPost.replies;
+        }
+        // Preserve other existing fields
+        if (existingPost.story && !card.story) {
+          card.story = existingPost.story;
+          card.text = existingPost.story;
+        }
+        console.log('[fetch-tweets-simple] Post already exists, updating with fresh media extraction:', tweetId);
       }
+
+      // Store post (with fresh media)
+      await store.set(`post-${tweetId}.json`, JSON.stringify(card), {
+        contentType: "application/json",
+      });
 
       // Always update index (even if post already existed in storage)
       // This ensures posts are added to index if they were missing
