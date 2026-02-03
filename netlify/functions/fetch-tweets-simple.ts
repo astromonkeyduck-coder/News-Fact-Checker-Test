@@ -216,7 +216,7 @@ export const handler: Handler = async (event) => {
       // If post doesn't exist, fetch and create it
       if (!postExists) {
         // Convert to Card format
-        const card = oEmbedToCard(oembed, tweetUrl);
+        const card = await oEmbedToCard(oembed, tweetUrl);
 
         // Store post
         await store.set(`post-${tweetId}.json`, JSON.stringify(card), {
