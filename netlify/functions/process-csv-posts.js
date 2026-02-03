@@ -148,7 +148,7 @@ async function addPost(tweetUrl) {
     }
     
     const result = await response.json();
-    return { success: true, alreadyExists: false };
+    return { success: true, alreadyExists: false, postData: result };
   } catch (error) {
     return { success: false, error: error.message };
   }

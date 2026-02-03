@@ -9,6 +9,8 @@ import { getStore } from "@netlify/blobs";
 import { fetchTweetOEmbed, extractTweetId, extractUsername } from "../../src/lib/posts/oembed-fetch";
 import { normalizeTweetToCard, toTitle, readTimeFromText } from "../../src/lib/posts/normalize";
 import { extractEnhancedData } from "../../src/lib/posts/enhanced-extract";
+// XIRI METHOD: Try to extract media using photo page approach (like Discord bots)
+import { extractTwitterMedia } from "../../src/lib/posts/twitter-media-extract";
 
 interface IndexData {
   ids: string[];
@@ -33,16 +35,42 @@ function oEmbedToCard(oembed: any, tweetUrl: string): any {
   // Extract enhanced data (images, videos, date, stats)
   const enhanced = extractEnhancedData(tweetId, oembed.html);
   
+  // XIRI METHOD: Also try scraping photo pages for media (like Discord bots do)
+  // This gets media that oEmbed doesn't provide
+  // Try headless browser first (if available), then fall back to static methods
+  let scrapedMedia = { images: [], videos: [] };
+  try {
+    // Try headless browser first (for dynamically loaded media)
+    // Set useHeadless=true to enable Puppeteer (requires puppeteer package)
+    const useHeadless = process.env.ENABLE_HEADLESS_BROWSER === 'true';
+    scrapedMedia = await extractTwitterMedia(tweetUrl, text, useHeadless);
+    console.log(`[fetch-tweets-simple] Scraped media for ${tweetId}:`, {
+      images: scrapedMedia.images.length,
+      videos: scrapedMedia.videos.length,
+      method: useHeadless ? 'headless' : 'static'
+    });
+  } catch (error) {
+    console.warn(`[fetch-tweets-simple] Failed to scrape media for ${tweetId}:`, error);
+  }
+  
+  // Combine oEmbed media with scraped media (scraped takes priority)
+  const allImages = [...(scrapedMedia.images || []), ...(enhanced.images || [])];
+  const allVideos = [...(scrapedMedia.videos || []), ...(enhanced.videos || [])];
+  
+  // Remove duplicates
+  const uniqueImages = Array.from(new Set(allImages));
+  const uniqueVideos = Array.from(new Set(allVideos));
+  
   // Determine post type based on media
   let postType: "text" | "photo" | "video" = "text";
-  if (enhanced.videos && enhanced.videos.length > 0) {
+  if (uniqueVideos.length > 0) {
     postType = "video";
-  } else if (enhanced.images && enhanced.images.length > 0) {
+  } else if (uniqueImages.length > 0) {
     postType = "photo";
   }
   
   // Use first image as main image for backward compatibility
-  const mainImage = enhanced.images && enhanced.images.length > 0 ? enhanced.images[0] : null;
+  const mainImage = uniqueImages.length > 0 ? uniqueImages[0] : null;
   
   // If date extraction failed, we need a fallback, but log a warning
   // The Snowflake extraction should work for all valid tweet IDs, so this is rare
@@ -55,8 +83,10 @@ function oEmbedToCard(oembed: any, tweetUrl: string): any {
   return {
     id: tweetId,
     image: mainImage,
-    images: enhanced.images.length > 0 ? enhanced.images : undefined,
-    videos: enhanced.videos.length > 0 ? enhanced.videos : undefined,
+    primary_image_url: mainImage, // New field for hero module
+    images: uniqueImages.length > 0 ? uniqueImages : undefined,
+    videos: uniqueVideos.length > 0 ? uniqueVideos : undefined,
+    video_url: uniqueVideos.length > 0 ? uniqueVideos[0] : undefined, // New field for hero module
     title: toTitle(text) || text.substring(0, 80) + (text.length > 80 ? '...' : ''),
     story: text,
     datePosted,

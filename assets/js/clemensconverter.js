@@ -1541,7 +1541,7 @@ function showResult(fileId, fileData) {
     (async () => {
         if (hasAudio && fileData.audioUrl && isBlobUrlValid(fileData.audioUrl)) {
             // Audio URL is valid, set up player immediately
-            setupAudioPlayer(fileId, fileData, hasSegments);
+        setupAudioPlayer(fileId, fileData, hasSegments);
         } else {
             // Try to restore from IndexedDB
             try {

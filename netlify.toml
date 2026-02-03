@@ -13,6 +13,7 @@
   SECRETS_SCAN_OMIT_KEYS = "AUTH0_DOMAIN,AUTH0_CLIENT_ID,R2_BUCKET"
   NODE_VERSION = "20"
   BUGSNAG_DISABLE_AUTOMATIC_REPORTING = "true"
+  ENABLE_HEADLESS_BROWSER = "true"
 
 # Netlify automatically serves 404.html for 404 errors
 # Make sure 404.html is in the root directory (publish directory)

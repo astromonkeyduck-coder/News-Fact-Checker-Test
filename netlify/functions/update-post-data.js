@@ -46,7 +46,7 @@ exports.handler = async (event) => {
 
     if (event.httpMethod === "POST" || event.httpMethod === "PATCH") {
       const body = JSON.parse(event.body || "{}");
-      const { postId, datePosted, views, likes, reposts, replies, engagements, bookmarks, shares, story, text, link, url, image, images } = body;
+      const { postId, datePosted, views, likes, reposts, replies, engagements, bookmarks, shares, story, text, link, url, image, images, videos, video, video_url, primary_image_url } = body;
 
       if (!postId) {
         return {
@@ -128,11 +128,39 @@ exports.handler = async (event) => {
         if (shares !== undefined) updatedPost.shares = shares;
         
         // Update image fields
-        if (image !== undefined && image !== null && image !== '') {
+        if (primary_image_url !== undefined && primary_image_url !== null && primary_image_url !== '') {
+          updatedPost.primary_image_url = primary_image_url;
+          updatedPost.image = primary_image_url; // Legacy compatibility
+          updatedPost.image_url = primary_image_url; // Legacy compatibility
+        } else if (image !== undefined && image !== null && image !== '') {
           updatedPost.image = image;
+          updatedPost.primary_image_url = image; // Set as primary if no primary_image_url provided
+          updatedPost.image_url = image; // Legacy compatibility
         }
         if (images !== undefined && Array.isArray(images) && images.length > 0) {
           updatedPost.images = images;
+          // Set primary if not already set
+          if (!updatedPost.primary_image_url && images[0]) {
+            updatedPost.primary_image_url = images[0];
+            updatedPost.image = images[0];
+          }
+        }
+        
+        // Update video fields
+        if (video_url !== undefined && video_url !== null && video_url !== '') {
+          updatedPost.video_url = video_url;
+          updatedPost.video = video_url; // Legacy compatibility
+        } else if (video !== undefined && video !== null && video !== '') {
+          updatedPost.video = video;
+          updatedPost.video_url = video;
+        }
+        if (videos !== undefined && Array.isArray(videos) && videos.length > 0) {
+          updatedPost.videos = videos;
+          // Set primary video if not already set
+          if (!updatedPost.video_url && videos[0]) {
+            updatedPost.video_url = videos[0];
+            updatedPost.video = videos[0];
+          }
         }
 
         // Save updated/created post
