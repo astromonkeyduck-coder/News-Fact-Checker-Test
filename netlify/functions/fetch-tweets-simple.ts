@@ -20,7 +20,7 @@ interface IndexData {
 /**
  * Convert oEmbed response to our Card format with enhanced data
  */
-function oEmbedToCard(oembed: any, tweetUrl: string): any {
+async function oEmbedToCard(oembed: any, tweetUrl: string): Promise<any> {
   const tweetId = extractTweetId(tweetUrl);
   const username = extractUsername(tweetUrl);
   
