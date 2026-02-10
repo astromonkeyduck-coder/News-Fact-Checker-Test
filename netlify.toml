@@ -217,6 +217,7 @@
 [functions."generate-earthquake-video"]
   node_bundler = "zisi"  # Use zip-it-and-ship-it which handles native .node modules
   included_files = ["netlify/functions/**/*.png", "netlify/functions/fonts-base64.js"]
+  timeout = 26  # Max for Netlify sync (Pro); keep under to avoid 504
 
 [functions."test-generate"]
   node_bundler = "zisi"  # Use zip-it-and-ship-it which handles native modules

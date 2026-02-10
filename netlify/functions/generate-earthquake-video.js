@@ -32,9 +32,8 @@ async function generateVideoFrames(magnitude, location, eventId, coordinates = n
     timestamp: new Date().toISOString()
   });
   
-  // Reduced frame count for faster generation (30 frames = 2 seconds at 15fps)
-  // This prevents timeout while still providing smooth animation
-  const frameCount = 30; // 30 frames for smooth animation (2 seconds at 15fps - fast and professional)
+  // Reduced frame count to stay under 26s Netlify sync limit (15 frames = 1s at 15fps)
+  const frameCount = 15;
   const frames = [];
   
   console.log(`[generate-earthquake-video] 🎬 Generating ${frameCount} frames for video...`);
@@ -729,54 +728,26 @@ exports.handler = async (event, context) => {
     const fps = 15;
     const videoDuration = frames.length / fps;
     
-    // Generate TTS audio
-    console.log(`[generate-earthquake-video] 🎤 Generating TTS audio...`);
-    const ttsAudio = await generateTTSAudio(magnitude, location);
-    
-    // Mix with datacenter.wav (returns object with tts and background if found)
-    let finalAudio = null;
-    if (ttsAudio) {
-      console.log(`[generate-earthquake-video] 🎵 Preparing audio with datacenter.wav...`);
-      finalAudio = await mixAudioWithDatacenter(ttsAudio, videoDuration);
-    }
-    
-    // Try to generate MP4 with audio first
-    let mp4Url = null;
-    if (finalAudio) {
-      console.log(`[generate-earthquake-video] 🎥 Attempting MP4 generation with audio...`);
-      const mp4Buffer = await framesToMP4WithAudio(frames, width, height, finalAudio, fps);
-      if (mp4Buffer) {
-        mp4Url = await storeVideo(mp4Buffer, eventId, 'mp4');
-        console.log(`[generate-earthquake-video] ✅ MP4 with audio generated: ${mp4Url}`);
-      }
-    }
-    
-    // Always generate GIF as fallback (for email compatibility)
+    // GIF-only path to stay under 26s Netlify sync limit (skip TTS/MP4)
     console.log(`[generate-earthquake-video] 🎬 Converting ${frames.length} frames to animated GIF...`);
     const gifBuffer = await framesToAnimatedGIF(frames, width, height);
     const gifUrl = await storeVideo(gifBuffer, eventId, 'gif');
-    
-    // Return MP4 if available, otherwise GIF
-    const videoUrl = mp4Url || gifUrl;
-    const format = mp4Url ? 'mp4' : 'gif';
     
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         success: true,
-        url: videoUrl,
-        mp4_url: mp4Url || null,
+        url: gifUrl,
+        mp4_url: null,
         gif_url: gifUrl,
         eventId: eventId,
         framesGenerated: frames.length,
         dimensions: `${width}x${height}`,
-        format: format,
+        format: 'gif',
         duration: `${videoDuration.toFixed(1)}s`,
-        hasAudio: !!finalAudio,
-        note: mp4Url 
-          ? 'MP4 video with TTS audio and datacenter.wav background music created. GIF also available for email compatibility.'
-          : 'Animated GIF created with visual effects. MP4 generation requires ffmpeg library (see TODO in code).'
+        hasAudio: false,
+        note: 'Animated GIF created with visual effects (GIF-only to stay under 26s timeout).'
       }),
     };
     

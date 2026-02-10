@@ -633,8 +633,9 @@ exports.handler = async (event, context) => {
   }
 };
 
-// Scheduled function configuration
+// Scheduled + background: returns 202 immediately, runs up to 15 min (avoids 499 from client timeout)
 exports.config = {
-  schedule: '*/5 * * * *', // Every 5 minutes
+  schedule: '*/5 * * * *',
+  background: true,
 };
 

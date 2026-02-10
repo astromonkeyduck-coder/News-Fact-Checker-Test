@@ -3,6 +3,7 @@
  * Receives inbound emails via Resend webhook and triggers ingest-all when email contains "ingest"
  * Automatically sends a reply email to the sender confirming receipt and action
  * Processes image attachments and adds Noteworthy News logo overlay
+ * Forwards all emails to richard@noteworthynews.co to richardadkns@gmail.com
  * 
  * Setup Instructions:
  * 1. Go to Resend Dashboard → Domains → Your Domain → Inbound Routes
@@ -14,8 +15,10 @@
  * - Send an email to richard@noteworthynews.co with subject or body containing "ingest"
  *   The ingest-all function will be triggered automatically and an auto-reply will be sent
  * - Send an email with image attachments to automatically get them back with logo overlay
+ * - All emails to richard@noteworthynews.co are automatically forwarded to richardadkns@gmail.com
  * 
  * Features:
+ * - Email Forwarding: All emails to richard@noteworthynews.co are forwarded to richardadkns@gmail.com with original content and attachments
  * - Auto-Reply: Sends confirmation email to sender automatically
  * - Attachment Processing: Processes image attachments and adds Noteworthy News logo (70% opacity, top right)
  * - Non-blocking: Errors don't fail the webhook
@@ -866,6 +869,158 @@ async function storeSenderEmailForNotifications(senderEmail) {
 }
 
 /**
+ * Forward email to richardadkns@gmail.com
+ * Non-blocking - errors are logged but don't fail the webhook
+ */
+async function forwardEmailToGmail(senderEmail, toEmail, subject, textBody, htmlBody, attachments) {
+  // Skip if no Resend API key
+  if (!process.env.RESEND_API_KEY) {
+    console.log('[Inbound Email] Skipping email forward: RESEND_API_KEY not configured');
+    return null;
+  }
+
+  const forwardToEmail = 'richardadkns@gmail.com';
+  
+  try {
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Noteworthy News <richard@noteworthynews.co>';
+    
+    // Clean sender email
+    let cleanSenderEmail = senderEmail;
+    const emailMatch = senderEmail.match(/<([^>]+)>/);
+    if (emailMatch) {
+      cleanSenderEmail = emailMatch[1];
+    }
+    
+    // Build email content with forwarding information
+    const forwardedSubject = `Fwd: ${subject || '(No Subject)'}`;
+    
+    // Create forwarded email body
+    const forwardedText = `---------- Forwarded message ----------
+From: ${cleanSenderEmail}
+To: ${toEmail}
+Date: ${new Date().toISOString()}
+Subject: ${subject || '(No Subject)'}
+
+${textBody || '(No text content)'}`;
+
+    const forwardedHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f5f5f5;">
+    <tr>
+      <td style="padding: 40px 20px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          <tr>
+            <td style="padding: 20px 30px; background-color: #f8f9fa; border-bottom: 2px solid #e0e0e0; border-radius: 10px 10px 0 0;">
+              <p style="color: #666666; font-size: 12px; margin: 0; line-height: 1.5;">
+                <strong>---------- Forwarded message ----------</strong><br>
+                <strong>From:</strong> ${cleanSenderEmail}<br>
+                <strong>To:</strong> ${toEmail}<br>
+                <strong>Date:</strong> ${new Date().toLocaleString()}<br>
+                <strong>Subject:</strong> ${subject || '(No Subject)'}
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 30px; background-color: #ffffff;">
+              ${htmlBody || `<p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0;">${textBody || '(No content)'}</p>`}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+    // Prepare email payload
+    const emailPayload = {
+      from: fromEmail,
+      to: forwardToEmail,
+      replyTo: cleanSenderEmail,
+      subject: forwardedSubject,
+      text: forwardedText,
+      html: forwardedHtml,
+    };
+
+    // Add attachments if present
+    if (attachments && Array.isArray(attachments) && attachments.length > 0) {
+      const emailAttachments = [];
+      
+      for (const attachment of attachments) {
+        const attachmentUrl = attachment.download_url || attachment.url || attachment.href || attachment.content_url || attachment.downloadUrl;
+        const attachmentName = attachment.filename || attachment.name || attachment.file_name || 'attachment';
+        const contentType = attachment.content_type || attachment.type || attachment.mime_type || 'application/octet-stream';
+        
+        if (attachmentUrl) {
+          try {
+            // Download attachment
+            let attachmentBuffer;
+            if (attachmentUrl.startsWith('http://') || attachmentUrl.startsWith('https://')) {
+              const response = await fetch(attachmentUrl);
+              if (response.ok) {
+                const arrayBuffer = await response.arrayBuffer();
+                attachmentBuffer = Buffer.from(arrayBuffer);
+              } else {
+                console.warn(`[Inbound Email] Failed to download attachment for forwarding: ${response.status}`);
+                continue;
+              }
+            } else if (attachmentUrl.startsWith('data:')) {
+              const base64Data = attachmentUrl.split(',')[1];
+              attachmentBuffer = Buffer.from(base64Data, 'base64');
+            } else {
+              console.warn(`[Inbound Email] Unsupported attachment URL format for forwarding: ${attachmentUrl.substring(0, 50)}`);
+              continue;
+            }
+            
+            emailAttachments.push({
+              filename: attachmentName,
+              content: attachmentBuffer.toString('base64'),
+              content_type: contentType
+            });
+          } catch (attachError) {
+            console.error(`[Inbound Email] Error processing attachment for forwarding:`, {
+              name: attachmentName,
+              error: attachError.message
+            });
+            // Continue with other attachments
+          }
+        }
+      }
+      
+      if (emailAttachments.length > 0) {
+        emailPayload.attachments = emailAttachments;
+      }
+    }
+
+    const result = await resend.emails.send(emailPayload);
+
+    console.log('[Inbound Email] ✅ Email forwarded to Gmail:', {
+      to: forwardToEmail,
+      from: cleanSenderEmail,
+      subject: forwardedSubject,
+      hasAttachments: emailPayload.attachments ? emailPayload.attachments.length : 0,
+      emailId: result.data?.id
+    });
+
+    return result;
+  } catch (error) {
+    // Log error but don't fail the webhook
+    console.error('[Inbound Email] ⚠️ Failed to forward email to Gmail (non-blocking):', {
+      to: forwardToEmail,
+      error: error.message,
+      name: error.name
+    });
+    return null;
+  }
+}
+
+/**
  * Send auto-reply email to the sender
  * Non-blocking - errors are logged but don't fail the webhook
  */
@@ -1214,6 +1369,12 @@ exports.handler = async (event, context) => {
         }),
       };
     }
+
+    // Forward email to richardadkns@gmail.com (non-blocking)
+    console.log('[Inbound Email] 📧 Forwarding email to Gmail...');
+    forwardEmailToGmail(fromEmail, toEmail, subject, textBody, htmlBody, attachments).catch(err => {
+      console.error('[Inbound Email] Email forwarding error (non-blocking):', err);
+    });
 
     // Check for attachments and process them (non-blocking)
     if (hasAttachments) {

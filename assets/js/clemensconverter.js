@@ -1838,7 +1838,7 @@ window.analyzeTranscript = async (fileId) => {
     analyzeBtn.innerHTML = '<span class="spinner"></span> Analyzing...';
 
     try {
-        const transcriptText = fileData.transcript.transcriptText || '';
+        const transcriptText = fileData.transcript.transcriptText || fileData.transcript.text || '';
         
         if (!transcriptText.trim()) {
             throw new Error('Transcript is empty');
@@ -1865,6 +1865,8 @@ window.analyzeTranscript = async (fileId) => {
             }
         }
         
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token') || localStorage.getItem('clems_token');
         const response = await fetch(`${CONFIG.apiBase}/analyze-transcript`, {
             method: 'POST',
             headers: {
@@ -1874,6 +1876,7 @@ window.analyzeTranscript = async (fileId) => {
             body: JSON.stringify({
                 lecture_transcript: transcriptText,
                 context_files: contextFilesBase64,
+                ...(token ? { token } : {}),
             }),
         });
 
@@ -1891,7 +1894,14 @@ window.analyzeTranscript = async (fileId) => {
                 console.error('[analyzeTranscript] Failed to parse error response:', parseError);
                 errorData = { error: `Analysis failed with status ${response.status}` };
             }
-            const errorMessage = errorData.error || errorData.message || `Analysis failed (${response.status})`;
+            let errorMessage = errorData.error || errorData.message || `Analysis failed (${response.status})`;
+            if (response.status === 401) {
+                if (!token) {
+                    errorMessage = 'Authentication required. Please access this page with ?token=YOUR_TOKEN in the URL, or remove CLEMS_TOKEN from environment variables if you want open access.';
+                } else {
+                    errorMessage = 'Invalid token. Please check that your token matches the CLEMS_TOKEN environment variable.';
+                }
+            }
             console.error('[analyzeTranscript] API error response:', errorData);
             throw new Error(errorMessage);
         }
