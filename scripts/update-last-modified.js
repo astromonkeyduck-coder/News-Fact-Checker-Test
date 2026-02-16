@@ -38,11 +38,9 @@ try {
   let content = fs.readFileSync(indexHtmlPath, 'utf8');
   
   // Find and replace the Last Update line
-  // Pattern: Last Update: [any date/time format]
   const lastUpdatePattern = /Last Update:\s*[^<]+/;
-  // FIXED: More specific pattern that only matches the content inside the div, not across HTML structure
-  // Match: "Scheduled Maintenance: [date]" inside the div content (between > and </div>)
-  const scheduledMaintenanceContentPattern = />Scheduled Maintenance:\s*[^<]+</;
+  // Match "Scheduled Maintenance: Month Day, Year" anywhere (e.g. in title and after SVG in div)
+  const scheduledMaintenancePattern = /Scheduled Maintenance:\s*[A-Za-z]+\s+\d{1,2},\s*\d{4}/;
   const newLastUpdate = `Last Update: ${getFormattedDate()}`;
   
   if (lastUpdatePattern.test(content)) {
@@ -64,21 +62,16 @@ try {
     // Write back to file
     fs.writeFileSync(indexHtmlPath, content, 'utf8');
     console.log(`✅ Updated Last Update timestamp to: ${getFormattedDate()}`);
-  } else if (scheduledMaintenanceContentPattern.test(content)) {
-    // If Scheduled Maintenance is found, update it to one week from today
+  } else if (scheduledMaintenancePattern.test(content)) {
+    // If Scheduled Maintenance is found, update it to one week from today (in both title and body)
     const oneWeekFromNow = new Date();
     oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7);
     const maintenanceDate = getFormattedDateForDate(oneWeekFromNow);
-    // Replace only the content part (between > and <)
-    const newScheduledMaintenance = `>Scheduled Maintenance: ${maintenanceDate}<`;
-    content = content.replace(scheduledMaintenanceContentPattern, newScheduledMaintenance);
-    
-    // Also update the title attribute
-    const titlePattern = /title="Scheduled Maintenance: [^"]+"/;
-    const newTitle = `title="Scheduled Maintenance: ${maintenanceDate}"`;
-    if (titlePattern.test(content)) {
-      content = content.replace(titlePattern, newTitle);
-    }
+    // Replace all "Scheduled Maintenance: [date]" (title attribute and div content, including after SVG)
+    content = content.replace(
+      /Scheduled Maintenance:\s*[A-Za-z]+\s+\d{1,2},\s*\d{4}/g,
+      `Scheduled Maintenance: ${maintenanceDate}`
+    );
     
     // Also update the maintenance date in the overlay document (after the countdown)
     const countdownSectionPattern = /(<div id="countdown"[^>]*>[^<]+<\/div>\s*<p style="font-size: 0\.8rem; margin-top: 6px; color: #555;">)[^<]+(<\/p>)/;

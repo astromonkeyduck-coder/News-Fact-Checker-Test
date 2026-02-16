@@ -194,17 +194,16 @@ export function getCuratedCameras() {
 
 /**
  * Check if fallback mode should be used
- * Returns true if Netlify functions are unavailable
+ * Returns true if Netlify functions are unavailable (so we use direct image URLs and they load)
  */
 export async function shouldUseFallback() {
   try {
-    // Quick check if Netlify functions are available
     const response = await fetch('/api/cams/health', {
       method: 'HEAD',
-      signal: AbortSignal.timeout(2000)
+      signal: AbortSignal.timeout(3000)
     });
     return !response.ok;
   } catch {
-    return true; // Network error or timeout = use fallback
+    return true; // Network error or timeout = use fallback (direct DOT URLs)
   }
 }

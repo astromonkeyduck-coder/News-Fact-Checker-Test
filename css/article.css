@@ -354,37 +354,147 @@ html.article-page-active::after,
     }
 }
 
-/* Earthquake enhancements - dark container so light text is visible on article page */
+/* Earthquake enhancements - professional editorial style (match key-takeaways) */
 .article-body .earthquake-enhancements {
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-    color: #fff;
-    padding: 1.5rem;
-    border-radius: 12px;
-    overflow: hidden;
+    background: transparent;
+    color: #1a1a1a;
+    padding: 0;
     margin: 2rem 0;
 }
 
 @media (max-width: 640px) {
     .article-body .earthquake-enhancements {
-        padding: 1rem;
         margin: 1.5rem 0;
     }
 }
 
-/* Inner sections - slightly stronger card background for separation on dark wrapper */
+/* Section blocks - key-takeaways style */
+.article-body .earthquake-enhancements .earthquake-animation-section,
 .article-body .earthquake-enhancements .earthquake-details-section,
 .article-body .earthquake-enhancements .impact-assessment-section,
+.article-body .earthquake-enhancements .tsunami-risk-section,
 .article-body .earthquake-enhancements .aftershock-forecast-section,
 .article-body .earthquake-enhancements .anomaly-detection-section,
 .article-body .earthquake-enhancements .tier-breakdown-section,
-.article-body .earthquake-enhancements .economic-impact-section,
 .article-body .earthquake-enhancements .historical-context-section {
-    background: rgba(255, 255, 255, 0.08) !important;
+    background: #f8f9fa;
+    border-left: 4px solid #1a1a1a;
+    border-radius: 0 2px 2px 0;
+    color: #1a1a1a;
+    padding: 1.25em 1.5em;
+    margin: 0 0 1.5em 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.article-body .earthquake-enhancements .earthquake-section-heading {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 0 0 0.75em 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.article-body .earthquake-enhancements .earthquake-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.25em;
 }
 
 .article-body .earthquake-enhancements .detail-card {
-    background: rgba(255, 255, 255, 0.08) !important;
+    padding: 0.75em 0;
+    border-bottom: 1px solid #e5e5e5;
+    background: transparent;
 }
+
+.article-body .earthquake-enhancements .detail-card:last-child {
+    border-bottom: none;
+}
+
+/* Map container - clean, minimal */
+.earthquake-enhancements .earthquake-map-container {
+    border: 1px solid #e5e5e5;
+    margin: 1.5em 0;
+}
+
+.earthquake-enhancements #earthquake-interactive-map {
+    min-height: 400px;
+    width: 100%;
+    background: #f5f5f5;
+}
+
+/* 3D visualization - professional header, dark canvas */
+.earthquake-enhancements .earthquake-3d-container {
+    border: 1px solid #e5e5e5;
+    margin: 1.5em 0;
+}
+
+.earthquake-enhancements .earthquake-3d-header {
+    background: #f8f9fa;
+    border-bottom: 1px solid #e5e5e5;
+    padding: 0.75rem 1rem;
+    color: #1a1a1a;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.earthquake-enhancements .earthquake-3d-header-title {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.earthquake-enhancements .earthquake-3d-header-hint {
+    font-size: 0.75rem;
+    color: #666;
+}
+
+.earthquake-enhancements #earthquake-nearby-locations,
+.earthquake-enhancements .earthquake-nearby-skeleton {
+    color: #666;
+}
+
+.earthquake-enhancements .earthquake-details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.earthquake-enhancements .earthquake-subsection {
+    margin-top: 1.25em;
+    padding-top: 1.25em;
+    border-top: 1px solid #e5e5e5;
+}
+
+.earthquake-enhancements .earthquake-subsection-heading {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0 0 0.5em 0;
+}
+
+.earthquake-enhancements .earthquake-metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+}
+
+.earthquake-enhancements .earthquake-metric-card {
+    padding: 0.75em;
+    background: transparent;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+/* Subdued severity colors for risk (editorial, not dashboard) */
+.earthquake-enhancements .severity-critical { color: #8B0000; }
+.earthquake-enhancements .severity-high { color: #8B4513; }
+.earthquake-enhancements .severity-moderate { color: #6B6B00; }
+.earthquake-enhancements .severity-low { color: #2E5C2E; }
 
 /* Key takeaways - At a glance block */
 .key-takeaways {
@@ -1207,24 +1317,24 @@ button:focus-visible {
     }
     
     /* Mobile: Advanced Features Responsive Styles */
+    .earthquake-animation-section,
     .impact-assessment-section,
     .tier-breakdown-section,
     .aftershock-forecast-section,
     .tsunami-risk-section,
     .anomaly-detection-section,
-    .economic-impact-section,
     .historical-context-section {
         margin: 1.5rem 0 !important;
         padding: 1rem !important;
         border-radius: 8px !important;
     }
     
+    .earthquake-animation-section h2,
     .impact-assessment-section h2,
     .tier-breakdown-section h2,
     .aftershock-forecast-section h2,
     .tsunami-risk-section h2,
     .anomaly-detection-section h2,
-    .economic-impact-section h2,
     .historical-context-section h2 {
         font-size: 1.25rem !important;
         margin-bottom: 0.75rem !important;
@@ -1233,8 +1343,7 @@ button:focus-visible {
     /* Mobile: Grid layouts become single column */
     .impact-assessment-section > div[style*="grid-template-columns"],
     .tier-breakdown-section > div[style*="grid-template-columns"],
-    .aftershock-forecast-section > div[style*="grid-template-columns"],
-    .economic-impact-section > div[style*="grid-template-columns"] {
+    .aftershock-forecast-section > div[style*="grid-template-columns"] {
         grid-template-columns: 1fr !important;
         gap: 0.75rem !important;
     }

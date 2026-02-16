@@ -414,8 +414,9 @@ export class LiveCams {
     container.innerHTML = this.gridCameras.map((camera, index) => {
       const snapshotUrl = camera.media?.snapshotUrl;
       const proxyUrl = snapshotUrl ? getImageProxyUrl(snapshotUrl) : null;
+      const directFirst = snapshotUrl && (snapshotUrl.startsWith('http://') || snapshotUrl.startsWith('https://'));
+      const initialSrc = directFirst ? snapshotUrl : proxyUrl;
       
-      // Escape all user-provided data
       const safeId = escapeAttr(camera.id || '');
       const safeTitle = escapeHtml(camera.title || `Camera ${index + 1}`);
       const safeTitleAttr = escapeAttr(camera.title || `Camera ${index + 1}`);
@@ -428,13 +429,14 @@ export class LiveCams {
             <span class="livecams-grid-cell-status online">●</span>
           </div>
           <div class="livecams-grid-cell-display">
-            ${proxyUrl ? `
+            ${initialSrc ? `
               <img 
-                src="${escapeAttr(proxyUrl)}" 
+                src="${escapeAttr(initialSrc)}" 
+                ${proxyUrl && directFirst ? `data-proxy-fallback="${escapeAttr(proxyUrl)}"` : ''}
                 alt="${safeTitleAttr}"
                 class="livecams-grid-cell-image"
                 loading="lazy"
-                onerror="this.parentElement.innerHTML='<div class=\\'livecams-grid-cell-placeholder\\'>📹</div>'"
+                onerror="var p=this.parentElement;var fb=this.getAttribute('data-proxy-fallback');if(fb&&this.src!==fb){this.src=fb;this.removeAttribute('data-proxy-fallback');this.onerror=function(){p.innerHTML='<div class=\\'livecams-grid-cell-placeholder\\'>📹</div>';};}else{p.innerHTML='<div class=\\'livecams-grid-cell-placeholder\\'>📹</div>';}"
               />
             ` : `
               <div class="livecams-grid-cell-placeholder">📹</div>

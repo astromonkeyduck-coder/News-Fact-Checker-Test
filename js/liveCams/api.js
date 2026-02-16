@@ -20,7 +20,7 @@ let useFallbackMode = null; // null = unknown, true = use fallback, false = use 
 // Cache configuration — bump CACHE_VERSION to invalidate old cache (thumbnails + more cams fix)
 const CACHE_KEY = 'livecams_cache';
 const CACHE_VERSION_KEY = 'livecams_cache_version';
-const CACHE_VERSION = 2;
+const CACHE_VERSION = 4;
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 /**
@@ -131,11 +131,36 @@ export async function searchCameras(filters, signal = null) {
     return cached;
   }
   
-  // If in fallback mode, go directly to fallback providers
+  // If in fallback mode, use direct DOT providers (browser). If we get very few, also try Netlify once so FL511/Caltrans come back when the app is deployed on Netlify.
   if (useFallbackMode) {
     console.log('[LiveCams API] Using fallback providers (direct DOT APIs)');
     try {
-      const results = await fetchFallbackCameras(filters);
+      let results = await fetchFallbackCameras(filters);
+      const isBroadSearch = !filters.q && !filters.city && !filters.bbox;
+      if (results.length <= 25 && isBroadSearch) {
+        try {
+          const netlifyParams = new URLSearchParams();
+          if (filters.country) netlifyParams.set('country', filters.country);
+          if (filters.state) netlifyParams.set('state', filters.state);
+          netlifyParams.set('limit', '400');
+          const token = await getCamsToken();
+          const headers = { Accept: 'application/json' };
+          if (token) headers['X-CAMS-TOKEN'] = token;
+          const res = await fetch(`/api/cams/search?${netlifyParams.toString()}`, { headers, signal: signal || abortController?.signal });
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data.results) && data.results.length > 0) {
+              const seen = new Set(results.map(c => c.id));
+              for (const cam of data.results) {
+                if (!seen.has(cam.id)) { seen.add(cam.id); results.push(cam); }
+              }
+              console.log('[LiveCams API] Merged Netlify results: total', results.length, 'cameras');
+            }
+          }
+        } catch (e) {
+          console.warn('[LiveCams API] Netlify merge skipped:', e.message);
+        }
+      }
       setCachedResults(cacheKey, results);
       return results;
     } catch (error) {
@@ -334,52 +359,71 @@ export async function fetchImageWithAuth(imageUrl) {
   return fetch(imageUrl, { headers });
 }
 
+function isAbsoluteImageUrl(url) {
+  if (!url || typeof url !== 'string') return false;
+  return url.startsWith('http://') || url.startsWith('https://');
+}
+
 /**
  * Load an image into an <img> element.
- * In fallback mode, loads directly. Otherwise uses proxy with auth headers.
+ * Always tries direct URL first (works for DOT/cameras in <img> without CORS); on error tries proxy, then placeholder.
  */
 export async function loadImageWithAuth(imgEl, proxyUrl, fallbackUrl = null, { cacheBust = false } = {}) {
-  if (!imgEl || !proxyUrl) return;
-  
+  if (!imgEl) return;
+  const urlToTry = proxyUrl || fallbackUrl;
+  if (!urlToTry) return;
+
   const placeholder = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 150'%3E%3Crect fill='%23111' width='200' height='150'/%3E%3Ctext fill='%23555' x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='14'%3ENo Image%3C/text%3E%3C/svg%3E";
-  
-  // Revoke previous object URL to avoid leaks
+  const addBust = (u) => (cacheBust ? addCacheBust(u) : u);
+
   if (imgEl.dataset.objectUrl) {
     URL.revokeObjectURL(imgEl.dataset.objectUrl);
     delete imgEl.dataset.objectUrl;
   }
-  
-  // In fallback mode: use direct image URL so thumbnails work without proxy.
-  // If proxyUrl is our proxy endpoint (e.g. /api/cams/proxy-image), proxy may 404 when not on Netlify — use fallbackUrl (direct) so DOT images still load.
-  if (useFallbackMode) {
-    const isProxyEndpoint = typeof proxyUrl === 'string' && proxyUrl.includes('proxy-image');
-    const urlToLoad = (isProxyEndpoint && fallbackUrl) ? fallbackUrl : proxyUrl;
-    const directUrl = cacheBust ? addCacheBust(urlToLoad) : urlToLoad;
+
+  function setPlaceholder() {
+    imgEl.src = placeholder;
+    imgEl.onerror = null;
+  }
+
+  // Strategy: try DIRECT url first (DOT/camera images work in <img> without CORS). If it fails, try proxy. Then placeholder.
+  const directUrl = isAbsoluteImageUrl(fallbackUrl) ? fallbackUrl : null;
+  const proxyIsOurEndpoint = typeof proxyUrl === 'string' && proxyUrl.includes('proxy-image');
+
+  if (directUrl) {
     imgEl.onerror = () => {
-      if (fallbackUrl && urlToLoad !== fallbackUrl) {
-        imgEl.src = cacheBust ? addCacheBust(fallbackUrl) : fallbackUrl;
+      if (proxyUrl && proxyIsOurEndpoint) {
         imgEl.onerror = () => {
-          imgEl.src = placeholder;
-          imgEl.onerror = null;
+          setPlaceholder();
         };
+        imgEl.src = addBust(proxyUrl);
       } else {
-        imgEl.src = placeholder;
+        setPlaceholder();
       }
-      imgEl.onerror = null;
     };
-    imgEl.src = directUrl;
+    imgEl.src = addBust(directUrl);
     imgEl.dataset.loaded = 'true';
     return;
   }
-  
-  // Use proxy with auth headers
-  const requestUrl = cacheBust ? addCacheBust(proxyUrl) : proxyUrl;
-  
+
+  // No direct URL: use proxy (or proxyUrl is already a direct URL from getImageProxyUrl in fallback mode)
+  if (useFallbackMode && proxyUrl && !proxyIsOurEndpoint) {
+    imgEl.onerror = () => {
+      if (fallbackUrl) {
+        imgEl.src = addBust(fallbackUrl);
+        imgEl.onerror = setPlaceholder;
+      } else setPlaceholder();
+    };
+    imgEl.src = addBust(proxyUrl);
+    imgEl.dataset.loaded = 'true';
+    return;
+  }
+
+  // Proxy path: fetch via proxy then set blob URL
+  const requestUrl = addBust(proxyUrl);
   try {
     const response = await fetchImageWithAuth(requestUrl);
-    if (!response.ok) {
-      throw new Error(`Image fetch failed: ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`Image fetch failed: ${response.status}`);
     const blob = await response.blob();
     const objectUrl = URL.createObjectURL(blob);
     imgEl.dataset.objectUrl = objectUrl;
@@ -387,11 +431,8 @@ export async function loadImageWithAuth(imgEl, proxyUrl, fallbackUrl = null, { c
     imgEl.dataset.loaded = 'true';
   } catch (error) {
     if (fallbackUrl) {
-      imgEl.onerror = () => {
-        imgEl.src = placeholder;
-        imgEl.onerror = null;
-      };
-      imgEl.src = cacheBust ? addCacheBust(fallbackUrl) : fallbackUrl;
+      imgEl.onerror = setPlaceholder;
+      imgEl.src = addBust(fallbackUrl);
     } else {
       imgEl.src = placeholder;
     }

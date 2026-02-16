@@ -621,45 +621,57 @@
         
         let html = '<div class="earthquake-enhancements">';
         
+        // Add generated earthquake animation (GIF/video) when available
+        const videoUrl = post.video_url || post.video || post.assets?.video_url || null;
+        const isGIF = videoUrl && (videoUrl.includes('.gif') || videoUrl.includes('get-uploaded-image'));
+        if (videoUrl && isGIF) {
+            const absoluteVideoUrl = ensureAbsoluteImageUrl(videoUrl);
+            html += `
+                <div class="earthquake-animation-section earthquake-section">
+                    <h2 class="earthquake-section-heading">Animated Visualization</h2>
+                    <div class="article-media earthquake-animation-media">
+                        <img src="${escapeHtml(absoluteVideoUrl)}" alt="Animated earthquake visualization near ${escapeHtml(locationDisplay)}" loading="lazy" style="width: 100%; max-width: 100%; height: auto; border-radius: 4px; border: 1px solid #e5e5e5;">
+                    </div>
+                </div>
+            `;
+        }
+        
         // Add interactive map container (only if we have coordinates)
         if (lat && lon) {
             html += `
-                <div class="earthquake-map-container" style="margin: 2rem 0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
-                    <div id="earthquake-interactive-map" style="width: 100%; height: 500px; background: #f0f0f0;"></div>
+                <div class="earthquake-map-container">
+                    <div id="earthquake-interactive-map" style="width: 100%; height: 500px;"></div>
                 </div>
             `;
         }
         
         // Add location details section
         html += `
-            <div class="earthquake-details-section" style="margin: 2rem 0; padding: 1.5rem; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
-                <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
-                    <span style="display: inline-flex; align-items: center; color: #4A9EFF;">${getIconSVG('location', 24, '#4A9EFF')}</span>
-                    Location Details
-                </h2>
-                <div class="earthquake-details-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-                    <div class="detail-card" style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
-                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem;">Magnitude</div>
-                        <div style="font-size: 1.5rem; font-weight: 700; color: #fff;">M${magnitudeFormatted}</div>
+            <div class="earthquake-details-section earthquake-section">
+                <h2 class="earthquake-section-heading">Location Details</h2>
+                <div class="earthquake-details-grid">
+                    <div class="detail-card">
+                        <div class="earthquake-label">Magnitude</div>
+                        <div style="font-size: 1.25rem; font-weight: 700; color: #1a1a1a;">M${magnitudeFormatted}</div>
                     </div>
                     ${depthFormatted ? `
-                    <div class="detail-card" style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
-                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem;">Depth</div>
-                        <div style="font-size: 1.5rem; font-weight: 700; color: #fff;">${depthFormatted}</div>
+                    <div class="detail-card">
+                        <div class="earthquake-label">Depth</div>
+                        <div style="font-size: 1.25rem; font-weight: 700; color: #1a1a1a;">${depthFormatted}</div>
                     </div>
                     ` : ''}
                     ${lat && lon ? `
-                    <div class="detail-card" style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
-                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem;">Coordinates</div>
-                        <div style="font-size: 0.875rem; font-weight: 600; color: #fff; font-family: 'Courier New', monospace;">${Math.abs(lat).toFixed(4)}°${lat >= 0 ? 'N' : 'S'}, ${Math.abs(lon).toFixed(4)}°${lon >= 0 ? 'E' : 'W'}</div>
+                    <div class="detail-card">
+                        <div class="earthquake-label">Coordinates</div>
+                        <div style="font-size: 0.875rem; font-weight: 600; color: #1a1a1a; font-family: 'Courier New', monospace;">${Math.abs(lat).toFixed(4)}°${lat >= 0 ? 'N' : 'S'}, ${Math.abs(lon).toFixed(4)}°${lon >= 0 ? 'E' : 'W'}</div>
                     </div>
                     ` : ''}
-                    <div class="detail-card" style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
-                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem;">Location</div>
-                        <div style="font-size: 0.875rem; font-weight: 600; color: #fff;">
+                    <div class="detail-card">
+                        <div class="earthquake-label">Location</div>
+                        <div style="font-size: 0.9375rem; font-weight: 600; color: #1a1a1a;">
                             ${escapeHtml(locationDisplay)}
                             ${locationEnglishName && locationEnglishName !== locationDisplay ? `
-                                <div style="font-size: 0.75rem; color: rgba(255,255,255,0.7); margin-top: 0.25rem; font-weight: 400;">
+                                <div style="font-size: 0.75rem; color: #666; margin-top: 0.25rem; font-weight: 400;">
                                     ${escapeHtml(locationEnglishName)}
                                 </div>
                             ` : ''}
@@ -678,61 +690,52 @@
         
         // Add impact assessment section (always show if available)
         if (impactAssessment) {
-            const severityColor = impactAssessment.severity === 'CRITICAL' ? '#d32f2f' : 
-                                 impactAssessment.severity === 'HIGH' ? '#f57c00' : 
-                                 impactAssessment.severity === 'MODERATE' ? '#fbc02d' : '#388e3c';
+            const severityClass = impactAssessment.severity === 'CRITICAL' ? 'severity-critical' : 
+                                 impactAssessment.severity === 'HIGH' ? 'severity-high' : 
+                                 impactAssessment.severity === 'MODERATE' ? 'severity-moderate' : 'severity-low';
             html += `
-                <div id="impact-assessment" class="impact-assessment-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%); border-radius: 12px; border-left: 4px solid ${severityColor}; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
-                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="display: inline-flex; align-items: center; color: ${severityColor};">${getIconSVG('chart', 24, severityColor)}</span>
-                        AI Impact Assessment
-                    </h2>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
-                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
-                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">Risk Score</div>
-                            <div style="font-size: 2.5rem; font-weight: 700; color: ${severityColor}; line-height: 1;">${impactAssessment.riskScore || 0}/100</div>
-                            <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8); margin-top: 0.5rem; font-weight: 600;">${impactAssessment.severity || 'UNKNOWN'}</div>
+                <div id="impact-assessment" class="impact-assessment-section earthquake-section">
+                    <h2 class="earthquake-section-heading">AI Impact Assessment</h2>
+                    <div class="earthquake-metric-grid">
+                        <div class="earthquake-metric-card">
+                            <div class="earthquake-label">Risk Score</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; line-height: 1.2;" class="${severityClass}">${impactAssessment.riskScore || 0}/100</div>
+                            <div style="font-size: 0.875rem; color: #666; margin-top: 0.25rem;">${impactAssessment.severity || 'UNKNOWN'}</div>
                         </div>
                         ${impactAssessment.affectedPopulation ? `
-                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
-                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">Affected Population</div>
-                            <div style="font-size: 2rem; font-weight: 700; color: #fff; line-height: 1;">
+                        <div class="earthquake-metric-card">
+                            <div class="earthquake-label">Affected Population</div>
+                            <div style="font-size: 1.25rem; font-weight: 700; color: #1a1a1a; line-height: 1.2;">
                                 ${impactAssessment.affectedPopulation >= 1000000 ? (impactAssessment.affectedPopulation / 1000000).toFixed(2) + 'M' : 
                                   impactAssessment.affectedPopulation >= 1000 ? (impactAssessment.affectedPopulation / 1000).toFixed(1) + 'K' : 
                                   impactAssessment.affectedPopulation.toLocaleString()}
                             </div>
-                            <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8); margin-top: 0.5rem;">people potentially affected</div>
+                            <div style="font-size: 0.75rem; color: #666; margin-top: 0.25rem;">people potentially affected</div>
                         </div>
                         ` : ''}
                         ${impactAssessment.populationDensity ? `
-                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
-                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">Population Density</div>
-                            <div style="font-size: 2rem; font-weight: 700; color: #4A90E2; line-height: 1;">${impactAssessment.populationDensity.toFixed(0)}</div>
-                            <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8); margin-top: 0.5rem;">people per km²</div>
+                        <div class="earthquake-metric-card">
+                            <div class="earthquake-label">Population Density</div>
+                            <div style="font-size: 1.25rem; font-weight: 700; color: #1a1a1a;">${impactAssessment.populationDensity.toFixed(0)}</div>
+                            <div style="font-size: 0.75rem; color: #666; margin-top: 0.25rem;">people per km²</div>
                         </div>
                         ` : ''}
                         ${impactAssessment.affectedRadius ? `
-                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
-                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">Affected Radius</div>
-                            <div style="font-size: 2rem; font-weight: 700; color: #fff; line-height: 1;">${impactAssessment.affectedRadius.toFixed(1)}</div>
-                            <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8); margin-top: 0.5rem;">kilometers</div>
+                        <div class="earthquake-metric-card">
+                            <div class="earthquake-label">Affected Radius</div>
+                            <div style="font-size: 1.25rem; font-weight: 700; color: #1a1a1a;">${impactAssessment.affectedRadius.toFixed(1)} km</div>
                         </div>
                         ` : ''}
                     </div>
                     
                     ${impactAssessment.nearbyCities && impactAssessment.nearbyCities.length > 0 ? `
-                    <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1);">
-                        <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem; color: rgba(255,255,255,0.9); display: flex; align-items: center; gap: 0.5rem;">
-                            <span style="display: inline-flex; align-items: center; color: #4A90E2;">${getIconSVG('location', 20, '#4A90E2')}</span>
-                            Nearby Cities & Population
-                        </h3>
-                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem;">
+                    <div class="earthquake-subsection">
+                        <h3 class="earthquake-subsection-heading">Nearby Cities & Population</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.5rem;">
                             ${impactAssessment.nearbyCities.slice(0, 8).map(city => `
-                                <div style="padding: 0.875rem; background: rgba(255,255,255,0.05); border-radius: 8px; border-left: 3px solid #4A90E2;">
-                                    <div style="font-weight: 600; color: #fff; margin-bottom: 0.25rem; font-size: 0.9375rem;">${escapeHtml(city.name || 'Unknown')}</div>
-                                    <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6);">
-                                        ${city.population ? city.population.toLocaleString() + ' people' : 'Population data unavailable'}
-                                    </div>
+                                <div style="padding: 0.5em 0; border-bottom: 1px solid #e5e5e5;">
+                                    <div style="font-weight: 600; color: #1a1a1a; font-size: 0.9375rem;">${escapeHtml(city.name || 'Unknown')}</div>
+                                    <div class="earthquake-label" style="margin-bottom: 0;">${city.population ? city.population.toLocaleString() + ' people' : 'Population data unavailable'}</div>
                                 </div>
                             `).join('')}
                         </div>
@@ -740,39 +743,17 @@
                     ` : ''}
                     
                     ${impactAssessment.criticalInfrastructure ? `
-                    <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1);">
-                        <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem; color: rgba(255,255,255,0.9); display: flex; align-items: center; gap: 0.5rem;">
-                            <span style="display: inline-flex; align-items: center; color: #f57c00;">${getIconSVG('building', 20, '#f57c00')}</span>
-                            Critical Infrastructure at Risk
-                        </h3>
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
-                            <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; text-align: center; border: 1px solid rgba(255,255,255,0.1);">
-                                <div style="font-size: 2rem; font-weight: 700; color: #e74c3c; margin-bottom: 0.25rem;">${impactAssessment.criticalInfrastructure.hospitals || 0}</div>
-                                <div style="font-size: 0.75rem; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 0.5px;">Hospitals</div>
-                            </div>
-                            <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; text-align: center; border: 1px solid rgba(255,255,255,0.1);">
-                                <div style="font-size: 2rem; font-weight: 700; color: #3498db; margin-bottom: 0.25rem;">${impactAssessment.criticalInfrastructure.schools || 0}</div>
-                                <div style="font-size: 0.75rem; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 0.5px;">Schools</div>
-                            </div>
-                            <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; text-align: center; border: 1px solid rgba(255,255,255,0.1);">
-                                <div style="font-size: 2rem; font-weight: 700; color: #9b59b6; margin-bottom: 0.25rem;">${impactAssessment.criticalInfrastructure.airports || 0}</div>
-                                <div style="font-size: 0.75rem; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 0.5px;">Airports</div>
-                            </div>
-                            <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; text-align: center; border: 1px solid rgba(255,255,255,0.1);">
-                                <div style="font-size: 2rem; font-weight: 700; color: #f39c12; margin-bottom: 0.25rem;">${impactAssessment.criticalInfrastructure.powerPlants || 0}</div>
-                                <div style="font-size: 0.75rem; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 0.5px;">Power Plants</div>
-                            </div>
-                            ${impactAssessment.criticalInfrastructure.dams ? `
-                            <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; text-align: center; border: 1px solid rgba(255,255,255,0.1);">
-                                <div style="font-size: 2rem; font-weight: 700; color: #1abc9c; margin-bottom: 0.25rem;">${impactAssessment.criticalInfrastructure.dams || 0}</div>
-                                <div style="font-size: 0.75rem; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 0.5px;">Dams</div>
-                            </div>
-                            ` : ''}
+                    <div class="earthquake-subsection">
+                        <h3 class="earthquake-subsection-heading">Critical Infrastructure at Risk</h3>
+                        <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
+                            <div><span style="font-weight: 700; color: #1a1a1a;">${impactAssessment.criticalInfrastructure.hospitals || 0}</span> <span class="earthquake-label" style="margin: 0;">Hospitals</span></div>
+                            <div><span style="font-weight: 700; color: #1a1a1a;">${impactAssessment.criticalInfrastructure.schools || 0}</span> <span class="earthquake-label" style="margin: 0;">Schools</span></div>
+                            <div><span style="font-weight: 700; color: #1a1a1a;">${impactAssessment.criticalInfrastructure.airports || 0}</span> <span class="earthquake-label" style="margin: 0;">Airports</span></div>
+                            <div><span style="font-weight: 700; color: #1a1a1a;">${impactAssessment.criticalInfrastructure.powerPlants || 0}</span> <span class="earthquake-label" style="margin: 0;">Power Plants</span></div>
+                            ${impactAssessment.criticalInfrastructure.dams ? `<div><span style="font-weight: 700; color: #1a1a1a;">${impactAssessment.criticalInfrastructure.dams || 0}</span> <span class="earthquake-label" style="margin: 0;">Dams</span></div>` : ''}
                         </div>
                         ${impactAssessment.criticalInfrastructure.details && (impactAssessment.criticalInfrastructure.details.hospitals?.length > 0 || impactAssessment.criticalInfrastructure.details.schools?.length > 0) ? `
-                        <div style="margin-top: 1rem; padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 8px; font-size: 0.875rem; color: rgba(255,255,255,0.7);">
-                            <strong style="color: rgba(255,255,255,0.9);">Note:</strong> Infrastructure data is based on OpenStreetMap and may not be complete. Always follow official emergency guidance.
-                        </div>
+                        <p style="margin: 0.75em 0 0; font-size: 0.8125rem; color: #666;"><strong>Note:</strong> Infrastructure data is based on OpenStreetMap and may not be complete. Always follow official emergency guidance.</p>
                         ` : ''}
                     </div>
                     ` : ''}
@@ -780,37 +761,27 @@
             `;
         } else {
             html += `
-                <div id="impact-assessment" class="impact-assessment-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%); border-radius: 12px; border-left: 4px solid #666; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
-                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="display: inline-flex; align-items: center; color: #888;">${getIconSVG('chart', 24, '#888')}</span>
-                        AI Impact Assessment
-                    </h2>
-                    <p style="font-size: 0.875rem; color: rgba(255,255,255,0.7); margin: 0;">Assessment data will appear here when available.</p>
+                <div id="impact-assessment" class="impact-assessment-section earthquake-section">
+                    <h2 class="earthquake-section-heading">AI Impact Assessment</h2>
+                    <p style="font-size: 0.9375rem; color: #666; margin: 0;">Assessment data will appear here when available.</p>
                 </div>
             `;
         }
         
         // Add tsunami risk section
         if (tsunamiAssessment && tsunamiAssessment.riskLevel !== 'LOW') {
-            const riskColor = tsunamiAssessment.riskLevel === 'HIGH' ? '#d32f2f' : '#f57c00';
+            const riskClass = tsunamiAssessment.riskLevel === 'HIGH' ? 'severity-critical' : 'severity-high';
             html += `
-                <div class="tsunami-risk-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(255,152,0,0.1) 0%, rgba(255,152,0,0.05) 100%); border-radius: 12px; border-left: 4px solid ${riskColor};">
-                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="display: inline-flex; align-items: center; color: ${riskColor};">${getIconSVG('wave', 24, riskColor)}</span>
-                        Tsunami Risk Assessment
-                    </h2>
-                    <div style="font-size: 1.125rem; font-weight: 600; color: ${riskColor}; margin-bottom: 0.5rem;">
-                        ${tsunamiAssessment.riskLevel} RISK
-                    </div>
-                    <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8); line-height: 1.6;">
+                <div class="tsunami-risk-section earthquake-section">
+                    <h2 class="earthquake-section-heading">Tsunami Risk Assessment</h2>
+                    <div style="font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.5rem;" class="${riskClass}">${tsunamiAssessment.riskLevel} RISK</div>
+                    <p style="font-size: 0.9375rem; color: #1a1a1a; line-height: 1.6; margin: 0 0 0.5em 0;">
                         ${tsunamiAssessment.assessment || 'Monitor official tsunami warnings.'}
-                    </div>
+                    </p>
                     ${tsunamiAssessment.travelTime ? `
-                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
-                        <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8);">
-                            Estimated travel time to coast: <strong>${tsunamiAssessment.travelTime.hours}h ${tsunamiAssessment.travelTime.minutes}m</strong>
-                        </div>
-                    </div>
+                    <p style="font-size: 0.875rem; color: #666; margin: 0.5em 0 0;">
+                        Estimated travel time to coast: <strong>${tsunamiAssessment.travelTime.hours}h ${tsunamiAssessment.travelTime.minutes}m</strong>
+                    </p>
                     ` : ''}
                 </div>
             `;
@@ -818,92 +789,74 @@
         
         // Add aftershock forecast section (always show if available)
         if (aftershockForecast) {
-            const probabilityColor = aftershockForecast.probability24h >= 70 ? '#d32f2f' : 
-                                   aftershockForecast.probability24h >= 40 ? '#f57c00' : 
-                                   aftershockForecast.probability24h >= 20 ? '#fbc02d' : '#388e3c';
+            const probClass = aftershockForecast.probability24h >= 70 ? 'severity-critical' : 
+                             aftershockForecast.probability24h >= 40 ? 'severity-high' : 
+                             aftershockForecast.probability24h >= 20 ? 'severity-moderate' : 'severity-low';
             html += `
-                <div class="aftershock-forecast-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(156,39,176,0.15) 0%, rgba(156,39,176,0.05) 100%); border-radius: 12px; border-left: 4px solid #9c27b0; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
-                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="display: inline-flex; align-items: center; color: #9c27b0;">${getIconSVG('chart', 24, '#9c27b0')}</span>
-                        AI Aftershock Forecast
-                    </h2>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
-                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
-                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">24 Hour Probability</div>
-                            <div style="font-size: 2rem; font-weight: 700; color: ${probabilityColor}; line-height: 1;">${aftershockForecast.probability24h || 0}%</div>
-                            <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8); margin-top: 0.5rem;">chance of aftershocks</div>
+                <div class="aftershock-forecast-section earthquake-section">
+                    <h2 class="earthquake-section-heading">AI Aftershock Forecast</h2>
+                    <div class="earthquake-metric-grid">
+                        <div class="earthquake-metric-card">
+                            <div class="earthquake-label">24 Hour Probability</div>
+                            <div style="font-size: 1.25rem; font-weight: 700; line-height: 1.2;" class="${probClass}">${aftershockForecast.probability24h || 0}%</div>
+                            <div style="font-size: 0.75rem; color: #666;">chance of aftershocks</div>
                         </div>
-                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
-                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">Expected Largest</div>
-                            <div style="font-size: 2rem; font-weight: 700; color: #9c27b0; line-height: 1;">M${(aftershockForecast.expectedLargestAftershock || 0).toFixed(1)}</div>
-                            <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8); margin-top: 0.5rem;">magnitude estimate</div>
+                        <div class="earthquake-metric-card">
+                            <div class="earthquake-label">Expected Largest</div>
+                            <div style="font-size: 1.25rem; font-weight: 700; color: #1a1a1a;">M${(aftershockForecast.expectedLargestAftershock || 0).toFixed(1)}</div>
+                            <div style="font-size: 0.75rem; color: #666;">magnitude estimate</div>
                         </div>
                         ${aftershockForecast.probability48h !== undefined ? `
-                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
-                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">48 Hour Probability</div>
-                            <div style="font-size: 2rem; font-weight: 700; color: #9c27b0; line-height: 1;">${aftershockForecast.probability48h}%</div>
-                            <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8); margin-top: 0.5rem;">chance of aftershocks</div>
+                        <div class="earthquake-metric-card">
+                            <div class="earthquake-label">48 Hour Probability</div>
+                            <div style="font-size: 1.25rem; font-weight: 700; color: #1a1a1a;">${aftershockForecast.probability48h}%</div>
                         </div>
                         ` : ''}
                         ${aftershockForecast.probability7d !== undefined ? `
-                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
-                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">7 Day Probability</div>
-                            <div style="font-size: 2rem; font-weight: 700; color: #9c27b0; line-height: 1;">${aftershockForecast.probability7d}%</div>
-                            <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8); margin-top: 0.5rem;">chance of aftershocks</div>
+                        <div class="earthquake-metric-card">
+                            <div class="earthquake-label">7 Day Probability</div>
+                            <div style="font-size: 1.25rem; font-weight: 700; color: #1a1a1a;">${aftershockForecast.probability7d}%</div>
                         </div>
                         ` : ''}
                     </div>
                     ${aftershockForecast.forecast ? `
-                    <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 1rem; font-size: 0.875rem; color: rgba(255,255,255,0.9); line-height: 1.6;">
+                    <p style="font-size: 0.9375rem; color: #1a1a1a; line-height: 1.6; margin: 0.75em 0 0;">
                         ${aftershockForecast.forecast}
-                    </div>
+                    </p>
                     ` : ''}
                     ${aftershockForecast.recommendation ? `
-                    <div style="padding: 1rem; background: rgba(156,39,176,0.2); border-radius: 8px; border-left: 3px solid #9c27b0;">
-                        <div style="font-size: 0.875rem; color: rgba(255,255,255,0.95);">
-                            <span style="display: inline-flex; align-items: center; gap: 0.5rem; vertical-align: middle;">
-                                <span style="display: inline-flex; align-items: center; color: #9c27b0;">${getIconSVG('lightbulb', 18, '#9c27b0')}</span>
-                                <strong style="color: #fff;">AI Recommendation:</strong> ${aftershockForecast.recommendation}
-                            </span>
-                        </div>
-                    </div>
+                    <p style="font-size: 0.875rem; color: #1a1a1a; margin: 0.75em 0 0; padding-left: 1em; border-left: 3px solid #1a1a1a;">
+                        <strong>Recommendation:</strong> ${aftershockForecast.recommendation}
+                    </p>
                     ` : ''}
                 </div>
             `;
         } else {
             html += `
-                <div class="aftershock-forecast-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(156,39,176,0.15) 0%, rgba(156,39,176,0.05) 100%); border-radius: 12px; border-left: 4px solid #9c27b0; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
-                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="display: inline-flex; align-items: center; color: #9c27b0;">${getIconSVG('chart', 24, '#9c27b0')}</span>
-                        AI Aftershock Forecast
-                    </h2>
-                    <p style="font-size: 0.875rem; color: rgba(255,255,255,0.7); margin: 0;">Assessment data will appear here when available.</p>
+                <div class="aftershock-forecast-section earthquake-section">
+                    <h2 class="earthquake-section-heading">AI Aftershock Forecast</h2>
+                    <p style="font-size: 0.9375rem; color: #666; margin: 0;">Assessment data will appear here when available.</p>
                 </div>
             `;
         }
         
         // Add anomaly detection section
         if (anomalyDetection && anomalyDetection.anomalyLevel !== 'NORMAL') {
-            const anomalyColor = anomalyDetection.anomalyLevel === 'HIGH' ? '#d32f2f' : 
-                                anomalyDetection.anomalyLevel === 'MEDIUM' ? '#f57c00' : '#fbc02d';
+            const anomalyClass = anomalyDetection.anomalyLevel === 'HIGH' ? 'severity-critical' : 
+                                anomalyDetection.anomalyLevel === 'MEDIUM' ? 'severity-high' : 'severity-moderate';
             html += `
-                <div class="anomaly-detection-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(211,47,47,0.1) 0%, rgba(211,47,47,0.05) 100%); border-radius: 12px; border-left: 4px solid ${anomalyColor};">
-                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="display: inline-flex; align-items: center; color: ${anomalyColor};">${getIconSVG('warning', 24, anomalyColor)}</span>
-                        Anomaly Detection
-                    </h2>
-                    <div style="font-size: 1.125rem; font-weight: 600; color: ${anomalyColor}; margin-bottom: 0.5rem;">
-                        ${anomalyDetection.anomalyLevel} ANOMALY LEVEL
-                    </div>
-                    <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8); line-height: 1.6; margin-bottom: 1rem;">
+                <div class="anomaly-detection-section earthquake-section">
+                    <h2 class="earthquake-section-heading">Anomaly Detection</h2>
+                    <div style="font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.5rem;" class="${anomalyClass}">${anomalyDetection.anomalyLevel} ANOMALY LEVEL</div>
+                    <p style="font-size: 0.9375rem; color: #1a1a1a; line-height: 1.6; margin: 0 0 0.5em 0;">
                         ${anomalyDetection.summary || 'Unusual earthquake patterns detected.'}
-                    </div>
+                    </p>
                     ${anomalyDetection.anomalies && anomalyDetection.anomalies.length > 0 ? `
-                    <div style="margin-top: 1rem;">
+                    <div style="margin-top: 0.75em;">
                         ${anomalyDetection.anomalies.map(anomaly => `
-                            <div style="padding: 0.75rem; margin-bottom: 0.5rem; background: rgba(255,255,255,0.05); border-radius: 8px; border-left: 3px solid ${anomalyColor};">
-                                <div style="font-size: 0.75rem; font-weight: 600; color: ${anomalyColor}; text-transform: uppercase; margin-bottom: 0.25rem;">${anomaly.type}</div>
-                                <div style="font-size: 0.875rem; color: rgba(255,255,255,0.9);">${escapeHtml(anomaly.description)}</div>
+                            <div style="padding: 0.5em 0; border-bottom: 1px solid #e5e5e5;">
+                                <div class="earthquake-label">${anomaly.type}</div>
+                                <div style="font-size: 0.875rem; color: #1a1a1a;">${escapeHtml(anomaly.description)}</div>
                             </div>
                         `).join('')}
                     </div>
@@ -912,95 +865,45 @@
             `;
         } else {
             html += `
-                <div class="anomaly-detection-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(211,47,47,0.1) 0%, rgba(211,47,47,0.05) 100%); border-radius: 12px; border-left: 4px solid #888;">
-                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="display: inline-flex; align-items: center; color: #888;">${getIconSVG('warning', 24, '#888')}</span>
-                        Anomaly Detection
-                    </h2>
-                    <p style="font-size: 0.875rem; color: rgba(255,255,255,0.7); margin: 0;">Assessment data will appear here when available.</p>
+                <div class="anomaly-detection-section earthquake-section">
+                    <h2 class="earthquake-section-heading">Anomaly Detection</h2>
+                    <p style="font-size: 0.9375rem; color: #666; margin: 0;">Assessment data will appear here when available.</p>
                 </div>
             `;
         }
         
         // Add comprehensive Tier Breakdown section (if we have impact assessment)
         if (impactAssessment && tierBreakdown) {
+            const t1Class = impactAssessment.severity === 'CRITICAL' ? 'severity-critical' : impactAssessment.severity === 'HIGH' ? 'severity-high' : impactAssessment.severity === 'MODERATE' ? 'severity-moderate' : 'severity-low';
+            const t2Class = tierBreakdown.tier2 === 'CRITICAL' ? 'severity-critical' : tierBreakdown.tier2 === 'HIGH' ? 'severity-high' : tierBreakdown.tier2 === 'MODERATE' ? 'severity-moderate' : 'severity-low';
+            const t3Class = tierBreakdown.tier3 === 'HIGH' ? 'severity-high' : tierBreakdown.tier3 === 'MODERATE' ? 'severity-moderate' : 'severity-low';
             html += `
-                <div class="tier-breakdown-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(33,150,243,0.15) 0%, rgba(33,150,243,0.05) 100%); border-radius: 12px; border-left: 4px solid #2196f3; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
-                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="display: inline-flex; align-items: center; color: #2196f3;">${getIconSVG('chart', 24, '#2196f3')}</span>
-                        Risk Tier Breakdown
-                    </h2>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
-                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">Overall Risk</div>
-                            <div style="font-size: 1.5rem; font-weight: 700; color: ${impactAssessment.severity === 'CRITICAL' ? '#d32f2f' : impactAssessment.severity === 'HIGH' ? '#f57c00' : impactAssessment.severity === 'MODERATE' ? '#fbc02d' : '#388e3c'};">
-                                ${impactAssessment.severity || 'UNKNOWN'}
-                            </div>
-                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-top: 0.5rem;">Based on multiple factors</div>
+                <div class="tier-breakdown-section earthquake-section">
+                    <h2 class="earthquake-section-heading">Risk Tier Breakdown</h2>
+                    <div class="earthquake-metric-grid">
+                        <div class="earthquake-metric-card">
+                            <div class="earthquake-label">Overall Risk</div>
+                            <div style="font-size: 1.25rem; font-weight: 700;" class="${t1Class}">${impactAssessment.severity || 'UNKNOWN'}</div>
+                            <div style="font-size: 0.75rem; color: #666;">Based on multiple factors</div>
                         </div>
-                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
-                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">Population Risk</div>
-                            <div style="font-size: 1.5rem; font-weight: 700; color: ${tierBreakdown.tier2 === 'CRITICAL' ? '#d32f2f' : tierBreakdown.tier2 === 'HIGH' ? '#f57c00' : tierBreakdown.tier2 === 'MODERATE' ? '#fbc02d' : '#388e3c'};">
-                                ${tierBreakdown.tier2}
-                            </div>
-                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-top: 0.5rem;">${impactAssessment.affectedPopulation ? (impactAssessment.affectedPopulation >= 1000000 ? (impactAssessment.affectedPopulation / 1000000).toFixed(2) + 'M' : (impactAssessment.affectedPopulation / 1000).toFixed(1) + 'K') : 'N/A'} people</div>
+                        <div class="earthquake-metric-card">
+                            <div class="earthquake-label">Population Risk</div>
+                            <div style="font-size: 1.25rem; font-weight: 700;" class="${t2Class}">${tierBreakdown.tier2}</div>
+                            <div style="font-size: 0.75rem; color: #666;">${impactAssessment.affectedPopulation ? (impactAssessment.affectedPopulation >= 1000000 ? (impactAssessment.affectedPopulation / 1000000).toFixed(2) + 'M' : (impactAssessment.affectedPopulation / 1000).toFixed(1) + 'K') : 'N/A'} people</div>
                         </div>
-                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
-                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">Density Risk</div>
-                            <div style="font-size: 1.5rem; font-weight: 700; color: ${tierBreakdown.tier3 === 'HIGH' ? '#f57c00' : tierBreakdown.tier3 === 'MODERATE' ? '#fbc02d' : '#388e3c'};">
-                                ${tierBreakdown.tier3}
-                            </div>
-                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-top: 0.5rem;">${impactAssessment.populationDensity ? impactAssessment.populationDensity.toFixed(0) + '/km²' : 'N/A'}</div>
+                        <div class="earthquake-metric-card">
+                            <div class="earthquake-label">Density Risk</div>
+                            <div style="font-size: 1.25rem; font-weight: 700;" class="${t3Class}">${tierBreakdown.tier3}</div>
+                            <div style="font-size: 0.75rem; color: #666;">${impactAssessment.populationDensity ? impactAssessment.populationDensity.toFixed(0) + '/km²' : 'N/A'}</div>
                         </div>
                     </div>
                 </div>
             `;
         } else {
             html += `
-                <div class="tier-breakdown-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(33,150,243,0.15) 0%, rgba(33,150,243,0.05) 100%); border-radius: 12px; border-left: 4px solid #2196f3; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
-                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="display: inline-flex; align-items: center; color: #2196f3;">${getIconSVG('chart', 24, '#2196f3')}</span>
-                        Risk Tier Breakdown
-                    </h2>
-                    <p style="font-size: 0.875rem; color: rgba(255,255,255,0.7); margin: 0;">Assessment data will appear here when available.</p>
-                </div>
-            `;
-        }
-        
-        // Add Economic Impact section only for M4+ with data (small quakes have no meaningful regional economic impact)
-        if (magnitude >= 4 && impactAssessment?.economicImpact?.estimatedGDP) {
-            const economic = impactAssessment.economicImpact;
-            html += `
-                <div class="economic-impact-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(76,175,80,0.1) 0%, rgba(76,175,80,0.05) 100%); border-radius: 12px; border-left: 4px solid #4caf50;">
-                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="display: inline-flex; align-items: center; color: #4caf50;">${getIconSVG('dollar', 24, '#4caf50')}</span>
-                        Economic Impact Assessment
-                    </h2>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-                        ${economic.estimatedGDP ? `
-                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
-                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem;">Estimated GDP Affected</div>
-                            <div style="font-size: 1.5rem; font-weight: 700; color: #4caf50;">$${(economic.estimatedGDP / 1000000000).toFixed(2)}B</div>
-                            <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8); margin-top: 0.25rem;">${economic.country || 'Region'}</div>
-                        </div>
-                        ` : ''}
-                        ${economic.gdpPerCapita ? `
-                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
-                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem;">GDP Per Capita</div>
-                            <div style="font-size: 1.5rem; font-weight: 700; color: #4caf50;">$${economic.gdpPerCapita.toLocaleString()}</div>
-                        </div>
-                        ` : ''}
-                    </div>
-                </div>
-            `;
-        } else {
-            html += `
-                <div class="economic-impact-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(76,175,80,0.1) 0%, rgba(76,175,80,0.05) 100%); border-radius: 12px; border-left: 4px solid #4caf50;">
-                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="display: inline-flex; align-items: center; color: #4caf50;">${getIconSVG('dollar', 24, '#4caf50')}</span>
-                        Economic Impact Assessment
-                    </h2>
-                    <p style="font-size: 0.875rem; color: rgba(255,255,255,0.7); margin: 0;">${magnitude < 4 ? 'Economic impact is assessed for earthquakes of magnitude 4.0 and above.' : 'Assessment data will appear here when available.'}</p>
+                <div class="tier-breakdown-section earthquake-section">
+                    <h2 class="earthquake-section-heading">Risk Tier Breakdown</h2>
+                    <p style="font-size: 0.9375rem; color: #666; margin: 0;">Assessment data will appear here when available.</p>
                 </div>
             `;
         }
@@ -1009,29 +912,26 @@
         if (impactAssessment?.historicalComparison && impactAssessment.historicalComparison.count > 0) {
             const historical = impactAssessment.historicalComparison;
             html += `
-                <div class="historical-context-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(33,150,243,0.1) 0%, rgba(33,150,243,0.05) 100%); border-radius: 12px; border-left: 4px solid #2196f3;">
-                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="display: inline-flex; align-items: center; color: #2196f3;">${getIconSVG('document', 24, '#2196f3')}</span>
-                        Historical Context
-                    </h2>
-                    <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8); margin-bottom: 1rem; line-height: 1.6;">
+                <div class="historical-context-section earthquake-section">
+                    <h2 class="earthquake-section-heading">Historical Context</h2>
+                    <p style="font-size: 0.9375rem; color: #1a1a1a; margin: 0 0 1rem 0; line-height: 1.6;">
                         ${historical.count} similar earthquake${historical.count !== 1 ? 's' : ''} recorded in this region historically.
-                    </div>
+                    </p>
                     ${historical.largest ? `
-                    <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 0.5rem;">
-                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.25rem;">Largest Historical Event</div>
-                        <div style="font-size: 1.125rem; font-weight: 700; color: #2196f3;">M${historical.largest.magnitude?.toFixed(1) || 'N/A'}</div>
-                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-top: 0.25rem;">${historical.largest.date ? new Date(historical.largest.date).toLocaleDateString() : 'Date unknown'}</div>
+                    <div class="earthquake-metric-card" style="margin-bottom: 0.5rem;">
+                        <div class="earthquake-label">Largest Historical Event</div>
+                        <div style="font-size: 1.125rem; font-weight: 700; color: #1a1a1a;">M${historical.largest.magnitude?.toFixed(1) || 'N/A'}</div>
+                        <div style="font-size: 0.75rem; color: #666;">${historical.largest.date ? new Date(historical.largest.date).toLocaleDateString() : 'Date unknown'}</div>
                     </div>
                     ` : ''}
                     ${historical.similar && historical.similar.length > 0 ? `
-                    <div style="margin-top: 1rem;">
-                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">Similar Events (within 0.5 magnitude)</div>
+                    <div class="earthquake-subsection">
+                        <div class="earthquake-subsection-heading">Similar Events (within 0.5 magnitude)</div>
                         <div style="display: grid; gap: 0.5rem;">
                             ${historical.similar.slice(0, 3).map(eq => `
-                                <div style="padding: 0.75rem; background: rgba(255,255,255,0.05); border-radius: 6px; border-left: 3px solid #2196f3;">
-                                    <div style="font-size: 0.875rem; font-weight: 600; color: #fff;">M${eq.magnitude?.toFixed(1) || 'N/A'}</div>
-                                    <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6);">${eq.date ? new Date(eq.date).toLocaleDateString() : 'Date unknown'}</div>
+                                <div style="padding: 0.5em 0; border-bottom: 1px solid #e5e5e5;">
+                                    <div style="font-size: 0.9375rem; font-weight: 600; color: #1a1a1a;">M${eq.magnitude?.toFixed(1) || 'N/A'}</div>
+                                    <div style="font-size: 0.75rem; color: #666;">${eq.date ? new Date(eq.date).toLocaleDateString() : 'Date unknown'}</div>
                                 </div>
                             `).join('')}
                         </div>
@@ -1041,25 +941,19 @@
             `;
         } else {
             html += `
-                <div class="historical-context-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(33,150,243,0.1) 0%, rgba(33,150,243,0.05) 100%); border-radius: 12px; border-left: 4px solid #2196f3;">
-                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="display: inline-flex; align-items: center; color: #2196f3;">${getIconSVG('document', 24, '#2196f3')}</span>
-                        Historical Context
-                    </h2>
-                    <p style="font-size: 0.875rem; color: rgba(255,255,255,0.7); margin: 0;">Assessment data will appear here when available.</p>
+                <div class="historical-context-section earthquake-section">
+                    <h2 class="earthquake-section-heading">Historical Context</h2>
+                    <p style="font-size: 0.9375rem; color: #666; margin: 0;">Assessment data will appear here when available.</p>
                 </div>
             `;
         }
         
         // Add 3D visualization container with enhanced features
         html += `
-            <div class="earthquake-3d-container" style="margin: 2rem 0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.15); background: rgba(0,0,0,0.3);">
-                <div style="padding: 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; justify-content: space-between; align-items: center;">
-                    <h3 style="margin: 0; color: #fff; font-size: 1.125rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="display: inline-flex; align-items: center;">${getIconSVG('globe', 20, '#fff')}</span>
-                        Interactive 3D Visualization
-                    </h3>
-                    <div style="font-size: 0.75rem; color: rgba(255,255,255,0.8);">Drag to rotate • Scroll to zoom</div>
+            <div class="earthquake-3d-container" style="margin: 2rem 0; border-radius: 4px; overflow: hidden; border: 1px solid #e5e5e5;">
+                <div class="earthquake-3d-header">
+                    <h3 class="earthquake-3d-header-title">Interactive 3D Visualization</h3>
+                    <div class="earthquake-3d-header-hint">Drag to rotate • Scroll to zoom</div>
                 </div>
                 <div id="earthquake-3d-viewer" style="width: 100%; height: 600px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); position: relative;">
                     <div style="position: absolute; top: 10px; right: 10px; z-index: 10; background: rgba(0,0,0,0.7); padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.75rem; color: rgba(255,255,255,0.9);">
@@ -1073,8 +967,8 @@
         // Add loading placeholders for nearby locations (will be populated by JavaScript)
         html += `
             <div id="earthquake-nearby-locations" style="margin: 2rem 0;">
-                <div style="text-align: center; padding: 2rem; color: rgba(255,255,255,0.6);">
-                    <div class="skeleton" style="height: 200px; border-radius: 12px;"></div>
+                <div class="earthquake-nearby-skeleton" style="text-align: center; padding: 2rem;">
+                    <div class="skeleton" style="height: 200px; border-radius: 4px;"></div>
                 </div>
             </div>
         `;
@@ -1436,11 +1330,24 @@
             
             mapContainer._leafletMap = map;
             
-            // Force Leaflet to recalculate size so tiles load (fixes blank map when container layout is delayed)
-            map.invalidateSize();
-            setTimeout(() => {
-                map.invalidateSize();
-            }, 200);
+            // Force Leaflet to recalculate size so tiles load (container may have 0 size if created off-screen)
+            function refreshMapSize() {
+                if (mapContainer._leafletMap) {
+                    mapContainer._leafletMap.invalidateSize();
+                }
+            }
+            refreshMapSize();
+            [100, 300, 500].forEach(ms => setTimeout(refreshMapSize, ms));
+            
+            // When user scrolls to the map, recalculate size so tiles load if they didn't before
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        refreshMapSize();
+                    }
+                });
+            }, { rootMargin: '50px', threshold: 0.1 });
+            observer.observe(mapContainer);
         }
     }
     

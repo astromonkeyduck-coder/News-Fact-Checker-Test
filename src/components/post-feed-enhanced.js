@@ -18,6 +18,28 @@ const ENHANCED_CACHE_KEY = 'noteworthy-posts-cache-enhanced';
 const ENHANCED_CACHE_EXPIRY = 2 * 60 * 1000; // 2 minutes
 const ENHANCED_CACHE_VERSION = '2'; // Increment this to invalidate all caches
 
+/** Fallback posts when API is unavailable or returns empty (e.g. local dev without netlify dev) */
+const FALLBACK_POSTS = [
+  {
+    id: 'fallback-1',
+    text: 'Breaking news cards load from the API. When the API is unavailable, you see these sample posts. Run "netlify dev" locally or deploy to Netlify to load live posts.',
+    title: 'Breaking news cards load from the API',
+    datePosted: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+    author: { handle: 'newsnoteworthy', name: 'Noteworthy News' },
+    link: 'https://x.com/newsnoteworthy'
+  },
+  {
+    id: 'fallback-2',
+    text: 'Stay informed with fact-checked stories and in-depth analysis. Add posts via your Netlify functions or admin to see them here.',
+    title: 'Stay informed with fact-checked stories',
+    datePosted: new Date(Date.now() - 3600000).toISOString(),
+    createdAt: new Date(Date.now() - 3600000).toISOString(),
+    author: { handle: 'newsnoteworthy', name: 'Noteworthy News' },
+    link: 'https://x.com/newsnoteworthy'
+  }
+];
+
 // Use ENHANCED_ prefix to avoid duplicate declaration with post-feed-v2.js
 const ENHANCED_EARTHQUAKE_MIN_MAG = 5.0;
 const ENHANCED_EXCLUDED_KEYWORDS = ['volcano', 'volcanic', 'embassy'];
@@ -1098,9 +1120,13 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
       console.warn('[Enhanced Feed] Cache read failed:', e);
     }
     
-    // Show skeleton only if we don't have cached posts
+    // Show simple loading state (no skeleton shimmer) while fetching
     if (enhancedCurrentPosts.length === 0) {
-      container.innerHTML = renderSkeletonCards(5);
+      container.innerHTML = `
+        <div style="grid-column: 1 / -1; padding: 3rem 2rem; text-align: center; color: rgba(255,255,255,0.85);">
+          <p style="font-size: 1.125rem; margin: 0; font-weight: 500;">Loading posts…</p>
+        </div>
+      `;
     }
   } else {
     // Add loading indicator at the bottom for additional posts
@@ -1169,10 +1195,15 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
     }
     
     // Handle both array response and object with posts property
-    const posts = Array.isArray(data) ? data : (data.posts || data.data || []);
+    let posts = Array.isArray(data) ? data : (data.posts || data.data || []);
     enhancedCurrentPosts = (posts || []).filter(
       post => !isLowMagnitudeEarthquakeEnhanced(post) && !isExcludedAlertEnhanced(post)
     );
+    // If API returned empty, use fallback so cards always show something
+    if (enhancedCurrentPosts.length === 0) {
+      enhancedCurrentPosts = [...FALLBACK_POSTS];
+      console.log('[Enhanced Feed] API returned no posts, using fallback sample posts');
+    }
     
     console.log('[Enhanced Feed] Loaded', enhancedCurrentPosts.length, 'posts');
 
@@ -1195,41 +1226,16 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
     }
   } catch (error) {
     console.error('[Enhanced Feed] Load error:', error);
-    const errorId = 'enhanced-feed-error-' + Date.now();
-    container.innerHTML = `
-      <div style="
-        padding: 3rem;
-        text-align: center;
-        color: rgba(255,255,255,0.7);
-      ">
-        <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
-        <h3 style="color: white; margin-bottom: 0.5rem;">Failed to load posts</h3>
-        <p style="margin-bottom: 1.5rem;">${error.message}</p>
-        <button
-          id="${errorId}"
-          style="
-            padding: 0.75rem 1.5rem;
-            background: rgb(29, 155, 240);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-          "
-        >Try Again</button>
-      </div>
-    `;
-    
-    // Attach event listener safely
-    const retryButton = document.getElementById(errorId);
-    if (retryButton && window.loadEnhancedPosts) {
-      retryButton.addEventListener('click', () => {
-        if (!enhancedIsLoading && window.loadEnhancedPosts) {
-          window.loadEnhancedPosts();
-        }
-      });
-    }
+    // Use fallback posts so cards always load (e.g. when API 404 in local dev)
+    enhancedCurrentPosts = [...FALLBACK_POSTS];
+    renderEnhancedFeed();
+    // Prepend a small notice so user knows they're seeing sample posts
+    const notice = document.createElement('div');
+    notice.className = 'feed-fallback-notice';
+    notice.style.cssText = 'grid-column: 1 / -1; padding: 0.75rem 1rem; margin-bottom: 0.5rem; background: rgba(79, 172, 254, 0.15); border: 1px solid rgba(79, 172, 254, 0.3); border-radius: 8px; color: rgba(255,255,255,0.9); font-size: 0.875rem;';
+    const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    notice.innerHTML = 'Showing sample posts. ' + (isLocal ? 'Run <code>netlify dev</code> to load live posts.' : 'Live posts will appear when the API is available.');
+    container.insertBefore(notice, container.firstChild);
   } finally {
     // Remove loading indicator
     const loadingIndicator = document.getElementById('enhanced-feed-loading');
@@ -1296,8 +1302,13 @@ function renderEnhancedFeed() {
   const sorted = [...pinned, ...sortEnhancedPosts(unpinned, enhancedCurrentSort)];
 
   if (sorted.length === 0) {
-    // Show loading skeleton cards when no posts found
-    container.innerHTML = renderSkeletonCards(5);
+    // Show clear empty state (no skeleton/shimmer)
+    container.innerHTML = `
+      <div class="feed-empty-state" style="grid-column: 1 / -1; padding: 3rem 2rem; text-align: center; background: rgba(13, 31, 58, 0.4); border-radius: 16px; border: 1px solid rgba(74, 158, 255, 0.15); color: rgba(255,255,255,0.9);">
+        <p style="font-size: 1.125rem; margin: 0 0 0.5rem 0; font-weight: 600;">No posts yet</p>
+        <p style="font-size: 0.9375rem; margin: 0; color: rgba(255,255,255,0.7);">Check back soon for breaking news and updates.</p>
+      </div>
+    `;
     return;
   }
   
