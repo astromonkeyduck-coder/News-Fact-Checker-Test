@@ -4,23 +4,32 @@
  * Automatically sends a reply email to the sender confirming receipt and action
  * Processes image attachments and adds Noteworthy News logo overlay
  * Forwards all emails to richard@noteworthynews.co to richardadkns@gmail.com
- * 
+ *
+ * Breaking News Attachment Flow (NEW):
+ * When an email with image/video attachments is sent to Noteworthy:
+ * - Saves the video/image to post-media blob storage
+ * - Saves the email message text (appended to post as "Reader update")
+ * - Matches the attachment to a breaking news post by: (1) text similarity (subject + body vs post title/story), (2) recency (newer posts preferred)
+ * - Updates the matched post and article page with the saved media
+ *
  * Setup Instructions:
  * 1. Go to Resend Dashboard → Domains → Your Domain → Inbound Routes
  * 2. Create a new inbound route for richard@noteworthynews.co
  * 3. Set webhook URL to: https://your-site.netlify.app/.netlify/functions/inbound-email
  * 4. Save the route
- * 
+ *
  * Usage:
  * - Send an email to richard@noteworthynews.co with subject or body containing "ingest"
  *   The ingest-all function will be triggered automatically and an auto-reply will be sent
+ * - Send an email with image/video attachments and a message describing the story → media is saved and attached to the matching breaking news post
  * - Send an email with image attachments to automatically get them back with logo overlay
  * - All emails to richard@noteworthynews.co are automatically forwarded to richardadkns@gmail.com
- * 
+ *
  * Features:
  * - Email Forwarding: All emails to richard@noteworthynews.co are forwarded to richardadkns@gmail.com with original content and attachments
  * - Auto-Reply: Sends confirmation email to sender automatically
  * - Attachment Processing: Processes image attachments and adds Noteworthy News logo (70% opacity, top right)
+ * - Save & Attach to Post: Saves image/video attachments to blob storage and attaches to matching breaking news post based on email text and recency
  * - Non-blocking: Errors don't fail the webhook
  */
 
@@ -685,6 +694,250 @@ async function processVideoWithLogo(attachmentUrl, attachmentName, contentType) 
       stack: error.stack?.substring(0, 500)
     });
     return null;
+  }
+}
+
+/**
+ * Download attachment from URL and save to post-media blob storage.
+ * Returns the get-uploaded-image URL for use on the site.
+ */
+async function saveAttachmentToBlob(attachmentUrl, attachmentName, contentType) {
+  try {
+    if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_BLOB_READ_WRITE_TOKEN) {
+      console.warn('[Inbound Email] Blob storage not configured, cannot save attachment');
+      return null;
+    }
+
+    const isImage = contentType && (
+      contentType.startsWith('image/') ||
+      /\.(jpg|jpeg|png|gif|webp|bmp|tiff)$/i.test(attachmentName || '')
+    );
+    const isVideo = contentType && (
+      contentType.startsWith('video/') ||
+      /\.(mp4|mov|avi|mkv|webm|m4v)$/i.test(attachmentName || '')
+    );
+    if (!isImage && !isVideo) return null;
+
+    let buffer;
+    if (attachmentUrl.startsWith('http://') || attachmentUrl.startsWith('https://')) {
+      const response = await fetch(attachmentUrl);
+      if (!response.ok) throw new Error(`Download failed: ${response.status}`);
+      buffer = Buffer.from(await response.arrayBuffer());
+    } else if (attachmentUrl.startsWith('data:')) {
+      buffer = Buffer.from(attachmentUrl.split(',')[1], 'base64');
+    } else {
+      return null;
+    }
+
+    const ext = attachmentName?.match(/\.(\w+)$/)?.[1] || (isVideo ? 'mp4' : 'png');
+    const timestamp = Date.now();
+    const fileHash = Buffer.from(attachmentName || 'upload').toString('base64').replace(/[^a-zA-Z0-9]/g, '').substring(0, 16);
+    const mediaKey = `post-media-email-${timestamp}-${fileHash}.${ext}`;
+
+    const { getStore } = require('@netlify/blobs');
+    const store = getStore({
+      name: 'post-media',
+      siteID: process.env.NETLIFY_SITE_ID,
+      token: process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
+    });
+    await store.set(mediaKey, buffer, { contentType });
+
+    const baseUrl = process.env.URL || process.env.DEPLOY_PRIME_URL || 'https://noteworthynews.co';
+    const storedUrl = `${baseUrl}/.netlify/functions/get-uploaded-image?key=${encodeURIComponent(mediaKey)}`;
+
+    console.log('[Inbound Email] ✅ Saved attachment to blob:', { mediaKey, size: buffer.length, type: isVideo ? 'video' : 'image' });
+    return { url: storedUrl, mediaKey, isVideo };
+  } catch (err) {
+    console.error('[Inbound Email] Failed to save attachment:', err.message);
+    return null;
+  }
+}
+
+/**
+ * Extract significant words from text for matching.
+ */
+function extractKeywords(text) {
+  if (!text || typeof text !== 'string') return new Set();
+  const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'what', 'which', 'who', 'when', 'where', 'why', 'how']);
+  return new Set(
+    text
+      .toLowerCase()
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/[^\w\s]/g, ' ')
+      .split(/\s+/)
+      .filter(w => w.length >= 3 && !stopWords.has(w))
+  );
+}
+
+/**
+ * Find the best matching breaking news post based on email text and recency.
+ */
+async function findMatchingPost(emailSubject, emailBody) {
+  try {
+    const { getStore } = require('@netlify/blobs');
+    const store = getStore({
+      name: 'x-posts',
+      siteID: process.env.NETLIFY_SITE_ID,
+      token: process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
+    });
+
+    let indexData;
+    try {
+      indexData = await store.get('index.json', { type: 'json' });
+    } catch {
+      console.warn('[Inbound Email] No posts index found');
+      return null;
+    }
+    const ids = (indexData?.ids || []).slice(0, 50);
+    if (ids.length === 0) return null;
+
+    const emailText = `${emailSubject || ''} ${emailBody || ''}`;
+    const emailKeywords = extractKeywords(emailText);
+
+    let bestPost = null;
+    let bestScore = -1;
+    let mostRecentPost = null;
+
+    for (const id of ids) {
+      let post;
+      try {
+        post = await store.get(`post-${id}.json`, { type: 'json' });
+      } catch {
+        continue;
+      }
+      if (!post) continue;
+      if (!mostRecentPost) mostRecentPost = { ...post, _id: id };
+
+      const postText = `${post.title || ''} ${post.story || ''} ${post.text || ''} ${post.location_display || ''}`;
+      const postKeywords = extractKeywords(postText);
+
+      let overlap = 0;
+      for (const word of emailKeywords) {
+        if (postKeywords.has(word)) overlap++;
+      }
+      const overlapRatio = emailKeywords.size > 0 ? overlap / Math.max(emailKeywords.size, postKeywords.size) : 0;
+
+      const datePosted = new Date(post.datePosted || post.createdAt || post.created_at || 0);
+      const daysSince = (Date.now() - datePosted.getTime()) / (24 * 60 * 60 * 1000);
+      const recencyMultiplier = 1 / (1 + daysSince * 0.2);
+
+      const score = overlapRatio * 100 * recencyMultiplier;
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestPost = { ...post, _id: id };
+      }
+    }
+
+    const result = bestScore > 0 ? bestPost : mostRecentPost;
+    if (result) {
+      console.log('[Inbound Email] Matched post:', { id: result._id, score: bestScore > 0 ? bestScore.toFixed(2) : 'fallback (most recent)' });
+    }
+    return result;
+  } catch (err) {
+    console.error('[Inbound Email] Error finding matching post:', err.message);
+    return null;
+  }
+}
+
+/**
+ * Update a post with media URL and optionally append email message.
+ * @param appendOnly - when true, only add to images/videos array, don't set primary or add message
+ */
+async function updatePostWithMedia(postId, mediaUrl, isVideo, emailMessage, appendOnly = false) {
+  try {
+    const { getStore } = require('@netlify/blobs');
+    const store = getStore({
+      name: 'x-posts',
+      siteID: process.env.NETLIFY_SITE_ID,
+      token: process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
+    });
+
+    const postKey = `post-${postId}.json`;
+    let post;
+    try {
+      post = await store.get(postKey, { type: 'json' });
+    } catch {
+      console.warn('[Inbound Email] Post not found:', postId);
+      return false;
+    }
+    if (!post) return false;
+
+    const updatedPost = { ...post };
+    const messageSnippet = !appendOnly && emailMessage ? String(emailMessage).trim().substring(0, 500) : '';
+
+    if (isVideo) {
+      if (!updatedPost.videos) updatedPost.videos = [];
+      if (!updatedPost.videos.includes(mediaUrl)) updatedPost.videos.unshift(mediaUrl);
+      if (!appendOnly) {
+        updatedPost.video_url = mediaUrl;
+        updatedPost.video = mediaUrl;
+      }
+    } else {
+      if (!updatedPost.images) updatedPost.images = [];
+      if (!updatedPost.images.includes(mediaUrl)) updatedPost.images.unshift(mediaUrl);
+      if (!appendOnly) {
+        updatedPost.primary_image_url = mediaUrl;
+        updatedPost.image = mediaUrl;
+        updatedPost.image_url = mediaUrl;
+      }
+    }
+
+    if (messageSnippet) {
+      const timestamp = new Date().toISOString().split('T')[0];
+      const addition = `\n\n— Reader update (${timestamp}): ${messageSnippet}`;
+      updatedPost.story = (updatedPost.story || updatedPost.text || '') + addition;
+      updatedPost.text = updatedPost.story;
+    }
+
+    await store.setJSON(postKey, updatedPost);
+    console.log('[Inbound Email] ✅ Updated post with media:', { postId, isVideo, hasMessage: !!messageSnippet });
+    return true;
+  } catch (err) {
+    console.error('[Inbound Email] Failed to update post:', err.message);
+    return false;
+  }
+}
+
+/**
+ * Save attachments to blob storage and attach to the best-matching breaking news post.
+ * Runs when email has image/video attachments and body text.
+ */
+async function saveAttachmentsAndAttachToPost(attachments, subject, textBody, htmlBody) {
+  if (!attachments || attachments.length === 0) return;
+
+  const emailBody = (textBody || '') + ' ' + extractTextFromHtml(htmlBody || '');
+  const emailMessage = (subject || '').trim() ? `${subject}\n\n${emailBody}`.trim() : emailBody.trim();
+
+  const savedMedia = [];
+  for (const att of attachments) {
+    const url = att.download_url || att.url || att.href || att.content_url || att.downloadUrl;
+    const name = att.filename || att.name || att.file_name || 'attachment';
+    const type = att.content_type || att.type || att.mime_type || 'application/octet-stream';
+
+    const isImage = type.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|bmp|tiff)$/i.test(name);
+    const isVideo = type.startsWith('video/') || /\.(mp4|mov|avi|mkv|webm|m4v)$/i.test(name);
+    if (!url || (!isImage && !isVideo)) continue;
+
+    const result = await saveAttachmentToBlob(url, name, type);
+    if (result) savedMedia.push(result);
+  }
+
+  if (savedMedia.length === 0) return;
+
+  const post = await findMatchingPost(subject, emailBody);
+  if (!post) {
+    console.log('[Inbound Email] No matching post found, media saved but not attached');
+    return;
+  }
+
+  const postId = post._id || post.id;
+  const primaryMedia = savedMedia[0];
+  await updatePostWithMedia(postId, primaryMedia.url, primaryMedia.isVideo, emailMessage, false);
+
+  for (let i = 1; i < savedMedia.length; i++) {
+    const m = savedMedia[i];
+    await updatePostWithMedia(postId, m.url, m.isVideo, null, true);
   }
 }
 
@@ -1379,7 +1632,11 @@ exports.handler = async (event, context) => {
     // Check for attachments and process them (non-blocking)
     if (hasAttachments) {
       console.log('[Inbound Email] 📎 Processing attachments:', attachments.length);
-      // Process attachments (images and videos) with logo overlay
+      // Save attachments to blob storage and attach to matching breaking news post
+      saveAttachmentsAndAttachToPost(attachments, subject, textBody, htmlBody).catch(err => {
+        console.error('[Inbound Email] Save-and-attach error (non-blocking):', err);
+      });
+      // Process attachments (images and videos) with logo overlay and send reply
       processAndReplyWithAttachments(fromEmail, attachments, subject).catch(err => {
         console.error('[Inbound Email] Attachment processing error (non-blocking):', err);
       });
