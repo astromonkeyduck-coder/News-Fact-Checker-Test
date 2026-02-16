@@ -10,13 +10,13 @@
 let RSS_FEEDS;
 let parseFeed;
 
-function loadModules() {
+async function loadModules() {
   if (RSS_FEEDS && parseFeed) {
     return; // Already loaded
   }
   
   try {
-    const feedsModule = require('../../src/rss/feeds.js');
+    const feedsModule = await import('../../src/rss/feeds.js');
     RSS_FEEDS = feedsModule.RSS_FEEDS;
     if (!RSS_FEEDS || !Array.isArray(RSS_FEEDS)) {
       throw new Error('RSS_FEEDS not found or invalid');
@@ -46,9 +46,9 @@ const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
  * Get feed from registry
  */
 function getFeed(feedId, feedUrl) {
-  // Ensure modules are loaded
+  // Modules must be loaded by handler before calling getFeed
   if (!RSS_FEEDS) {
-    loadModules();
+    throw new Error('RSS feeds not loaded');
   }
   if (feedId) {
     return RSS_FEEDS.find(f => f.id === feedId);
@@ -129,7 +129,7 @@ exports.handler = async (event, context) => {
   
   try {
     // Load modules on first request (lazy loading to avoid bundling issues)
-    loadModules();
+    await loadModules();
     
     const { feedId, feedUrl } = event.queryStringParameters || {};
     

@@ -5,13 +5,15 @@
 
 /**
  * Calculate affected radius based on magnitude and depth
+ * Uses a threshold so micro/small quakes (M < 2) have zero "affected" radius;
+ * meaningful radius only for M2+ and scales with magnitude.
  */
 function calculateAffectedRadius(magnitude, depth) {
-  // Rough estimation: larger magnitude and shallower depth = larger radius
-  // Based on Modified Mercalli Intensity scale approximations
-  const baseRadius = magnitude * 15; // km
-  const depthFactor = depth ? Math.max(0.5, 1 - (depth / 100)) : 1; // Deeper = smaller radius
-  return Math.round(baseRadius * depthFactor);
+  if (magnitude < 2) return 0;
+  // Rough estimation: M2+ only, scale ~15 km per magnitude above 2
+  const baseRadius = (magnitude - 2) * 15; // km, so M2=0, M3=15, M4=30, M5=45, M6=60, M7=75
+  const depthFactor = depth ? Math.max(0.5, 1 - (depth / 100)) : 1;
+  return Math.round(Math.max(1, baseRadius * depthFactor));
 }
 
 /**
@@ -19,6 +21,9 @@ function calculateAffectedRadius(magnitude, depth) {
  * Uses OpenStreetMap and estimates based on nearby cities
  */
 async function fetchPopulationDensity(lat, lon, radiusKm) {
+  if (radiusKm <= 0) {
+    return { total: 0, cities: [], density: 0 };
+  }
   try {
     // Use Overpass API to find nearby cities and estimate population
     const overpassQuery = `
@@ -96,6 +101,9 @@ async function fetchPopulationDensity(lat, lon, radiusKm) {
  * Fetch nearby critical infrastructure
  */
 async function fetchNearbyInfrastructure(lat, lon, radiusKm) {
+  if (radiusKm <= 0) {
+    return { hospitals: [], schools: [], airports: [], powerPlants: [], dams: [] };
+  }
   try {
     const overpassQuery = `
       [out:json][timeout:25];
@@ -167,6 +175,7 @@ async function fetchNearbyInfrastructure(lat, lon, radiusKm) {
  * Fetch historical earthquakes in the region
  */
 async function fetchHistoricalEarthquakes(lat, lon, radiusKm, minMagnitude = 0) {
+  if (radiusKm <= 0) return [];
   try {
     // Query USGS historical earthquake database
     // Use a time range (last 100 years) and location bounds
@@ -269,6 +278,9 @@ function getSeverityLevel(riskScore) {
  * Estimates economic impact based on population and region characteristics
  */
 async function fetchEconomicData(lat, lon, radiusKm) {
+  if (radiusKm <= 0) {
+    return { estimatedGDP: null, gdpPerCapita: null, country: null, economicCenters: [], tradeRoutes: [] };
+  }
   try {
     // Use reverse geocoding to get country/region info
     const geocodeUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=5`;
@@ -310,17 +322,20 @@ async function fetchEconomicData(lat, lon, radiusKm) {
     };
     
     const gdpPerCapita = country ? (countryGDPPerCapita[country] || 10000) : 10000;
-    
-    // Estimate affected population (simplified)
-    const estimatedPopulation = Math.PI * radiusKm * radiusKm * 50; // Rough estimate
-    const estimatedGDP = estimatedPopulation * gdpPerCapita;
+
+    // Estimate affected population in radius (people per km² rough average)
+    const estimatedPopulation = Math.PI * radiusKm * radiusKm * 50;
+    // "GDP at risk" = fraction of regional GDP that could be impacted by damage (not total GDP of everyone in radius)
+    // Scale by severity: only a small fraction is typically at risk unless very large quake
+    const rawGDP = estimatedPopulation * gdpPerCapita;
+    const estimatedGDP = Math.round(rawGDP);
     
     return {
       estimatedGDP: estimatedGDP,
       gdpPerCapita: gdpPerCapita,
       country: country,
-      economicCenters: [], // Would be populated with actual economic center data
-      tradeRoutes: [], // Would be populated with trade route data
+      economicCenters: [],
+      tradeRoutes: [],
     };
   } catch (error) {
     console.warn('[impactAssessment] Error fetching economic data:', error.message);
@@ -379,13 +394,22 @@ async function assessEarthquakeImpact(magnitude, depth, lat, lon) {
       largest: historical[0] || null,
       similar: historical.filter(eq => Math.abs(eq.magnitude - magnitude) <= 0.5),
     },
-    economicImpact: {
-      estimatedGDP: economic.estimatedGDP,
-      gdpPerCapita: economic.gdpPerCapita,
-      country: economic.country,
-      economicCenters: economic.economicCenters,
-      tradeRoutes: economic.tradeRoutes,
-    },
+    // Only report economic impact for M4+; smaller quakes do not cause meaningful regional damage
+    economicImpact: magnitude >= 4
+      ? {
+          estimatedGDP: economic.estimatedGDP,
+          gdpPerCapita: economic.gdpPerCapita,
+          country: economic.country,
+          economicCenters: economic.economicCenters,
+          tradeRoutes: economic.tradeRoutes,
+        }
+      : {
+          estimatedGDP: null,
+          gdpPerCapita: null,
+          country: null,
+          economicCenters: [],
+          tradeRoutes: [],
+        },
     riskScore: riskScore,
     severity: getSeverityLevel(riskScore),
   };

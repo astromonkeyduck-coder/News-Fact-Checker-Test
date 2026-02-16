@@ -10,13 +10,13 @@
 let RSS_FEEDS;
 let parseFeed;
 
-function loadModules() {
+async function loadModules() {
   if (RSS_FEEDS && parseFeed) {
     return; // Already loaded
   }
   
   try {
-    const feedsModule = require('../../src/rss/feeds.js');
+    const feedsModule = await import('../../src/rss/feeds.js');
     RSS_FEEDS = feedsModule.RSS_FEEDS;
     if (!RSS_FEEDS || !Array.isArray(RSS_FEEDS)) {
       throw new Error('RSS_FEEDS not found or invalid');
@@ -169,9 +169,9 @@ function filterItems(items, filters) {
  * Get enabled feeds (respects config)
  */
 function getEnabledFeeds() {
-  // Ensure modules are loaded
+  // Modules must be loaded by handler before calling getEnabledFeeds
   if (!RSS_FEEDS) {
-    loadModules();
+    throw new Error('RSS feeds not loaded');
   }
   // In production, check localStorage config from request
   // For now, return all enabledByDefault feeds
@@ -209,7 +209,7 @@ exports.handler = async (event, context) => {
   
   try {
     // Load modules on first request (lazy loading to avoid bundling issues)
-    loadModules();
+    await loadModules();
     
     const params = event.queryStringParameters || {};
     const filters = {

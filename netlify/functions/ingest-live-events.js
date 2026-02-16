@@ -142,8 +142,8 @@ async function ingestRSSFeeds() {
     let parseFeed;
     let moduleLoadError = null;
     
-    // Lazy load modules to prevent bundling issues
-    function loadModules() {
+    // Lazy load modules to prevent bundling issues (dynamic import for ESM feeds.js)
+    async function loadModules() {
       if (RSS_FEEDS && parseFeed) {
         return { RSS_FEEDS, parseFeed };
       }
@@ -153,7 +153,7 @@ async function ingestRSSFeeds() {
       }
       
       try {
-        const feedsModule = require('../../src/rss/feeds.js');
+        const feedsModule = await import('../../src/rss/feeds.js');
         RSS_FEEDS = feedsModule.RSS_FEEDS || feedsModule.default?.RSS_FEEDS;
         if (!RSS_FEEDS || !Array.isArray(RSS_FEEDS)) {
           throw new Error('RSS_FEEDS is not an array');
@@ -180,7 +180,7 @@ async function ingestRSSFeeds() {
     }
     
     try {
-      loadModules();
+      await loadModules();
     } catch (error) {
       // Log error clearly instead of silently returning empty array
       console.error('[Ingest] RSS module loading failed - RSS ingestion disabled:', error.message);

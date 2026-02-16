@@ -354,6 +354,38 @@ html.article-page-active::after,
     }
 }
 
+/* Earthquake enhancements - dark container so light text is visible on article page */
+.article-body .earthquake-enhancements {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: #fff;
+    padding: 1.5rem;
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 2rem 0;
+}
+
+@media (max-width: 640px) {
+    .article-body .earthquake-enhancements {
+        padding: 1rem;
+        margin: 1.5rem 0;
+    }
+}
+
+/* Inner sections - slightly stronger card background for separation on dark wrapper */
+.article-body .earthquake-enhancements .earthquake-details-section,
+.article-body .earthquake-enhancements .impact-assessment-section,
+.article-body .earthquake-enhancements .aftershock-forecast-section,
+.article-body .earthquake-enhancements .anomaly-detection-section,
+.article-body .earthquake-enhancements .tier-breakdown-section,
+.article-body .earthquake-enhancements .economic-impact-section,
+.article-body .earthquake-enhancements .historical-context-section {
+    background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.article-body .earthquake-enhancements .detail-card {
+    background: rgba(255, 255, 255, 0.08) !important;
+}
+
 /* Key takeaways - At a glance block */
 .key-takeaways {
     margin: 0 0 2em 0;
@@ -926,10 +958,9 @@ html.article-page-active::after,
         gap: 20px;
     }
     
-    /* Ensure thumbnails maintain aspect ratio on mobile */
     .more-coverage .news-card-thumbnail-wrapper {
         aspect-ratio: 16 / 9;
-        max-height: 120px; /* Smaller on mobile */
+        max-height: 140px;
     }
 }
 
@@ -952,37 +983,40 @@ html.article-page-active::after,
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* Thumbnail wrapper with fixed 16:9 aspect ratio - prevents layout shift */
+/* Thumbnail wrapper - aspect ratio matches typical share graphics (e.g. 1200x628) to avoid stretch/crop */
 .more-coverage .news-card-thumbnail-wrapper {
     position: relative;
     width: 100%;
     aspect-ratio: 16 / 9;
-    max-height: 150px; /* Limit thumbnail height */
+    max-height: 180px;
     overflow: hidden;
-    background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+    background: #1a1a2e; /* Matches branded earthquake graphics so letterboxing blends */
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
+/* Show full image without zoom or crop - contain keeps aspect ratio and avoids stretched/cropped text */
 .more-coverage .news-card-thumbnail {
     width: 100%;
     height: 100%;
-    object-fit: cover;
-    object-position: 50% 15%; /* Bias upward to show header text (ALASKA, CALIFORNIA) */
+    object-fit: contain;
+    object-position: center center;
     display: block;
     transition: transform 0.3s ease;
 }
 
-/* Smart positioning for earthquake graphics - detect by URL pattern */
+/* Earthquake/branded graphics - same contain treatment so "Breaking News:" and map stay readable */
 .more-coverage .news-card-thumbnail[data-variant="earthquake"],
 .more-coverage .news-card-thumbnail[data-variant="shareGraphic"] {
-    object-position: 50% 15%; /* Show top header text */
+    object-fit: contain;
+    object-position: center center;
 }
 
-/* Standard photos use center crop */
+/* Standard photos - contain as well for consistent, non-cropped look */
 .more-coverage .news-card-thumbnail[data-variant="photo"] {
-    object-position: 50% 50%;
+    object-fit: contain;
+    object-position: center center;
 }
 
 .more-coverage .news-card:hover .news-card-thumbnail {

@@ -619,7 +619,7 @@
         const aftershockForecast = post.assets?.aftershock_forecast || null;
         const anomalyDetection = post.assets?.anomaly_detection || null;
         
-        let html = '';
+        let html = '<div class="earthquake-enhancements">';
         
         // Add interactive map container (only if we have coordinates)
         if (lat && lon) {
@@ -778,6 +778,16 @@
                     ` : ''}
                 </div>
             `;
+        } else {
+            html += `
+                <div id="impact-assessment" class="impact-assessment-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%); border-radius: 12px; border-left: 4px solid #666; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="display: inline-flex; align-items: center; color: #888;">${getIconSVG('chart', 24, '#888')}</span>
+                        AI Impact Assessment
+                    </h2>
+                    <p style="font-size: 0.875rem; color: rgba(255,255,255,0.7); margin: 0;">Assessment data will appear here when available.</p>
+                </div>
+            `;
         }
         
         // Add tsunami risk section
@@ -860,6 +870,16 @@
                     ` : ''}
                 </div>
             `;
+        } else {
+            html += `
+                <div class="aftershock-forecast-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(156,39,176,0.15) 0%, rgba(156,39,176,0.05) 100%); border-radius: 12px; border-left: 4px solid #9c27b0; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="display: inline-flex; align-items: center; color: #9c27b0;">${getIconSVG('chart', 24, '#9c27b0')}</span>
+                        AI Aftershock Forecast
+                    </h2>
+                    <p style="font-size: 0.875rem; color: rgba(255,255,255,0.7); margin: 0;">Assessment data will appear here when available.</p>
+                </div>
+            `;
         }
         
         // Add anomaly detection section
@@ -888,6 +908,16 @@
                         `).join('')}
                     </div>
                     ` : ''}
+                </div>
+            `;
+        } else {
+            html += `
+                <div class="anomaly-detection-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(211,47,47,0.1) 0%, rgba(211,47,47,0.05) 100%); border-radius: 12px; border-left: 4px solid #888;">
+                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="display: inline-flex; align-items: center; color: #888;">${getIconSVG('warning', 24, '#888')}</span>
+                        Anomaly Detection
+                    </h2>
+                    <p style="font-size: 0.875rem; color: rgba(255,255,255,0.7); margin: 0;">Assessment data will appear here when available.</p>
                 </div>
             `;
         }
@@ -925,10 +955,20 @@
                     </div>
                 </div>
             `;
+        } else {
+            html += `
+                <div class="tier-breakdown-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(33,150,243,0.15) 0%, rgba(33,150,243,0.05) 100%); border-radius: 12px; border-left: 4px solid #2196f3; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="display: inline-flex; align-items: center; color: #2196f3;">${getIconSVG('chart', 24, '#2196f3')}</span>
+                        Risk Tier Breakdown
+                    </h2>
+                    <p style="font-size: 0.875rem; color: rgba(255,255,255,0.7); margin: 0;">Assessment data will appear here when available.</p>
+                </div>
+            `;
         }
         
-        // Add Economic Impact section (if available)
-        if (impactAssessment?.economicImpact && impactAssessment.economicImpact.estimatedGDP) {
+        // Add Economic Impact section only for M4+ with data (small quakes have no meaningful regional economic impact)
+        if (magnitude >= 4 && impactAssessment?.economicImpact?.estimatedGDP) {
             const economic = impactAssessment.economicImpact;
             html += `
                 <div class="economic-impact-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(76,175,80,0.1) 0%, rgba(76,175,80,0.05) 100%); border-radius: 12px; border-left: 4px solid #4caf50;">
@@ -951,6 +991,16 @@
                         </div>
                         ` : ''}
                     </div>
+                </div>
+            `;
+        } else {
+            html += `
+                <div class="economic-impact-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(76,175,80,0.1) 0%, rgba(76,175,80,0.05) 100%); border-radius: 12px; border-left: 4px solid #4caf50;">
+                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="display: inline-flex; align-items: center; color: #4caf50;">${getIconSVG('dollar', 24, '#4caf50')}</span>
+                        Economic Impact Assessment
+                    </h2>
+                    <p style="font-size: 0.875rem; color: rgba(255,255,255,0.7); margin: 0;">${magnitude < 4 ? 'Economic impact is assessed for earthquakes of magnitude 4.0 and above.' : 'Assessment data will appear here when available.'}</p>
                 </div>
             `;
         }
@@ -989,6 +1039,16 @@
                     ` : ''}
                 </div>
             `;
+        } else {
+            html += `
+                <div class="historical-context-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(33,150,243,0.1) 0%, rgba(33,150,243,0.05) 100%); border-radius: 12px; border-left: 4px solid #2196f3;">
+                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="display: inline-flex; align-items: center; color: #2196f3;">${getIconSVG('document', 24, '#2196f3')}</span>
+                        Historical Context
+                    </h2>
+                    <p style="font-size: 0.875rem; color: rgba(255,255,255,0.7); margin: 0;">Assessment data will appear here when available.</p>
+                </div>
+            `;
         }
         
         // Add 3D visualization container with enhanced features
@@ -1010,21 +1070,6 @@
             </div>
         `;
         
-        // Add animation section placeholder (will be populated if animation exists)
-        html += `
-            <div id="earthquake-animation-section" style="margin: 2rem 0; display: none;">
-                <div style="padding: 1rem; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 12px 12px 0 0;">
-                    <h3 style="margin: 0; color: #fff; font-size: 1.125rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="display: inline-flex; align-items: center;">${getIconSVG('play', 20, '#fff')}</span>
-                        Shake Intensity Animation
-                    </h3>
-                </div>
-                <div id="earthquake-animation-container" style="width: 100%; background: rgba(0,0,0,0.3); border-radius: 0 0 12px 12px; padding: 1rem; text-align: center;">
-                    <img id="earthquake-animation-img" src="" alt="Earthquake shake intensity animation" style="max-width: 100%; border-radius: 8px; display: none;">
-                </div>
-            </div>
-        `;
-        
         // Add loading placeholders for nearby locations (will be populated by JavaScript)
         html += `
             <div id="earthquake-nearby-locations" style="margin: 2rem 0;">
@@ -1034,6 +1079,7 @@
             </div>
         `;
         
+        html += '</div>';
         return html;
     }
     
@@ -1057,38 +1103,64 @@
             const container = document.getElementById('earthquake-3d-viewer');
             if (!container || !window.THREE) return;
             
-            // Scene setup
-            const scene = new window.THREE.Scene();
-            scene.background = new window.THREE.Color(0x1a1a1a);
+            const THREE = window.THREE;
             
-            const camera = new window.THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
-            const renderer = new window.THREE.WebGLRenderer({ antialias: true });
+            // Scene setup — deep space feel
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x050510);
+            
+            const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
             renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            if (renderer.toneMapping !== undefined && THREE.ACESFilmicToneMapping !== undefined) {
+                renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                renderer.toneMappingExposure = 0.9;
+            }
             container.appendChild(renderer.domElement);
             
-            // Add lights
-            const ambientLight = new window.THREE.AmbientLight(0x404040, 0.6);
-            scene.add(ambientLight);
-            const directionalLight = new window.THREE.DirectionalLight(0xffffff, 0.8);
-            directionalLight.position.set(10, 10, 5);
-            scene.add(directionalLight);
+            // Professional lighting — no harsh single highlight
+            const hemi = new THREE.HemisphereLight(0x1a2a4a, 0x0a0a12, 0.5);
+            scene.add(hemi);
+            const keyLight = new THREE.DirectionalLight(0xe8f0ff, 0.5);
+            keyLight.position.set(8, 12, 6);
+            scene.add(keyLight);
+            const fillLight = new THREE.DirectionalLight(0x8090b0, 0.25);
+            fillLight.position.set(-6, 4, -4);
+            scene.add(fillLight);
             
-            // Create Earth sphere with texture (if available, otherwise use gradient material)
-            const earthGeometry = new window.THREE.SphereGeometry(5, 64, 64);
-            const earthMaterial = new window.THREE.MeshPhongMaterial({ 
-                color: 0x2233ff,
-                emissive: 0x112244,
-                shininess: 100,
-                specular: 0x222222
+            // Earth sphere — soft, realistic shading (no blown-out highlight)
+            const earthGeometry = new THREE.SphereGeometry(5, 72, 72);
+            const earthMaterial = new THREE.MeshPhongMaterial({
+                color: 0x1e3a5f,
+                emissive: 0x061220,
+                specular: 0x0a1628,
+                shininess: 25,
+                flatShading: false
             });
-            const earth = new window.THREE.Mesh(earthGeometry, earthMaterial);
+            const earth = new THREE.Mesh(earthGeometry, earthMaterial);
             scene.add(earth);
             
-            // Add subtle grid lines for reference
-            const gridHelper = new window.THREE.GridHelper(20, 20, 0x444444, 0x222222);
+            // Subtle reference plane (soft dark disk instead of harsh grid)
+            const planeGeometry = new THREE.CircleGeometry(14, 48);
+            const planeMaterial = new THREE.MeshBasicMaterial({
+                color: 0x080810,
+                transparent: true,
+                opacity: 0.6
+            });
+            const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+            plane.rotation.x = -Math.PI / 2;
+            plane.position.y = -5.02;
+            scene.add(plane);
+            
+            // Very subtle grid only at low opacity
+            const gridHelper = new THREE.GridHelper(24, 12, 0x15152a, 0x0c0c18);
+            gridHelper.position.y = -5.01;
+            gridHelper.material.transparent = true;
+            gridHelper.material.opacity = 0.2;
             scene.add(gridHelper);
             
-            // Calculate position on sphere (convert lat/lon to 3D coordinates)
+            // Epicenter position on sphere
             const phi = (90 - lat) * (Math.PI / 180);
             const theta = (lon + 180) * (Math.PI / 180);
             const radius = 5.2;
@@ -1096,71 +1168,81 @@
             const y = radius * Math.cos(phi);
             const z = radius * Math.sin(phi) * Math.sin(theta);
             
-            // Create epicenter marker (pulsing sphere) - size scales with magnitude
+            // Epicenter glow (point light so the marker reads clearly)
+            const epicenterLight = new THREE.PointLight(0xff6644, 0.4, 8);
+            epicenterLight.position.set(x, y, z);
+            scene.add(epicenterLight);
+            
+            // Epicenter marker — smooth sphere, no wireframe look
             const epicenterSize = Math.min(0.2 + (magnitude / 20), 0.5);
-            const epicenterGeometry = new window.THREE.SphereGeometry(epicenterSize, 32, 32);
-            const epicenterMaterial = new window.THREE.MeshPhongMaterial({ 
-                color: 0xff0000,
-                emissive: 0xff4444,
+            const epicenterGeometry = new THREE.SphereGeometry(epicenterSize, 36, 36);
+            const epicenterMaterial = new THREE.MeshPhongMaterial({
+                color: 0xff4422,
+                emissive: 0xcc2200,
+                emissiveIntensity: 0.4,
+                specular: 0x331100,
+                shininess: 20,
                 transparent: true,
-                opacity: 0.95
+                opacity: 0.98
             });
-            const epicenter = new window.THREE.Mesh(epicenterGeometry, epicenterMaterial);
+            const epicenter = new THREE.Mesh(epicenterGeometry, epicenterMaterial);
             epicenter.position.set(x, y, z);
             scene.add(epicenter);
             
-            // Add multiple pulsing rings for visual impact
+            // Pulsing rings — smooth, no harsh edges
             for (let i = 0; i < 3; i++) {
-                const ringSize = epicenterSize * (1.5 + i * 0.5);
-                const ringGeometry = new window.THREE.RingGeometry(ringSize, ringSize + 0.1, 32);
-                const ringMaterial = new window.THREE.MeshBasicMaterial({ 
-                    color: 0xff0000,
-                    side: window.THREE.DoubleSide,
+                const ringSize = epicenterSize * (1.6 + i * 0.6);
+                const ringGeometry = new THREE.RingGeometry(ringSize, ringSize + 0.08, 64);
+                const ringMaterial = new THREE.MeshBasicMaterial({
+                    color: 0xff4422,
+                    side: THREE.DoubleSide,
                     transparent: true,
-                    opacity: 0.3 - (i * 0.1)
+                    opacity: 0.25 - (i * 0.06),
+                    depthWrite: false
                 });
-                const ring = new window.THREE.Mesh(ringGeometry, ringMaterial);
+                const ring = new THREE.Mesh(ringGeometry, ringMaterial);
                 ring.position.set(x, y, z);
-                ring.lookAt(0, 0, 0);
-                ring.userData.pulseOffset = i * 0.3;
+                ring.lookAt(earth.position.x, earth.position.y, earth.position.z);
+                ring.userData.pulseOffset = i * 0.35;
                 scene.add(ring);
             }
             
-            // Create depth indicator (line from surface to depth)
+            // Depth indicator (subtle line)
             if (depth) {
-                const depthRatio = Math.min(depth / 100, 0.5); // Max 50% of radius
-                const depthPoint = new window.THREE.Vector3(
+                const depthRatio = Math.min(depth / 100, 0.5);
+                const depthPoint = new THREE.Vector3(
                     x * (1 - depthRatio),
                     y * (1 - depthRatio),
                     z * (1 - depthRatio)
                 );
-                const depthGeometry = new window.THREE.BufferGeometry().setFromPoints([
-                    new window.THREE.Vector3(x, y, z),
+                const depthGeometry = new THREE.BufferGeometry().setFromPoints([
+                    new THREE.Vector3(x, y, z),
                     depthPoint
                 ]);
-                const depthMaterial = new window.THREE.LineBasicMaterial({ color: 0xff6666, linewidth: 2 });
-                const depthLine = new window.THREE.Line(depthGeometry, depthMaterial);
+                const depthMaterial = new THREE.LineBasicMaterial({ color: 0xaa3322, linewidth: 1 });
+                const depthLine = new THREE.Line(depthGeometry, depthMaterial);
                 scene.add(depthLine);
             }
             
-            // Create shake intensity ring
-            const ringGeometry = new window.THREE.RingGeometry(0.4, 0.6, 32);
-            const ringMaterial = new window.THREE.MeshBasicMaterial({ 
-                color: 0xff0000,
-                side: window.THREE.DoubleSide,
+            // Single subtle intensity ring at epicenter
+            const ringGeometry = new THREE.RingGeometry(epicenterSize * 1.4, epicenterSize * 1.7, 48);
+            const ringMat = new THREE.MeshBasicMaterial({
+                color: 0xff5522,
+                side: THREE.DoubleSide,
                 transparent: true,
-                opacity: 0.6
+                opacity: 0.35,
+                depthWrite: false
             });
-            const ring = new window.THREE.Mesh(ringGeometry, ringMaterial);
+            const ring = new THREE.Mesh(ringGeometry, ringMat);
             ring.position.set(x, y, z);
-            ring.lookAt(0, 0, 0); // Face outward from Earth
+            ring.lookAt(earth.position.x, earth.position.y, earth.position.z);
+            ring.userData.isMainRing = true;
             scene.add(ring);
             
-            // Position camera with better initial view
+            // Initial camera — focus on epicenter
             camera.position.set(15, 10, 15);
             camera.lookAt(x, y, z);
             
-            // Add orbit controls for interactivity
             let isDragging = false;
             let previousMousePosition = { x: 0, y: 0 };
             let cameraDistance = 20;
@@ -1174,71 +1256,60 @@
                 if (isDragging) {
                     const deltaX = e.clientX - previousMousePosition.x;
                     const deltaY = e.clientY - previousMousePosition.y;
-                    
-                    // Rotate camera around epicenter using spherical coordinates
-                    const direction = new window.THREE.Vector3();
-                    direction.subVectors(camera.position, new window.THREE.Vector3(x, y, z));
-                    const radius = direction.length();
-                    
-                    // Convert to spherical coordinates manually
-                    const theta = Math.atan2(direction.z, direction.x);
-                    const phi = Math.acos(direction.y / radius);
-                    
-                    const newTheta = theta - deltaX * 0.01;
-                    const newPhi = Math.max(0.1, Math.min(Math.PI - 0.1, phi + deltaY * 0.01));
-                    
-                    // Convert back to Cartesian
-                    camera.position.x = x + radius * Math.sin(newPhi) * Math.cos(newTheta);
-                    camera.position.y = y + radius * Math.cos(newPhi);
-                    camera.position.z = z + radius * Math.sin(newPhi) * Math.sin(newTheta);
-                    
+                    const direction = new THREE.Vector3();
+                    direction.subVectors(camera.position, new THREE.Vector3(x, y, z));
+                    const rad = direction.length();
+                    const th = Math.atan2(direction.z, direction.x);
+                    const ph = Math.acos(direction.y / rad);
+                    const newTheta = th - deltaX * 0.01;
+                    const newPhi = Math.max(0.1, Math.min(Math.PI - 0.1, ph + deltaY * 0.01));
+                    camera.position.x = x + rad * Math.sin(newPhi) * Math.cos(newTheta);
+                    camera.position.y = y + rad * Math.cos(newPhi);
+                    camera.position.z = z + rad * Math.sin(newPhi) * Math.sin(newTheta);
                     camera.lookAt(x, y, z);
-                    
                     previousMousePosition = { x: e.clientX, y: e.clientY };
                 }
             });
             
-            container.addEventListener('mouseup', () => {
-                isDragging = false;
-            });
+            container.addEventListener('mouseup', () => { isDragging = false; });
             
             container.addEventListener('wheel', (e) => {
                 e.preventDefault();
                 cameraDistance += e.deltaY * 0.01;
                 cameraDistance = Math.max(10, Math.min(50, cameraDistance));
-                
-                // Get direction from epicenter to camera
-                const direction = new window.THREE.Vector3();
-                direction.subVectors(camera.position, new window.THREE.Vector3(x, y, z));
+                const direction = new THREE.Vector3();
+                direction.subVectors(camera.position, new THREE.Vector3(x, y, z));
                 direction.normalize();
-                
-                // Move camera along direction vector
                 camera.position.set(x, y, z);
                 camera.position.add(direction.multiplyScalar(cameraDistance));
                 camera.lookAt(x, y, z);
             });
             
-            // Animation loop with enhanced effects
+            // Animation loop — smooth, subtle motion
             let pulseScale = 1.0;
             let time = 0;
             function animate() {
                 requestAnimationFrame(animate);
-                time += 0.016; // ~60fps
+                time += 0.016;
                 
-                // Rotate Earth slowly
-                earth.rotation.y += 0.001;
+                earth.rotation.y += 0.0008;
                 
-                // Pulse epicenter with magnitude-based intensity
-                pulseScale = 1.0 + Math.sin(time * 2) * (0.2 + magnitude / 50);
+                pulseScale = 1.0 + Math.sin(time * 1.8) * (0.12 + magnitude / 60);
                 epicenter.scale.set(pulseScale, pulseScale, pulseScale);
-                epicenterMaterial.opacity = 0.7 + Math.sin(time * 2) * 0.25;
+                epicenterMaterial.opacity = 0.88 + Math.sin(time * 1.8) * 0.1;
                 
-                // Pulse rings
+                // Pulse rings (offset rings and main ring)
                 scene.children.forEach(child => {
-                    if (child.userData.pulseOffset !== undefined) {
-                        const ringPulse = 1.0 + Math.sin((time + child.userData.pulseOffset) * 1.5) * 0.3;
+                    if (child.userData.pulseOffset !== undefined && child.material) {
+                        const ringPulse = 1.0 + Math.sin((time + child.userData.pulseOffset) * 1.2) * 0.2;
                         child.scale.set(ringPulse, ringPulse, 1);
-                        child.material.opacity = 0.2 + Math.sin((time + child.userData.pulseOffset) * 1.5) * 0.2;
+                        const base = 0.25 - (child.userData.pulseOffset * 0.06);
+                        child.material.opacity = Math.max(0.06, base + Math.sin((time + child.userData.pulseOffset) * 1.2) * 0.12);
+                    }
+                    if (child.userData.isMainRing && child.material) {
+                        child.material.opacity = 0.28 + Math.sin(time * 1.5) * 0.12;
+                        const s = 1.0 + Math.sin(time * 1.5) * 0.15;
+                        child.scale.set(s, s, 1);
                     }
                 });
                 
@@ -1259,41 +1330,58 @@
      * Initialize interactive earthquake map using Leaflet
      */
     function initializeEarthquakeMap(lat, lon, magnitude, locationDisplay) {
-        // Load Leaflet CSS and JS if not already loaded
-        if (!document.querySelector('link[href*="leaflet"]')) {
+        function runCreateMap() {
+            // Ensure container has been laid out (e.g. after CSS applied)
+            requestAnimationFrame(() => {
+                createMap(lat, lon, magnitude, locationDisplay);
+            });
+        }
+        
+        const leafletLink = document.querySelector('link[href*="leaflet"]');
+        if (!leafletLink) {
             const leafletCSS = document.createElement('link');
             leafletCSS.rel = 'stylesheet';
             leafletCSS.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-            leafletCSS.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=';
-            leafletCSS.crossOrigin = '';
+            leafletCSS.crossOrigin = 'anonymous';
+            leafletCSS.onload = () => loadLeafletJS(runCreateMap);
+            leafletCSS.onerror = () => loadLeafletJS(runCreateMap);
             document.head.appendChild(leafletCSS);
+        } else {
+            loadLeafletJS(runCreateMap);
         }
         
-        // Load Leaflet JS
-        if (!window.L) {
+        function loadLeafletJS(whenReady) {
+            if (window.L) {
+                whenReady();
+                return;
+            }
             const leafletJS = document.createElement('script');
             leafletJS.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-            leafletJS.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
-            leafletJS.crossOrigin = '';
-            leafletJS.onload = () => {
-                createMap(lat, lon, magnitude, locationDisplay);
-            };
+            leafletJS.crossOrigin = 'anonymous';
+            leafletJS.onload = whenReady;
+            leafletJS.onerror = whenReady;
             document.head.appendChild(leafletJS);
-        } else {
-            createMap(lat, lon, magnitude, locationDisplay);
         }
         
         function createMap(lat, lon, magnitude, locationDisplay) {
             const mapContainer = document.getElementById('earthquake-interactive-map');
             if (!mapContainer) return;
             
-            // Create map centered on earthquake location
-            const map = window.L.map('earthquake-interactive-map').setView([lat, lon], 10);
+            // Remove previous map instance if any (e.g. when re-opening same article)
+            if (mapContainer._leafletMap) {
+                mapContainer._leafletMap.remove();
+                mapContainer._leafletMap = null;
+            }
             
-            // Add OpenStreetMap tiles
-            window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                maxZoom: 19
+            const map = window.L.map('earthquake-interactive-map', {
+                preferCanvas: false
+            }).setView([lat, lon], 10);
+            
+            // CARTO Light basemap (reliable, no API key) — works when OSM tiles are blocked or rate-limited
+            window.L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 20
             }).addTo(map);
             
             // Calculate radius based on magnitude (rough estimate of felt area)
@@ -1345,6 +1433,14 @@
             
             // Fetch and add nearby locations as markers
             fetchNearbyLocationsForMap(lat, lon, map);
+            
+            mapContainer._leafletMap = map;
+            
+            // Force Leaflet to recalculate size so tiles load (fixes blank map when container layout is delayed)
+            map.invalidateSize();
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 200);
         }
     }
     
@@ -1909,43 +2005,7 @@
                     initializeEarthquakeMap(post.lat, post.lon, earthquakeMagnitude, post.location_display || post.location);
                     const depth = post.assets?.depth || post.depth;
                     initialize3DVisualization(post.lat, post.lon, earthquakeMagnitude, depth, post.location_display || post.location);
-                    
-                    // Try to load animation if available (for magnitude 3.0+)
-                    const eventId = post.assets?.event_id || post.event_id || post.id;
-                    if (eventId && earthquakeMagnitude >= 3.0) {
-                        loadEarthquakeAnimation(eventId, earthquakeMagnitude);
-                    }
                 }, 100);
-            }
-            
-            /**
-             * Load earthquake animation if available
-             */
-            function loadEarthquakeAnimation(eventId, magnitude) {
-                const animationSection = document.getElementById('earthquake-animation-section');
-                const animationImg = document.getElementById('earthquake-animation-img');
-                if (!animationSection || !animationImg) return;
-                
-                // Try to fetch animation
-                const baseUrl = window.location.origin;
-                const animationUrl = `${baseUrl}/.netlify/functions/get-uploaded-image?key=earthquake-${eventId}-animation`;
-                
-                // Check if animation exists
-                fetch(animationUrl, { method: 'HEAD' })
-                    .then(response => {
-                        if (response.ok) {
-                            animationImg.src = animationUrl;
-                            animationImg.style.display = 'block';
-                            animationSection.style.display = 'block';
-                            animationImg.onerror = () => {
-                                animationSection.style.display = 'none';
-                            };
-                        }
-                    })
-                    .catch(() => {
-                        // Animation not available, hide section
-                        animationSection.style.display = 'none';
-                    });
             }
             
             // Initialize comments

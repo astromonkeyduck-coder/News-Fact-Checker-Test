@@ -16,7 +16,7 @@ let moduleLoadError = null;
  * Lazy load modules - only load when first request comes in
  * This prevents function initialization failures from crashing the entire function
  */
-function loadModules() {
+async function loadModules() {
   if (RSS_FEEDS && parseFeed) {
     return { RSS_FEEDS, parseFeed }; // Already loaded
   }
@@ -26,7 +26,7 @@ function loadModules() {
   }
   
   try {
-    const feedsModule = require('../../src/rss/feeds.js');
+    const feedsModule = await import('../../src/rss/feeds.js');
     RSS_FEEDS = feedsModule.RSS_FEEDS;
     if (!RSS_FEEDS || !Array.isArray(RSS_FEEDS)) {
       throw new Error('RSS_FEEDS is not an array');
@@ -102,11 +102,11 @@ function validateFeedUrl(url) {
 }
 
 /**
- * Get feed from registry by ID
+ * Get feed from registry by ID (call after await loadModules() in handler)
  */
 function getFeedById(feedId) {
-  const { RSS_FEEDS: feeds } = loadModules();
-  const feed = feeds.find(f => f.id === feedId);
+  if (!RSS_FEEDS) throw new Error('RSS feeds not loaded');
+  const feed = RSS_FEEDS.find(f => f.id === feedId);
   
   // Validate feed URL for SSRF protection
   if (feed && !validateFeedUrl(feed.feedUrl)) {
@@ -129,10 +129,9 @@ async function fetchAndParseFeed(feed) {
   }
   
   try {
-    const { parseFeed: parse } = loadModules();
-    
+    if (!parseFeed) throw new Error('RSS parser not loaded');
     // Parse feed (rss-parser handles fetching internally)
-    const items = await parse(feed.feedUrl, feed);
+    const items = await parseFeed(feed.feedUrl, feed);
     
     // Size check on parsed items (max 5MB)
     const resultSize = JSON.stringify(items).length;
@@ -195,7 +194,7 @@ exports.handler = async (event, context) => {
   
   try {
     // Lazy load modules in handler (not at module level) to prevent function crash
-    loadModules();
+    await loadModules();
     
     const { source } = event.queryStringParameters || {};
     

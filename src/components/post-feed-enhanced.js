@@ -14,10 +14,6 @@
  * - Better visual hierarchy
  */
 
-// #region agent log
-console.log('[Enhanced Feed] 🚀 Script starting to load...');
-// #endregion
-
 const ENHANCED_CACHE_KEY = 'noteworthy-posts-cache-enhanced';
 const ENHANCED_CACHE_EXPIRY = 2 * 60 * 1000; // 2 minutes
 const ENHANCED_CACHE_VERSION = '2'; // Increment this to invalidate all caches
@@ -1057,9 +1053,6 @@ function renderSkeletonCards(count = 5) {
  * Load posts from API with chunked loading
  */
 async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', limit = 20, resetDisplayCount = true) {
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'post-feed-enhanced.js:loadEnhancedPosts',message:'loadEnhancedPosts called',data:{endpoint,limit,resetDisplayCount},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3'})}).catch(()=>{});
-  // #endregion
   // Prevent concurrent loads and infinite recursion
   if (enhancedIsLoading) {
     console.warn('[Enhanced Feed] Already loading, skipping duplicate call');
@@ -1182,10 +1175,7 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
     );
     
     console.log('[Enhanced Feed] Loaded', enhancedCurrentPosts.length, 'posts');
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'post-feed-enhanced.js:loadEnhancedPosts',message:'Posts loaded successfully',data:{postCount:enhancedCurrentPosts.length,firstPostId:enhancedCurrentPosts[0]?.id||null},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H4'})}).catch(()=>{});
-    // #endregion
-    
+
     // Cache posts with version
     localStorage.setItem(ENHANCED_CACHE_KEY, JSON.stringify({
       posts: enhancedCurrentPosts,
@@ -1205,9 +1195,6 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
     }
   } catch (error) {
     console.error('[Enhanced Feed] Load error:', error);
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'post-feed-enhanced.js:loadEnhancedPosts:catch',message:'Fetch error',data:{errorMessage:error.message,errorName:error.name},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3'})}).catch(()=>{});
-    // #endregion
     const errorId = 'enhanced-feed-error-' + Date.now();
     container.innerHTML = `
       <div style="
@@ -1307,11 +1294,7 @@ function renderEnhancedFeed() {
   const pinned = filtered.filter(p => p.isPinned);
   const unpinned = filtered.filter(p => !p.isPinned);
   const sorted = [...pinned, ...sortEnhancedPosts(unpinned, enhancedCurrentSort)];
-  // #region agent log
-  const cs = window.getComputedStyle(container);
-  fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'post-feed-enhanced.js:renderEnhancedFeed',message:'Rendering feed',data:{totalPosts:enhancedCurrentPosts.length,sortedCount:sorted.length,displayedCount:enhancedDisplayedCount,containerDisplay:cs.display,containerWidth:cs.width,containerHeight:cs.height},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H5'})}).catch(()=>{});
-  // #endregion
-  
+
   if (sorted.length === 0) {
     // Show loading skeleton cards when no posts found
     container.innerHTML = renderSkeletonCards(5);
@@ -1644,14 +1627,8 @@ let enhancedFeedInitialized = false;
 let lastContainerId = null;
 
 function initEnhancedFeed(containerId = 'articlesTrack', endpoint = '/.netlify/functions/posts-read', limit = 20) {
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'post-feed-enhanced.js:initEnhancedFeed',message:'initEnhancedFeed called',data:{containerId,endpoint,limit},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H2'})}).catch(()=>{});
-  // #endregion
   const container = document.getElementById(containerId);
   if (!container) {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'post-feed-enhanced.js:initEnhancedFeed',message:'Container NOT found',data:{containerId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H2'})}).catch(()=>{});
-    // #endregion
     console.error('[Enhanced Feed] Container not found:', containerId);
     return;
   }
@@ -1774,9 +1751,6 @@ function initEnhancedFeed(containerId = 'articlesTrack', endpoint = '/.netlify/f
 
 // Export for use
 if (typeof window !== 'undefined') {
-  // #region agent log
-  console.log('[Enhanced Feed] ✅ Script fully loaded, registering window.renderPostFeedEnhanced');
-  // #endregion
   window.renderPostFeedEnhanced = initEnhancedFeed;
   // Also export skeleton function for immediate use
   window.renderPostFeedEnhanced.renderSkeletonCards = renderSkeletonCards;
@@ -1786,9 +1760,6 @@ if (typeof window !== 'undefined') {
     console.log('[Enhanced Feed] Cache cleared. Refresh the page to see updated posts.');
     return true;
   };
-  // #region agent log
-  console.log('[Enhanced Feed] ✅ window.renderPostFeedEnhanced is now:', typeof window.renderPostFeedEnhanced);
-  // #endregion
 
   // Self-initialize when script loads: if the feed container exists and shows loading/empty state, load posts.
   // This ensures cards load even if this script runs after DOMContentLoaded (e.g. slow script load).

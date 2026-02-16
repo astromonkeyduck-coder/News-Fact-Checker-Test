@@ -14200,6 +14200,10 @@
   
   
   
+  
+  
+  
+  
   <!-- Auth0 Configuration - Inject environment variables for production -->
     <script>
       // Auth0 credentials injected at build time
@@ -17805,15 +17809,9 @@
                 // Check for enhanced feed first, then v2, then old feed
                 if (window.renderPostFeedEnhanced || window.renderPostFeedV2 || typeof renderPostFeed !== 'undefined') {
                     clearInterval(checkInterval);
-                    // #region agent log
-                    fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.html:waitForRenderFunction',message:'Render function found',data:{hasEnhanced:!!window.renderPostFeedEnhanced,hasV2:!!window.renderPostFeedV2,attempts},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1'})}).catch(()=>{});
-                    // #endregion
                     callback();
                 } else if (attempts >= maxAttempts) {
                     clearInterval(checkInterval);
-                    // #region agent log
-                    fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.html:waitForRenderFunction',message:'Timeout - render functions not available',data:{attempts,maxAttempts},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1'})}).catch(()=>{});
-                    // #endregion
                     console.warn('[X Posts] Post feed functions not available after', maxAttempts * 100, 'ms, trying fallback');
                     callback();
                 }
@@ -17923,9 +17921,6 @@
         // Show skeleton animation immediately when page loads AND try to load posts immediately
         document.addEventListener('DOMContentLoaded', function() {
             const container = document.getElementById('articlesTrack');
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'index.html:DOMContentLoaded',message:'Container check',data:{containerFound:!!container,containerIdExists:!!document.getElementById('articlesTrack')},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H2'})}).catch(()=>{});
-            // #endregion
             if (container && (!container.innerHTML || container.innerHTML.trim().length < 100)) {
                 // Show skeleton loading animation immediately
                 const skeletonHTML = `

@@ -1392,8 +1392,7 @@ exports.handler = async (event, context) => {
                         <td align="center" style="padding-top: 12px;">
                           <p style="margin: 0; font-size: 12px; color: #6B7280; line-height: 1.5;">
                             <a href="https://noteworthynews.co/article.html?id=${encodeURIComponent(`post-usgs-${earthquake.event_id || earthquake.canonical_id?.split(':')[1] || 'unknown'}`)}#earthquake-3d-viewer" style="color: #2563EB; text-decoration: none; border-bottom: 1px dotted #2563EB;">Interactive 3D visualization</a> • 
-                            <a href="https://noteworthynews.co/article.html?id=${encodeURIComponent(`post-usgs-${earthquake.event_id || earthquake.canonical_id?.split(':')[1] || 'unknown'}`)}#impact-assessment" style="color: #2563EB; text-decoration: none; border-bottom: 1px dotted #2563EB;">Advanced AI assessments</a> • 
-                            <a href="https://noteworthynews.co/article.html?id=${encodeURIComponent(`post-usgs-${earthquake.event_id || earthquake.canonical_id?.split(':')[1] || 'unknown'}`)}#earthquake-animation-section" style="color: #2563EB; text-decoration: none; border-bottom: 1px dotted #2563EB;">Animations</a>
+                            <a href="https://noteworthynews.co/article.html?id=${encodeURIComponent(`post-usgs-${earthquake.event_id || earthquake.canonical_id?.split(':')[1] || 'unknown'}`)}#impact-assessment" style="color: #2563EB; text-decoration: none; border-bottom: 1px dotted #2563EB;">Advanced AI assessments</a>
                           </p>
                         </td>
                       </tr>

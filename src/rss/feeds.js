@@ -187,24 +187,7 @@ function isFeedUrlAllowed(feedUrl) {
   return RSS_FEEDS.some(feed => feed.feedUrl === feedUrl);
 }
 
-// CommonJS exports for server-side (only in Node.js environment)
-// Note: This file intentionally uses both CommonJS and ES6 exports for dual compatibility:
-// - Server-side Netlify functions use require() (CommonJS)
-// - Browser code uses ES6 import statements
-// The esbuild warning "commonjs-variable-in-esm" is expected and safe to ignore.
-// This is a legitimate dual-module pattern for files that need to work in both environments.
-if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
-  // eslint-disable-next-line no-undef
-  module.exports = {
-    RSS_FEEDS,
-    getFeedById,
-    getEnabledFeeds,
-    getFeedByUrl,
-    isFeedUrlAllowed
-  };
-}
-
-// ES6 exports for client-side (for ES6 import syntax)
+// ESM exports (browser and Node/Netlify via dynamic import())
 export {
   RSS_FEEDS,
   getFeedById,
