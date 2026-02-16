@@ -448,6 +448,47 @@ function initKeyboardNavigation() {
     });
 }
 
+// TOC scroll-spy: highlight current section in "In this article"
+function initTocScrollSpy() {
+    const tocNav = document.getElementById('article-toc');
+    const articleBody = document.querySelector('.article-body');
+    if (!tocNav || !articleBody) return;
+
+    const links = tocNav.querySelectorAll('.article-toc__item[href^="#"]');
+    if (links.length === 0) return;
+
+    let ticking = false;
+    function updateActive() {
+        const viewportMid = window.scrollY + window.innerHeight * 0.35;
+        let currentId = null;
+        const headings = articleBody.querySelectorAll('h2[id], h3[id]');
+        for (let i = headings.length - 1; i >= 0; i--) {
+            const h = headings[i];
+            const top = h.getBoundingClientRect().top + window.scrollY;
+            if (top <= viewportMid) {
+                currentId = h.id;
+                break;
+            }
+        }
+        links.forEach((a) => {
+            const id = (a.getAttribute('href') || '').replace(/^#/, '');
+            a.classList.toggle('is-active', id === currentId);
+        });
+        ticking = false;
+    }
+
+    function onScroll() {
+        if (!ticking) {
+            requestAnimationFrame(updateActive);
+            ticking = true;
+        }
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    updateActive();
+}
+
 // Initialize all features
 // Initialize share menu links with fallback URLs on page load
 // NOTE: This is just a fallback - the actual share text will be updated by article-loader.js
@@ -528,4 +569,6 @@ document.addEventListener('DOMContentLoaded', function() {
     initTextSizeControls();
     initPrint();
     initKeyboardNavigation();
+    // TOC scroll-spy is invoked by article-loader after TOC is built (when 2+ headings)
+    window.initArticleTocScrollSpy = initTocScrollSpy;
 });

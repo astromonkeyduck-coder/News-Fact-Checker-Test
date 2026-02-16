@@ -250,6 +250,122 @@
     }
 
     /**
+     * Derive key takeaways from post for "At a glance" block.
+     * Uses post.key_takeaways, post.summary, or derives from story (lines or sentences).
+     * @param {Object} post - Post object
+     * @returns {string[]} Array of takeaway strings (max 5), or empty if none
+     */
+    function deriveKeyTakeaways(post) {
+        const maxItems = 5;
+        const maxLineLen = 120;
+
+        if (post.key_takeaways && Array.isArray(post.key_takeaways) && post.key_takeaways.length > 0) {
+            return post.key_takeaways
+                .slice(0, maxItems)
+                .map(s => (typeof s === 'string' ? s.trim() : String(s).trim()))
+                .filter(Boolean)
+                .map(s => s.length > maxLineLen ? s.substring(0, maxLineLen).trim() + '…' : s);
+        }
+
+        if (post.summary && typeof post.summary === 'string') {
+            const trimmed = post.summary.trim();
+            if (!trimmed) return [];
+            const byNewline = trimmed.split(/\n+/).map(s => s.trim()).filter(Boolean);
+            if (byNewline.length > 0) {
+                return byNewline.slice(0, maxItems).map(s =>
+                    s.length > maxLineLen ? s.substring(0, maxLineLen).trim() + '…' : s
+                );
+            }
+            const bySentence = trimmed.split(/\.\s+/).map(s => s.trim()).filter(Boolean);
+            return bySentence.slice(0, maxItems).map(s =>
+                s.length > maxLineLen ? s.substring(0, maxLineLen).trim() + '…' : (s.endsWith('.') ? s : s + '.')
+            );
+        }
+
+        const story = post.story || post.text || post.title || '';
+        if (!story || typeof story !== 'string') return [];
+
+        const lines = story.split(/\n+/).map(s => s.trim()).filter(Boolean);
+        if (lines.length >= 2) {
+            return lines.slice(0, maxItems).map(s =>
+                s.length > maxLineLen ? s.substring(0, maxLineLen).trim() + '…' : s
+            );
+        }
+
+        const single = story.trim();
+        if (!single) return [];
+        const sentences = single.split(/\.\s+/).map(s => s.trim()).filter(Boolean);
+        if (sentences.length >= 2) {
+            return sentences.slice(0, 3).map(s =>
+                s.length > maxLineLen ? s.substring(0, maxLineLen).trim() + '…' : (s.endsWith('.') ? s : s + '.')
+            );
+        }
+        if (sentences.length === 1 && sentences[0].length > 40) {
+            const s = sentences[0];
+            return [s.length > maxLineLen ? s.substring(0, maxLineLen).trim() + '…' : s];
+        }
+        return [];
+    }
+
+    /**
+     * Build key takeaways HTML block (empty string if no takeaways).
+     */
+    function buildKeyTakeawaysHTML(post) {
+        const items = deriveKeyTakeaways(post);
+        if (items.length === 0) return '';
+        const listItems = items.map(item => `<li>${escapeHtml(item)}</li>`).join('');
+        return `<div class="key-takeaways" role="region" aria-label="Key points">
+            <h2 class="key-takeaways__title">Key points</h2>
+            <ul class="key-takeaways__list">${listItems}</ul>
+        </div>`;
+    }
+
+    /**
+     * Generate a URL-safe slug from heading text (for id and TOC links).
+     */
+    function slugify(text) {
+        if (!text) return '';
+        return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'section';
+    }
+
+    /**
+     * Inject heading IDs and build table of contents in sidebar.
+     * Call after bodyElement.innerHTML is set. Shows TOC only if 2+ headings.
+     */
+    function buildTableOfContents(bodyElement) {
+        const headings = bodyElement.querySelectorAll('h2, h3');
+        if (headings.length < 2) return;
+
+        const used = new Set();
+        const tocEntries = [];
+
+        headings.forEach((el) => {
+            const text = (el.textContent || '').trim();
+            let id = el.id || slugify(text);
+            if (used.has(id)) {
+                let n = 2;
+                while (used.has(id + '-' + n)) n++;
+                id = id + '-' + n;
+            }
+            used.add(id);
+            el.id = id;
+            const tag = el.tagName.toLowerCase();
+            tocEntries.push({ id, text, tag });
+        });
+
+        const tocWrap = document.getElementById('article-toc-wrap');
+        const tocNav = document.getElementById('article-toc');
+        if (!tocWrap || !tocNav) return;
+
+        tocNav.innerHTML = tocEntries.map(({ id, text, tag }) => {
+            const cls = tag === 'h3' ? 'article-toc__item article-toc__item--h3' : 'article-toc__item';
+            return `<a href="#${escapeHtml(id)}" class="${cls}">${escapeHtml(text)}</a>`;
+        }).join('');
+
+        tocWrap.style.display = '';
+    }
+
+    /**
      * Get or create meta element
      */
     function getOrCreateMeta(property, attribute = 'property') {
@@ -1601,7 +1717,7 @@
             }
             
             // Update article body - PRESERVE EXACT POST TEXT
-            let bodyHTML = '';
+            let bodyHTML = buildKeyTakeawaysHTML(post);
             
             // Normalize URLs for comparison (remove trailing slashes, query params, etc.)
             const normalizeUrl = (url) => {
@@ -1765,7 +1881,17 @@
             
             bodyElement.innerHTML = bodyHTML;
             console.log('[ArticleLoader] Article body updated, total length:', bodyHTML.length);
-            
+
+            // Mark first paragraph for lead/drop-cap styling
+            const firstP = bodyElement.querySelector('p');
+            if (firstP) firstP.classList.add('lead-paragraph');
+
+            // Heading IDs and table of contents (sidebar)
+            buildTableOfContents(bodyElement);
+            if (typeof window.initArticleTocScrollSpy === 'function') {
+                window.initArticleTocScrollSpy();
+            }
+
             // Render article tags if they exist
             const tagsContainer = document.getElementById('article-tags');
             if (tagsContainer && post.tags && Array.isArray(post.tags) && post.tags.length > 0) {

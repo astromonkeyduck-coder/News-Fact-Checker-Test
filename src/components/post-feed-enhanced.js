@@ -1789,5 +1789,26 @@ if (typeof window !== 'undefined') {
   // #region agent log
   console.log('[Enhanced Feed] ✅ window.renderPostFeedEnhanced is now:', typeof window.renderPostFeedEnhanced);
   // #endregion
+
+  // Self-initialize when script loads: if the feed container exists and shows loading/empty state, load posts.
+  // This ensures cards load even if this script runs after DOMContentLoaded (e.g. slow script load).
+  function trySelfInit() {
+    const container = document.getElementById('articlesTrack');
+    if (!container) return;
+    const html = (container.innerHTML || '').trim();
+    const needsLoad = html.length < 100 ||
+      html.includes('Loading') ||
+      html.includes('postsLoadingIndicator') ||
+      (html.includes('skeleton') && !html.includes('feed-post-card'));
+    if (needsLoad && !enhancedInitInProgress && !enhancedInitDone) {
+      console.log('[Enhanced Feed] Self-init: container ready, loading posts');
+      initEnhancedFeed('articlesTrack', '/.netlify/functions/posts-read', 20);
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', trySelfInit);
+  } else {
+    trySelfInit();
+  }
 }
 

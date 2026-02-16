@@ -17,7 +17,7 @@ export async function fetchFL511Direct(params = {}) {
       where: '1=1',
       outFields: '*',
       f: 'json',
-      resultRecordCount: '500'
+      resultRecordCount: '1000'
     });
     
     // Add bbox if provided (minLon,minLat,maxLon,maxLat)

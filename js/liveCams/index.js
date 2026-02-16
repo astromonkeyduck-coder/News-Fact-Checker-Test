@@ -4,7 +4,7 @@
  */
 
 import { LiveCamsState } from './state.js';
-import { searchCameras, geocodeLocation, createSearchSignal } from './api.js';
+import { searchCameras, geocodeLocation, createSearchSignal, getImageProxyUrl } from './api.js';
 import { SearchBar } from './components/SearchBar.js';
 import { FiltersPanel } from './components/FiltersPanel.js';
 import { CamerasGrid } from './components/CamerasGrid.js';
@@ -413,7 +413,7 @@ export class LiveCams {
     
     container.innerHTML = this.gridCameras.map((camera, index) => {
       const snapshotUrl = camera.media?.snapshotUrl;
-      const proxyUrl = snapshotUrl ? `/api/cams/proxy-image?url=${encodeURIComponent(snapshotUrl)}` : null;
+      const proxyUrl = snapshotUrl ? getImageProxyUrl(snapshotUrl) : null;
       
       // Escape all user-provided data
       const safeId = escapeAttr(camera.id || '');

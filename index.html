@@ -17953,15 +17953,34 @@
             }
             
             // Try to load posts immediately if script is already loaded
+            function loadBreakingNewsFeed() {
+                if (window.renderPostFeedEnhanced) {
+                    console.log('[X Posts] Using enhanced feed');
+                    window.renderPostFeedEnhanced('articlesTrack', '/.netlify/functions/posts-read', 20);
+                } else if (window.renderPostFeedV2) {
+                    console.log('[X Posts] Using v2 feed');
+                    window.renderPostFeedV2('articlesTrack', '/.netlify/functions/posts-read', 5);
+                } else if (typeof renderPostFeed !== 'undefined') {
+                    renderPostFeed('articlesTrack', '/.netlify/functions/posts-read', 5);
+                } else {
+                    const container = document.getElementById('articlesTrack');
+                    if (container) {
+                        container.innerHTML = '<div class="feed-error-message" style="padding: 2rem; text-align: center; color: rgba(255,255,255,0.8);">Failed to load posts. Please refresh the page.</div>';
+                    }
+                }
+            }
             if (window.renderPostFeedEnhanced) {
                 console.log('[X Posts] Enhanced feed available immediately, loading posts...');
-                window.renderPostFeedEnhanced('articlesTrack', '/.netlify/functions/posts-read', 20);
+                loadBreakingNewsFeed();
             } else if (window.renderPostFeedV2) {
                 console.log('[X Posts] V2 feed available immediately, loading posts...');
-                window.renderPostFeedV2('articlesTrack', '/.netlify/functions/posts-read', 5);
+                loadBreakingNewsFeed();
             } else if (typeof renderPostFeed !== 'undefined') {
                 console.log('[X Posts] Old feed available immediately, loading posts...');
-                renderPostFeed('articlesTrack', '/.netlify/functions/posts-read', 5);
+                loadBreakingNewsFeed();
+            } else {
+                // Scripts may still be loading (defer). Start polling so feed loads as soon as they're ready.
+                waitForRenderFunction(loadBreakingNewsFeed, 50);
             }
         });
         

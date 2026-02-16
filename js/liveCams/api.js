@@ -11,14 +11,16 @@
  * Never log or expose the token in console or source code
  */
 
-import { fetchFallbackCameras, shouldUseFallback } from './fallback-providers/index.js';
+import { fetchFallbackCameras, shouldUseFallback, getCuratedCameras } from './fallback-providers/index.js';
 
 let abortController = null;
 let camsToken = null;
 let useFallbackMode = null; // null = unknown, true = use fallback, false = use Netlify
 
-// Cache configuration
+// Cache configuration — bump CACHE_VERSION to invalidate old cache (thumbnails + more cams fix)
 const CACHE_KEY = 'livecams_cache';
+const CACHE_VERSION_KEY = 'livecams_cache_version';
+const CACHE_VERSION = 2;
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 /**
@@ -56,23 +58,24 @@ async function getCamsToken() {
 }
 
 /**
- * Get cached results if still valid
+ * Get cached results if still valid and cache version matches
  */
 function getCachedResults(cacheKey) {
   try {
+    const storedVersion = localStorage.getItem(CACHE_VERSION_KEY);
+    if (storedVersion !== String(CACHE_VERSION)) {
+      localStorage.removeItem(CACHE_KEY);
+      localStorage.setItem(CACHE_VERSION_KEY, String(CACHE_VERSION));
+      return null;
+    }
     const cached = localStorage.getItem(CACHE_KEY);
     if (!cached) return null;
-    
     const data = JSON.parse(cached);
     const entry = data[cacheKey];
-    
     if (!entry) return null;
-    
-    // Check if cache is still valid
     if (Date.now() - entry.timestamp > CACHE_TTL_MS) {
       return null; // Cache expired
     }
-    
     console.log('[LiveCams API] Using cached results:', entry.results.length, 'cameras');
     return entry.results;
   } catch (err) {
@@ -116,16 +119,16 @@ function setCachedResults(cacheKey, results) {
 export async function searchCameras(filters, signal = null) {
   const cacheKey = JSON.stringify(filters);
   
-  // Check cache first
-  const cached = getCachedResults(cacheKey);
-  if (cached) {
-    return cached;
-  }
-  
-  // Determine if we should use fallback mode
+  // Determine fallback mode BEFORE cache check so image loading uses the correct mode
+  // (when cache hit we return early and never set useFallbackMode otherwise)
   if (useFallbackMode === null) {
     useFallbackMode = await shouldUseFallback();
     console.log('[LiveCams API] Fallback mode:', useFallbackMode ? 'ENABLED (using direct DOT APIs)' : 'DISABLED (using Netlify)');
+  }
+  
+  const cached = getCachedResults(cacheKey);
+  if (cached) {
+    return cached;
   }
   
   // If in fallback mode, go directly to fallback providers
@@ -137,7 +140,9 @@ export async function searchCameras(filters, signal = null) {
       return results;
     } catch (error) {
       console.error('[LiveCams API] Fallback search failed:', error);
-      return [];
+      const curated = getCuratedCameras();
+      setCachedResults(cacheKey, curated);
+      return curated;
     }
   }
   
@@ -151,7 +156,7 @@ export async function searchCameras(filters, signal = null) {
   if (filters.bbox) params.set('bbox', filters.bbox);
   if (filters.type && filters.type !== 'any') params.set('type', filters.type);
   if (filters.media && filters.media !== 'any') params.set('media', filters.media);
-  params.set('limit', '200');
+  params.set('limit', '400');
   
   const url = `/api/cams/search?${params.toString()}`;
   
@@ -190,13 +195,10 @@ export async function searchCameras(filters, signal = null) {
       
       // Try fallback on any error
       console.log('[LiveCams API] Trying fallback providers after Netlify error...');
-      const fallbackResults = await fetchFallbackCameras(filters);
-      if (fallbackResults.length > 0) {
-        setCachedResults(cacheKey, fallbackResults);
-        return fallbackResults;
-      }
-      
-      throw new Error(`Search failed: ${response.status} ${response.statusText}`);
+      const fallbackResults = await fetchFallbackCameras(filters).catch(() => getCuratedCameras());
+      const results = fallbackResults.length > 0 ? fallbackResults : getCuratedCameras();
+      setCachedResults(cacheKey, results);
+      return results;
     }
     
     const data = await response.json();
@@ -214,7 +216,25 @@ export async function searchCameras(filters, signal = null) {
       return fallbackResults;
     }
     
-    const results = data.results || [];
+    let results = data.results || [];
+    // If Netlify returned no (or very few) cameras for a broad search, merge in fallback so we always show something
+    const isBroadSearch = !filters.q && !filters.city && !filters.bbox;
+    if (results.length < 15 && isBroadSearch) {
+      console.log('[LiveCams API] Netlify returned few cameras for broad search, merging fallback providers');
+      try {
+        const fallbackResults = await fetchFallbackCameras(filters);
+        const seen = new Set(results.map(c => c.id));
+        for (const cam of fallbackResults) {
+          if (!seen.has(cam.id)) {
+            seen.add(cam.id);
+            results.push(cam);
+          }
+        }
+        console.log('[LiveCams API] After merge:', results.length, 'cameras');
+      } catch (mergeErr) {
+        console.warn('[LiveCams API] Fallback merge failed:', mergeErr.message);
+      }
+    }
     setCachedResults(cacheKey, results);
     return results;
     
@@ -225,14 +245,16 @@ export async function searchCameras(filters, signal = null) {
     
     // On network errors, try fallback
     console.warn('[LiveCams API] Network error, trying fallback:', error.message);
+    useFallbackMode = true;
     try {
-      useFallbackMode = true; // Remember to use fallback
       const fallbackResults = await fetchFallbackCameras(filters);
       setCachedResults(cacheKey, fallbackResults);
       return fallbackResults;
     } catch (fallbackError) {
       console.error('[LiveCams API] Fallback also failed:', fallbackError);
-      throw error; // Re-throw original error
+      const curated = getCuratedCameras();
+      setCachedResults(cacheKey, curated);
+      return curated;
     }
   }
 }
@@ -251,19 +273,40 @@ export function setFallbackMode(enabled) {
 export function clearCache() {
   try {
     localStorage.removeItem(CACHE_KEY);
+    localStorage.setItem(CACHE_VERSION_KEY, String(CACHE_VERSION));
     console.log('[LiveCams API] Cache cleared');
   } catch {}
 }
 
+// Hosts that typically allow CORS for images (DOT/ArcGIS); use direct load in fallback mode
+const CORS_SAFE_IMAGE_HOSTS = [
+  'arcgis.com',
+  'dot.ca.gov',
+  'cwwp2.dot.ca.gov',
+  'txdot.gov',
+  'its.txdot.gov',
+  'wydot.info',
+  'wyoroad.info',
+  'fl511.com'
+];
+
+function isCorsSafeImageHost(url) {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return CORS_SAFE_IMAGE_HOSTS.some(h => host === h || host.endsWith('.' + h));
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Get image proxy URL
- * In fallback mode, returns direct URL (DOT images usually don't need proxy)
+ * In fallback mode, use direct URL only for CORS-safe hosts (DOT/ArcGIS); otherwise use proxy so curated cams (e.g. EarthCam) work when proxy is available.
  */
 export function getImageProxyUrl(imageUrl) {
   if (!imageUrl) return null;
   
-  // In fallback mode, use direct URLs (DOT APIs have CORS enabled)
-  if (useFallbackMode) {
+  if (useFallbackMode && isCorsSafeImageHost(imageUrl)) {
     return imageUrl;
   }
   
@@ -306,11 +349,14 @@ export async function loadImageWithAuth(imgEl, proxyUrl, fallbackUrl = null, { c
     delete imgEl.dataset.objectUrl;
   }
   
-  // In fallback mode, just set src directly (DOT images have CORS enabled)
+  // In fallback mode: use direct image URL so thumbnails work without proxy.
+  // If proxyUrl is our proxy endpoint (e.g. /api/cams/proxy-image), proxy may 404 when not on Netlify — use fallbackUrl (direct) so DOT images still load.
   if (useFallbackMode) {
-    const directUrl = cacheBust ? addCacheBust(proxyUrl) : proxyUrl;
+    const isProxyEndpoint = typeof proxyUrl === 'string' && proxyUrl.includes('proxy-image');
+    const urlToLoad = (isProxyEndpoint && fallbackUrl) ? fallbackUrl : proxyUrl;
+    const directUrl = cacheBust ? addCacheBust(urlToLoad) : urlToLoad;
     imgEl.onerror = () => {
-      if (fallbackUrl) {
+      if (fallbackUrl && urlToLoad !== fallbackUrl) {
         imgEl.src = cacheBust ? addCacheBust(fallbackUrl) : fallbackUrl;
         imgEl.onerror = () => {
           imgEl.src = placeholder;

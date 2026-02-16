@@ -336,6 +336,10 @@ html.article-page-active::after,
     letter-spacing: 0.01em;
 }
 
+.article-body > *:first-child {
+    margin-top: 0.5em;
+}
+
 @media (min-width: 1024px) {
     .article-body {
         font-size: 1.1875rem;
@@ -350,10 +354,71 @@ html.article-page-active::after,
     }
 }
 
+/* Key takeaways - At a glance block */
+.key-takeaways {
+    margin: 0 0 2em 0;
+    padding: 1.25em 1.5em;
+    background: #f8f9fa;
+    border-left: 4px solid #1a1a1a;
+    border-radius: 0 2px 2px 0;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: #1a1a1a;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.key-takeaways__title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0 0 0.75em 0;
+    color: #666;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.key-takeaways__list {
+    margin: 0;
+    padding-left: 1.25em;
+    list-style: disc;
+}
+
+.key-takeaways__list li {
+    margin-bottom: 0.5em;
+}
+
+.key-takeaways__list li:last-child {
+    margin-bottom: 0;
+}
+
 .article-body p {
     margin-bottom: 1.5em;
     text-align: left;
     word-spacing: normal;
+}
+
+/* Lead paragraph - slightly larger, premium feel */
+.article-body .lead-paragraph {
+    font-size: 1.25rem;
+    letter-spacing: 0.02em;
+    line-height: 1.7;
+}
+
+@media (min-width: 1024px) {
+    .article-body .lead-paragraph {
+        font-size: 1.3125rem;
+    }
+}
+
+/* Drop cap on first paragraph (class allows toggling) */
+.article-body .lead-paragraph::first-letter {
+    float: left;
+    font-size: 3.5em;
+    line-height: 0.85;
+    margin: 0.08em 0.12em 0 0;
+    font-weight: 700;
+    font-family: 'Georgia', 'Charter', 'Times New Roman', serif;
+    color: #1a1a1a;
 }
 
 /* Ensure full content is displayed - no truncation */
@@ -402,7 +467,7 @@ html.article-page-active::after,
 .article-body h2 {
     font-size: 1.75rem;
     font-weight: 700;
-    margin: 2.5em 0 1em;
+    margin: 2em 0 0.75em;
     color: #1a1a1a;
     line-height: 1.3;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -411,7 +476,7 @@ html.article-page-active::after,
 .article-body h3 {
     font-size: 1.375rem;
     font-weight: 600;
-    margin: 2em 0 0.75em;
+    margin: 1.5em 0 0.5em;
     color: #1a1a1a;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
@@ -501,6 +566,44 @@ html.article-page-active::after,
     letter-spacing: 0.5px;
     position: relative;
     z-index: 1;
+}
+
+/* Table of contents - In this article */
+#article-toc {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.article-toc__item {
+    display: block;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: #1a1a1a;
+    text-decoration: none;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    padding: 4px 0;
+    border-bottom: none;
+    transition: color 0.2s ease;
+}
+
+.article-toc__item:hover {
+    color: #4A90E2;
+}
+
+.article-toc__item--h3 {
+    padding-left: 12px;
+    font-size: 0.75rem;
+    color: #666;
+}
+
+.article-toc__item--h3:hover {
+    color: #1a1a1a;
+}
+
+.article-toc__item.is-active {
+    font-weight: 600;
+    color: #1a1a1a;
 }
 
 /* News Card Component - Improved spacing and hover */
@@ -1607,6 +1710,7 @@ body.article-page {
     
     .main-header,
     .article-sidebar,
+    #article-toc-wrap,
     .article-header-utility,
     .article-controls,
     .reading-progress,
@@ -1616,6 +1720,11 @@ body.article-page {
     .share-menu,
     .starfield {
         display: none !important;
+    }
+
+    /* Key takeaways: keep in print as summary at top */
+    .key-takeaways {
+        break-inside: avoid;
     }
     
     .article-container,
