@@ -54,32 +54,19 @@ async function saveMap() {
     process.exit(1);
   }
 
-  // Resize for newsletter: higher quality (480x270, quality 82) — still keeps email under truncation limit
-  try {
-    const sharp = require('sharp');
-    buffer = await sharp(buffer)
-      .resize(480, 270, { fit: 'cover' })
-      .jpeg({ quality: 82 })
-      .toBuffer();
-    const jpegPath = path.join(__dirname, '../newsletter-sample-map.jpg');
-    fs.writeFileSync(jpegPath, buffer);
-    if (fs.existsSync(OUTPUT_FILE)) fs.unlinkSync(OUTPUT_FILE);
-    console.log('   ✅ Resized for newsletter (JPEG for small size)');
-  } catch (e) {
-    console.warn('   ⚠️ Could not resize:', e.message);
-    fs.writeFileSync(OUTPUT_FILE, buffer);
-  }
-
-  const outPath = fs.existsSync(path.join(__dirname, '../newsletter-sample-map.jpg')) 
-    ? path.join(__dirname, '../newsletter-sample-map.jpg') : OUTPUT_FILE;
-  const finalBuffer = fs.readFileSync(outPath);
-  console.log('   ✅ Saved to', path.relative(process.cwd(), outPath), `(${Math.round(finalBuffer.length / 1024)} KB)`);
+  // Save at full quality — no resize or compression
+  const pngPath = path.join(__dirname, '../newsletter-sample-map.png');
+  fs.writeFileSync(pngPath, buffer);
+  const jpegPath = path.join(__dirname, '../newsletter-sample-map.jpg');
+  if (fs.existsSync(jpegPath)) fs.unlinkSync(jpegPath);
+  console.log('   ✅ Saved full-quality PNG (no reduction)');
+  console.log('   ✅ Saved to', path.relative(process.cwd(), pngPath), `(${Math.round(buffer.length / 1024)} KB)`);
 
   console.log('\n✅ Done! Next steps:');
-  console.log('   git add newsletter-sample-map.jpg newsletter-sample-map.png');
+  console.log('   git add newsletter-sample-map.png');
   console.log('   git commit -m "Add permanent newsletter sample map"');
   console.log('   git push');
-  console.log('\n   After push, the newsletter will use: https://noteworthynews.co/newsletter-sample-map.jpg');
+  console.log('\n   After push, the newsletter will use: https://noteworthynews.co/newsletter-sample-map.png');
 }
 
 saveMap().catch((e) => {
