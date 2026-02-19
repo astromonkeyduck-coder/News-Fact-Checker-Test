@@ -308,6 +308,19 @@ async function checkAndSendLocationAlert(userEmail, userName, event, eventType) 
       return { success: false, reason: 'User not subscribed to this event type' };
     }
 
+    // For earthquakes: check user's magnitude threshold (default 6.0+)
+    if (eventType.toLowerCase() === 'earthquake') {
+      const eventMagnitude = event.magnitude ?? event.assets?.magnitude ?? event.raw?.properties?.mag;
+      if (eventMagnitude != null) {
+        const { getUserEmailPreferences } = require('./lib/emailPreferences');
+        const prefs = await getUserEmailPreferences(userEmail);
+        const minMag = prefs.earthquakeMagnitudeMin ?? 6;
+        if (eventMagnitude < minMag) {
+          return { success: false, reason: `Magnitude ${eventMagnitude} below user threshold ${minMag}` };
+        }
+      }
+    }
+
     // Send alert
     return await sendLocationAlert(userEmail, userName, event, eventType, distance);
   } catch (error) {

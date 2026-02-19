@@ -77,6 +77,8 @@ exports.handler = async (event) => {
             leaderboard: preferences.leaderboard,
             streak: preferences.streak,
             location: preferences.location,
+            earthquakeAlerts: preferences.earthquakeAlerts ?? false,
+            earthquakeMagnitudeMin: preferences.earthquakeMagnitudeMin ?? 6,
           },
         }),
       };
@@ -85,10 +87,15 @@ exports.handler = async (event) => {
     const body = JSON.parse(event.body || "{}");
     const updates = body.preferences || {};
 
-    const allowed = ["leaderboard", "streak", "location"];
+    const allowed = ["leaderboard", "streak", "location", "earthquakeAlerts", "earthquakeMagnitudeMin"];
     const sanitized = {};
     for (const key of allowed) {
-      if (key in updates && typeof updates[key] === "boolean") {
+      if (key === "earthquakeMagnitudeMin") {
+        const v = updates[key];
+        if ([4, 5, 6, 7].includes(Number(v))) {
+          sanitized[key] = Number(v);
+        }
+      } else if (key in updates && typeof updates[key] === "boolean") {
         sanitized[key] = updates[key];
       }
     }
@@ -120,6 +127,8 @@ exports.handler = async (event) => {
           leaderboard: updated.leaderboard,
           streak: updated.streak,
           location: updated.location,
+          earthquakeAlerts: updated.earthquakeAlerts ?? false,
+          earthquakeMagnitudeMin: updated.earthquakeMagnitudeMin ?? 6,
         },
       }),
     };

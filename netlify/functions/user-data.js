@@ -100,6 +100,8 @@ exports.handler = async (event, context) => {
                   leaderboard: true,
                   streak: true,
                   location: false,
+                  earthquakeAlerts: false,
+                  earthquakeMagnitudeMin: 6,
                 },
               },
               createdAt: new Date().toISOString(),
@@ -144,6 +146,8 @@ exports.handler = async (event, context) => {
                 leaderboard: true,  // Default: enabled if email provided
                 streak: true,        // Default: enabled
                 location: false,     // Default: disabled (must opt-in)
+                earthquakeAlerts: false, // Default: disabled (must opt-in)
+                earthquakeMagnitudeMin: 6,
               },
             },
             createdAt: new Date().toISOString(),
@@ -167,6 +171,8 @@ exports.handler = async (event, context) => {
                 leaderboard: true,
                 streak: true,
                 location: false,
+                earthquakeAlerts: false,
+                earthquakeMagnitudeMin: 6,
               },
             };
           }

@@ -15,6 +15,8 @@ async function getUserEmailPreferences(userEmail) {
       leaderboard: true,
       streak: true,
       location: false,
+      earthquakeAlerts: false,
+      earthquakeMagnitudeMin: 6,
     };
   }
 
@@ -36,6 +38,8 @@ async function getUserEmailPreferences(userEmail) {
         leaderboard: true,
         streak: true,
         location: false,
+        earthquakeAlerts: false,
+        earthquakeMagnitudeMin: 6,
       };
     }
 
@@ -43,6 +47,8 @@ async function getUserEmailPreferences(userEmail) {
       leaderboard: userData.preferences.emails.leaderboard !== false, // Default true
       streak: userData.preferences.emails.streak !== false, // Default true
       location: userData.preferences.emails.location === true, // Default false (must opt-in)
+      earthquakeAlerts: userData.preferences.emails.earthquakeAlerts === true, // Default false (must opt-in)
+      earthquakeMagnitudeMin: userData.preferences.emails.earthquakeMagnitudeMin ?? 6, // Default 6.0+
     };
   } catch (error) {
     console.error('[Email Preferences] Error getting preferences:', error);
@@ -51,6 +57,8 @@ async function getUserEmailPreferences(userEmail) {
       leaderboard: true,
       streak: true,
       location: false,
+      earthquakeAlerts: false,
+      earthquakeMagnitudeMin: 6,
     };
   }
 }
@@ -100,10 +108,12 @@ async function updateEmailPreferences(userEmail, emailPreferences) {
         leaderboard: true,
         streak: true,
         location: false,
+        earthquakeAlerts: false,
+        earthquakeMagnitudeMin: 6,
       };
     }
 
-    // Update email preferences
+    // Update email preferences (earthquakeMagnitudeMin: 4|5|6|7 for 4.0+, 5.0+, 6.0+, 7.0+)
     userData.preferences.emails = {
       ...userData.preferences.emails,
       ...emailPreferences,

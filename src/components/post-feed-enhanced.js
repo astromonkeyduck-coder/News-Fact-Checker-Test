@@ -72,6 +72,11 @@ let enhancedIsLoading = false;
 let enhancedCurrentSort = localStorage.getItem('feed-sort') || 'recent';
 let enhancedCurrentSearch = localStorage.getItem('feed-search') || '';
 let enhancedCurrentPosts = [];
+let enhancedUserLocation = null;
+try {
+  const cached = localStorage.getItem('user-location');
+  if (cached) enhancedUserLocation = JSON.parse(cached);
+} catch (_) {}
 let enhancedDisplayedCount = 5; // Number of posts currently displayed
 let enhancedPostsPerChunk = 15; // Number of posts to load per scroll
 let enhancedScrollObserver = null; // Intersection Observer for infinite scroll
@@ -1267,6 +1272,54 @@ function searchEnhancedPosts(posts, query) {
 /**
  * Sort posts
  */
+let enhancedLocationRequested = false;
+
+async function getEnhancedUserLocation() {
+  if (enhancedUserLocation) return enhancedUserLocation;
+  if (enhancedLocationRequested) return null;
+  enhancedLocationRequested = true;
+  try {
+    const cached = localStorage.getItem('user-location');
+    const cachedTime = localStorage.getItem('user-location-time');
+    if (cached && cachedTime && Date.now() - parseInt(cachedTime, 10) < 24 * 60 * 60 * 1000) {
+      enhancedUserLocation = JSON.parse(cached);
+      return enhancedUserLocation;
+    }
+    const res = await fetch('https://ipapi.co/json/');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (data.latitude && data.longitude) {
+      enhancedUserLocation = { lat: parseFloat(data.latitude), lng: parseFloat(data.longitude), city: data.city, region: data.region, country: data.country_name };
+      localStorage.setItem('user-location', JSON.stringify(enhancedUserLocation));
+      localStorage.setItem('user-location-time', Date.now().toString());
+      return enhancedUserLocation;
+    }
+  } catch (e) {
+    try {
+      const r = await fetch('https://freeipapi.com/api/json/');
+      if (r.ok) {
+        const d = await r.json();
+        if (d.latitude && d.longitude) {
+          enhancedUserLocation = { lat: parseFloat(d.latitude), lng: parseFloat(d.longitude), city: d.cityName, region: d.regionName, country: d.countryName };
+          localStorage.setItem('user-location', JSON.stringify(enhancedUserLocation));
+          localStorage.setItem('user-location-time', Date.now().toString());
+          return enhancedUserLocation;
+        }
+      }
+    } catch (_) {}
+  }
+  return null;
+}
+
+function distanceFromUser(post, userLoc) {
+  if (!userLoc || !post.location?.lat || !post.location?.lng) return Infinity;
+  const R = 6371;
+  const dLat = (post.location.lat - userLoc.lat) * Math.PI / 180;
+  const dLon = (post.location.lng - userLoc.lng) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(userLoc.lat * Math.PI/180) * Math.cos(post.location.lat * Math.PI/180) * Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
 function sortEnhancedPosts(posts, sortMode) {
   const sorted = [...posts];
   switch (sortMode) {
@@ -1281,6 +1334,17 @@ function sortEnhancedPosts(posts, sortMode) {
       break;
     case 'reposts':
       sorted.sort((a, b) => (b.stats?.reposts || 0) - (a.stats?.reposts || 0));
+      break;
+    case 'nearMe':
+      if (enhancedUserLocation) {
+        sorted.sort((a, b) => distanceFromUser(a, enhancedUserLocation) - distanceFromUser(b, enhancedUserLocation));
+      } else {
+        sorted.sort((a, b) => {
+          const dateA = new Date(a.createdAt || a.datePosted || 0);
+          const dateB = new Date(b.createdAt || b.datePosted || 0);
+          return dateB - dateA;
+        });
+      }
       break;
     default: // recent
       sorted.sort((a, b) => {
@@ -1723,43 +1787,106 @@ function initEnhancedFeed(containerId = 'articlesTrack', endpoint = '/.netlify/f
     loadEnhancedPosts(endpoint, limit);
   }
   
-  // Set up search and sort handlers (if controls exist)
-  const searchInput = document.querySelector('.feed-search-input');
+  // Set up search and sort handlers - support both legacy (.feed-search-input, .feed-sort-select)
+  // and page controls (#globeSearchInputPosts, .feed-sort-btn)
+  const searchInput = document.getElementById('globeSearchInputPosts') || document.querySelector('.feed-search-input');
   const sortSelect = document.querySelector('.feed-sort-select');
+  const sortButtons = document.querySelectorAll('.feed-sort-btn');
+  const searchClearBtn = document.getElementById('globeSearchClearPosts');
   
   if (searchInput) {
+    searchInput.value = enhancedCurrentSearch;
+    if (searchClearBtn) searchClearBtn.style.display = enhancedCurrentSearch ? 'block' : 'none';
+    
     let searchTimeout;
-    searchInput.addEventListener('input', (e) => {
-      clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(() => {
-        enhancedCurrentSearch = e.target.value;
-        localStorage.setItem('feed-search', enhancedCurrentSearch);
-        // Reset display count when search changes
-        enhancedDisplayedCount = 5;
-        // Disconnect observer before re-rendering
-        if (enhancedScrollObserver) {
-          enhancedScrollObserver.disconnect();
-          enhancedScrollObserver = null;
-        }
-        renderEnhancedFeed();
-        setupInfiniteScroll();
-      }, 300);
-    });
-  }
-  
-  if (sortSelect) {
-    sortSelect.addEventListener('change', (e) => {
-      enhancedCurrentSort = e.target.value;
-      localStorage.setItem('feed-sort', enhancedCurrentSort);
-      // Reset display count when sort changes
+    const onSearch = () => {
+      enhancedCurrentSearch = searchInput.value;
+      localStorage.setItem('feed-search', enhancedCurrentSearch);
+      if (searchClearBtn) searchClearBtn.style.display = enhancedCurrentSearch ? 'block' : 'none';
       enhancedDisplayedCount = 5;
-      // Disconnect observer before re-rendering
       if (enhancedScrollObserver) {
         enhancedScrollObserver.disconnect();
         enhancedScrollObserver = null;
       }
       renderEnhancedFeed();
       setupInfiniteScroll();
+    };
+    
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(onSearch, 300);
+    });
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        clearTimeout(searchTimeout);
+        onSearch();
+      }
+    });
+    
+    if (searchClearBtn) {
+      searchClearBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        enhancedCurrentSearch = '';
+        localStorage.setItem('feed-search', '');
+        searchClearBtn.style.display = 'none';
+        searchInput.focus();
+        enhancedDisplayedCount = 5;
+        if (enhancedScrollObserver) { enhancedScrollObserver.disconnect(); enhancedScrollObserver = null; }
+        renderEnhancedFeed();
+        setupInfiniteScroll();
+      });
+    }
+  }
+  
+  if (sortSelect) {
+    sortSelect.addEventListener('change', (e) => {
+      enhancedCurrentSort = e.target.value;
+      localStorage.setItem('feed-sort', enhancedCurrentSort);
+      enhancedDisplayedCount = 5;
+      if (enhancedScrollObserver) { enhancedScrollObserver.disconnect(); enhancedScrollObserver = null; }
+      renderEnhancedFeed();
+      setupInfiniteScroll();
+    });
+  }
+  
+  // Wire up .feed-sort-btn buttons (used on index.html)
+  if (sortButtons.length > 0) {
+    const updateSortBtnStyles = () => {
+      sortButtons.forEach(btn => {
+        const active = btn.dataset.sort === enhancedCurrentSort;
+        btn.style.background = active ? 'linear-gradient(135deg, rgba(74, 144, 226, 0.25) 0%, rgba(91, 181, 255, 0.2) 100%)' : 'rgba(255, 255, 255, 0.05)';
+        btn.style.borderColor = active ? 'rgba(74, 144, 226, 0.5)' : 'rgba(255, 255, 255, 0.1)';
+        btn.style.color = active ? '#4A90E2' : 'rgba(255, 255, 255, 0.8)';
+        btn.style.fontWeight = active ? '600' : '500';
+      });
+    };
+    updateSortBtnStyles();
+    
+    sortButtons.forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const newSort = btn.dataset.sort;
+        if (newSort === 'nearMe') {
+          if (!enhancedUserLocation) {
+            const loc = await getEnhancedUserLocation();
+            if (!loc) {
+              const toast = document.createElement('div');
+              toast.textContent = 'Location unavailable. Showing recent posts.';
+              toast.style.cssText = 'position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);padding:0.75rem 1.5rem;background:rgba(15,15,35,0.95);border:1px solid rgba(255,255,255,0.2);border-radius:8px;color:rgba(255,255,255,0.9);font-size:0.875rem;z-index:10000;';
+              document.body.appendChild(toast);
+              setTimeout(() => { toast.remove(); }, 3000);
+              return;
+            }
+          }
+        }
+        enhancedCurrentSort = newSort;
+        localStorage.setItem('feed-sort', enhancedCurrentSort);
+        enhancedDisplayedCount = 5;
+        if (enhancedScrollObserver) { enhancedScrollObserver.disconnect(); enhancedScrollObserver = null; }
+        updateSortBtnStyles();
+        renderEnhancedFeed();
+        setupInfiniteScroll();
+      });
     });
   }
 }

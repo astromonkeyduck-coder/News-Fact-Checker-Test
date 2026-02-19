@@ -1362,21 +1362,29 @@
                 preferCanvas: false
             }).setView([lat, lon], 10);
             
-            // Try OSM first (most reliable), then CARTO as fallback
-            const osmLayer = window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                maxZoom: 19
-            });
+            // Use CARTO as primary (reliable, OSM data) - OSM tile server often returns 403
             const cartoLayer = window.L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
                 subdomains: 'abcd',
                 maxZoom: 20
             });
-            osmLayer.addTo(map);
-            osmLayer.on('loaderror', () => {
-                map.removeLayer(osmLayer);
-                cartoLayer.addTo(map);
+            const osmLayer = window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19
             });
+            const topoLayer = window.L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://opentopomap.org">OpenTopoMap</a>',
+                maxZoom: 17
+            });
+            cartoLayer.addTo(map);
+            const tryFallback = (fromLayer, toLayer) => {
+                if (map.hasLayer(fromLayer)) {
+                    map.removeLayer(fromLayer);
+                    toLayer.addTo(map);
+                }
+            };
+            cartoLayer.on('tileerror', () => tryFallback(cartoLayer, osmLayer));
+            osmLayer.on('tileerror', () => tryFallback(osmLayer, topoLayer));
             
             // Calculate radius based on magnitude (rough estimate of felt area)
             const radiusKm = magnitude * 10; // km
@@ -1812,8 +1820,8 @@
                 twitterBtn.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
             }
             
-            // Update article body - PRESERVE EXACT POST TEXT
-            let bodyHTML = buildKeyTakeawaysHTML(post);
+            // Update article body - Hero image FIRST (like AP News), then key takeaways, then text
+            let bodyHTML = '';
             
             // Normalize URLs for comparison (remove trailing slashes, query params, etc.)
             const normalizeUrl = (url) => {
@@ -1827,7 +1835,13 @@
             };
             
             // STEP 3: Canonical image resolution (SINGLE SOURCE OF TRUTH)
-            const primary = post.primary_image_url || post.image_url || post.image || null;
+            // For earthquakes, fall back to USGS images if no primary
+            let primary = post.primary_image_url || post.image_url || post.image || null;
+            if (!primary && (post.category === 'Earthquake' || post.source === 'USGS')) {
+                const usgsImages = post.assets?.usgs_images || post.usgs_images || [];
+                const firstUsgs = usgsImages[0];
+                primary = firstUsgs ? (typeof firstUsgs === 'string' ? firstUsgs : firstUsgs?.url) : null;
+            }
             
             // STEP 4: Build deduplicated secondary image list (NEVER includes primary)
             const secondaryCandidates = [
@@ -1870,8 +1884,8 @@
                 
                 if (isUploadedImage) {
                     // For uploaded images, add retry logic with exponential backoff
-                    bodyHTML += `<div class="article-media" data-image-url="${escapeHtml(absoluteImageUrl)}">
-                        <img src="${escapeHtml(absoluteImageUrl)}" alt="${escapeHtml(title)}" loading="lazy" 
+                    bodyHTML += `<div class="article-media article-media-hero" data-image-url="${escapeHtml(absoluteImageUrl)}">
+                        <img src="${escapeHtml(absoluteImageUrl)}" alt="${escapeHtml(title)}" loading="eager" 
                              onerror="(function(img) {
                                 const container = img.parentElement;
                                 if (!container) return;
@@ -1885,19 +1899,22 @@
                                 } else {
                                     img.style.display='none';
                                     if (!container.querySelector('.image-error')) {
-                                        container.innerHTML='<p class=\\'image-error\\' style=\\'color: rgba(255,255,255,0.4); padding: 0.5rem; text-align: center; font-size: 0.8125rem; margin: 0;\\'>Image unavailable</p>';
+                                        container.innerHTML='<p class=\\'image-error\\' style=\\'color: #666; padding: 0.5rem; text-align: center; font-size: 0.8125rem; margin: 0;\\'>Image unavailable</p>';
                                     }
                                 }
                              })(this);">
                     </div>`;
                 } else {
-                    // For regular images, use simple error handling
-                    bodyHTML += `<div class="article-media">
-                        <img src="${escapeHtml(absoluteImageUrl)}" alt="${escapeHtml(title)}" loading="lazy" 
-                             onerror="this.style.display='none'; this.parentElement.innerHTML='<p style=\\'color: rgba(255,255,255,0.6); padding: 2rem; text-align: center;\\'>Image could not be loaded</p>';">
+                    // For regular images, use simple error handling (dark text for white background visibility)
+                    bodyHTML += `<div class="article-media article-media-hero">
+                        <img src="${escapeHtml(absoluteImageUrl)}" alt="${escapeHtml(title)}" loading="eager" 
+                             onerror="this.style.display='none'; this.parentElement.innerHTML='<p style=\\'color: #666; padding: 2rem; text-align: center;\\'>Image could not be loaded</p>';">
                     </div>`;
                 }
             }
+            
+            // Key takeaways after hero image
+            bodyHTML += buildKeyTakeawaysHTML(post);
             
             // Render secondary images ONLY if they exist and are different from primary
             if (secondary.length > 0) {

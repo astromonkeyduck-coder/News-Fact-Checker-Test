@@ -253,6 +253,45 @@ exports.handler = async (event, context) => {
             (n.subject && n.subject.includes('D.C. shooting'))
           );
           
+          // 5. Add the earthquake alerts rollout newsletter if it's missing (always include for quick send)
+          const earthquakeSubject = 'Noteworthy News: Earthquake Alerts Now Live';
+          const hasEarthquakeRollout = uniqueNewsletters.some(n => 
+            (n.subject && n.subject.includes('Earthquake Alerts')) ||
+            (n.id && n.id.includes('earthquake-alerts-rollout'))
+          );
+          
+          if (!hasEarthquakeRollout) {
+            try {
+              const fs = require('fs');
+              const path = require('path');
+              const earthquakeFile = path.join(__dirname, '../../newsletter-earthquake-alerts-rollout.html');
+              if (fs.existsSync(earthquakeFile)) {
+                const fileContent = fs.readFileSync(earthquakeFile, 'utf8');
+                const previewHtml = fileContent
+                  .replace(/\{\{FULL_NAME\}\}/g, 'Preview User')
+                  .replace(/\{\{FIRST_NAME\}\}/g, 'Preview')
+                  .replace(/\{\{EMAIL_USERNAME\}\}/g, 'preview')
+                  .replace(/\{\{DATE_PLACEHOLDER\}\}/g, new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }))
+                  .replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, '#')
+                  .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, '#')
+                  .replace(/\{\{\{PREFERENCES_URL\}\}\}/g, '#')
+                  .replace(/\{\{PREFERENCES_URL\}\}/g, '#');
+                uniqueNewsletters.push({
+                  id: 'earthquake-alerts-rollout',
+                  subject: earthquakeSubject,
+                  timestamp: new Date().toISOString(),
+                  emailsSent: 0,
+                  html: fileContent,
+                  previewHtml: previewHtml,
+                  text: fileContent.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim(),
+                });
+                console.log('Added earthquake alerts rollout newsletter from file');
+              }
+            } catch (e) {
+              console.log('Error loading earthquake rollout newsletter:', e.message);
+            }
+          }
+          
           if (!hasDCShooting) {
             // Check if we have the template - if template exists, newsletter was likely sent
             try {

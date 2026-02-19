@@ -12,6 +12,8 @@
 [build.environment]
   SECRETS_SCAN_OMIT_KEYS = "AUTH0_DOMAIN,AUTH0_CLIENT_ID,R2_BUCKET"
   NODE_VERSION = "20"
+  # Disable auto earthquake email alerts until ready (set to "false" to re-enable)
+  EARTHQUAKE_EMAIL_ALERTS_DISABLED = "true"
   BUGSNAG_DISABLE_AUTOMATIC_REPORTING = "true"
   ENABLE_HEADLESS_BROWSER = "true"
 

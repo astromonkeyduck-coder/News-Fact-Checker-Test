@@ -677,7 +677,7 @@ html.article-page-active::after,
 }
 
 .article-media .image-error {
-    color: rgba(255, 255, 255, 0.3);
+    color: #666;
     padding: 0.5rem;
     text-align: center;
     font-size: 0.8125rem;
@@ -714,6 +714,17 @@ html.article-page-active::after,
     margin: 2.5em 0;
     border-radius: 0;
     overflow: visible;
+}
+
+/* Hero image - first in article, prominent on mobile and desktop */
+.article-media-hero {
+    margin-top: 0;
+    margin-bottom: 1.5em;
+}
+
+.article-media-hero img {
+    object-fit: contain;
+    background: #f8f9fa;
 }
 
 .article-media img {
@@ -1626,14 +1637,22 @@ body.article-page .main-header {
     }
 }
 
-/* Collapsible sidebar on mobile */
+/* Collapsible sidebar on mobile - article first, then sidebar, then more coverage last */
 @media (max-width: 1023px) {
-    .article-sidebar {
-        order: 2;
+    .article-breadcrumb-row {
+        order: 0;
     }
     
     .article-main {
         order: 1;
+    }
+    
+    .article-sidebar {
+        order: 2;
+    }
+    
+    .more-coverage {
+        order: 3;
     }
 }
 

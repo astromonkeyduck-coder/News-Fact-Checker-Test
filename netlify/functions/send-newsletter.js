@@ -1404,6 +1404,7 @@ function getNewsletterHTMLWithPosts(posts) {
     .ii a[href]{color:#60a5fa!important}
     [data-ogsc] body,[data-ogsc] table{background-color:#0b1020!important}
     @media (prefers-color-scheme:light){body,html,table,td{background-color:#0b1020!important;color:#f9fafb!important}}
+    @media only screen and (max-width:600px){.footer-gif{width:100%!important;max-width:100%!important;min-width:100%!important}.footer-gif-cell{padding-left:0!important;padding-right:0!important}}
   </style>
 </head>
 <body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background-color:#0b1020!important;color-scheme:dark only">
@@ -1475,8 +1476,8 @@ function getNewsletterHTMLWithPosts(posts) {
         </table>
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:650px;margin:0 auto;background-color:#050814!important">
           <tr>
-            <td style="padding:30px 20px;text-align:center;background-color:#050814!important;width:100%">
-              <img src="https://noteworthynews.co/nw-logo.GIF" alt="Noteworthy News Logo" style="width:100%;max-width:100%;height:auto;display:block;margin:0 auto 30px;opacity:0.95" />
+            <td class="footer-gif-cell" style="padding:30px 20px;text-align:center;background-color:#050814!important;width:100%">
+              <img src="https://noteworthynews.co/nw-logo.GIF" alt="Noteworthy News Logo" class="footer-gif" width="100%" style="width:100%;max-width:100%;height:auto;display:block;margin:0 auto 30px;opacity:0.95" />
               <p style="margin:0 0 6px 0;font-size:11px;color:#6b7280!important;line-height:1.5">You're receiving this email because you subscribed to Noteworthy News.</p>
               <p style="margin:0;font-size:11px;color:#6b7280!important;line-height:1.5"><a href="{{{PREFERENCES_URL}}}" style="color:#3b82f6!important;text-decoration:underline;font-weight:500">Manage preferences</a> · <a href="{{{UNSUBSCRIBE_URL}}}" style="color:#3b82f6!important;text-decoration:underline;font-weight:500">Unsubscribe</a> · noteworthynews.co</p>
             </td>

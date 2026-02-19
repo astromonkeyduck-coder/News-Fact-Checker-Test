@@ -581,8 +581,10 @@ exports.handler = async (event, context) => {
           }
         }
         
-        // Send email alert for ALL earthquakes (temporary: for testing/monitoring)
-        if (!testMode) {
+        // Send email alert only for magnitude 6.0+ (don't connect to Resend audience)
+        // Disabled when EARTHQUAKE_EMAIL_ALERTS_DISABLED=true (still needs work)
+        const emailAlertsDisabled = process.env.EARTHQUAKE_EMAIL_ALERTS_DISABLED === "true";
+        if (!testMode && !emailAlertsDisabled && magnitude >= 6.0) {
           try {
             // Check if AI_NOTIFICATION_EMAILS or ALERT_TO_EMAIL is configured
             const hasEmailConfig = process.env.AI_NOTIFICATION_EMAILS || process.env.ALERT_TO_EMAIL;

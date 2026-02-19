@@ -1060,6 +1060,11 @@ async function sendPushNotificationForEarthquake(earthquake, imageUrl, logger) {
  * Uses HTTP call to send-earthquake-alert function which handles image attachments
  */
 async function sendEmailAlert(earthquake, imageUrl, logger) {
+  // Disabled when EARTHQUAKE_EMAIL_ALERTS_DISABLED=true (still needs work)
+  if (process.env.EARTHQUAKE_EMAIL_ALERTS_DISABLED === "true") {
+    logger.info('Email alerts disabled (EARTHQUAKE_EMAIL_ALERTS_DISABLED=true)', { canonical_id: earthquake?.canonical_id });
+    return false;
+  }
   const dryRun = isDryRun();
   
   // Extract magnitude from event - it might be in earthquake.magnitude, assets.magnitude, or raw.properties.mag
@@ -1075,9 +1080,9 @@ async function sendEmailAlert(earthquake, imageUrl, logger) {
     return false;
   }
   
-  // Send email only for magnitude 5.0+ earthquakes
-  if (magnitude < 5.0) {
-    logger.info('Skipping email: magnitude below 5.0 threshold', {
+  // Send email only for magnitude 6.0+ earthquakes (default threshold)
+  if (magnitude < 6.0) {
+    logger.info('Skipping email: magnitude below 6.0 threshold', {
       magnitude,
       canonical_id: earthquake.canonical_id,
       location: earthquake.location_display
@@ -1819,12 +1824,12 @@ async function processEarthquake(feature, logger, forceEmail = false) {
   // 3. Alert hasn't been sent yet (!storedEvent.alert_sent) - forceEmail ensures we check this
   // 4. There's a new image (hasNewImage)
   // CRITICAL: Never send if alert_sent is true UNLESS there's a new image
-  const shouldSendEmail = magnitude >= 5.0 && (isNew || !storedEvent.alert_sent || hasNewImage);
+  const shouldSendEmail = magnitude >= 6.0 && (isNew || !storedEvent.alert_sent || hasNewImage);
   
   logger.info('Checking email alert conditions', {
     canonical_id: canonicalId,
     magnitude,
-    meets_magnitude_threshold: magnitude >= 5.0,
+    meets_magnitude_threshold: magnitude >= 6.0,
     alert_sent: storedEvent.alert_sent,
     isNew,
     forceEmail,
