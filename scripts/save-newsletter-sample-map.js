@@ -54,19 +54,23 @@ async function saveMap() {
     process.exit(1);
   }
 
-  // Save at full quality — no resize or compression
-  const pngPath = path.join(__dirname, '../newsletter-sample-map.png');
-  fs.writeFileSync(pngPath, buffer);
+  // Email-sized copy so the newsletter doesn't truncate and the image inlines (~25KB)
+  const sharp = require('sharp');
   const jpegPath = path.join(__dirname, '../newsletter-sample-map.jpg');
-  if (fs.existsSync(jpegPath)) fs.unlinkSync(jpegPath);
-  console.log('   ✅ Saved full-quality PNG (no reduction)');
-  console.log('   ✅ Saved to', path.relative(process.cwd(), pngPath), `(${Math.round(buffer.length / 1024)} KB)`);
+  const emailBuffer = await sharp(buffer)
+    .resize(480, 270, { fit: 'cover' })
+    .jpeg({ quality: 80 })
+    .toBuffer();
+  fs.writeFileSync(jpegPath, emailBuffer);
+  const pngPath = path.join(__dirname, '../newsletter-sample-map.png');
+  if (fs.existsSync(pngPath)) fs.unlinkSync(pngPath);
+  console.log('   ✅ Saved email-sized JPEG (480×270, ~' + Math.round(emailBuffer.length / 1024) + ' KB)');
 
   console.log('\n✅ Done! Next steps:');
-  console.log('   git add newsletter-sample-map.png');
-  console.log('   git commit -m "Add permanent newsletter sample map"');
+  console.log('   git add newsletter-sample-map.jpg');
+  console.log('   git commit -m "Update newsletter sample map"');
   console.log('   git push');
-  console.log('\n   After push, the newsletter will use: https://noteworthynews.co/newsletter-sample-map.png');
+  console.log('\n   Newsletter uses: https://noteworthynews.co/newsletter-sample-map.jpg');
 }
 
 saveMap().catch((e) => {
