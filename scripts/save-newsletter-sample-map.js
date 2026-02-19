@@ -54,12 +54,12 @@ async function saveMap() {
     process.exit(1);
   }
 
-  // Resize and compress aggressively for email (320x180 JPEG ~25-40KB to avoid Gmail 102KB truncation)
+  // Resize for newsletter: higher quality (480x270, quality 82) — still keeps email under truncation limit
   try {
     const sharp = require('sharp');
     buffer = await sharp(buffer)
-      .resize(320, 180, { fit: 'cover' })
-      .jpeg({ quality: 70 })
+      .resize(480, 270, { fit: 'cover' })
+      .jpeg({ quality: 82 })
       .toBuffer();
     const jpegPath = path.join(__dirname, '../newsletter-sample-map.jpg');
     fs.writeFileSync(jpegPath, buffer);
