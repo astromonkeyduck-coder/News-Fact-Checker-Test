@@ -638,9 +638,15 @@ exports.handler = async (event, context) => {
       
       for (const email of emailsToSend) {
         try {
-          const unsubscribeUrl = `https://noteworthynews.co/unsubscribe.html?email=${encodeURIComponent(Buffer.from(email).toString('base64'))}`;
-          let personalizedHtml = htmlContent.replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, unsubscribeUrl).replace(/\{\{UNSUBSCRIBE_URL\}\}/g, unsubscribeUrl);
-          let personalizedText = textContent.replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, unsubscribeUrl).replace(/\{\{UNSUBSCRIBE_URL\}\}/g, unsubscribeUrl);
+          const encodedEmailB64 = Buffer.from(email).toString('base64');
+          const unsubscribeUrl = `https://noteworthynews.co/unsubscribe.html?email=${encodeURIComponent(encodedEmailB64)}`;
+          const preferencesUrl = `https://noteworthynews.co/newsletter-preferences.html?email=${encodeURIComponent(encodedEmailB64)}`;
+          let personalizedHtml = htmlContent
+            .replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, unsubscribeUrl).replace(/\{\{UNSUBSCRIBE_URL\}\}/g, unsubscribeUrl)
+            .replace(/\{\{\{PREFERENCES_URL\}\}\}/g, preferencesUrl).replace(/\{\{PREFERENCES_URL\}\}/g, preferencesUrl);
+          let personalizedText = textContent
+            .replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, unsubscribeUrl).replace(/\{\{UNSUBSCRIBE_URL\}\}/g, unsubscribeUrl)
+            .replace(/\{\{\{PREFERENCES_URL\}\}\}/g, preferencesUrl).replace(/\{\{PREFERENCES_URL\}\}/g, preferencesUrl);
           
           // Get custom data for this email (if provided as array or object)
           let customData = {};
@@ -974,6 +980,7 @@ exports.handler = async (event, context) => {
       
       const encodedEmail = Buffer.from(email).toString('base64');
       const unsubscribeUrl = `https://noteworthynews.co/unsubscribe.html?email=${encodeURIComponent(encodedEmail)}`;
+      const preferencesUrl = `https://noteworthynews.co/newsletter-preferences.html?email=${encodeURIComponent(encodedEmail)}`;
       
       // Get contact data for personalization
       const firstName = contact.firstName || contact.first_name || '';
@@ -995,6 +1002,8 @@ exports.handler = async (event, context) => {
       let personalizedHtml = htmlContent
         .replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, unsubscribeUrl)
         .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, unsubscribeUrl)
+        .replace(/\{\{\{PREFERENCES_URL\}\}\}/g, preferencesUrl)
+        .replace(/\{\{PREFERENCES_URL\}\}/g, preferencesUrl)
         .replace(/\{\{FIRST_NAME\}\}/g, firstName || emailUsername)
         .replace(/\{\{LAST_NAME\}\}/g, lastName || '')
         .replace(/\{\{FULL_NAME\}\}/g, fullName)
@@ -1007,6 +1016,8 @@ exports.handler = async (event, context) => {
       let personalizedText = textContent
         .replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, unsubscribeUrl)
         .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, unsubscribeUrl)
+        .replace(/\{\{\{PREFERENCES_URL\}\}\}/g, preferencesUrl)
+        .replace(/\{\{PREFERENCES_URL\}\}/g, preferencesUrl)
         .replace(/\{\{FIRST_NAME\}\}/g, firstName || emailUsername)
         .replace(/\{\{LAST_NAME\}\}/g, lastName || '')
         .replace(/\{\{FULL_NAME\}\}/g, fullName)
@@ -1207,7 +1218,9 @@ exports.handler = async (event, context) => {
           .replace(/\{\{FIRST_NAME\}\}/g, 'Preview')
           .replace(/\{\{EMAIL_USERNAME\}\}/g, 'preview')
           .replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, '#')
-          .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, '#');
+          .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, '#')
+          .replace(/\{\{\{PREFERENCES_URL\}\}\}/g, '#')
+          .replace(/\{\{PREFERENCES_URL\}\}/g, '#');
         
         // Generate text version if not provided
         const finalTextContent = textContent || htmlContent.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
@@ -1340,7 +1353,7 @@ function getDefaultNewsletterHTML() {
             <td style="padding: 25px 30px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border-top: 2px solid #4a90e2; border-radius: 0 0 10px 10px;">
               <p style="color: #333333; font-size: 16px; margin: 0 0 8px 0; line-height: 1.5;"><strong>The Noteworthy News Team</strong></p>
               <p style="text-align: center; margin: 20px 0 0 0; padding-top: 20px; border-top: 1px solid #e0e0e0;">
-                <a href="{{{UNSUBSCRIBE_URL}}}" style="color: #999999; font-size: 12px; text-decoration: underline;">Unsubscribe from this newsletter</a>
+                <a href="{{{PREFERENCES_URL}}}" style="color: #999999; font-size: 12px; text-decoration: underline;">Manage preferences</a> · <a href="{{{UNSUBSCRIBE_URL}}}" style="color: #999999; font-size: 12px; text-decoration: underline;">Unsubscribe from this newsletter</a>
               </p>
             </td>
           </tr>
@@ -1368,7 +1381,8 @@ Stay informed and stay curious!
 The Noteworthy News Team
 
 ---
-To unsubscribe from future emails, visit: {{{UNSUBSCRIBE_URL}}}`;
+Manage preferences: {{{PREFERENCES_URL}}}
+To unsubscribe, visit: {{{UNSUBSCRIBE_URL}}}`;
 }
 
 // Newsletter HTML template - Professional Briefing Format
@@ -1464,7 +1478,7 @@ function getNewsletterHTMLWithPosts(posts) {
             <td style="padding:30px 20px;text-align:center;background-color:#050814!important;width:100%">
               <img src="https://noteworthynews.co/nw-logo.GIF" alt="Noteworthy News Logo" style="width:100%;max-width:100%;height:auto;display:block;margin:0 auto 30px;opacity:0.95" />
               <p style="margin:0 0 6px 0;font-size:11px;color:#6b7280!important;line-height:1.5">You're receiving this email because you subscribed to Noteworthy News.</p>
-              <p style="margin:0;font-size:11px;color:#6b7280!important;line-height:1.5"><a href="{{{UNSUBSCRIBE_URL}}}" style="color:#3b82f6!important;text-decoration:underline;font-weight:500">Unsubscribe</a> · noteworthynews.co</p>
+              <p style="margin:0;font-size:11px;color:#6b7280!important;line-height:1.5"><a href="{{{PREFERENCES_URL}}}" style="color:#3b82f6!important;text-decoration:underline;font-weight:500">Manage preferences</a> · <a href="{{{UNSUBSCRIBE_URL}}}" style="color:#3b82f6!important;text-decoration:underline;font-weight:500">Unsubscribe</a> · noteworthynews.co</p>
             </td>
           </tr>
         </table>
@@ -1515,6 +1529,7 @@ Stay informed, stay curious.
 — The Noteworthy News Team
 
 ---
+Manage preferences: {{{PREFERENCES_URL}}}
 Unsubscribe: {{{UNSUBSCRIBE_URL}}}`;
 }
 

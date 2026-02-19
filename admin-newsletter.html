@@ -1831,7 +1831,7 @@
                                 You're receiving this because you subscribed to Noteworthy News.
                             </p>
                             <p style="margin: 0;">
-                                <a href="{{UNSUBSCRIBE_URL}}" style="color: #667eea; text-decoration: none; font-size: 14px;">Unsubscribe</a>
+                                <a href="{{{PREFERENCES_URL}}}" style="color: #667eea; text-decoration: none; font-size: 14px;">Manage preferences</a> · <a href="{{{UNSUBSCRIBE_URL}}}" style="color: #667eea; text-decoration: none; font-size: 14px;">Unsubscribe</a>
                             </p>
                         </td>
                     </tr>
@@ -2515,7 +2515,7 @@
                         const templateId = newsletter.id || `newsletter-${Date.now()}`;
                         // Prioritize html (original) over previewHtml (preview version)
                         const html = newsletter.html || '';
-                        const previewHtml = newsletter.previewHtml || (html ? html.replace(/\{\{FULL_NAME\}\}/g, 'Preview User').replace(/\{\{FIRST_NAME\}\}/g, 'Preview').replace(/\{\{EMAIL_USERNAME\}\}/g, 'preview').replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, '#').replace(/\{\{UNSUBSCRIBE_URL\}\}/g, '#') : '');
+                        const previewHtml = newsletter.previewHtml || (html ? html.replace(/\{\{FULL_NAME\}\}/g, 'Preview User').replace(/\{\{FIRST_NAME\}\}/g, 'Preview').replace(/\{\{EMAIL_USERNAME\}\}/g, 'preview').replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, '#').replace(/\{\{UNSUBSCRIBE_URL\}\}/g, '#').replace(/\{\{\{PREFERENCES_URL\}\}\}/g, '#').replace(/\{\{PREFERENCES_URL\}\}/g, '#') : '');
                         const hasHtml = html && html.trim().length > 0;
                         
                         return {
@@ -2813,7 +2813,7 @@
             <td style="padding:30px 20px;text-align:center;background-color:#050814!important;width:100%">
               <img src="https://noteworthynews.co/nw-logo.GIF" alt="Noteworthy News Logo" style="width:100%;max-width:100%;height:auto;display:block;margin:0 auto 30px;opacity:0.95" />
               <p style="margin:0 0 6px 0;font-size:11px;color:#6b7280!important;line-height:1.5">You're receiving this email because you subscribed to Noteworthy News.</p>
-              <p style="margin:0;font-size:11px;color:#6b7280!important;line-height:1.5"><a href="#" style="color:#3b82f6!important;text-decoration:underline;font-weight:500">Unsubscribe</a> · noteworthynews.co</p>
+              <p style="margin:0;font-size:11px;color:#6b7280!important;line-height:1.5"><a href="{{{PREFERENCES_URL}}}" style="color:#3b82f6!important;text-decoration:underline;font-weight:500">Manage preferences</a> · <a href="{{{UNSUBSCRIBE_URL}}}" style="color:#3b82f6!important;text-decoration:underline;font-weight:500">Unsubscribe</a> · noteworthynews.co</p>
             </td>
           </tr>
         </table>
@@ -2861,6 +2861,8 @@
                 .replace(/\{\{EMAIL_USERNAME\}\}/g, 'preview')
                 .replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, '#')
                 .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, '#')
+                .replace(/\{\{\{PREFERENCES_URL\}\}\}/g, '#')
+                .replace(/\{\{PREFERENCES_URL\}\}/g, '#')
                 .replace(/\{\{DATE_PLACEHOLDER\}\}/g, datePlaceholder)
                 .replace(/\{\{HEADLINE\}\}/g, 'Major News Story')
                 .replace(/\{\{BREAKING_NEWS_CONTENT\}\}/g, 'This is a breaking news story that requires immediate attention.')

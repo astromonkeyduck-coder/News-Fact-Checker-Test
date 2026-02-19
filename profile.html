@@ -183,6 +183,34 @@
             color: rgba(255, 255, 255, 0.7);
             margin-bottom: 2rem;
         }
+
+        /* Email preferences toggles */
+        .email-pref-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        .email-pref-info h5 { margin: 0 0 2px 0; font-size: 0.95rem; color: white; }
+        .email-pref-info p { margin: 0; font-size: 0.8rem; color: rgba(255,255,255,0.5); }
+        .profile-toggle {
+            position: relative; width: 48px; height: 26px; flex-shrink: 0;
+        }
+        .profile-toggle input { opacity: 0; width: 0; height: 0; }
+        .profile-toggle-slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.15); transition: 0.3s; border-radius: 26px;
+        }
+        .profile-toggle-slider:before {
+            position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px;
+            background: white; transition: 0.3s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .profile-toggle input:checked + .profile-toggle-slider { background: linear-gradient(135deg, #4A90E2, #2ECC71); }
+        .profile-toggle input:checked + .profile-toggle-slider:before { transform: translateX(22px); }
     </style>
 </head>
 <body>
@@ -254,9 +282,10 @@
                     tipsSubmitted: 0
                 };
                 
-                // Try to fetch user data from backend
+                let userData = null;
+                let token = null;
                 try {
-                    const token = await window.auth0.getToken();
+                    token = await window.auth0.getToken();
                     if (token) {
                         const response = await fetch('/.netlify/functions/user-data?email=' + encodeURIComponent(user.email), {
                             headers: {
@@ -264,7 +293,7 @@
                             }
                         });
                         if (response.ok) {
-                            const userData = await response.json();
+                            userData = await response.json();
                             // Merge stats if available
                             if (userData.stats) {
                                 Object.assign(stats, userData.stats);
@@ -313,6 +342,46 @@
                         <button class="btn btn-secondary" onclick="window.auth0.logout()">Sign Out</button>
                     </div>
                     
+                    <div class="profile-card" id="email-preferences-container">
+                        <h3 class="section-title">Email Notifications</h3>
+                        <p style="margin-bottom: 1rem; color: rgba(255, 255, 255, 0.7);">
+                            Choose which emails you want to receive.
+                        </p>
+                        <div class="email-pref-item">
+                            <div class="email-pref-info">
+                                <h5>Leaderboard updates</h5>
+                                <p>When your ranking changes</p>
+                            </div>
+                            <label class="profile-toggle">
+                                <input type="checkbox" id="emailPrefLeaderboard">
+                                <span class="profile-toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="email-pref-item">
+                            <div class="email-pref-info">
+                                <h5>Streak reminders</h5>
+                                <p>Keep your visit streak going</p>
+                            </div>
+                            <label class="profile-toggle">
+                                <input type="checkbox" id="emailPrefStreak">
+                                <span class="profile-toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="email-pref-item">
+                            <div class="email-pref-info">
+                                <h5>Location alerts</h5>
+                                <p>Earthquakes and events near you</p>
+                            </div>
+                            <label class="profile-toggle">
+                                <input type="checkbox" id="emailPrefLocation">
+                                <span class="profile-toggle-slider"></span>
+                            </label>
+                        </div>
+                        <p style="margin-top: 1rem; font-size: 0.85rem; color: rgba(255,255,255,0.5);">
+                            Get a preferences link in any email to manage newsletter & other settings.
+                        </p>
+                    </div>
+                    
                     <div class="profile-card" id="notification-preferences-container">
                         <!-- Push notification preferences will be rendered here -->
                         <div style="text-align: center; padding: 1rem; color: rgba(255,255,255,0.6);">
@@ -327,6 +396,45 @@
                         window.NotificationPreferences.render('#notification-preferences-container', { showTestButton: true });
                     }
                 }, 500);
+
+                // Init email preferences (leaderboard, streak, location)
+                const emails = userData?.preferences?.emails || {};
+                const lb = document.getElementById('emailPrefLeaderboard');
+                const streak = document.getElementById('emailPrefStreak');
+                const loc = document.getElementById('emailPrefLocation');
+                if (lb) lb.checked = emails.leaderboard !== false;
+                if (streak) streak.checked = emails.streak !== false;
+                if (loc) loc.checked = emails.location === true;
+
+                async function saveEmailPrefs() {
+                    if (!token || !user?.email) return;
+                    try {
+                        await fetch('/.netlify/functions/user-data', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({
+                                email: user.email,
+                                data: {
+                                    preferences: {
+                                        emails: {
+                                            leaderboard: lb?.checked !== false,
+                                            streak: streak?.checked !== false,
+                                            location: loc?.checked === true
+                                        }
+                                    }
+                                }
+                            })
+                        });
+                    } catch (e) {
+                        console.error('Save email prefs:', e);
+                    }
+                }
+                lb?.addEventListener('change', saveEmailPrefs);
+                streak?.addEventListener('change', saveEmailPrefs);
+                loc?.addEventListener('change', saveEmailPrefs);
                 
             } catch (error) {
                 console.error('Error loading profile:', error);

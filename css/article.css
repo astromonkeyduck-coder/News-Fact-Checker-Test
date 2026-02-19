@@ -103,7 +103,7 @@ html.article-page-active::after,
 }
 
 .breadcrumb-back:hover {
-    color: #1a1a1a;
+    color: #4A90E2;
 }
 
 .breadcrumb-meta {
@@ -116,7 +116,7 @@ html.article-page-active::after,
 .category-chip {
     display: inline-block;
     padding: 4px 10px;
-    background: #1a1a1a;
+    background: #2563eb;
     border: none;
     border-radius: 2px;
     color: #ffffff;
@@ -296,7 +296,7 @@ html.article-page-active::after,
 }
 
 .utility-btn:focus {
-    outline: 2px solid #1a1a1a;
+    outline: 2px solid #4A90E2;
     outline-offset: 2px;
 }
 
@@ -376,9 +376,10 @@ html.article-page-active::after,
 .article-body .earthquake-enhancements .aftershock-forecast-section,
 .article-body .earthquake-enhancements .anomaly-detection-section,
 .article-body .earthquake-enhancements .tier-breakdown-section,
-.article-body .earthquake-enhancements .historical-context-section {
+.article-body .earthquake-enhancements .historical-context-section,
+.article-body .earthquake-enhancements .earthquake-nearby-section {
     background: #f8f9fa;
-    border-left: 4px solid #1a1a1a;
+    border-left: 4px solid #2563eb;
     border-radius: 0 2px 2px 0;
     color: #1a1a1a;
     padding: 1.25em 1.5em;
@@ -421,8 +422,26 @@ html.article-page-active::after,
 
 .earthquake-enhancements #earthquake-interactive-map {
     min-height: 400px;
+    height: 500px;
     width: 100%;
     background: #f5f5f5;
+}
+
+/* Prevent vertical/single-character text wrap (article headings and earthquake sections) */
+.article-header h1,
+#article-heading,
+.article-body .earthquake-enhancements .earthquake-section-heading,
+.article-body .earthquake-enhancements h2,
+.article-body .earthquake-enhancements h3 {
+    white-space: normal;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    min-width: 0;
+}
+
+.earthquake-enhancements .earthquake-3d-container [style*="position: absolute"] {
+    white-space: nowrap;
+    max-width: 100%;
 }
 
 /* 3D visualization - professional header, dark canvas */
@@ -456,7 +475,74 @@ html.article-page-active::after,
 
 .earthquake-enhancements #earthquake-nearby-locations,
 .earthquake-enhancements .earthquake-nearby-skeleton {
+    color: #1a1a1a;
+}
+
+/* Nearby locations - cleaner card format (matches other sections) */
+.earthquake-nearby-section .earthquake-nearby-block {
+    margin-bottom: 1.5rem;
+}
+.earthquake-nearby-section .earthquake-nearby-block:last-child {
+    margin-bottom: 0;
+}
+.earthquake-nearby-section .earthquake-nearby-subheading {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0 0 0.75rem 0;
+}
+.earthquake-nearby-section .earthquake-nearby-grid {
+    display: grid;
+    gap: 0.75rem;
+}
+.earthquake-nearby-section .earthquake-nearby-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+.earthquake-nearby-section .earthquake-nearby-card-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+}
+.earthquake-nearby-section .earthquake-nearby-name {
+    font-weight: 600;
+    color: #1a1a1a;
+}
+.earthquake-nearby-section .earthquake-nearby-type {
+    font-size: 0.875rem;
     color: #666;
+    text-transform: capitalize;
+}
+.earthquake-nearby-section .earthquake-nearby-distance {
+    font-weight: 600;
+    color: #4A90E2;
+    flex-shrink: 0;
+    margin-left: 0.75rem;
+}
+.earthquake-nearby-section .earthquake-nearby-distance-edu { color: #1976d2; }
+.earthquake-nearby-section .earthquake-nearby-distance-venue { color: #e65100; }
+.earthquake-nearby-section .earthquake-nearby-hint {
+    margin: 1rem 0 0 0;
+    padding: 0.75rem 1rem;
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    color: #666;
+    font-style: italic;
+}
+.earthquake-nearby-section .earthquake-nearby-empty {
+    margin: 0;
+    padding: 1rem 0;
+    color: #666;
+    font-size: 0.9375rem;
 }
 
 .earthquake-enhancements .earthquake-details-grid {
@@ -501,7 +587,7 @@ html.article-page-active::after,
     margin: 0 0 2em 0;
     padding: 1.25em 1.5em;
     background: #f8f9fa;
-    border-left: 4px solid #1a1a1a;
+    border-left: 4px solid #4A90E2;
     border-radius: 0 2px 2px 0;
     font-size: 0.9375rem;
     line-height: 1.6;
@@ -574,7 +660,7 @@ html.article-page-active::after,
 /* Update blocks for multi-paragraph posts - AP News style */
 .article-body p.update-block {
     padding-left: 20px;
-    border-left: 3px solid #1a1a1a;
+    border-left: 3px solid #2563eb;
     margin-left: 0;
     margin-bottom: 1.5em;
     padding-top: 0.5em;
@@ -1306,6 +1392,7 @@ button:focus-visible {
 @media (max-width: 640px) {
     .article-container {
         padding: 0 16px 32px;
+        padding-top: calc(60px + env(safe-area-inset-top)); /* Space for fixed header + safe area */
     }
     
     .article-header-panel {
@@ -1390,16 +1477,21 @@ button:focus-visible {
         max-width: 100px !important;
     }
     
-    /* Mobile: Header layout */
+    /* Mobile: Header layout - single row, no wrapping */
     .main-header > div {
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         gap: 8px;
+        min-width: 0;
+    }
+    
+    .main-header > div > a:first-child {
+        flex-shrink: 0;
+        min-width: 0;
     }
     
     .main-header nav {
-        width: 100%;
-        justify-content: space-between;
-        margin-top: 8px;
+        flex-shrink: 0;
+        margin-top: 0;
     }
     
     .main-header a[href="index.html"] {
@@ -1519,6 +1611,11 @@ body.article-page {
     padding-right: calc(20px + env(scrollbar-width, 0px));
 }
 
+/* Noteworthy blue accent on article header */
+body.article-page .main-header {
+    border-bottom-color: rgba(37, 99, 235, 0.2);
+}
+
 .article-breadcrumb-row {
     padding-right: 0;
 }
@@ -1567,7 +1664,7 @@ body.article-page {
 .reading-progress-bar {
     height: 100%;
     width: 0%;
-    background: #1a1a1a;
+    background: #4A90E2;
     transition: width 0.1s ease-out;
 }
 

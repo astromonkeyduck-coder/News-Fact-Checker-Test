@@ -98,7 +98,7 @@ const templateHTML = `<!DOCTYPE html>
             <td style="padding:30px 20px;text-align:center;background-color:#050814!important;width:100%">
               <img src="https://noteworthynews.co/nw-logo.GIF" alt="Noteworthy News Logo" style="width:100%;max-width:100%;height:auto;display:block;margin:0 auto 30px;opacity:0.95" />
               <p style="margin:0 0 6px 0;font-size:11px;color:#6b7280!important;line-height:1.5">You're receiving this email because you subscribed to Noteworthy News.</p>
-              <p style="margin:0;font-size:11px;color:#6b7280!important;line-height:1.5"><a href="{{{UNSUBSCRIBE_URL}}}" style="color:#3b82f6!important;text-decoration:underline;font-weight:500">Unsubscribe</a> · noteworthynews.co</p>
+              <p style="margin:0;font-size:11px;color:#6b7280!important;line-height:1.5"><a href="{{{PREFERENCES_URL}}}" style="color:#3b82f6!important;text-decoration:underline;font-weight:500">Manage preferences</a> · <a href="{{{UNSUBSCRIBE_URL}}}" style="color:#3b82f6!important;text-decoration:underline;font-weight:500">Unsubscribe</a> · noteworthynews.co</p>
             </td>
           </tr>
         </table>

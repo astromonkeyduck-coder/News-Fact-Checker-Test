@@ -9,10 +9,11 @@
  * @param {string} props.content - Main email content (HTML)
  * @param {string} props.headerSubtitle - Optional subtitle for header (default: "Weekly Briefing")
  * @param {string} props.unsubscribeUrl - Unsubscribe URL placeholder (default: "{{{UNSUBSCRIBE_URL}}}")
+ * @param {string} props.preferencesUrl - Preferences URL placeholder (default: "{{{PREFERENCES_URL}}}")
  * 
  * @returns {string} Complete HTML email
  */
-function EmailLayout({ content, headerSubtitle = 'Weekly Briefing', unsubscribeUrl = '{{{UNSUBSCRIBE_URL}}}' }) {
+function EmailLayout({ content, headerSubtitle = 'Weekly Briefing', unsubscribeUrl = '{{{UNSUBSCRIBE_URL}}}', preferencesUrl = '{{{PREFERENCES_URL}}}' }) {
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -42,7 +43,7 @@ function EmailLayout({ content, headerSubtitle = 'Weekly Briefing', unsubscribeU
             </td>
           </tr>
         </table>
-        ${EmailFooter({ unsubscribeUrl })}
+        ${EmailFooter({ unsubscribeUrl, preferencesUrl })}
       </td>
     </tr>
   </table>
@@ -68,13 +69,13 @@ function EmailHeader({ subtitle = 'Weekly Briefing' }) {
 /**
  * EmailFooter - Footer component with logo and unsubscribe link
  */
-function EmailFooter({ unsubscribeUrl = '{{{UNSUBSCRIBE_URL}}}' }) {
+function EmailFooter({ unsubscribeUrl = '{{{UNSUBSCRIBE_URL}}}', preferencesUrl = '{{{PREFERENCES_URL}}}' }) {
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:650px;margin:0 auto;background-color:#050814!important">
     <tr>
       <td style="padding:30px 20px;text-align:center;background-color:#050814!important;width:100%">
         <img src="https://noteworthynews.co/nw-logo.GIF" alt="Noteworthy News Logo" style="width:100%;max-width:100%;height:auto;display:block;margin:0 auto 30px;opacity:0.95" />
         <p style="margin:0 0 6px 0;font-size:11px;color:#6b7280!important;line-height:1.5">You're receiving this email because you subscribed to Noteworthy News.</p>
-        <p style="margin:0;font-size:11px;color:#6b7280!important;line-height:1.5"><a href="${unsubscribeUrl}" style="color:#3b82f6!important;text-decoration:underline;font-weight:500">Unsubscribe</a> · noteworthynews.co</p>
+        <p style="margin:0;font-size:11px;color:#6b7280!important;line-height:1.5"><a href="${preferencesUrl}" style="color:#3b82f6!important;text-decoration:underline;font-weight:500">Manage preferences</a> · <a href="${unsubscribeUrl}" style="color:#3b82f6!important;text-decoration:underline;font-weight:500">Unsubscribe</a> · noteworthynews.co</p>
       </td>
     </tr>
   </table>`;

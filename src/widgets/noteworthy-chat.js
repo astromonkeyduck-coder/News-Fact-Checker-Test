@@ -4982,13 +4982,13 @@ class NoteworthyChat extends HTMLElement {
       
       // Clear uploaded files after displaying
       uploadedFiles = [];
-      const previewContainer = rootRef.querySelector('.file-preview-container');
+      const previewContainer = root.querySelector('.file-preview-container');
       if (previewContainer) {
         previewContainer.remove();
       }
 
       // Update header to show thinking mode
-      const subText = rootRef.querySelector('.sub');
+      const subText = root.querySelector('.sub');
       let originalSub = null;
       if (subText) {
         originalSub = subText.textContent;
@@ -5341,7 +5341,7 @@ class NoteworthyChat extends HTMLElement {
         }
         
         // Restore header subtitle
-        const subText = rootRef.querySelector('.sub');
+        const subText = root.querySelector('.sub');
         if (subText && thinking._originalSub) {
           subText.textContent = thinking._originalSub;
           subText.style.color = '';
@@ -5544,7 +5544,7 @@ class NoteworthyChat extends HTMLElement {
         thinking.remove();
         
         // Restore header subtitle on error
-        const subText = rootRef.querySelector('.sub');
+        const subText = root.querySelector('.sub');
         if (subText && thinking && thinking._originalSub) {
           subText.textContent = thinking._originalSub;
           subText.style.color = '';
@@ -5680,10 +5680,10 @@ class NoteworthyChat extends HTMLElement {
         preview.appendChild(removeBtn);
         
         // Insert preview before input area
-        const inputContainer = rootRef.querySelector('.input');
+        const inputContainer = root.querySelector('.input');
         if (inputContainer) {
           // Check if file preview container exists
-          let previewContainer = rootRef.querySelector('.file-preview-container');
+          let previewContainer = root.querySelector('.file-preview-container');
           if (!previewContainer) {
             previewContainer = document.createElement('div');
             previewContainer.className = 'file-preview-container';
@@ -9711,7 +9711,7 @@ class NoteworthyChat extends HTMLElement {
     }
     
     function updateFilePreviewContainer() {
-      const previewContainer = rootRef.querySelector('.file-preview-container');
+      const previewContainer = root.querySelector('.file-preview-container');
       if (previewContainer && uploadedFiles.length === 0) {
         previewContainer.remove();
       }

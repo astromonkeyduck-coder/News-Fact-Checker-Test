@@ -955,8 +955,12 @@
                     <h3 class="earthquake-3d-header-title">Interactive 3D Visualization</h3>
                     <div class="earthquake-3d-header-hint">Drag to rotate • Scroll to zoom</div>
                 </div>
-                <div id="earthquake-3d-viewer" style="width: 100%; height: 600px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); position: relative;">
-                    <div style="position: absolute; top: 10px; right: 10px; z-index: 10; background: rgba(0,0,0,0.7); padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.75rem; color: rgba(255,255,255,0.9);">
+                <div id="earthquake-3d-viewer" style="width: 100%; height: 600px; background: linear-gradient(135deg, #0a0a18 0%, #1a1a2e 50%, #16213e 100%); position: relative;">
+                    <div class="earthquake-3d-hud" style="position: absolute; top: 12px; left: 12px; z-index: 10; display: flex; align-items: center; gap: 10px;">
+                        <span class="earthquake-3d-magnitude-badge" style="background: rgba(255,68,34,0.9); color: #fff; font-weight: 700; font-size: 1.25rem; padding: 0.35rem 0.75rem; border-radius: 6px;">M ${magnitudeFormatted}</span>
+                        ${depth ? `<span style="background: rgba(0,0,0,0.6); color: rgba(255,255,255,0.95); font-size: 0.8rem; padding: 0.3rem 0.6rem; border-radius: 4px;">Depth: ${depth.toFixed(1)} km</span>` : ''}
+                    </div>
+                    <div style="position: absolute; top: 10px; right: 10px; z-index: 10; background: rgba(0,0,0,0.7); padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.75rem; color: rgba(255,255,255,0.9); white-space: nowrap;">
                         Epicenter: ${lat?.toFixed(4) || 'N/A'}°N, ${lon?.toFixed(4) || 'N/A'}°E
                         ${depth ? ` • Depth: ${depth.toFixed(1)} km` : ''}
                     </div>
@@ -964,9 +968,10 @@
             </div>
         `;
         
-        // Add loading placeholders for nearby locations (will be populated by JavaScript)
+        // Add loading placeholders for nearby locations (cleaner card format, matches other sections)
         html += `
-            <div id="earthquake-nearby-locations" style="margin: 2rem 0;">
+            <div id="earthquake-nearby-locations" class="earthquake-section earthquake-nearby-section">
+                <h2 class="earthquake-section-heading">Nearby Important Locations</h2>
                 <div class="earthquake-nearby-skeleton" style="text-align: center; padding: 2rem;">
                     <div class="skeleton" style="height: 200px; border-radius: 4px;"></div>
                 </div>
@@ -1002,6 +1007,30 @@
             // Scene setup — deep space feel
             const scene = new THREE.Scene();
             scene.background = new THREE.Color(0x050510);
+            
+            // Starfield background
+            const starCount = 800;
+            const starGeometry = new THREE.BufferGeometry();
+            const starPositions = new Float32Array(starCount * 3);
+            for (let i = 0; i < starCount * 3; i += 3) {
+                const r = 80 + Math.random() * 120;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1);
+                starPositions[i] = r * Math.sin(phi) * Math.cos(theta);
+                starPositions[i + 1] = r * Math.sin(phi) * Math.sin(theta);
+                starPositions[i + 2] = r * Math.cos(phi);
+            }
+            starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+            starGeometry.computeBoundingSphere();
+            const starMaterial = new THREE.PointsMaterial({
+                color: 0xffffff,
+                size: 0.4,
+                transparent: true,
+                opacity: 0.7,
+                sizeAttenuation: true
+            });
+            const stars = new THREE.Points(starGeometry, starMaterial);
+            scene.add(stars);
             
             const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
             const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
@@ -1133,34 +1162,55 @@
             ring.userData.isMainRing = true;
             scene.add(ring);
             
-            // Initial camera — focus on epicenter
+            // Expanding shockwave rings (seismic wave effect)
+            const shockwaves = [];
+            const shockwaveInterval = 1.8;
+            let nextShockwaveTime = 0.5;
+            function addShockwave() {
+                const swRadius = epicenterSize * 1.2;
+                const swGeometry = new THREE.RingGeometry(swRadius, swRadius + 0.15, 64);
+                const swMaterial = new THREE.MeshBasicMaterial({
+                    color: 0xff6622,
+                    side: THREE.DoubleSide,
+                    transparent: true,
+                    opacity: 0.6,
+                    depthWrite: false
+                });
+                const sw = new THREE.Mesh(swGeometry, swMaterial);
+                sw.position.set(x, y, z);
+                sw.lookAt(earth.position.x, earth.position.y, earth.position.z);
+                sw.userData.birth = performance.now() / 1000;
+                sw.userData.isShockwave = true;
+                scene.add(sw);
+                shockwaves.push(sw);
+            }
+            
+            // Initial camera and smooth orbit state
             camera.position.set(15, 10, 15);
             camera.lookAt(x, y, z);
-            
-            let isDragging = false;
-            let previousMousePosition = { x: 0, y: 0 };
             let cameraDistance = 20;
+            let targetDistance = 20;
+            let cameraTheta = Math.atan2(camera.position.z - z, camera.position.x - x);
+            let cameraPhi = Math.acos(Math.max(-1, Math.min(1, (camera.position.y - y) / cameraDistance)));
+            let targetTheta = cameraTheta;
+            let targetPhi = cameraPhi;
+            const damp = 0.08;
             
             container.addEventListener('mousedown', (e) => {
                 isDragging = true;
                 previousMousePosition = { x: e.clientX, y: e.clientY };
             });
             
+            let isDragging = false;
+            let previousMousePosition = { x: 0, y: 0 };
+            
             container.addEventListener('mousemove', (e) => {
                 if (isDragging) {
                     const deltaX = e.clientX - previousMousePosition.x;
                     const deltaY = e.clientY - previousMousePosition.y;
-                    const direction = new THREE.Vector3();
-                    direction.subVectors(camera.position, new THREE.Vector3(x, y, z));
-                    const rad = direction.length();
-                    const th = Math.atan2(direction.z, direction.x);
-                    const ph = Math.acos(direction.y / rad);
-                    const newTheta = th - deltaX * 0.01;
-                    const newPhi = Math.max(0.1, Math.min(Math.PI - 0.1, ph + deltaY * 0.01));
-                    camera.position.x = x + rad * Math.sin(newPhi) * Math.cos(newTheta);
-                    camera.position.y = y + rad * Math.cos(newPhi);
-                    camera.position.z = z + rad * Math.sin(newPhi) * Math.sin(newTheta);
-                    camera.lookAt(x, y, z);
+                    targetTheta -= deltaX * 0.008;
+                    targetPhi += deltaY * 0.008;
+                    targetPhi = Math.max(0.15, Math.min(Math.PI - 0.15, targetPhi));
                     previousMousePosition = { x: e.clientX, y: e.clientY };
                 }
             });
@@ -1169,28 +1219,49 @@
             
             container.addEventListener('wheel', (e) => {
                 e.preventDefault();
-                cameraDistance += e.deltaY * 0.01;
-                cameraDistance = Math.max(10, Math.min(50, cameraDistance));
-                const direction = new THREE.Vector3();
-                direction.subVectors(camera.position, new THREE.Vector3(x, y, z));
-                direction.normalize();
-                camera.position.set(x, y, z);
-                camera.position.add(direction.multiplyScalar(cameraDistance));
-                camera.lookAt(x, y, z);
+                targetDistance += e.deltaY * 0.015;
+                targetDistance = Math.max(8, Math.min(55, targetDistance));
             });
             
-            // Animation loop — smooth, subtle motion
+            // Animation loop — smooth motion, shockwaves, camera damping
             let pulseScale = 1.0;
             let time = 0;
             function animate() {
                 requestAnimationFrame(animate);
-                time += 0.016;
+                const dt = 0.016;
+                time += dt;
                 
                 earth.rotation.y += 0.0008;
+                
+                // Spawn shockwaves periodically
+                if (time >= nextShockwaveTime) {
+                    addShockwave();
+                    nextShockwaveTime = time + shockwaveInterval;
+                }
+                for (let i = shockwaves.length - 1; i >= 0; i--) {
+                    const sw = shockwaves[i];
+                    const age = time - sw.userData.birth;
+                    const scale = 1 + age * 2.5;
+                    sw.scale.set(scale, scale, 1);
+                    sw.material.opacity = Math.max(0, 0.5 - age * 0.4);
+                    if (age > 1.2) {
+                        scene.remove(sw);
+                        shockwaves.splice(i, 1);
+                    }
+                }
                 
                 pulseScale = 1.0 + Math.sin(time * 1.8) * (0.12 + magnitude / 60);
                 epicenter.scale.set(pulseScale, pulseScale, pulseScale);
                 epicenterMaterial.opacity = 0.88 + Math.sin(time * 1.8) * 0.1;
+                
+                // Smooth camera (damped orbit and zoom)
+                cameraTheta += (targetTheta - cameraTheta) * damp;
+                cameraPhi += (targetPhi - cameraPhi) * damp;
+                cameraDistance += (targetDistance - cameraDistance) * damp;
+                camera.position.x = x + cameraDistance * Math.sin(cameraPhi) * Math.cos(cameraTheta);
+                camera.position.y = y + cameraDistance * Math.cos(cameraPhi);
+                camera.position.z = z + cameraDistance * Math.sin(cameraPhi) * Math.sin(cameraTheta);
+                camera.lookAt(x, y, z);
                 
                 // Pulse rings (offset rings and main ring)
                 scene.children.forEach(child => {
@@ -1225,9 +1296,29 @@
      */
     function initializeEarthquakeMap(lat, lon, magnitude, locationDisplay) {
         function runCreateMap() {
-            // Ensure container has been laid out (e.g. after CSS applied)
+            const mapContainer = document.getElementById('earthquake-interactive-map');
+            if (!mapContainer) return;
+            // Wait until container is visible and has size so Leaflet tiles load
+            const tryCreate = () => {
+                const w = mapContainer.offsetWidth;
+                const h = mapContainer.offsetHeight;
+                if (w > 0 && h > 0) {
+                    createMap(lat, lon, magnitude, locationDisplay);
+                    return true;
+                }
+                return false;
+            };
             requestAnimationFrame(() => {
-                createMap(lat, lon, magnitude, locationDisplay);
+                if (tryCreate()) return;
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach((entry) => {
+                        if (entry.isIntersecting && tryCreate()) {
+                            observer.disconnect();
+                        }
+                    });
+                }, { rootMargin: '100px', threshold: 0 });
+                observer.observe(mapContainer);
+                setTimeout(() => { tryCreate(); observer.disconnect(); }, 800);
             });
         }
         
@@ -1271,12 +1362,21 @@
                 preferCanvas: false
             }).setView([lat, lon], 10);
             
-            // CARTO Light basemap (reliable, no API key) — works when OSM tiles are blocked or rate-limited
-            window.L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
+            // Try OSM first (most reliable), then CARTO as fallback
+            const osmLayer = window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19
+            });
+            const cartoLayer = window.L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
                 subdomains: 'abcd',
                 maxZoom: 20
-            }).addTo(map);
+            });
+            osmLayer.addTo(map);
+            osmLayer.on('loaderror', () => {
+                map.removeLayer(osmLayer);
+                cartoLayer.addTo(map);
+            });
             
             // Calculate radius based on magnitude (rough estimate of felt area)
             const radiusKm = magnitude * 10; // km
@@ -1302,9 +1402,9 @@
             
             const epicenterMarker = window.L.marker([lat, lon], { icon: epicenterIcon }).addTo(map);
             
-            // Add popup with earthquake info
+            // Add popup with earthquake info (min-width prevents vertical character wrap)
             epicenterMarker.bindPopup(`
-                <div style="text-align: center; padding: 0.5rem;">
+                <div style="text-align: center; padding: 0.5rem; min-width: 200px; white-space: normal;">
                     <h3 style="margin: 0 0 0.5rem 0; font-size: 1.25rem; font-weight: 700;">M${magnitude.toFixed(1)} Earthquake</h3>
                     <p style="margin: 0; color: #666;">${escapeHtml(locationDisplay)}</p>
                     <p style="margin: 0.5rem 0 0 0; font-size: 0.875rem; color: #999;">Epicenter</p>
@@ -1403,26 +1503,21 @@
         
         const { locations = [], education = [], venues = [] } = data;
         
-        let html = '';
+        let html = '<h2 class="earthquake-section-heading">Nearby Important Locations</h2>';
         
         if (locations.length > 0 || education.length > 0 || venues.length > 0) {
-            html += `<h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
-                <span style="display: inline-flex; align-items: center; color: #4A9EFF;">${getIconSVG('city', 24, '#4A9EFF')}</span>
-                Nearby Important Locations
-            </h2>`;
-            
             if (locations.length > 0) {
                 html += `
-                    <div style="margin-bottom: 2rem;">
-                        <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem; color: rgba(255,255,255,0.9);">Cities & Landmarks</h3>
-                        <div style="display: grid; gap: 0.75rem;">
+                    <div class="earthquake-nearby-block">
+                        <h3 class="earthquake-nearby-subheading">Cities & Landmarks</h3>
+                        <div class="earthquake-nearby-grid">
                             ${locations.slice(0, 6).map(loc => `
-                                <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
-                                    <div>
-                                        <div style="font-weight: 600; color: #fff; margin-bottom: 0.25rem;">${escapeHtml(loc.name)}</div>
-                                        <div style="font-size: 0.875rem; color: rgba(255,255,255,0.6); text-transform: capitalize;">${escapeHtml(loc.type)}</div>
+                                <div class="earthquake-nearby-card">
+                                    <div class="earthquake-nearby-card-main">
+                                        <span class="earthquake-nearby-name">${escapeHtml(loc.name)}</span>
+                                        <span class="earthquake-nearby-type">${escapeHtml(loc.type)}</span>
                                     </div>
-                                    <div style="font-weight: 600; color: #4A90E2;">${loc.distance} km</div>
+                                    <span class="earthquake-nearby-distance">${loc.distance} km</span>
                                 </div>
                             `).join('')}
                         </div>
@@ -1432,16 +1527,16 @@
             
             if (education.length > 0) {
                 html += `
-                    <div style="margin-bottom: 2rem;">
-                        <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem; color: rgba(255,255,255,0.9);">🎓 Educational Institutions</h3>
-                        <div style="display: grid; gap: 0.75rem;">
+                    <div class="earthquake-nearby-block">
+                        <h3 class="earthquake-nearby-subheading">Educational Institutions</h3>
+                        <div class="earthquake-nearby-grid">
                             ${education.map(edu => `
-                                <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
-                                    <div>
-                                        <div style="font-weight: 600; color: #fff; margin-bottom: 0.25rem;">${escapeHtml(edu.name)}</div>
-                                        <div style="font-size: 0.875rem; color: rgba(255,255,255,0.6); text-transform: capitalize;">${escapeHtml(edu.type === 'university' ? 'University' : edu.type === 'college' ? 'College' : 'School')}</div>
+                                <div class="earthquake-nearby-card">
+                                    <div class="earthquake-nearby-card-main">
+                                        <span class="earthquake-nearby-name">${escapeHtml(edu.name)}</span>
+                                        <span class="earthquake-nearby-type">${escapeHtml(edu.type === 'university' ? 'University' : edu.type === 'college' ? 'College' : 'School')}</span>
                                     </div>
-                                    <div style="font-weight: 600; color: #1976d2;">${edu.distance} km</div>
+                                    <span class="earthquake-nearby-distance earthquake-nearby-distance-edu">${edu.distance} km</span>
                                 </div>
                             `).join('')}
                         </div>
@@ -1451,31 +1546,29 @@
             
             if (venues.length > 0) {
                 html += `
-                    <div style="margin-bottom: 2rem;">
-                        <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem; color: rgba(255,255,255,0.9);">🎭 Event Venues & Entertainment</h3>
-                        <div style="display: grid; gap: 0.75rem;">
+                    <div class="earthquake-nearby-block">
+                        <h3 class="earthquake-nearby-subheading">Event Venues & Entertainment</h3>
+                        <div class="earthquake-nearby-grid">
                             ${venues.slice(0, 6).map(venue => `
-                                <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
-                                    <div>
-                                        <div style="font-weight: 600; color: #fff; margin-bottom: 0.25rem;">${escapeHtml(venue.name)}</div>
-                                        <div style="font-size: 0.875rem; color: rgba(255,255,255,0.6); text-transform: capitalize;">${escapeHtml(venue.type.replace(/_/g, ' '))}</div>
+                                <div class="earthquake-nearby-card">
+                                    <div class="earthquake-nearby-card-main">
+                                        <span class="earthquake-nearby-name">${escapeHtml(venue.name)}</span>
+                                        <span class="earthquake-nearby-type">${escapeHtml(venue.type.replace(/_/g, ' '))}</span>
                                     </div>
-                                    <div style="font-weight: 600; color: #f57c00;">${venue.distance} km</div>
+                                    <span class="earthquake-nearby-distance earthquake-nearby-distance-venue">${venue.distance} km</span>
                                 </div>
                             `).join('')}
                         </div>
-                        <div style="margin-top: 1rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; font-size: 0.875rem; color: rgba(255,255,255,0.7); font-style: italic;">
-                            <span style="display: inline-flex; align-items: center; gap: 0.5rem; vertical-align: middle;">
-                                <span style="display: inline-flex; align-items: center; color: #4A9EFF;">${getIconSVG('lightbulb', 16, '#4A9EFF')}</span>
-                                These venues may host concerts, festivals, sports events, or other gatherings. Check local event listings for scheduled activities.
-                            </span>
-                        </div>
+                        <p class="earthquake-nearby-hint">These venues may host concerts, festivals, sports events, or other gatherings. Check local event listings for scheduled activities.</p>
                     </div>
                 `;
             }
         }
         
-        container.innerHTML = html || '<div style="text-align: center; padding: 2rem; color: rgba(255,255,255,0.6);">No nearby locations found.</div>';
+        if (locations.length === 0 && education.length === 0 && venues.length === 0) {
+            html += '<p class="earthquake-nearby-empty">No nearby locations found.</p>';
+        }
+        container.innerHTML = html;
     }
     
     /**

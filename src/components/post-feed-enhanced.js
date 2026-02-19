@@ -16,7 +16,7 @@
 
 const ENHANCED_CACHE_KEY = 'noteworthy-posts-cache-enhanced';
 const ENHANCED_CACHE_EXPIRY = 2 * 60 * 1000; // 2 minutes
-const ENHANCED_CACHE_VERSION = '2'; // Increment this to invalidate all caches
+const ENHANCED_CACHE_VERSION = '3'; // Increment this to invalidate all caches
 
 /** Fallback posts when API is unavailable or returns empty (e.g. local dev without netlify dev) */
 const FALLBACK_POSTS = [
@@ -1103,12 +1103,18 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
         const isNotExpired = Date.now() - timestamp < 300000; // 5 minutes
         // Use cache if version matches and less than 5 minutes old
         if (posts && posts.length > 0 && isVersionValid && isNotExpired) {
-          enhancedCurrentPosts = posts.filter(
+          const filtered = posts.filter(
             post => !isLowMagnitudeEarthquakeEnhanced(post) && !isExcludedAlertEnhanced(post)
           );
-          // Render first 5 posts instantly from cache
-          renderEnhancedFeed();
-          setupInfiniteScroll();
+          // Don't use cache if it contains fallback posts (stale from when API was down)
+          const hasFallback = filtered.some(p => (p.id || '').toString().startsWith('fallback-'));
+          if (!hasFallback) {
+            enhancedCurrentPosts = filtered;
+            renderEnhancedFeed();
+            setupInfiniteScroll();
+          } else {
+            localStorage.removeItem(ENHANCED_CACHE_KEY); // Clear corrupted cache
+          }
           // Continue to fetch fresh data in background
         } else if (!isVersionValid) {
           // Cache version mismatch - clear it
@@ -1199,20 +1205,18 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
     enhancedCurrentPosts = (posts || []).filter(
       post => !isLowMagnitudeEarthquakeEnhanced(post) && !isExcludedAlertEnhanced(post)
     );
-    // If API returned empty, use fallback so cards always show something
-    if (enhancedCurrentPosts.length === 0) {
-      enhancedCurrentPosts = [...FALLBACK_POSTS];
-      console.log('[Enhanced Feed] API returned no posts, using fallback sample posts');
-    }
+    // When API returns empty: show empty state in renderEnhancedFeed, don't use fallback
     
     console.log('[Enhanced Feed] Loaded', enhancedCurrentPosts.length, 'posts');
 
-    // Cache posts with version
-    localStorage.setItem(ENHANCED_CACHE_KEY, JSON.stringify({
-      posts: enhancedCurrentPosts,
-      timestamp: Date.now(),
-      version: ENHANCED_CACHE_VERSION,
-    }));
+    // Cache only real posts (never cache fallback)
+    if (enhancedCurrentPosts.length > 0 && !enhancedCurrentPosts.some(p => (p.id || '').toString().startsWith('fallback-'))) {
+      localStorage.setItem(ENHANCED_CACHE_KEY, JSON.stringify({
+        posts: enhancedCurrentPosts,
+        timestamp: Date.now(),
+        version: ENHANCED_CACHE_VERSION,
+      }));
+    }
     
     // Update current limit
     enhancedCurrentLimit = limit;
@@ -1226,15 +1230,15 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
     }
   } catch (error) {
     console.error('[Enhanced Feed] Load error:', error);
-    // Use fallback posts so cards always load (e.g. when API 404 in local dev)
+    // Use fallback only when API is unreachable (404, network error) - don't cache
     enhancedCurrentPosts = [...FALLBACK_POSTS];
     renderEnhancedFeed();
-    // Prepend a small notice so user knows they're seeing sample posts
+    // Prepend notice so user knows API is unavailable
     const notice = document.createElement('div');
     notice.className = 'feed-fallback-notice';
     notice.style.cssText = 'grid-column: 1 / -1; padding: 0.75rem 1rem; margin-bottom: 0.5rem; background: rgba(79, 172, 254, 0.15); border: 1px solid rgba(79, 172, 254, 0.3); border-radius: 8px; color: rgba(255,255,255,0.9); font-size: 0.875rem;';
     const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-    notice.innerHTML = 'Showing sample posts. ' + (isLocal ? 'Run <code>netlify dev</code> to load live posts.' : 'Live posts will appear when the API is available.');
+    notice.innerHTML = 'API unavailable. ' + (isLocal ? 'Run <code>netlify dev</code> to load live posts.' : 'Check your connection or try again later.');
     container.insertBefore(notice, container.firstChild);
   } finally {
     // Remove loading indicator

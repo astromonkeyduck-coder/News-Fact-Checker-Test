@@ -178,7 +178,9 @@ exports.handler = async (event, context) => {
                     .replace(/\{\{FIRST_NAME\}\}/g, 'Preview')
                     .replace(/\{\{EMAIL_USERNAME\}\}/g, 'preview')
                     .replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, '#')
-                    .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, '#');
+                    .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, '#')
+                    .replace(/\{\{\{PREFERENCES_URL\}\}\}/g, '#')
+                    .replace(/\{\{PREFERENCES_URL\}\}/g, '#');
                   console.log('Generated preview HTML from html');
                 }
                 
@@ -390,7 +392,9 @@ exports.handler = async (event, context) => {
                   .replace(/\{\{FIRST_NAME\}\}/g, 'Preview')
                   .replace(/\{\{EMAIL_USERNAME\}\}/g, 'preview')
                   .replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, '#')
-                  .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, '#');
+                  .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, '#')
+                  .replace(/\{\{\{PREFERENCES_URL\}\}\}/g, '#')
+                  .replace(/\{\{PREFERENCES_URL\}\}/g, '#');
               }
               // Ensure html exists - use previewHtml if html is missing
               const html = parsed.html || parsed.previewHtml || '';
@@ -586,7 +590,9 @@ exports.handler = async (event, context) => {
                       .replace(/\{\{FIRST_NAME\}\}/g, 'Preview')
                       .replace(/\{\{EMAIL_USERNAME\}\}/g, 'preview')
                       .replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, '#')
-                      .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, '#');
+                      .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, '#')
+                      .replace(/\{\{\{PREFERENCES_URL\}\}\}/g, '#')
+                      .replace(/\{\{PREFERENCES_URL\}\}/g, '#');
                     
                     console.log(`✅ Generated HTML for ${file}: ${html.length} chars, preview: ${previewHtml.length} chars`);
                     

@@ -1521,7 +1521,7 @@ exports.handler = async (event, context) => {
                       You're receiving this because you subscribed to Noteworthy News alerts.
                     </p>
                     <p style="margin: 0 0 10px 0; font-size: 12px; color: #6B7280; line-height: 1.6;">
-                      <a href="{{{UNSUBSCRIBE_URL}}}" style="color: #2563EB; text-decoration: none; font-weight: 500;">Manage preferences</a> · <a href="{{{UNSUBSCRIBE_URL}}}" style="color: #2563EB; text-decoration: none; font-weight: 500;">Unsubscribe</a>
+                      <a href="{{{PREFERENCES_URL}}}" style="color: #2563EB; text-decoration: none; font-weight: 500;">Manage preferences</a> · <a href="{{{UNSUBSCRIBE_URL}}}" style="color: #2563EB; text-decoration: none; font-weight: 500;">Unsubscribe</a>
                     </p>
                     <p style="margin: 0 0 8px 0; font-size: 11px; color: #9CA3AF; line-height: 1.5;">
                       Data source: USGS
@@ -1807,12 +1807,20 @@ exports.handler = async (event, context) => {
       console.log(`[send-earthquake-alert] ⚠️ Removed image tag from HTML - no attachment available`);
     }
     
-    // Send email to all notification emails
+    // Send email to all notification emails (personalize unsubscribe/preferences URLs per recipient)
     const emailResults = await Promise.allSettled(
       notificationEmails.map(async (email) => {
+        const encodedEmail = Buffer.from(email).toString('base64');
+        const unsubscribeUrl = `https://noteworthynews.co/unsubscribe.html?email=${encodeURIComponent(encodedEmail)}`;
+        const preferencesUrl = `https://noteworthynews.co/newsletter-preferences.html?email=${encodeURIComponent(encodedEmail)}`;
+        const personalizedHtml = htmlWithImage
+          .replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, unsubscribeUrl)
+          .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, unsubscribeUrl)
+          .replace(/\{\{\{PREFERENCES_URL\}\}\}/g, preferencesUrl)
+          .replace(/\{\{PREFERENCES_URL\}\}/g, preferencesUrl);
         const emailContent = {
           ...baseEmailContent,
-          html: htmlWithImage, // Use HTML with embedded image
+          html: personalizedHtml,
           to: email,
         };
         

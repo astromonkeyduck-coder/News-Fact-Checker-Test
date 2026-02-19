@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Email Preferences - Noteworthy News</title>
+    <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="32x32">
+    <link rel="apple-touch-icon" href="IMG_5794.PNG" sizes="180x180">
+    <meta name="theme-color" content="#0f234a">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html {
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%) !important;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .preferences-container {
+            max-width: 520px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 48px 40px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        .logo { width: 80px; height: 80px; margin: 0 auto 24px; border-radius: 50%; overflow: hidden; display: block; }
+        .logo img { width: 100%; height: 100%; object-fit: cover; }
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 900;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #ffffff 0%, #4A90E2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-align: center;
+        }
+        .subtitle { color: rgba(255,255,255,0.7); font-size: 0.95rem; margin-bottom: 28px; text-align: center; }
+        .status-message { padding: 16px; border-radius: 10px; margin: 20px 0; font-size: 0.95rem; line-height: 1.5; }
+        .status-message.error { background: rgba(231, 76, 60, 0.2); border: 2px solid rgba(231, 76, 60, 0.5); color: #e74c3c; }
+        .status-message.success { background: rgba(46, 204, 113, 0.2); border: 2px solid rgba(46, 204, 113, 0.5); color: #2ecc71; }
+        .pref-section { margin-bottom: 24px; }
+        .pref-section h3 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 12px;
+        }
+        .pref-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 18px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.2s ease;
+        }
+        .pref-item:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.12); }
+        .pref-info { flex: 1; }
+        .pref-info .label { font-size: 0.95rem; font-weight: 600; color: white; }
+        .pref-info .desc { font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-top: 2px; }
+        .toggle-wrap { flex-shrink: 0; margin-left: 16px; }
+        .toggle {
+            position: relative;
+            width: 48px;
+            height: 26px;
+            display: block;
+        }
+        .toggle input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255, 255, 255, 0.15);
+            transition: 0.3s;
+            border-radius: 26px;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px; width: 20px;
+            left: 3px; bottom: 3px;
+            background: white;
+            transition: 0.3s;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .toggle input:checked + .toggle-slider { background: linear-gradient(135deg, #4A90E2, #2ECC71); }
+        .toggle input:checked + .toggle-slider:before { transform: translateX(22px); }
+        .toggle input:disabled + .toggle-slider { opacity: 0.5; cursor: not-allowed; }
+        .newsletter-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 18px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .newsletter-row .pref-info { flex: 1; }
+        .btn-unsubscribe {
+            display: inline-block;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-unsubscribe:hover { box-shadow: 0 6px 16px rgba(231, 76, 60, 0.4); transform: translateY(-1px); }
+        .actions { margin-top: 28px; text-align: center; }
+        .btn-home {
+            display: inline-block;
+            padding: 12px 28px;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.2s ease;
+        }
+        .btn-home:hover { background: rgba(255, 255, 255, 0.25); }
+        .profile-link { margin-top: 16px; font-size: 0.9rem; }
+        .profile-link a { color: #4A90E2; text-decoration: underline; }
+        .profile-link a:hover { color: #6AA3ED; }
+    </style>
+</head>
+<body>
+    <div class="preferences-container">
+        <a href="index.html" class="logo" aria-label="Noteworthy News">
+            <img src="IMG_5992.PNG" alt="Noteworthy News" loading="lazy">
+        </a>
+        <h1>Email Preferences</h1>
+        <p class="subtitle">Choose which emails you want to receive</p>
+
+        <div id="invalidLink" class="status-message error" style="display: none;">
+            Invalid link. Please use the preferences link from your email.
+        </div>
+
+        <div id="preferencesContent" style="display: none;">
+            <div id="toast" class="status-message success" style="display: none;"></div>
+
+            <div class="pref-section">
+                <h3>Newsletter</h3>
+                <div class="newsletter-row">
+                    <div class="pref-info">
+                        <span class="label">Newsletter & Breaking News</span>
+                        <p class="desc">Weekly digest and important news updates</p>
+                    </div>
+                    <a href="#" id="unsubscribeBtn" class="btn-unsubscribe">Unsubscribe</a>
+                </div>
+            </div>
+
+            <div class="pref-section">
+                <h3>Other notifications</h3>
+                <div class="pref-item">
+                    <div class="pref-info">
+                        <span class="label">Leaderboard updates</span>
+                        <p class="desc">When your ranking changes on the leaderboard</p>
+                    </div>
+                    <label class="toggle-wrap">
+                        <span class="toggle">
+                            <input type="checkbox" id="toggleLeaderboard">
+                            <span class="toggle-slider"></span>
+                        </span>
+                    </label>
+                </div>
+                <div class="pref-item">
+                    <div class="pref-info">
+                        <span class="label">Streak reminders</span>
+                        <p class="desc">Keep your visit streak going</p>
+                    </div>
+                    <label class="toggle-wrap">
+                        <span class="toggle">
+                            <input type="checkbox" id="toggleStreak">
+                            <span class="toggle-slider"></span>
+                        </span>
+                    </label>
+                </div>
+                <div class="pref-item">
+                    <div class="pref-info">
+                        <span class="label">Location alerts</span>
+                        <p class="desc">Earthquakes and events near you</p>
+                    </div>
+                    <label class="toggle-wrap">
+                        <span class="toggle">
+                            <input type="checkbox" id="toggleLocation">
+                            <span class="toggle-slider"></span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="actions">
+                <a href="index.html" class="btn-home">Back to Home</a>
+                <p class="profile-link">Manage more settings on your <a href="profile.html">profile page</a>.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+(function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const encodedEmail = urlParams.get('email');
+    const invalidLink = document.getElementById('invalidLink');
+    const content = document.getElementById('preferencesContent');
+    const toast = document.getElementById('toast');
+
+    function showToast(msg) {
+        toast.textContent = msg;
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, 3500);
+    }
+
+    if (!encodedEmail) {
+        invalidLink.style.display = 'block';
+        return;
+    }
+
+    content.style.display = 'block';
+    document.getElementById('unsubscribeBtn').href = 'unsubscribe.html?email=' + encodeURIComponent(encodedEmail);
+
+    const toggleLeaderboard = document.getElementById('toggleLeaderboard');
+    const toggleStreak = document.getElementById('toggleStreak');
+    const toggleLocation = document.getElementById('toggleLocation');
+
+    async function load() {
+        try {
+            const r = await fetch('/.netlify/functions/email-preferences-link?email=' + encodeURIComponent(encodedEmail));
+            const data = await r.json();
+            if (data.success && data.preferences) {
+                toggleLeaderboard.checked = data.preferences.leaderboard !== false;
+                toggleStreak.checked = data.preferences.streak !== false;
+                toggleLocation.checked = data.preferences.location === true;
+            }
+        } catch (e) {
+            console.error('Load preferences:', e);
+        }
+    }
+
+    async function save() {
+        try {
+            const prefs = {
+                leaderboard: toggleLeaderboard.checked,
+                streak: toggleStreak.checked,
+                location: toggleLocation.checked,
+            };
+            const r = await fetch('/.netlify/functions/email-preferences-link', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: encodedEmail, preferences: prefs }),
+            });
+            const data = await r.json();
+            if (data.success) {
+                showToast('Preferences saved');
+            }
+        } catch (e) {
+            console.error('Save preferences:', e);
+            showToast('Could not save. Please try again.');
+        }
+    }
+
+    toggleLeaderboard.addEventListener('change', save);
+    toggleStreak.addEventListener('change', save);
+    toggleLocation.addEventListener('change', save);
+
+    load();
+})();
+    </script>
+    <script src="src/components/cookie-banner.js"></script>
+</body>
+</html>
