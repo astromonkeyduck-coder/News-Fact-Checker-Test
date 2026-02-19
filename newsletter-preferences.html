@@ -3,82 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Email Preferences - Noteworthy News</title>
-    <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="32x32">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Email Preferences - Noteworthy News</title>
+    <link rel="icon" type="image/png" href="https://noteworthynews.co/IMG_5794.PNG" sizes="32x32">
     <link rel="apple-touch-icon" href="IMG_5794.PNG" sizes="180x180">
-    <meta name="theme-color" content="#0f234a">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#ffffff">
+    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html {
-            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%) !important;
+            background: #f8f9fa;
             min-height: 100vh;
-            overflow-x: hidden;
         }
         body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%);
-            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+            background: #f8f9fa;
+            color: #1a1a1a;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 24px;
         }
         .preferences-container {
-            max-width: 520px;
+            max-width: 600px;
             width: 100%;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
+            background: #ffffff;
             padding: 48px 40px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid #dee2e6;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
         }
-        .logo { width: 80px; height: 80px; margin: 0 auto 24px; border-radius: 50%; overflow: hidden; display: block; }
+        .logo {
+            display: block;
+            width: 56px;
+            height: 56px;
+            margin: 0 auto 20px;
+            overflow: hidden;
+        }
         .logo img { width: 100%; height: 100%; object-fit: cover; }
         h1 {
+            font-family: 'Source Serif 4', Georgia, serif;
             font-size: 1.75rem;
-            font-weight: 900;
-            margin-bottom: 8px;
-            background: linear-gradient(135deg, #ffffff 0%, #4A90E2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-weight: 700;
+            color: #1a1a1a;
+            text-align: center;
+            margin-bottom: 6px;
+        }
+        .subtitle {
+            color: #6c757d;
+            font-size: 0.95rem;
+            margin-bottom: 32px;
             text-align: center;
         }
-        .subtitle { color: rgba(255,255,255,0.7); font-size: 0.95rem; margin-bottom: 28px; text-align: center; }
-        .status-message { padding: 16px; border-radius: 10px; margin: 20px 0; font-size: 0.95rem; line-height: 1.5; }
-        .status-message.error { background: rgba(231, 76, 60, 0.2); border: 2px solid rgba(231, 76, 60, 0.5); color: #e74c3c; }
-        .status-message.success { background: rgba(46, 204, 113, 0.2); border: 2px solid rgba(46, 204, 113, 0.5); color: #2ecc71; }
-        .pref-section { margin-bottom: 24px; }
+        .status-message {
+            padding: 14px 18px;
+            margin: 20px 0;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            border: 1px solid;
+        }
+        .status-message.error {
+            background: #fff5f5;
+            border-color: #4A90E2;
+            color: #a00;
+        }
+        .status-message.success {
+            background: #f0f9f0;
+            border-color: #198754;
+            color: #0d6e3d;
+        }
+        .pref-section {
+            margin-bottom: 28px;
+        }
         .pref-section h3 {
-            font-size: 0.75rem;
+            font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+            font-size: 0.7rem;
             text-transform: uppercase;
-            letter-spacing: 0.12em;
-            color: rgba(255,255,255,0.5);
-            margin-bottom: 12px;
+            letter-spacing: 0.14em;
+            color: #6c757d;
+            margin-bottom: 14px;
+            font-weight: 600;
         }
         .pref-item {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 16px 18px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            margin-bottom: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            transition: all 0.2s ease;
+            padding: 16px 0;
+            border-bottom: 1px solid #e9ecef;
         }
-        .pref-item:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.12); }
+        .pref-item:last-child { border-bottom: none; }
         .pref-info { flex: 1; }
-        .pref-info .label { font-size: 0.95rem; font-weight: 600; color: white; }
-        .pref-info .desc { font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-top: 2px; }
-        .toggle-wrap { flex-shrink: 0; margin-left: 16px; }
+        .pref-info .label {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+        .pref-info .desc {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-top: 2px;
+        }
+        .toggle-wrap { flex-shrink: 0; margin-left: 20px; }
         .toggle {
             position: relative;
-            width: 48px;
-            height: 26px;
+            width: 44px;
+            height: 24px;
             display: block;
         }
         .toggle input { opacity: 0; width: 0; height: 0; }
@@ -86,71 +117,102 @@
             position: absolute;
             cursor: pointer;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(255, 255, 255, 0.15);
-            transition: 0.3s;
-            border-radius: 26px;
+            background: #dee2e6;
+            transition: 0.2s;
         }
         .toggle-slider:before {
             position: absolute;
             content: "";
-            height: 20px; width: 20px;
-            left: 3px; bottom: 3px;
-            background: white;
-            transition: 0.3s;
-            border-radius: 50%;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background: #fff;
+            transition: 0.2s;
+            border: 1px solid #ced4da;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
-        .toggle input:checked + .toggle-slider { background: linear-gradient(135deg, #4A90E2, #2ECC71); }
-        .toggle input:checked + .toggle-slider:before { transform: translateX(22px); }
-        .toggle input:disabled + .toggle-slider { opacity: 0.5; cursor: not-allowed; }
+        .toggle input:checked + .toggle-slider {
+            background: #4A90E2;
+            border: none;
+        }
+        .toggle input:checked + .toggle-slider:before {
+            transform: translateX(20px);
+            border-color: #4A90E2;
+        }
+        .magnitude-select {
+            padding: 8px 14px;
+            border: 1px solid #ced4da;
+            color: #1a1a1a;
+            font-size: 0.9rem;
+            cursor: pointer;
+            background: #fff;
+            margin-left: 16px;
+        }
+        .magnitude-select:focus {
+            outline: none;
+            border-color: #4A90E2;
+        }
         .newsletter-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 16px 18px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            margin-bottom: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 16px 0;
+            border-bottom: 1px solid #e9ecef;
         }
         .newsletter-row .pref-info { flex: 1; }
         .btn-unsubscribe {
             display: inline-block;
-            padding: 10px 20px;
-            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-            color: white;
+            padding: 8px 18px;
+            background: #4A90E2;
+            color: #fff;
             text-decoration: none;
-            border-radius: 50px;
             font-size: 0.9rem;
             font-weight: 600;
-            transition: all 0.2s ease;
-            border: none;
-            cursor: pointer;
+            border: 1px solid #4A90E2;
+            transition: background 0.2s, color 0.2s;
         }
-        .btn-unsubscribe:hover { box-shadow: 0 6px 16px rgba(231, 76, 60, 0.4); transform: translateY(-1px); }
-        .actions { margin-top: 28px; text-align: center; }
+        .btn-unsubscribe:hover {
+            background: #fff;
+            color: #4A90E2;
+        }
+        .actions {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid #e9ecef;
+            text-align: center;
+        }
         .btn-home {
             display: inline-block;
-            padding: 12px 28px;
-            background: rgba(255, 255, 255, 0.15);
-            color: white;
+            padding: 10px 24px;
+            background: #fff;
+            color: #1a1a1a;
             text-decoration: none;
-            border-radius: 50px;
             font-weight: 600;
             font-size: 0.95rem;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            transition: all 0.2s ease;
+            border: 1px solid #1a1a1a;
+            transition: background 0.2s, color 0.2s;
         }
-        .btn-home:hover { background: rgba(255, 255, 255, 0.25); }
-        .profile-link { margin-top: 16px; font-size: 0.9rem; }
-        .profile-link a { color: #4A90E2; text-decoration: underline; }
-        .profile-link a:hover { color: #6AA3ED; }
+        .btn-home:hover {
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .profile-link {
+            margin-top: 16px;
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        .profile-link a {
+            color: #4A90E2;
+            text-decoration: underline;
+        }
+        .profile-link a:hover { text-decoration: none; }
     </style>
 </head>
 <body>
     <div class="preferences-container">
-        <a href="index.html" class="logo" aria-label="Noteworthy News">
-            <img src="IMG_5992.PNG" alt="Noteworthy News" loading="lazy">
+        <a href="https://noteworthynews.co/" class="logo" aria-label="Noteworthy News">
+            <img src="https://noteworthynews.co/IMG_5992.PNG" alt="Noteworthy News" loading="lazy">
         </a>
         <h1>Email Preferences</h1>
         <p class="subtitle">Choose which emails you want to receive</p>
@@ -166,7 +228,7 @@
                 <h3>Newsletter</h3>
                 <div class="newsletter-row">
                     <div class="pref-info">
-                        <span class="label">Newsletter & Breaking News</span>
+                        <span class="label">Newsletter &amp; Breaking News</span>
                         <p class="desc">Weekly digest and important news updates</p>
                     </div>
                     <a href="#" id="unsubscribeBtn" class="btn-unsubscribe">Unsubscribe</a>
@@ -174,7 +236,7 @@
             </div>
 
             <div class="pref-section">
-                <h3>Other notifications</h3>
+                <h3>Email Alerts</h3>
                 <div class="pref-item">
                     <div class="pref-info">
                         <span class="label">Leaderboard updates</span>
@@ -201,8 +263,32 @@
                 </div>
                 <div class="pref-item">
                     <div class="pref-info">
+                        <span class="label">Earthquake alerts</span>
+                        <p class="desc">Breaking alerts for significant earthquakes worldwide</p>
+                    </div>
+                    <label class="toggle-wrap">
+                        <span class="toggle">
+                            <input type="checkbox" id="toggleEarthquakeAlerts">
+                            <span class="toggle-slider"></span>
+                        </span>
+                    </label>
+                </div>
+                <div class="pref-item" id="magnitudeRow" style="display: none;">
+                    <div class="pref-info">
+                        <span class="label">Minimum magnitude</span>
+                        <p class="desc">Only alerts for earthquakes this size or larger</p>
+                    </div>
+                    <select id="magnitudeMin" class="magnitude-select">
+                        <option value="4">4.0+</option>
+                        <option value="5">5.0+</option>
+                        <option value="6">6.0+</option>
+                        <option value="7">7.0+</option>
+                    </select>
+                </div>
+                <div class="pref-item">
+                    <div class="pref-info">
                         <span class="label">Location alerts</span>
-                        <p class="desc">Earthquakes and events near you</p>
+                        <p class="desc">Earthquakes and events near your saved locations</p>
                     </div>
                     <label class="toggle-wrap">
                         <span class="toggle">
@@ -214,7 +300,7 @@
             </div>
 
             <div class="actions">
-                <a href="index.html" class="btn-home">Back to Home</a>
+                <a href="https://noteworthynews.co/" class="btn-home">Back to Home</a>
                 <p class="profile-link">Manage more settings on your <a href="profile.html">profile page</a>.</p>
             </div>
         </div>
@@ -244,7 +330,19 @@
 
     const toggleLeaderboard = document.getElementById('toggleLeaderboard');
     const toggleStreak = document.getElementById('toggleStreak');
+    const toggleEarthquakeAlerts = document.getElementById('toggleEarthquakeAlerts');
     const toggleLocation = document.getElementById('toggleLocation');
+    const magnitudeMin = document.getElementById('magnitudeMin');
+    const magnitudeRow = document.getElementById('magnitudeRow');
+
+    function updateMagnitudeVisibility() {
+        magnitudeRow.style.display = toggleEarthquakeAlerts?.checked ? 'flex' : 'none';
+    }
+
+    toggleEarthquakeAlerts?.addEventListener('change', function() {
+        updateMagnitudeVisibility();
+        save();
+    });
 
     async function load() {
         try {
@@ -253,7 +351,10 @@
             if (data.success && data.preferences) {
                 toggleLeaderboard.checked = data.preferences.leaderboard !== false;
                 toggleStreak.checked = data.preferences.streak !== false;
+                toggleEarthquakeAlerts.checked = data.preferences.earthquakeAlerts === true;
                 toggleLocation.checked = data.preferences.location === true;
+                if (magnitudeMin) magnitudeMin.value = String(data.preferences.earthquakeMagnitudeMin ?? 6);
+                updateMagnitudeVisibility();
             }
         } catch (e) {
             console.error('Load preferences:', e);
@@ -265,7 +366,9 @@
             const prefs = {
                 leaderboard: toggleLeaderboard.checked,
                 streak: toggleStreak.checked,
+                earthquakeAlerts: toggleEarthquakeAlerts?.checked === true,
                 location: toggleLocation.checked,
+                earthquakeMagnitudeMin: Number(magnitudeMin?.value || 6),
             };
             const r = await fetch('/.netlify/functions/email-preferences-link', {
                 method: 'POST',
@@ -285,6 +388,7 @@
     toggleLeaderboard.addEventListener('change', save);
     toggleStreak.addEventListener('change', save);
     toggleLocation.addEventListener('change', save);
+    magnitudeMin?.addEventListener('change', save);
 
     load();
 })();
