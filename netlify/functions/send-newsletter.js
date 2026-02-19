@@ -218,6 +218,32 @@ async function processImagesForEmail(htmlContent, baseUrl = 'https://noteworthyn
           console.log(`[processImagesForEmail] Processing data URL image: ${filename}`);
         }
       }
+      // Handle static noteworthynews.co URLs (e.g. newsletter-sample-map.png, IMG_5992.PNG)
+      else if (originalSrc.includes('noteworthynews.co') && !originalSrc.includes('get-uploaded-image') && /\.(png|PNG|jpg|jpeg|gif|GIF)(\?|$)/.test(originalSrc)) {
+        let fullImageUrl = originalSrc;
+        if (!originalSrc.startsWith('http')) {
+          fullImageUrl = `${baseUrl}${originalSrc.startsWith('/') ? '' : '/'}${originalSrc}`;
+        }
+        console.log(`[processImagesForEmail] Fetching static image: ${fullImageUrl.substring(0, 80)}...`);
+        try {
+          const imageResponse = await fetch(fullImageUrl);
+          if (imageResponse.ok) {
+            const arrayBuffer = await imageResponse.arrayBuffer();
+            imageBuffer = Buffer.from(arrayBuffer);
+            contentType = imageResponse.headers.get('content-type') || 'image/png';
+            const urlPath = new URL(fullImageUrl).pathname;
+            const pathParts = urlPath.split('/').filter(Boolean);
+            filename = pathParts[pathParts.length - 1] || `image-${i + 1}.png`;
+            console.log(`[processImagesForEmail] Successfully fetched static image: ${filename} (${imageBuffer.length} bytes)`);
+          } else {
+            console.warn(`[processImagesForEmail] Failed to fetch static image: ${imageResponse.status} ${imageResponse.statusText}`);
+            continue;
+          }
+        } catch (fetchError) {
+          console.error(`[processImagesForEmail] Error fetching static image:`, fetchError.message);
+          continue;
+        }
+      }
       // Handle get-uploaded-image URLs (both absolute and relative)
       else if (originalSrc.includes('get-uploaded-image')) {
         // Extract key from URL - handle both ?key= and &key= patterns
