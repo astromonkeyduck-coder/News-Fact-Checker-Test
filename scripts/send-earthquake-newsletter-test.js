@@ -37,6 +37,18 @@ async function sendTest() {
 
   console.log(`📧 Sending earthquake alerts newsletter test to ${testEmail}...\n`);
 
+  // Ensure sample map image exists (generate if needed)
+  const baseUrl = process.env.URL || process.env.NETLIFY_URL || 'https://noteworthynews.co';
+  try {
+    const genRes = await fetch(`${baseUrl.replace(/\/$/, '')}/.netlify/functions/generate-sample-earthquake-map`);
+    if (genRes.ok) {
+      const genData = await genRes.json();
+      console.log('✅ Sample map image ready:', genData.url?.substring(0, 60) + '...');
+    }
+  } catch (e) {
+    console.warn('⚠️ Could not generate sample map (may already exist):', e.message);
+  }
+
   const payload = {
     token,
     subject: 'Noteworthy News: Earthquake Alerts Now Live',
@@ -51,7 +63,6 @@ async function sendTest() {
   };
 
   try {
-    const baseUrl = process.env.URL || process.env.NETLIFY_URL || 'https://noteworthynews.co';
     const url = `${baseUrl.replace(/\/$/, '')}/.netlify/functions/send-newsletter`;
     const response = await fetch(url, {
       method: 'POST',

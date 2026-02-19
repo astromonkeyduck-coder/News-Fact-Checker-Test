@@ -207,6 +207,34 @@
             text-decoration: underline;
         }
         .profile-link a:hover { text-decoration: none; }
+        /* Cookie banner: fixed at bottom, full width */
+        #cookie-banner.cookie-banner {
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            z-index: 10000 !important;
+            background: linear-gradient(135deg, rgba(7, 21, 42, 0.98) 0%, rgba(13, 31, 58, 0.98) 100%) !important;
+            backdrop-filter: blur(20px) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
+            border-top: 1px solid rgba(79, 172, 254, 0.3) !important;
+            box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4) !important;
+            padding: 1.25rem !important;
+            transform: translateY(100%) !important;
+            transition: transform 0.3s ease !important;
+        }
+        #cookie-banner.cookie-banner.cookie-banner-visible { transform: translateY(0) !important; }
+        #cookie-banner.cookie-banner.cookie-banner-hidden { transform: translateY(100%) !important; }
+        .cookie-banner-content { max-width: 600px; margin: 0 auto; }
+        .cookie-banner-title { color: #fff !important; font-size: 1rem; margin: 0 0 0.5rem 0 !important; }
+        .cookie-banner-text p { color: rgba(255,255,255,0.9) !important; font-size: 0.875rem; margin: 0 0 1rem 0 !important; line-height: 1.5; }
+        .cookie-banner-text a { color: #60a5fa !important; text-decoration: underline; }
+        .cookie-banner-buttons { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .cookie-btn { padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; font-size: 0.875rem; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; border: 1px solid transparent; }
+        .cookie-btn-accept { background: #4A90E2 !important; color: #fff !important; }
+        .cookie-btn-reject { background: rgba(255,255,255,0.15) !important; color: #fff !important; border-color: rgba(255,255,255,0.3) !important; }
+        .cookie-btn-learn { background: transparent !important; color: #60a5fa !important; border-color: rgba(96,165,250,0.5) !important; }
     </style>
 </head>
 <body>

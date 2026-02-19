@@ -20,10 +20,14 @@ try {
 }
 
 async function uploadCSV() {
-    const csvPath = path.join(__dirname, '../account_analytics_content_2026-01-15_2026-02-01.csv');
+    const csvArg = process.argv[2];
+    const csvFile = csvArg || 'account_analytics_content_2025-02-16_2026-02-16.csv';
+    const csvPath = path.isAbsolute(csvFile) ? csvFile : path.join(__dirname, '..', csvFile);
     
     if (!fs.existsSync(csvPath)) {
         console.error(`❌ CSV file not found: ${csvPath}`);
+        console.error(`\n💡 Usage: node scripts/upload-csv-to-breaking-news.js [csv-filename]`);
+        console.error(`   Example: node scripts/upload-csv-to-breaking-news.js account_analytics_content_2025-02-16_2026-02-16.csv`);
         process.exit(1);
     }
     
@@ -35,7 +39,7 @@ async function uploadCSV() {
     
     // Create multipart form data manually
     const boundary = `----WebKitFormBoundary${Date.now()}`;
-    const filename = 'account_analytics_content_2026-01-15_2026-02-01.csv';
+    const filename = path.basename(csvFile);
     
     const formData = `--${boundary}\r\n` +
         `Content-Disposition: form-data; name="csv"; filename="${filename}"\r\n` +
