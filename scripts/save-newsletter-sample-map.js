@@ -35,9 +35,9 @@ async function generateLocally() {
   console.log('   Trying local generation...');
   const generateImage = require('../netlify/functions/generate-earthquake-image').generateImage;
   const magnitude = 6.2;
-  const location = 'Near Japan';
+  const location = 'Tokyo, Japan';
   const eventId = 'newsletter-sample';
-  const coordinates = [139.7, 35.6];
+  const coordinates = [139.7, 35.6]; // east of Tokyo
   return generateImage(magnitude, location, eventId, 'standard', coordinates, null);
 }
 
