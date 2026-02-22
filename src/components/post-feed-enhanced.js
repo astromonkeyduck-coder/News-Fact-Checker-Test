@@ -32,7 +32,7 @@ const FALLBACK_POSTS = [
 ];
 
 // Use ENHANCED_ prefix to avoid duplicate declaration with post-feed-v2.js
-const ENHANCED_EARTHQUAKE_MIN_MAG = 5.0;
+const ENHANCED_EARTHQUAKE_MIN_MAG = 2.5;
 const ENHANCED_EXCLUDED_KEYWORDS = ['volcano', 'volcanic', 'embassy'];
 
 function isLowMagnitudeEarthquakeEnhanced(post) {
@@ -42,9 +42,9 @@ function isLowMagnitudeEarthquakeEnhanced(post) {
   const source = (post.source || '').toLowerCase();
   const isEarthquake = category === 'earthquake' || eventType === 'earthquake' || source === 'usgs';
   if (!isEarthquake) return false;
-  const magnitudeRaw = post.magnitude ?? post.mag ?? post.magnitude_value ?? post.magnitudeValue;
+  const magnitudeRaw = post.magnitude ?? post.mag ?? post.magnitude_value ?? post.magnitudeValue ?? post.assets?.magnitude;
   const magnitude = typeof magnitudeRaw === 'string' ? parseFloat(magnitudeRaw) : Number(magnitudeRaw);
-  if (!Number.isFinite(magnitude)) return false;
+  if (!Number.isFinite(magnitude)) return true; // Unknown magnitude for earthquake - filter out to be safe
   return magnitude < ENHANCED_EARTHQUAKE_MIN_MAG;
 }
 
@@ -1106,7 +1106,7 @@ function renderSkeletonCards(count = 5) {
 /**
  * Load posts from API with chunked loading
  */
-async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', limit = 20, resetDisplayCount = true) {
+async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', limit = 50, resetDisplayCount = true) {
   // Prevent concurrent loads and infinite recursion
   if (enhancedIsLoading) {
     console.warn('[Enhanced Feed] Already loading, skipping duplicate call');
@@ -1422,6 +1422,21 @@ function distanceFromUser(post, userLoc) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
+/** Interleave non-earthquake (news) with earthquake posts so news isn't buried */
+function interleaveNewsAndEarthquakes(posts) {
+  const isEarthquake = (p) => (p.category || '').toLowerCase() === 'earthquake' || (p.source || '').toLowerCase() === 'usgs' || (p.id || '').toString().toLowerCase().startsWith('eq-');
+  const news = posts.filter(p => !isEarthquake(p));
+  const eq = posts.filter(p => isEarthquake(p));
+  if (news.length === 0 || eq.length === 0) return posts;
+  const result = [];
+  let i = 0, j = 0;
+  while (i < news.length || j < eq.length) {
+    if (i < news.length) result.push(news[i++]);
+    if (j < eq.length) result.push(eq[j++]);
+  }
+  return result;
+}
+
 function sortEnhancedPosts(posts, sortMode) {
   const sorted = [...posts];
   switch (sortMode) {
@@ -1469,7 +1484,9 @@ function renderEnhancedFeed() {
   let filtered = searchEnhancedPosts(enhancedCurrentPosts, enhancedCurrentSearch);
   const pinned = filtered.filter(p => p.isPinned);
   const unpinned = filtered.filter(p => !p.isPinned);
-  const sorted = [...pinned, ...sortEnhancedPosts(unpinned, enhancedCurrentSort)];
+  const sortedUnpinned = sortEnhancedPosts(unpinned, enhancedCurrentSort);
+  // Interleave news with earthquakes so non-earthquake posts don't get buried
+  const sorted = [...pinned, ...interleaveNewsAndEarthquakes(sortedUnpinned)];
 
   if (sorted.length === 0) {
     // Use fallback posts so we never show permanent "No posts yet" - keeps feed looking active
@@ -1816,7 +1833,7 @@ function setupInfiniteScroll() {
 let enhancedFeedInitialized = false;
 let lastContainerId = null;
 
-function initEnhancedFeed(containerId = 'articlesTrack', endpoint = '/.netlify/functions/posts-read', limit = 20) {
+function initEnhancedFeed(containerId = 'articlesTrack', endpoint = '/.netlify/functions/posts-read', limit = 50) {
   const container = document.getElementById(containerId);
   if (!container) {
     console.error('[Enhanced Feed] Container not found:', containerId);
@@ -2027,7 +2044,7 @@ if (typeof window !== 'undefined') {
       (html.includes('skeleton') && !html.includes('feed-post-card'));
     if (needsLoad && !enhancedInitInProgress && !enhancedInitDone) {
       console.log('[Enhanced Feed] Self-init: container ready, loading posts');
-      initEnhancedFeed('articlesTrack', '/.netlify/functions/posts-read', 20);
+      initEnhancedFeed('articlesTrack', '/.netlify/functions/posts-read', 50);
     }
   }
   if (document.readyState === 'loading') {

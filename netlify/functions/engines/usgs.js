@@ -1348,9 +1348,11 @@ async function processEarthquake(feature, logger, forceEmail = false) {
   
   const magnitude = props.mag || 0;
   
-  // TESTING MODE: Process all earthquakes regardless of magnitude
-  // No magnitude threshold - all earthquakes will be processed and sent
-  // (Previously filtered at 0.5 for production)
+  // Filter out earthquakes below magnitude 2.5 - don't create posts for tiny events
+  if (magnitude < 2.5) {
+    logger.info('Skipping earthquake below magnitude 2.5', { eventId, magnitude });
+    return null;
+  }
   
   const place = props.place || 'Unknown Location';
   const time = props.time || Date.now();

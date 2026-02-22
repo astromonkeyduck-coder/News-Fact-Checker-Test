@@ -42,7 +42,7 @@ function getIconHTML(iconName, className = 'w-5 h-5') {
 const CACHE_KEY = 'noteworthy-posts-cache-v2';
 const CACHE_EXPIRY = 2 * 60 * 1000; // 2 minutes
 
-const EARTHQUAKE_CARD_MIN_MAGNITUDE = 5.0;
+const EARTHQUAKE_CARD_MIN_MAGNITUDE = 2.5;
 const EXCLUDED_ALERT_KEYWORDS = ['volcano', 'volcanic', 'embassy'];
 
 function isLowMagnitudeEarthquake(post) {
@@ -52,9 +52,9 @@ function isLowMagnitudeEarthquake(post) {
   const source = (post.source || '').toLowerCase();
   const isEarthquake = category === 'earthquake' || eventType === 'earthquake' || source === 'usgs';
   if (!isEarthquake) return false;
-  const magnitudeRaw = post.magnitude ?? post.mag ?? post.magnitude_value ?? post.magnitudeValue;
+  const magnitudeRaw = post.magnitude ?? post.mag ?? post.magnitude_value ?? post.magnitudeValue ?? post.assets?.magnitude;
   const magnitude = typeof magnitudeRaw === 'string' ? parseFloat(magnitudeRaw) : Number(magnitudeRaw);
-  if (!Number.isFinite(magnitude)) return false;
+  if (!Number.isFinite(magnitude)) return true; // Unknown magnitude for earthquake - filter out to be safe
   return magnitude < EARTHQUAKE_CARD_MIN_MAGNITUDE;
 }
 
