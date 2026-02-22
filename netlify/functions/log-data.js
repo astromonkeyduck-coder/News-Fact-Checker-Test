@@ -1740,13 +1740,13 @@ exports.handler = async (event, context) => {
           const alerts = await store.get(alertsKey, { type: "json" }) || [];
           return {
             statusCode: 200,
-            headers,
+            headers: { ...headers, "Cache-Control": "private, max-age=30, stale-while-revalidate=60" },
             body: JSON.stringify({ alerts: alerts.slice(0, 100), count: alerts.length }),
           };
         } catch (e) {
           return {
             statusCode: 200,
-            headers,
+            headers: { ...headers, "Cache-Control": "private, max-age=30, stale-while-revalidate=60" },
             body: JSON.stringify({ alerts: [], count: 0 }),
           };
         }
@@ -1816,6 +1816,7 @@ exports.handler = async (event, context) => {
             ...headers,
             "Content-Type": "text/csv",
             "Content-Disposition": `attachment; filename="noteworthy-data-${date}${dataType ? `-${dataType}` : ''}.csv"`,
+            "Cache-Control": "private, max-age=30, stale-while-revalidate=60",
           },
           body: csv,
         };
@@ -1824,7 +1825,7 @@ exports.handler = async (event, context) => {
       // Default JSON response
       return {
         statusCode: 200,
-        headers,
+        headers: { ...headers, "Cache-Control": "private, max-age=30, stale-while-revalidate=60" },
         body: JSON.stringify({ logs, count: logs.length }),
       };
     }

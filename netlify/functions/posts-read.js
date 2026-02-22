@@ -20,7 +20,8 @@ exports.handler = async (event) => {
     "Access-Control-Allow-Methods": "GET, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
     "Content-Type": "application/json",
-    "Cache-Control": "no-store",
+    "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
+    "Netlify-CDN-Cache-Control": "public, max-age=60, stale-while-revalidate=300",
   };
 
   // Handle OPTIONS

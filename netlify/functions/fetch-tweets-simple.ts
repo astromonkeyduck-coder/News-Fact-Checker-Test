@@ -174,7 +174,11 @@ export const handler: Handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers,
+        headers: {
+          ...headers,
+          "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
+          "Netlify-CDN-Cache-Control": "public, max-age=60, stale-while-revalidate=300",
+        },
         body: JSON.stringify(posts.filter(p => p !== null)),
       };
     }

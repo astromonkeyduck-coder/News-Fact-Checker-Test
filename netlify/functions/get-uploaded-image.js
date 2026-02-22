@@ -6,6 +6,7 @@
  */
 
 const sharp = require('sharp');
+const DEBUG = process.env.NETLIFY_DEV === 'true';
 
 exports.handler = async (event, context) => {
   // CORS headers
@@ -71,8 +72,7 @@ exports.handler = async (event, context) => {
     let imageData = null;
     let foundStore = null;
     
-    console.log(`[get-uploaded-image] Looking for image: ${imageKey}`);
-    console.log(`[get-uploaded-image] Site ID: ${siteID ? siteID.substring(0, 8) + '...' : 'MISSING'}, Token: ${token ? 'PRESENT' : 'MISSING'}`);
+    if (DEBUG) console.log(`[get-uploaded-image] Looking for image: ${imageKey}`);
     
     // Generate key variants for backward compatibility
     // New format: earthquake-{eventId}-{templateType}-{timestamp}.png
@@ -85,7 +85,7 @@ exports.handler = async (event, context) => {
       // Key has template type (new format) - also try old format
       const oldFormat = imageKey.replace(/-standard-|-square-|-wide-/, '-');
       keyVariants.push(oldFormat);
-      console.log(`[get-uploaded-image] Will also try old format: ${oldFormat}`);
+      if (DEBUG) console.log(`[get-uploaded-image] Will also try old format: ${oldFormat}`);
     } else {
       // Key doesn't have template type - try adding -standard- (new format)
       // Pattern: earthquake-{eventId}-{timestamp}.png
@@ -98,153 +98,67 @@ exports.handler = async (event, context) => {
         // (to avoid double-adding)
         if (!eventId.includes('standard') && !eventId.includes('square') && !eventId.includes('wide')) {
           keyVariants.push(`earthquake-${eventId}-standard-${timestamp}.png`);
-          console.log(`[get-uploaded-image] Will also try new format: earthquake-${eventId}-standard-${timestamp}.png`);
+          if (DEBUG) console.log(`[get-uploaded-image] Will also try new format: earthquake-${eventId}-standard-${timestamp}.png`);
         }
       }
     }
     
-    // Try to find the media in any of the stores using REST API
-    // Note: siteID and token are guaranteed to exist after early validation above
-    outerLoop: for (const storeName of storeNames) {
-      for (const keyVariant of keyVariants) {
-        try {
-          const encodedKey = encodeURIComponent(keyVariant);
-          const apiUrl = `https://api.netlify.com/api/v1/sites/${siteID}/blobs/${storeName}/${encodedKey}`;
-          console.log(`[get-uploaded-image] Trying store: ${storeName}, key: ${keyVariant}`);
-          console.log(`[get-uploaded-image] Encoded key: ${encodedKey}`);
-          console.log(`[get-uploaded-image] Full API URL: ${apiUrl}`);
-        
-          const response = await fetch(apiUrl, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-          });
-          
-          console.log(`[get-uploaded-image] Response from ${storeName}: ${response.status} ${response.statusText}`);
-          const contentType = response.headers.get('content-type') || '';
-          console.log(`[get-uploaded-image] Content-Type: ${contentType}`);
-          
-          // Log response body for non-200 responses to debug
-          if (!response.ok) {
-            const errorText = await response.text().catch(() => '');
-            console.log(`[get-uploaded-image] Error response body: ${errorText.substring(0, 500)}`);
-            
-            // Special handling for 401 Unauthorized
-            if (response.status === 401) {
-              console.error(`[get-uploaded-image] ❌ 401 Unauthorized - Netlify Blobs authentication failed`, {
-                storeName,
-                keyVariant,
-                hasToken: !!token,
-                tokenLength: token ? token.length : 0,
-                siteID: siteID ? siteID.substring(0, 8) + '...' : 'MISSING',
-                error: errorText.substring(0, 200)
-              });
-              // Continue to next store/key variant instead of failing immediately
-            }
+    // Try to find the media in any of the stores using REST API (parallel fetches)
+    async function tryFetchFromStore(storeName, keyVariant) {
+      const encodedKey = encodeURIComponent(keyVariant);
+      const apiUrl = `https://api.netlify.com/api/v1/sites/${siteID}/blobs/${storeName}/${encodedKey}`;
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const jsonData = await response.json().catch(() => null);
+        if (jsonData && jsonData.url) {
+          const imageResponse = await fetch(jsonData.url);
+          if (!imageResponse.ok) throw new Error('Redirect fetch failed');
+          const arrayBuffer = await imageResponse.arrayBuffer();
+          if (arrayBuffer && arrayBuffer.byteLength > 0) {
+            const firstBytes = new Uint8Array(arrayBuffer.slice(0, 4));
+            const isPNG = firstBytes[0] === 0x89 && firstBytes[1] === 0x50 && firstBytes[2] === 0x4E && firstBytes[3] === 0x47;
+            const isJPEG = firstBytes[0] === 0xFF && firstBytes[1] === 0xD8;
+            if (isPNG || isJPEG) return { imageData: arrayBuffer, foundStore: storeName };
           }
-          
-          if (response.ok) {
-          // Check if response is JSON (Netlify Blobs might return JSON with a URL)
-          if (contentType.includes('application/json')) {
-            const jsonData = await response.json().catch(() => null);
-            if (jsonData && jsonData.url) {
-              console.log(`[get-uploaded-image] ⚠️ Blobs API returned JSON with URL, fetching from: ${jsonData.url}`);
-              // Follow the URL to get the actual image
-              try {
-                const imageResponse = await fetch(jsonData.url);
-                if (imageResponse.ok) {
-                  const arrayBuffer = await imageResponse.arrayBuffer();
-                  if (arrayBuffer && arrayBuffer.byteLength > 0) {
-                    // Verify it's actually an image (not more JSON)
-                    const firstBytes = new Uint8Array(arrayBuffer.slice(0, 4));
-                    const isPNG = firstBytes[0] === 0x89 && firstBytes[1] === 0x50 && firstBytes[2] === 0x4E && firstBytes[3] === 0x47;
-                    const isJPEG = firstBytes[0] === 0xFF && firstBytes[1] === 0xD8;
-                    if (isPNG || isJPEG) {
-                      imageData = arrayBuffer;
-                      foundStore = storeName;
-                      console.log(`[get-uploaded-image] ✅ Found image via redirect URL: ${Math.round(arrayBuffer.byteLength / 1024)}KB (${isPNG ? 'PNG' : 'JPEG'})`);
-                      break outerLoop; // Break out of both loops
-                    } else {
-                      console.warn(`[get-uploaded-image] ⚠️ Redirect URL did not return valid image (magic bytes: ${Array.from(firstBytes).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' ')})`);
-                    }
-                  }
-                } else {
-                  console.warn(`[get-uploaded-image] ⚠️ Failed to fetch from redirect URL: ${imageResponse.status} ${imageResponse.statusText}`);
-                }
-              } catch (redirectErr) {
-                console.warn(`[get-uploaded-image] ⚠️ Error fetching from redirect URL:`, redirectErr.message);
-              }
-            } else {
-              console.warn(`[get-uploaded-image] ⚠️ JSON response but no URL field:`, JSON.stringify(jsonData).substring(0, 200));
-            }
-          } else {
-            // Binary response - get as arrayBuffer
-            const arrayBuffer = await response.arrayBuffer();
-            if (arrayBuffer && arrayBuffer.byteLength > 0) {
-              // Check if it's actually JSON (starts with {)
-              const firstBytes = new Uint8Array(arrayBuffer.slice(0, 10));
-              const startsWithJson = firstBytes[0] === 0x7b; // '{' character
-              
-              if (startsWithJson) {
-                // It's JSON, try to parse and get URL
-                const text = new TextDecoder().decode(arrayBuffer);
-                try {
-                  const jsonData = JSON.parse(text);
-                  if (jsonData.url) {
-                    console.log(`[get-uploaded-image] ⚠️ Response is JSON (despite content-type), fetching from: ${jsonData.url}`);
-                    try {
-                      const imageResponse = await fetch(jsonData.url);
-                      if (imageResponse.ok) {
-                        const imageArrayBuffer = await imageResponse.arrayBuffer();
-                        if (imageArrayBuffer && imageArrayBuffer.byteLength > 0) {
-                          // Verify it's actually an image (not more JSON)
-                          const firstBytes = new Uint8Array(imageArrayBuffer.slice(0, 4));
-                          const isPNG = firstBytes[0] === 0x89 && firstBytes[1] === 0x50 && firstBytes[2] === 0x4E && firstBytes[3] === 0x47;
-                          const isJPEG = firstBytes[0] === 0xFF && firstBytes[1] === 0xD8;
-                          if (isPNG || isJPEG) {
-                            imageData = imageArrayBuffer;
-                            foundStore = storeName;
-                            console.log(`[get-uploaded-image] ✅ Found image via JSON URL: ${Math.round(imageArrayBuffer.byteLength / 1024)}KB (${isPNG ? 'PNG' : 'JPEG'})`);
-                            break outerLoop; // Break out of both loops
-                          } else {
-                            console.warn(`[get-uploaded-image] ⚠️ Redirect URL did not return valid image (magic bytes: ${Array.from(firstBytes).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' ')})`);
-                          }
-                        }
-                      } else {
-                        console.warn(`[get-uploaded-image] ⚠️ Failed to fetch from redirect URL: ${imageResponse.status} ${imageResponse.statusText}`);
-                      }
-                    } catch (redirectErr) {
-                      console.warn(`[get-uploaded-image] ⚠️ Error fetching from redirect URL:`, redirectErr.message);
-                    }
-                  }
-                } catch (parseErr) {
-                  console.warn(`[get-uploaded-image] ⚠️ Failed to parse JSON response:`, parseErr.message);
-                }
-              } else {
-                // It's actual binary image data
-                imageData = arrayBuffer;
-                foundStore = storeName;
-                console.log(`[get-uploaded-image] ✅ Found image in ${storeName}: ${Math.round(arrayBuffer.byteLength / 1024)}KB`);
-                break outerLoop; // Break out of both loops
-              }
-            } else {
-              console.warn(`[get-uploaded-image] ⚠️ Empty response from ${storeName}`);
-            }
-          }
-          } else if (response.status === 404) {
-            console.log(`[get-uploaded-image] Image not found in ${storeName} with key ${keyVariant} (404)`);
-            // Continue to next key variant
-          } else {
-            // Log non-404 errors but continue trying other key variants
-            const errorText = await response.text().catch(() => '');
-            console.warn(`[get-uploaded-image] Error fetching from ${storeName} with key ${keyVariant}:`, response.status, response.statusText, errorText.substring(0, 200));
-          }
-        } catch (fetchErr) {
-          // Network error, try next key variant
-          console.warn(`[get-uploaded-image] Network error fetching from ${storeName} with key ${keyVariant}:`, fetchErr.message);
         }
+        throw new Error('Invalid JSON response');
       }
+      const arrayBuffer = await response.arrayBuffer();
+      if (!arrayBuffer || arrayBuffer.byteLength === 0) throw new Error('Empty response');
+      const firstBytes = new Uint8Array(arrayBuffer.slice(0, 10));
+      if (firstBytes[0] === 0x7b) {
+        const text = new TextDecoder().decode(arrayBuffer);
+        try {
+          const jsonData = JSON.parse(text);
+          if (jsonData && jsonData.url) {
+            const imageResponse = await fetch(jsonData.url);
+            if (!imageResponse.ok) throw new Error('Redirect fetch failed');
+            const imageArrayBuffer = await imageResponse.arrayBuffer();
+            if (imageArrayBuffer && imageArrayBuffer.byteLength > 0) {
+              const fb = new Uint8Array(imageArrayBuffer.slice(0, 4));
+              const isPNG = fb[0] === 0x89 && fb[1] === 0x50 && fb[2] === 0x4E && fb[3] === 0x47;
+              const isJPEG = fb[0] === 0xFF && fb[1] === 0xD8;
+              if (isPNG || isJPEG) return { imageData: imageArrayBuffer, foundStore: storeName };
+            }
+          }
+        } catch (_) {}
+        throw new Error('Invalid JSON');
+      }
+      return { imageData: arrayBuffer, foundStore: storeName };
+    }
+    const pairs = storeNames.flatMap(s => keyVariants.map(k => [s, k]));
+    try {
+      const result = await Promise.any(pairs.map(([storeName, keyVariant]) => tryFetchFromStore(storeName, keyVariant)));
+      imageData = result.imageData;
+      foundStore = result.foundStore;
+      if (DEBUG) console.log(`[get-uploaded-image] Found image in ${foundStore}: ${Math.round(imageData.byteLength / 1024)}KB`);
+    } catch (_) {
+      /* All store/key combinations failed, will try SDK fallback */
     }
 
     // Check if requesting metadata
@@ -270,7 +184,7 @@ exports.handler = async (event, context) => {
 
     // If REST API failed, try SDK as fallback (for images stored via SDK)
     if (!imageData) {
-      console.log('[get-uploaded-image] REST API failed, trying SDK fallback...');
+      if (DEBUG) console.log('[get-uploaded-image] REST API failed, trying SDK fallback...');
       try {
         const { getStore } = require("@netlify/blobs");
         
@@ -287,12 +201,11 @@ exports.handler = async (event, context) => {
               if (sdkImage && sdkImage.byteLength > 0) {
                 imageData = sdkImage;
                 foundStore = storeName;
-                console.log(`[get-uploaded-image] ✅ Found image via SDK fallback in ${storeName}: ${Math.round(sdkImage.byteLength / 1024)}KB`);
+                if (DEBUG) console.log(`[get-uploaded-image] Found image via SDK fallback in ${storeName}: ${Math.round(sdkImage.byteLength / 1024)}KB`);
                 break sdkFallbackLoop;
               }
             } catch (sdkErr) {
-              // Continue to next variant
-              console.log(`[get-uploaded-image] SDK fallback failed for ${storeName}/${keyVariant}:`, sdkErr.message);
+              if (DEBUG) console.log(`[get-uploaded-image] SDK fallback failed for ${storeName}/${keyVariant}:`, sdkErr.message);
             }
           }
         }
@@ -331,7 +244,7 @@ exports.handler = async (event, context) => {
         };
       }
       
-      console.log(`[get-uploaded-image] ✅ Image found in ${foundStore}, size: ${Math.round(imageData.byteLength / 1024)}KB`);
+      if (DEBUG) console.log(`[get-uploaded-image] Image found in ${foundStore}, size: ${Math.round(imageData.byteLength / 1024)}KB`);
 
       // Determine content type from key extension
       let contentType = "image/png";
@@ -396,7 +309,7 @@ exports.handler = async (event, context) => {
             
             if (resizedBuffer.length <= maxSize) {
               imageBuffer = resizedBuffer;
-              console.log('[get-uploaded-image] Image resized and compressed', { 
+              if (DEBUG) console.log('[get-uploaded-image] Image resized and compressed', { 
                 originalSize,
                 finalSize: resizedBuffer.length,
                 key: imageKey 
@@ -435,7 +348,7 @@ exports.handler = async (event, context) => {
       }
 
       // Log image size for debugging
-      console.log('[get-uploaded-image] Serving image', { 
+      if (DEBUG) console.log('[get-uploaded-image] Serving image', { 
         key: imageKey, 
         size: imageBuffer.length, 
         contentType,
@@ -447,7 +360,8 @@ exports.handler = async (event, context) => {
         headers: {
           ...headers,
           "Content-Type": contentType,
-          "Cache-Control": "public, max-age=31536000, immutable", // Cache for 1 year
+          "Cache-Control": "public, max-age=31536000, immutable",
+          "Netlify-CDN-Cache-Control": "public, max-age=31536000, immutable",
           "Content-Length": imageBuffer.length.toString(),
         },
         body: imageBuffer.toString('base64'),

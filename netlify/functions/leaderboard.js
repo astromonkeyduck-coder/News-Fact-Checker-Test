@@ -74,7 +74,11 @@ exports.handler = async (event, context) => {
 
       return {
         statusCode: 200,
-        headers,
+        headers: {
+          ...headers,
+          "Cache-Control": "public, max-age=60, stale-while-revalidate=120",
+          "Netlify-CDN-Cache-Control": "public, max-age=60, stale-while-revalidate=120",
+        },
         body: JSON.stringify({ scores }),
       };
     }

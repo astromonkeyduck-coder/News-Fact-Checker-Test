@@ -22,7 +22,7 @@ const ENHANCED_CACHE_VERSION = '5'; // Increment when sort/display logic changes
 const FALLBACK_POSTS = [
   {
     id: 'fallback-1',
-    text: 'Posts will appear here once they\'re added. Import via the Admin Posts Manager or run "netlify dev" locally.',
+    text: 'Check back again later.',
     title: 'Posts loading',
     datePosted: new Date().toISOString(),
     createdAt: new Date().toISOString(),
@@ -1431,12 +1431,11 @@ function renderEnhancedFeed() {
 
   if (sorted.length === 0) {
     // Show clear empty state with import instructions for admins
-    const adminUrl = `${window.location.origin}/admin-posts-manager.html`;
     container.innerHTML = `
       <div class="feed-empty-state" style="grid-column: 1 / -1; padding: 3rem 2rem; text-align: center; background: rgba(13, 31, 58, 0.4); border-radius: 16px; border: 1px solid rgba(74, 158, 255, 0.15); color: rgba(255,255,255,0.9);">
         <p style="font-size: 1.125rem; margin: 0 0 0.5rem 0; font-weight: 600;">No posts yet</p>
-        <p style="font-size: 0.9375rem; margin: 0 0 1rem 0; color: rgba(255,255,255,0.7);">Import your CSV via the <a href="${adminUrl}" style="color: #4A90E2; text-decoration: underline;">Admin Posts Manager</a> to add breaking news.</p>
-        <p style="font-size: 0.875rem; margin: 0; color: rgba(255,255,255,0.5);">Check back soon for updates.</p>
+        <p style="font-size: 0.9375rem; margin: 0 0 1rem 0; color: rgba(255,255,255,0.7);">More breaking news coming soon.</p>
+        <p style="font-size: 0.875rem; margin: 0; color: rgba(255,255,255,0.5);">Check back for updates.</p>
       </div>
     `;
     return;

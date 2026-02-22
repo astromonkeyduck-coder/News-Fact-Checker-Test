@@ -735,7 +735,11 @@ exports.handler = async (event, context) => {
     
     return {
       statusCode: 200,
-      headers,
+      headers: {
+        ...headers,
+        "Cache-Control": "public, max-age=86400, immutable",
+        "Netlify-CDN-Cache-Control": "public, max-age=86400, immutable",
+      },
       body: JSON.stringify({
         success: true,
         url: gifUrl,
