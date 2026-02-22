@@ -2319,7 +2319,7 @@ class BreakingNewsGame {
         
         // Sync music state periodically and on events
         syncMusicState();
-        setInterval(syncMusicState, 2000); // Check every 2 seconds
+        setInterval(syncMusicState, 5000); // Check every 5 seconds (was 2s - reduced for performance)
         
         // Listen for music state changes on global audio elements
         ['play', 'pause', 'ended'].forEach(event => {
@@ -5838,12 +5838,12 @@ function initDevToolsSurprise() {
         lastHeight = currentHeight;
     }
     
-    // Start polling after page loads (every 100ms for detection)
+    // Poll infrequently to avoid performance impact (was 100ms - caused lag/crashes)
     setTimeout(() => {
         if (pageLoaded) {
-            setInterval(checkDevTools, 100);
+            setInterval(checkDevTools, 5000); // Every 5 seconds
         }
-    }, 1000); // Wait 1 second after page load
+    }, 3000); // Wait 3 seconds after page load
     
     // Also check on resize (but only after page loaded)
     window.addEventListener('resize', () => {
@@ -5869,13 +5869,20 @@ function initDevToolsSurprise() {
         }
     }
     
-    // Check console after page loads (wait a bit to avoid false positives)
+    // Check console infrequently to avoid performance impact (was 200ms - caused lag)
+    let consoleCheckCount = 0;
+    const maxConsoleChecks = 12; // Stop after 12 checks (~1 min)
+    function detectConsoleThrottled() {
+        if (consoleDetected || surpriseShown || consoleCheckCount >= maxConsoleChecks) return;
+        consoleCheckCount++;
+        detectConsole();
+    }
     setTimeout(() => {
         if (pageLoaded) {
-            detectConsole();
-            setInterval(detectConsole, 200);
+            detectConsoleThrottled();
+            setInterval(detectConsoleThrottled, 5000); // Every 5 seconds
         }
-    }, 2000); // Wait 2 seconds after page load
+    }, 5000); // Wait 5 seconds after page load
     
     function showDevToolsSurprise() {
         if (surpriseShown) return;

@@ -1453,6 +1453,11 @@ class CiaMissionGlobe {
 
   animate() {
     if (!this.globeInstance) return;
+    // Pause animation when tab is hidden to save CPU/battery
+    if (typeof document.hidden !== 'undefined' && document.hidden) {
+      this.animationFrameId = requestAnimationFrame(() => this.animate());
+      return;
+    }
 
     const isMobile = this.isMobile();
     
