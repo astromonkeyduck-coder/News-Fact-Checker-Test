@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Page Not Found - Noteworthy News</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800;900&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
     <!-- Favicon and Theme -->
     <link rel="icon" type="image/png" href="/IMG_5794.PNG" sizes="32x32">
     <link rel="icon" type="image/png" href="/IMG_5794.PNG" sizes="192x192">
@@ -18,275 +20,553 @@
             padding: 0;
             box-sizing: border-box;
         }
-        
-        /* Ensure background covers entire document and prevents white overscroll */
+
         html {
             background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%) !important;
             min-height: 100vh;
             overflow-x: hidden;
             overscroll-behavior: none !important;
-            overscroll-behavior-x: none !important;
-            overscroll-behavior-y: none !important;
             -webkit-overflow-scrolling: touch;
         }
-        
+
         body {
             font-family: 'Inter', sans-serif;
             background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%);
             color: white;
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             text-align: center;
             padding: 20px;
+            position: relative;
         }
-        
+
+        /* Particle canvas - full viewport overlay */
+        #particle-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Noise overlay for newspaper feel */
+        .noise-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+        }
+
+        /* News ticker */
+        .ticker-wrap {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.4);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+            z-index: 10;
+            padding: 8px 0;
+        }
+
+        .ticker {
+            display: inline-flex;
+            white-space: nowrap;
+            animation: ticker-scroll 25s linear infinite;
+        }
+
+        .ticker span {
+            font-family: 'Sora', 'Inter', monospace;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-right: 3rem;
+            color: rgba(255, 255, 255, 0.9);
+            letter-spacing: 0.05em;
+        }
+
+        @keyframes ticker-scroll {
+            from { transform: translateX(0); }
+            to { transform: translateX(-50%); }
+        }
+
+        /* Main content - above overlay */
+        .page-content {
+            position: relative;
+            z-index: 5;
+            width: 100%;
+            max-width: 640px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        /* Glitch 404 */
+        .glitch-container {
+            position: relative;
+            margin: 0.5rem 0;
+        }
+
+        .glitch-404 {
+            font-family: 'Sora', sans-serif;
+            font-size: clamp(5rem, 15vw, 8rem);
+            font-weight: 900;
+            margin: 0;
+            background: linear-gradient(135deg, #ffffff 0%, #4A90E2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            position: relative;
+            animation: glitch 4s ease-in-out infinite;
+        }
+
+        .glitch-404::before,
+        .glitch-404::after {
+            content: '404';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #ffffff 0%, #4A90E2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .glitch-404::before {
+            animation: glitch-before 3s ease-in-out infinite;
+            text-shadow: 2px 0 #ff0040;
+            clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%);
+        }
+
+        .glitch-404::after {
+            animation: glitch-after 2.5s ease-in-out infinite;
+            text-shadow: -2px 0 #00fff2;
+            clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%);
+        }
+
+        .glitch-container:hover .glitch-404 {
+            animation: glitch 0.5s ease-in-out infinite;
+        }
+
+        .glitch-container:hover .glitch-404::before {
+            animation: glitch-before 0.3s ease-in-out infinite;
+        }
+
+        .glitch-container:hover .glitch-404::after {
+            animation: glitch-after 0.25s ease-in-out infinite;
+        }
+
+        @keyframes glitch {
+            0%, 90%, 100% { transform: translate(0); }
+            92% { transform: translate(-3px, 2px); }
+            94% { transform: translate(3px, -2px); }
+            96% { transform: translate(-2px, -2px); }
+            98% { transform: translate(2px, 2px); }
+        }
+
+        @keyframes glitch-before {
+            0%, 90%, 100% { transform: translate(0); opacity: 0.8; }
+            92% { transform: translate(-4px, 0); opacity: 1; }
+            94% { transform: translate(4px, 0); opacity: 1; }
+            96% { transform: translate(-2px, 0); opacity: 1; }
+            98% { transform: translate(2px, 0); opacity: 1; }
+        }
+
+        @keyframes glitch-after {
+            0%, 90%, 100% { transform: translate(0); opacity: 0.8; }
+            92% { transform: translate(4px, 0); opacity: 1; }
+            94% { transform: translate(-4px, 0); opacity: 1; }
+            96% { transform: translate(2px, 0); opacity: 1; }
+            98% { transform: translate(-2px, 0); opacity: 1; }
+        }
+
+        /* Reduced motion: disable glitch */
+        @media (prefers-reduced-motion: reduce) {
+            .glitch-404,
+            .glitch-404::before,
+            .glitch-404::after {
+                animation: none !important;
+            }
+            .glitch-container:hover .glitch-404,
+            .glitch-container:hover .glitch-404::before,
+            .glitch-container:hover .glitch-404::after {
+                animation: none !important;
+            }
+        }
+
+        /* Newspaper card */
         .error-container {
-            max-width: 600px;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 60px 40px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            max-width: 560px;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 16px;
+            padding: 0 0 2.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.35);
+            overflow: hidden;
         }
-        
+
+        .breaking-banner {
+            background: linear-gradient(90deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            font-family: 'Sora', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 800;
+            letter-spacing: 0.3em;
+            padding: 0.5rem 1rem;
+            text-align: center;
+        }
+
+        .newspaper-content {
+            padding: 2rem 2rem 1.5rem;
+        }
+
+        .masthead {
+            font-family: 'Sora', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 0.2em;
+            margin-bottom: 0.5rem;
+        }
+
+        .headline {
+            font-family: 'Sora', sans-serif;
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 1rem;
+            line-height: 1.2;
+        }
+
+        .dateline {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 1rem;
+            font-style: italic;
+        }
+
+        .news-copy {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.85);
+            line-height: 1.7;
+            margin-bottom: 2rem;
+        }
+
         .logo {
-            width: 120px;
-            height: 120px;
-            margin: 0 auto 30px;
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 1.5rem;
             border-radius: 50%;
             overflow: hidden;
-            position: relative;
-            animation: logoBounce 2s ease-in-out infinite;
+            animation: logoFloat 4s ease-in-out infinite;
         }
-        
+
         .logo a {
             display: block;
             width: 100%;
             height: 100%;
             text-decoration: none;
         }
-        
+
         .logo img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
-        
-        @keyframes logoBounce {
-            0%, 100% { transform: translateY(0px); }
+
+        @keyframes logoFloat {
+            0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-10px); }
         }
-        
-        .sorry-text {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: #e74c3c;
-            margin-bottom: 20px;
-            animation: sadPulse 3s ease-in-out infinite;
-            text-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
-        }
-        
-        @keyframes sadPulse {
-            0%, 100% { 
-                transform: scale(1);
-                opacity: 1;
-            }
-            50% { 
-                transform: scale(1.1);
-                opacity: 0.8;
+
+        @media (prefers-reduced-motion: reduce) {
+            .logo {
+                animation: none;
             }
         }
-        
-        h1 {
-            font-size: 4rem;
-            font-weight: 900;
-            margin-bottom: 20px;
-            background: linear-gradient(135deg, #ffffff 0%, #4A90E2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        h2 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 30px;
-            color: #cccccc;
-        }
-        
-        p {
-            font-size: 1.1rem;
-            margin-bottom: 40px;
-            color: #aaaaaa;
-            line-height: 1.6;
-        }
-        
+
         .buttons {
             display: flex;
-            gap: 20px;
+            gap: 1rem;
             justify-content: center;
             flex-wrap: wrap;
         }
-        
+
         .btn {
-            padding: 15px 30px;
+            padding: 14px 28px;
             background: linear-gradient(135deg, #4A90E2 0%, #2A60B0 100%);
-            color: white;
+            color: white !important;
             text-decoration: none;
             border-radius: 50px;
             font-weight: 600;
+            font-size: 0.95rem;
             transition: all 0.3s ease;
             border: 2px solid transparent;
         }
-        
+
         .btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(74, 144, 226, 0.3);
+            box-shadow: 0 10px 25px rgba(74, 144, 226, 0.35);
             border-color: rgba(255, 255, 255, 0.3);
         }
-        
+
+        .btn:focus-visible {
+            outline: 2px solid #4A90E2;
+            outline-offset: 2px;
+        }
+
         .btn-secondary {
             background: transparent;
-            border: 2px solid rgba(255, 255, 255, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.35);
         }
-        
+
         .btn-secondary:hover {
             background: rgba(255, 255, 255, 0.1);
         }
-        
+
+        @media (prefers-reduced-motion: reduce) {
+            .btn:hover {
+                transform: none;
+            }
+        }
+
+        /* Ticker reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            .ticker {
+                animation: none;
+            }
+        }
+
         @media (max-width: 600px) {
             .error-container {
-                padding: 40px 20px;
+                padding-bottom: 2rem;
             }
-            
-            h1 {
-                font-size: 3rem;
+
+            .newspaper-content {
+                padding: 1.5rem 1.25rem 1rem;
             }
-            
+
+            .headline {
+                font-size: 1.4rem;
+            }
+
+            .glitch-404 {
+                font-size: 4.5rem;
+            }
+
             .buttons {
                 flex-direction: column;
                 align-items: center;
             }
-            
+
             .btn {
                 width: 100%;
-                max-width: 300px;
+                max-width: 280px;
+            }
+
+            .ticker span {
+                font-size: 0.75rem;
             }
         }
     </style>
 </head>
 <body>
-            <div class="error-container">
-            <div class="logo">
-                <a href="/" aria-label="Go to Noteworthy News homepage">
-                    <img src="/IMG_5992.PNG" alt="Noteworthy News Logo" loading="lazy">
-                </a>
-            </div>
-            <div class="sorry-text">Sorry!</div>
-            <h1>404</h1>
-            <h2>Page Not Found</h2>
-            <p>The page you're looking for doesn't exist. It might have been moved, deleted, or you entered the wrong URL.</p>
-        <div class="buttons">
-                            <a href="/" class="btn">Go Home</a>
-                            <a href="/game.html" class="btn btn-secondary">Play the Game</a>
+    <!-- Particle canvas -->
+    <canvas id="particle-canvas" aria-hidden="true"></canvas>
+    <div class="noise-overlay" aria-hidden="true"></div>
+
+    <!-- News ticker -->
+    <div class="ticker-wrap" role="marquee" aria-live="polite">
+        <div class="ticker">
+            <span>404</span>
+            <span>Page not found</span>
+            <span>404</span>
+            <span>Lost in the newsroom</span>
+            <span>404</span>
+            <span>Story missing</span>
+            <span>404</span>
+            <span>Page not found</span>
+            <span>404</span>
+            <span>Lost in the newsroom</span>
+            <span>404</span>
+            <span>Story missing</span>
         </div>
     </div>
-    
+
+    <main class="page-content">
+        <div class="glitch-container">
+            <h1 class="glitch-404">404</h1>
+        </div>
+
+        <div class="error-container">
+            <div class="breaking-banner">BREAKING</div>
+            <div class="newspaper-content">
+                <div class="logo">
+                    <a href="/" aria-label="Go to Noteworthy News homepage">
+                        <img src="/IMG_5992.PNG" alt="Noteworthy News Logo" loading="lazy">
+                    </a>
+                </div>
+                <div class="masthead">NOTEWORTHY NEWS</div>
+                <h2 class="headline">Page Not Found</h2>
+                <div class="dateline">Dateline: Somewhere on the internet</div>
+                <p class="news-copy">Sources say this URL has gone missing. No further details at this time. The page you're looking for doesn't exist—it might have been moved, deleted, or you may have entered the wrong address.</p>
+                <div class="buttons">
+                    <a href="/" class="btn">Go Home</a>
+                    <a href="/game.html" class="btn btn-secondary">Fact Checker Game</a>
+                    <a href="/geography-game.html" class="btn btn-secondary">Geography Game</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
     <script>
-        // Sad sound effect for 404 page
+        // Particle system
+        (function() {
+            const canvas = document.getElementById('particle-canvas');
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            let animationId;
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+
+            const particles = [];
+            const particleCount = prefersReducedMotion ? 0 : 60;
+
+            function createParticle() {
+                return {
+                    x: Math.random() * (canvas?.width || 800),
+                    y: Math.random() * (canvas?.height || 600),
+                    vx: (Math.random() - 0.5) * 0.3,
+                    vy: (Math.random() - 0.5) * 0.3,
+                    size: Math.random() * 1.5 + 0.5,
+                    opacity: Math.random() * 0.4 + 0.1
+                };
+            }
+
+            function initParticles() {
+                particles.length = 0;
+                for (let i = 0; i < particleCount; i++) {
+                    particles.push(createParticle());
+                }
+            }
+
+            function animate() {
+                if (!ctx || !canvas || particleCount === 0) return;
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                for (let i = 0; i < particles.length; i++) {
+                    const p = particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+
+                    if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+                    if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity})`;
+                    ctx.fill();
+                }
+
+                animationId = requestAnimationFrame(animate);
+            }
+
+            resize();
+            initParticles();
+            if (particleCount > 0) animate();
+
+            window.addEventListener('resize', () => {
+                resize();
+                initParticles();
+            });
+
+            window.addEventListener('beforeunload', () => {
+                cancelAnimationFrame(animationId);
+            });
+        })();
+
+        // Duplicate ticker content for seamless loop
+        (function() {
+            const ticker = document.querySelector('.ticker');
+            if (ticker) {
+                ticker.innerHTML += ticker.innerHTML;
+            }
+        })();
+
+        // Sad / news alert sound
         function playSadSound() {
             try {
-                // Create Web Audio API context
                 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                
-                // Resume audio context if it's suspended (needed for autoplay policies)
                 if (audioContext.state === 'suspended') {
-                    audioContext.resume().then(() => {
-                        playSadTone(audioContext);
-                    });
+                    audioContext.resume().then(() => playSadTone(audioContext));
                 } else {
                     playSadTone(audioContext);
                 }
-            } catch (error) {
-                console.log('Sad sound error:', error);
+            } catch (e) {
+                console.log('Sound error:', e);
             }
         }
-        
-        function playSadTone(audioContext) {
-            // Create oscillator for the sad tone
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            
-            // Configure sad sound - descending minor third
-            const duration = 1.2; // Longer, more melancholic
-            const volume = 0.6; // Moderate volume
-            
-            // Start with a lower frequency (minor key feel)
-            oscillator.type = 'sine';
-            
-            // Create a sad descending melody (minor third down)
-            const startFreq = 330; // E4 (sad starting note)
-            const endFreq = 262; // C4 (descending, melancholic)
-            
-            // Smooth frequency descent
-            oscillator.frequency.setValueAtTime(startFreq, audioContext.currentTime);
-            oscillator.frequency.exponentialRampToValueAtTime(endFreq, audioContext.currentTime + duration);
-            
-            // Slow, sad volume envelope - gradual fade out
-            gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-            gainNode.gain.linearRampToValueAtTime(volume, audioContext.currentTime + 0.1); // Slow attack
-            gainNode.gain.linearRampToValueAtTime(volume * 0.7, audioContext.currentTime + duration * 0.5); // Slight decay
-            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration); // Long fade out
-            
-            // Connect the audio chain
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            // Start the oscillator
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + duration);
+
+        function playSadTone(ctx) {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            const duration = 1.2;
+            const vol = 0.5;
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(330, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(262, ctx.currentTime + duration);
+            gain.gain.setValueAtTime(0, ctx.currentTime);
+            gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + 0.1);
+            gain.gain.linearRampToValueAtTime(vol * 0.7, ctx.currentTime + duration * 0.5);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + duration);
         }
-        
-        // Play sad sound when page loads
-        window.addEventListener('load', function() {
-            // Small delay to ensure page is visible
-            setTimeout(() => {
-                playSadSound();
-            }, 300);
-        });
-        
-        // Also play on user interaction if autoplay was blocked
-        document.addEventListener('click', function playOnClick() {
+
+        window.addEventListener('load', () => setTimeout(playSadSound, 300));
+        document.addEventListener('click', function once() {
             playSadSound();
-            document.removeEventListener('click', playOnClick);
+            document.removeEventListener('click', once);
         }, { once: true });
     </script>
-    
+
     <!-- Background Music - Shared across all pages -->
     <audio id="backgroundMusic" preload="metadata">
         <source src="/TheMoneyMaker 🤑.mp3" type="audio/mpeg">
         Your browser does not support the audio element.
     </audio>
-    
-    <!-- Second track (plays after first) -->
     <audio id="backgroundMusicSecond" preload="metadata">
         <source src="/YEAHHHHHH.mp3" type="audio/mpeg">
         Your browser does not support the audio element.
     </audio>
-    
-    <!-- Third track (loops after second) -->
     <audio id="backgroundMusicLoop" preload="metadata" loop>
         <source src="/Audiolandingpage.m4a" type="audio/mp4">
         Your browser does not support the audio element.
     </audio>
-    
-    <!-- Shared Music Manager Script -->
     <script src="/music-system.js"></script>
-    
-    <!-- Cookie Consent Banner -->
     <script src="/src/components/cookie-banner.js"></script>
 </body>
 </html>

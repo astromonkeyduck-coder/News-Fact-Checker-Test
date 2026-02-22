@@ -32,12 +32,18 @@
     <meta name="twitter:site" content="@NoteworthyNews">
     <meta name="twitter:creator" content="@NoteworthyNews">
     
+    <!-- Shared design tokens and theme -->
+    <link rel="stylesheet" href="styles/responsive.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <script src="christmas-config.js"></script>
+    <script>if (typeof CHRISTMAS_CONFIG !== 'undefined') { window.CHRISTMAS_CONFIG = CHRISTMAS_CONFIG; }</script>
+    <script src="christmas-theme-loader.js"></script>
     
     <!-- Legal Pages Styles -->
     <link rel="stylesheet" href="styles/legal-pages.css">
+    <link rel="stylesheet" href="styles/legal-resource-advanced.css">
     <link rel="stylesheet" href="styles/interactive-components.css">
     
     <!-- Favicon and Theme -->
@@ -576,11 +582,12 @@
         }
     </style>
 </head>
-<body>
+<body data-page-accent="privacy">
     <!-- Background Effects -->
     <div class="particles" id="particles"></div>
     <div class="matrix-rain" id="matrixRain"></div>
-    <div class="reading-progress" id="readingProgress"></div>
+    <div class="crt-overlay" aria-hidden="true"></div>
+    <div class="reading-progress" id="readingProgress" role="progressbar"></div>
     
     <!-- Western Effects -->
     <div class="western-stars">
@@ -597,7 +604,7 @@
     <div class="leather-texture"></div>
     
     <div class="container">
-        <div class="header">
+        <div class="header reveal">
             <div class="logo">
                 <a href="index.html" aria-label="Go to Noteworthy News homepage">
                     <img src="IMG_5794.PNG" alt="Noteworthy News Logo" style="height: 32px; width: 32px; max-width: 32px; max-height: 32px; display: block;">
@@ -609,7 +616,7 @@
         </div>
         
         <div class="content">
-            <p class="fade-in">At Noteworthy News, we respect your privacy and are committed to protecting your personal information. This Privacy Policy explains how we collect, use, and safeguard your information when you visit our website.</p>
+            <p class="fade-in reveal">At Noteworthy News, we respect your privacy and are committed to protecting your personal information. This Privacy Policy explains how we collect, use, and safeguard your information when you visit our website.</p>
             
             <!-- Table of Contents -->
             <div class="table-of-contents fade-in" id="table-of-contents" style="margin: 40px 0;"></div>
@@ -922,6 +929,9 @@
             }
         })();
     </script>
+    
+    <!-- Legal/Resource Advanced Enhancement -->
+    <script src="src/js/legal-resource-enhance.js"></script>
     
     <!-- Resource Page Utilities -->
     <script src="js/resource-page-utils.js"></script>

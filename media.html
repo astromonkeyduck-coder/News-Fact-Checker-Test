@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0a0a0f">
+    <title>Media - Post to Noteworthy News</title>
+    <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="32x32">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --bg: #0a0a0f;
+            --bg-card: #141419;
+            --border: rgba(255,255,255,0.12);
+            --text: #fff;
+            --text-dim: rgba(255,255,255,0.6);
+            --accent: #D4A017;
+            --accent-hover: #F4C430;
+            --success: #4caf50;
+            --error: #f44336;
+            --touch: 48px;
+        }
+        
+        html, body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            min-height: 100dvh;
+            line-height: 1.5;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .page {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 16px;
+            padding-bottom: calc(16px + env(safe-area-inset-bottom));
+        }
+        
+        .header {
+            text-align: center;
+            padding: 24px 0 20px;
+        }
+        
+        .header h1 {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .header p {
+            font-size: 14px;
+            color: var(--text-dim);
+        }
+        
+        .step {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+        
+        .step-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+        
+        .step-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        
+        input[type="url"],
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 16px;
+            font-family: inherit;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        
+        input::placeholder, textarea::placeholder {
+            color: var(--text-dim);
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: var(--touch);
+            padding: 0 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.2s, transform 0.1s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .btn:active { transform: scale(0.98); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .btn-primary {
+            background: var(--accent);
+            color: #000;
+            width: 100%;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            background: var(--accent-hover);
+        }
+        
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        
+        .btn-secondary:hover:not(:disabled) {
+            background: rgba(255,255,255,0.15);
+        }
+        
+        .btn-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+        }
+        
+        .btn-row .btn { flex: 1; }
+        
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 28px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: rgba(0,0,0,0.2);
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: var(--accent);
+            background: rgba(212,160,23,0.08);
+        }
+        
+        .upload-zone-icon {
+            font-size: 32px;
+            opacity: 0.7;
+        }
+        
+        .upload-zone-text {
+            font-size: 15px;
+            color: var(--text);
+        }
+        
+        .upload-zone-hint {
+            font-size: 13px;
+            color: var(--text-dim);
+        }
+        
+        input[type="file"] { display: none; }
+        
+        .media-preview {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+            margin-top: 12px;
+        }
+        
+        .media-item {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            aspect-ratio: 1;
+            background: rgba(0,0,0,0.3);
+        }
+        
+        .media-item img, .media-item video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        
+        .media-remove {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(244,67,54,0.95);
+            color: white;
+            border: none;
+            font-size: 18px;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .media-url-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        
+        .media-url-row input { flex: 1; }
+        
+        .toast {
+            position: fixed;
+            bottom: calc(24px + env(safe-area-inset-bottom));
+            left: 16px;
+            right: 16px;
+            max-width: 448px;
+            margin: 0 auto;
+            padding: 14px 18px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 9999;
+            animation: toastIn 0.3s ease;
+        }
+        
+        .toast.success { background: rgba(76,175,80,0.95); color: #fff; }
+        .toast.error { background: rgba(244,67,54,0.95); color: #fff; }
+        .toast.info { background: rgba(33,150,243,0.95); color: #fff; }
+        
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .preview-card {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 14px;
+            margin-top: 12px;
+            font-size: 14px;
+            color: var(--text-dim);
+        }
+        
+        .preview-card strong { color: var(--text); }
+        
+        .collapsible-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .collapsible-header::after {
+            content: '▼';
+            font-size: 12px;
+            color: var(--text-dim);
+            transition: transform 0.2s;
+        }
+        
+        .collapsible-header.collapsed::after {
+            transform: rotate(-90deg);
+        }
+        
+        .collapsible-content { overflow: hidden; }
+        
+        .collapsible-content.collapsed { display: none; }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(0,0,0,0.3);
+            border-top-color: #000;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .login-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            min-height: 100dvh;
+            padding: 20px;
+        }
+        
+        .login-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 28px;
+            width: 100%;
+            max-width: 340px;
+        }
+        
+        .login-box h2 {
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+        
+        .login-box p {
+            font-size: 13px;
+            color: var(--text-dim);
+            margin-bottom: 20px;
+        }
+        
+        .login-box input[type="password"] {
+            margin-bottom: 12px;
+        }
+        
+        .login-error {
+            font-size: 13px;
+            color: var(--error);
+            margin-top: 12px;
+            display: none;
+        }
+        
+        #mainContent { display: none; }
+        #mainContent.authenticated { display: block; }
+        
+        @media (min-width: 600px) {
+            .page { padding: 24px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen (same password as admin newsletter) -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-box">
+            <h2>Media Access</h2>
+            <p>Enter the same password as the newsletter admin</p>
+            <form onsubmit="event.preventDefault(); checkPassword(); return false;">
+                <input type="password" id="adminPassword" placeholder="Newsletter Key" autocomplete="new-password" onkeypress="if(event.key==='Enter'){event.preventDefault();checkPassword();}">
+            </form>
+            <button type="button" class="btn btn-primary" id="authBtn" onclick="checkPassword()" style="width:100%;">Authenticate</button>
+            <p id="loginError" class="login-error"></p>
+        </div>
+    </div>
+    
+    <div id="mainContent" class="page">
+        <header class="header">
+            <h1>Post to Noteworthy News</h1>
+            <p>Paste X link → Add media → Update</p>
+        </header>
+        
+        <!-- Step 1: X Post Link -->
+        <section class="step">
+            <div class="step-label">Step 1</div>
+            <div class="step-title">Paste X post link</div>
+            <input type="url" id="xLink" placeholder="https://x.com/newsnoteworthy/status/..." inputmode="url" autocomplete="off">
+            <div class="btn-row">
+                <button type="button" class="btn btn-primary" id="fetchBtn" onclick="fetchPost()">
+                    Fetch Post
+                </button>
+            </div>
+        </section>
+        
+        <!-- Step 2: Post details (auto-filled) -->
+        <section class="step">
+            <div class="step-label">Step 2</div>
+            <div class="step-title">Post details</div>
+            <textarea id="headline" placeholder="Headline / story (from fetch or type manually)" rows="3"></textarea>
+            <input type="datetime-local" id="postDate" style="margin-top: 12px;">
+        </section>
+        
+        <!-- Step 3: Add media -->
+        <section class="step">
+            <div class="step-label">Step 3</div>
+            <div class="step-title">Add photos or videos</div>
+            <div class="upload-zone" id="uploadZone" tabindex="0">
+                <span class="upload-zone-icon">📷</span>
+                <span class="upload-zone-text">Tap to pick from camera roll</span>
+                <span class="upload-zone-hint">Or paste a video/image URL below</span>
+            </div>
+            <input type="file" id="mediaFile" accept="image/*,video/*" multiple>
+            <div class="media-url-row">
+                <input type="url" id="mediaUrl" placeholder="Paste image or video URL" inputmode="url">
+                <button type="button" class="btn btn-secondary" onclick="addMediaUrl()">Add</button>
+            </div>
+            <div class="media-preview" id="mediaPreview"></div>
+        </section>
+        
+        <!-- Step 4: Update Post -->
+        <section class="step">
+            <div class="step-label">Step 4</div>
+            <div class="step-title">Publish to website</div>
+            <button type="button" class="btn btn-primary" id="publishBtn" onclick="publishPost()">
+                Update Post
+            </button>
+        </section>
+        
+        <p style="text-align: center; margin-top: 24px;">
+            <a href="admin-posts-manager.html" style="color: var(--text-dim); font-size: 13px;">Advanced: Full Post Manager</a>
+        </p>
+        
+        <!-- Remove post (collapsible) -->
+        <section class="step" style="border-color: rgba(244,67,54,0.4);">
+            <div class="collapsible-header" id="removeHeader" onclick="toggleRemove()">
+                <span style="color: var(--error);">🗑️ Remove a post</span>
+            </div>
+            <div class="collapsible-content collapsed" id="removeContent">
+                <input type="text" id="deletePostId" placeholder="Post ID to delete" style="margin-top: 12px;">
+                <button type="button" class="btn btn-secondary" style="margin-top: 12px; background: var(--error); color: white; border: none;" onclick="deletePost()">Delete Post</button>
+            </div>
+        </section>
+    </div>
+    
+    <div id="toast" class="toast" style="display: none;"></div>
+    
+    <script>
+        const API = window.location.origin;
+        
+        // Auth: same password as admin newsletter (uses adminNewsletterToken)
+        const MAX_ATTEMPTS = 5;
+        const LOCKOUT_MS = 15 * 60 * 1000;
+        const ATTEMPT_WINDOW = 5 * 60 * 1000;
+        
+        function getLoginAttempts() {
+            try {
+                const d = JSON.parse(localStorage.getItem('newsletterLoginAttempts') || '{}');
+                return { count: d.count || 0, lockoutUntil: d.lockoutUntil || null, attempts: d.attempts || [] };
+            } catch { return { count: 0, lockoutUntil: null, attempts: [] }; }
+        }
+        
+        function saveLoginAttempt(failed) {
+            const d = getLoginAttempts();
+            const now = Date.now();
+            d.attempts = (d.attempts || []).filter(t => now - t < ATTEMPT_WINDOW);
+            if (failed) {
+                d.attempts.push(now);
+                d.count = d.attempts.length;
+                if (d.count >= MAX_ATTEMPTS) d.lockoutUntil = now + LOCKOUT_MS;
+            } else {
+                d.count = 0;
+                d.attempts = [];
+                d.lockoutUntil = null;
+            }
+            localStorage.setItem('newsletterLoginAttempts', JSON.stringify(d));
+            return d;
+        }
+        
+        function isLockedOut() {
+            const d = getLoginAttempts();
+            if (d.lockoutUntil && Date.now() < d.lockoutUntil)
+                return Math.ceil((d.lockoutUntil - Date.now()) / 60000);
+            return false;
+        }
+        
+        function getAdminToken() {
+            try {
+                const s = sessionStorage.getItem('adminNewsletterToken');
+                if (!s) return null;
+                const d = JSON.parse(s);
+                if (d.expires && Date.now() > d.expires) {
+                    sessionStorage.removeItem('adminNewsletterToken');
+                    return null;
+                }
+                return d.token || s;
+            } catch { return null; }
+        }
+        
+        async function checkPassword() {
+            const inp = document.getElementById('adminPassword');
+            const err = document.getElementById('loginError');
+            const btn = document.getElementById('authBtn');
+            const pwd = inp?.value || '';
+            
+            if (btn) { btn.disabled = true; btn.textContent = 'Authenticating...'; }
+            err.style.display = 'none';
+            
+            const lock = isLockedOut();
+            if (lock) {
+                err.textContent = `Too many attempts. Try again in ${lock} min.`;
+                err.style.display = 'block';
+                inp.disabled = true;
+                if (btn) { btn.disabled = false; btn.textContent = 'Authenticate'; }
+                return;
+            }
+            
+            if (!pwd) {
+                err.textContent = 'Enter password';
+                err.style.display = 'block';
+                if (btn) { btn.disabled = false; btn.textContent = 'Authenticate'; }
+                return;
+            }
+            
+            try {
+                const res = await fetch(`/.netlify/functions/newsletter-templates?token=${encodeURIComponent(pwd)}`, { method: 'GET' });
+                if (res.ok || res.status === 200) {
+                    saveLoginAttempt(false);
+                    sessionStorage.setItem('adminNewsletterToken', JSON.stringify({
+                        token: pwd,
+                        expires: Date.now() + 24 * 60 * 60 * 1000
+                    }));
+                    inp.value = '';
+                    document.getElementById('loginScreen').style.display = 'none';
+                    document.getElementById('mainContent').classList.add('authenticated');
+                } else if (res.status === 401) {
+                    const d = saveLoginAttempt(true);
+                    const left = MAX_ATTEMPTS - d.count;
+                    err.textContent = d.count >= MAX_ATTEMPTS
+                        ? `Locked for ${Math.ceil(LOCKOUT_MS/60000)} minutes.`
+                        : `Wrong password. ${left} attempt${left > 1 ? 's' : ''} left.`;
+                    err.style.display = 'block';
+                    inp.value = '';
+                    if (d.count >= MAX_ATTEMPTS) inp.disabled = true;
+                } else {
+                    const data = await res.json().catch(() => ({}));
+                    if (data.error && (data.error + '').includes('token')) {
+                        saveLoginAttempt(false);
+                        sessionStorage.setItem('adminNewsletterToken', JSON.stringify({
+                            token: pwd,
+                            expires: Date.now() + 24 * 60 * 60 * 1000
+                        }));
+                        inp.value = '';
+                        document.getElementById('loginScreen').style.display = 'none';
+                        document.getElementById('mainContent').classList.add('authenticated');
+                    } else {
+                        saveLoginAttempt(true);
+                        err.textContent = 'Authentication failed.';
+                        err.style.display = 'block';
+                        inp.value = '';
+                    }
+                }
+            } catch (e) {
+                err.textContent = 'Connection error. Try again.';
+                err.style.display = 'block';
+                inp.value = '';
+            }
+            if (btn) { btn.disabled = false; btn.textContent = 'Authenticate'; }
+        }
+        
+        if (getAdminToken()) {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainContent').classList.add('authenticated');
+        }
+        
+        const state = {
+            postId: '',
+            postLink: '',
+            headline: '',
+            postDate: '',
+            mediaUrls: []
+        };
+        
+        // Init date
+        document.getElementById('postDate').value = new Date().toISOString().slice(0, 16);
+        
+        function toast(msg, type = 'info') {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.className = 'toast ' + type;
+            el.style.display = 'block';
+            setTimeout(() => { el.style.display = 'none'; }, 5000);
+        }
+        
+        function toggleRemove() {
+            const content = document.getElementById('removeContent');
+            const header = document.getElementById('removeHeader');
+            content.classList.toggle('collapsed');
+            header.classList.toggle('collapsed', content.classList.contains('collapsed'));
+        }
+        
+        async function fetchPost() {
+            const url = document.getElementById('xLink').value.trim();
+            if (!url) {
+                toast('Paste an X post link first', 'error');
+                return;
+            }
+            
+            const btn = document.getElementById('fetchBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading-spinner"></span>Fetching...';
+            
+            try {
+                const res = await fetch(`${API}/.netlify/functions/fetch-tweets-simple`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tweetUrl: url })
+                });
+                
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || data.message || `HTTP ${res.status}`);
+                
+                const postId = data.id;
+                if (!postId) throw new Error('No post ID returned');
+                
+                await new Promise(r => setTimeout(r, 500));
+                
+                let post = null;
+                try {
+                    const listRes = await fetch(`${API}/.netlify/functions/posts-read?limit=200`);
+                    if (listRes.ok) {
+                        const posts = await listRes.json();
+                        post = Array.isArray(posts) ? posts.find(p => p.id === postId) : null;
+                    }
+                } catch (_) {}
+                
+                if (!post) {
+                    const match = url.match(/status\/(\d+)/);
+                    post = {
+                        id: match ? match[1] : postId,
+                        link: url,
+                        story: 'Post created – add details below',
+                        text: 'Post created – add details below',
+                        datePosted: new Date().toISOString(),
+                        images: [],
+                        videos: []
+                    };
+                }
+                
+                populateForm(post);
+                toast('Post fetched! Add media if needed, then Update.', 'success');
+            } catch (err) {
+                toast('Error: ' + err.message, 'error');
+            }
+            
+            btn.disabled = false;
+            btn.textContent = 'Fetch Post';
+        }
+        
+        function populateForm(post) {
+            state.postId = post.id || '';
+            state.postLink = post.link || post.url || document.getElementById('xLink').value;
+            state.headline = post.story || post.text || '';
+            state.postDate = post.datePosted ? new Date(post.datePosted).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16);
+            
+            document.getElementById('xLink').value = state.postLink;
+            document.getElementById('headline').value = state.headline;
+            document.getElementById('postDate').value = state.postDate;
+            
+            const imgs = post.images || (post.image ? [post.image] : []);
+            const vids = post.videos || (post.video_url ? [post.video_url] : []);
+            state.mediaUrls = [...imgs, ...vids];
+            renderMediaPreview();
+        }
+        
+        function renderMediaPreview() {
+            const grid = document.getElementById('mediaPreview');
+            grid.innerHTML = '';
+            state.mediaUrls.forEach((url, i) => {
+                const item = document.createElement('div');
+                item.className = 'media-item';
+                if (/\.(mp4|webm|mov)(\?|$)/i.test(url)) {
+                    const v = document.createElement('video');
+                    v.src = url;
+                    v.controls = true;
+                    item.appendChild(v);
+                } else {
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.alt = 'Media';
+                    item.appendChild(img);
+                }
+                const rm = document.createElement('button');
+                rm.className = 'media-remove';
+                rm.textContent = '×';
+                rm.onclick = () => { state.mediaUrls.splice(i, 1); renderMediaPreview(); };
+                item.appendChild(rm);
+                grid.appendChild(item);
+            });
+        }
+        
+        const uploadZone = document.getElementById('uploadZone');
+        const mediaFile = document.getElementById('mediaFile');
+        
+        uploadZone.onclick = () => mediaFile.click();
+        uploadZone.ondragover = (e) => { e.preventDefault(); uploadZone.classList.add('dragover'); };
+        uploadZone.ondragleave = () => uploadZone.classList.remove('dragover');
+        uploadZone.ondrop = (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) handleMediaFiles(Array.from(e.dataTransfer.files));
+        };
+        
+        mediaFile.onchange = (e) => {
+            if (e.target.files.length) handleMediaFiles(Array.from(e.target.files));
+            e.target.value = '';
+        };
+        
+        uploadZone.onpaste = (e) => {
+            const items = e.clipboardData?.items;
+            if (!items) return;
+            const files = [];
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                if (item.type.indexOf('image') !== -1 || item.type.indexOf('video') !== -1) {
+                    e.preventDefault();
+                    const blob = item.getAsFile();
+                    if (blob) files.push(new File([blob], 'pasted-' + Date.now() + '.' + (blob.type.split('/')[1] || 'png'), { type: blob.type }));
+                }
+            }
+            if (files.length) handleMediaFiles(files);
+        };
+        
+        function addMediaUrl() {
+            const url = document.getElementById('mediaUrl').value.trim();
+            if (!url) {
+                toast('Enter a URL first', 'error');
+                return;
+            }
+            state.mediaUrls.push(url);
+            document.getElementById('mediaUrl').value = '';
+            renderMediaPreview();
+            toast('URL added');
+        }
+        
+        document.getElementById('mediaUrl').onkeypress = (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); addMediaUrl(); }
+        };
+        
+        async function handleMediaFiles(files) {
+            for (const file of files) {
+                if (file.size > 20 * 1024 * 1024) {
+                    toast(`"${file.name}" too large (max 20MB)`, 'error');
+                    continue;
+                }
+                if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+                    toast(`"${file.name}" not supported`, 'error');
+                    continue;
+                }
+                try {
+                    const base64 = await new Promise((resolve, reject) => {
+                        const r = new FileReader();
+                        r.onload = () => resolve(r.result);
+                        r.onerror = reject;
+                        r.readAsDataURL(file);
+                    });
+                    const res = await fetch(`${API}/.netlify/functions/upload-post-media`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ image: base64, fileName: file.name })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || data.message);
+                    const fullUrl = data.url.startsWith('http') ? data.url : API + data.url;
+                    state.mediaUrls.push(fullUrl);
+                } catch (err) {
+                    toast('Upload failed: ' + err.message, 'error');
+                }
+            }
+            renderMediaPreview();
+        }
+        
+        async function publishPost() {
+            const link = document.getElementById('xLink').value.trim();
+            const headline = document.getElementById('headline').value.trim();
+            const date = document.getElementById('postDate').value;
+            
+            if (!link) {
+                toast('Paste X link and Fetch first', 'error');
+                return;
+            }
+            if (!headline) {
+                toast('Headline is required', 'error');
+                return;
+            }
+            if (!date) {
+                toast('Date is required', 'error');
+                return;
+            }
+            
+            const match = link.match(/status\/(\d+)/);
+            const postId = match ? match[1] : state.postId;
+            if (!postId) {
+                toast('Could not get post ID from link', 'error');
+                return;
+            }
+            
+            const isVideo = (u) => /\.(mp4|webm|mov|m4v)(\?|$)/i.test(u) || (u && (u.includes('youtube.com') || u.includes('youtu.be')));
+            const imageUrls = state.mediaUrls.filter(u => !isVideo(u));
+            const videoUrls = state.mediaUrls.filter(u => isVideo(u));
+            
+            const postData = {
+                postId,
+                datePosted: new Date(date).toISOString(),
+                story: headline,
+                text: headline,
+                link,
+                image: imageUrls[0],
+                images: imageUrls.length ? imageUrls : undefined,
+                video_url: videoUrls[0],
+                videos: videoUrls.length ? videoUrls : undefined
+            };
+            
+            Object.keys(postData).forEach(k => {
+                if (postData[k] === undefined || postData[k] === null || postData[k] === '') delete postData[k];
+            });
+            
+            const btn = document.getElementById('publishBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading-spinner"></span>Publishing...';
+            
+            try {
+                const res = await fetch(`${API}/.netlify/functions/update-post-data`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(postData)
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || data.message || `HTTP ${res.status}`);
+                toast('Post updated! Live on the site.', 'success');
+            } catch (err) {
+                toast('Error: ' + err.message, 'error');
+            }
+            
+            btn.disabled = false;
+            btn.textContent = 'Update Post';
+        }
+        
+        async function deletePost() {
+            const id = document.getElementById('deletePostId').value.trim();
+            if (!id) {
+                toast('Enter post ID to delete', 'error');
+                return;
+            }
+            if (!confirm('Delete post ' + id + '? This cannot be undone.')) return;
+            
+            try {
+                const res = await fetch(`${API}/.netlify/functions/remove-post`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ postId: id })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || data.message);
+                toast('Post deleted', 'success');
+                document.getElementById('deletePostId').value = '';
+            } catch (err) {
+                toast('Error: ' + err.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

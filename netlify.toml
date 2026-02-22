@@ -26,6 +26,12 @@
   to = "/IMG_5794.PNG"
   status = 200
 
+# Category page - /category and /category?country=... -> /category/
+[[redirects]]
+  from = "/category"
+  to = "/category/"
+  status = 301
+
 # KONSCIOUS page redirects (case-insensitive)
 [[redirects]]
   from = "/Koncious"
@@ -73,6 +79,12 @@
 [[redirects]]
   from = "/admin"
   to = "/admin-newsletter.html"
+  status = 200
+  force = false
+
+[[redirects]]
+  from = "/media"
+  to = "/media.html"
   status = 200
   force = false
 

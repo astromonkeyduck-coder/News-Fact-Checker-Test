@@ -1,0 +1,275 @@
+/**
+ * Legal & Resource Pages - Advanced Enhancement Layer
+ * CRT scanlines, vignette, scroll reveal, reading progress, back-to-top
+ * Shared across: privacy, terms, editorial-policy, media-literacy-guide, fact-checking-tips, educational-resources
+ */
+
+/* ==========================================================================
+   CRT Overlay
+   ========================================================================== */
+
+.crt-overlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+}
+
+.crt-overlay::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.03) 2px,
+        rgba(0, 0, 0, 0.03) 4px
+    );
+}
+
+.crt-overlay::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+        ellipse at center,
+        transparent 0%,
+        transparent 60%,
+        rgba(0, 0, 0, 0.4) 100%
+    );
+}
+
+/* ==========================================================================
+   Particles & Matrix Rain (base styles - JS creates content)
+   ========================================================================== */
+
+.particles {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -1;
+    opacity: 0.1;
+}
+
+.particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: rgba(74, 144, 226, 0.6);
+    border-radius: 50%;
+    animation: lrFloat 6s ease-in-out infinite;
+}
+
+@keyframes lrFloat {
+    0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
+    50% { transform: translateY(-20px) rotate(180deg); opacity: 1; }
+}
+
+.matrix-rain {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -1;
+    opacity: 0.04;
+}
+
+.matrix-character {
+    position: absolute;
+    color: rgba(74, 144, 226, 0.3);
+    font-family: monospace;
+    font-size: 14px;
+    animation: lrMatrixFall 3s linear infinite;
+}
+
+@keyframes lrMatrixFall {
+    0% { transform: translateY(-100px); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(100vh); opacity: 0; }
+}
+
+/* ==========================================================================
+   Scroll Reveal
+   ========================================================================== */
+
+.reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.reveal-delay-1 { transition-delay: 0.08s; }
+.reveal-delay-2 { transition-delay: 0.16s; }
+.reveal-delay-3 { transition-delay: 0.24s; }
+.reveal-delay-4 { transition-delay: 0.32s; }
+.reveal-delay-5 { transition-delay: 0.4s; }
+.reveal-delay-6 { transition-delay: 0.48s; }
+
+/* ==========================================================================
+   Reading Progress Bar
+   ========================================================================== */
+
+.reading-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent-cyan, #06B6D4) 0%, var(--accent-blue, #3B82F6) 100%);
+    z-index: 10001;
+    transform-origin: left;
+    transition: transform 0.1s ease-out;
+}
+
+/* ==========================================================================
+   Back to Top Button
+   ========================================================================== */
+
+.back-to-top {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-cyan, #06B6D4) 0%, var(--accent-blue, #3B82F6) 100%);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: opacity 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+    z-index: 9998;
+    box-shadow: 0 4px 20px rgba(6, 182, 212, 0.3);
+}
+
+.back-to-top.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.back-to-top:hover {
+    box-shadow: 0 6px 28px rgba(6, 182, 212, 0.5);
+    transform: translateY(-2px);
+}
+
+.back-to-top svg,
+.scroll-to-top svg {
+    width: 24px;
+    height: 24px;
+}
+
+/* Legacy scroll-to-top (privacy etc) - same styling */
+.scroll-to-top {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-cyan, #06B6D4) 0%, var(--accent-blue, #3B82F6) 100%);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: opacity 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+    z-index: 9998;
+    box-shadow: 0 4px 20px rgba(6, 182, 212, 0.3);
+}
+
+.scroll-to-top.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.scroll-to-top:hover {
+    box-shadow: 0 6px 28px rgba(6, 182, 212, 0.5);
+    transform: translateY(-2px);
+}
+
+/* ==========================================================================
+   Animated Section Borders (legal-section, resource-section)
+   ========================================================================== */
+
+.legal-section.reveal,
+.resource-section.reveal,
+.resource-card.reveal {
+    position: relative;
+}
+
+.legal-section::before,
+.resource-section::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, var(--accent-cyan, #06B6D4), var(--accent-blue, #3B82F6), var(--accent-cyan, #06B6D4));
+    background-size: 200% 200%;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    animation: lrBorderShift 4s ease-in-out infinite;
+}
+
+.legal-section:hover::before,
+.resource-section:hover::before {
+    opacity: 0.6;
+}
+
+@keyframes lrBorderShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+/* Section hover glow */
+.legal-section:hover,
+.resource-section:hover,
+.resource-card:hover {
+    box-shadow: 0 8px 40px rgba(6, 182, 212, 0.15);
+}
+
+/* ==========================================================================
+   Page-specific accent overrides (optional - set on body)
+   ========================================================================== */
+
+body[data-page-accent="privacy"] { --page-accent: #4A90E2; }
+body[data-page-accent="terms"] { --page-accent: #2ECC71; }
+body[data-page-accent="editorial"] { --page-accent: #9B59B6; }
+body[data-page-accent="media-literacy"] { --page-accent: #06B6D4; }
+body[data-page-accent="fact-checking"] { --page-accent: #F59E0B; }
+body[data-page-accent="educational"] { --page-accent: #4FACFE; }
+
+/* Active TOC link */
+.legal-quick-ref a.active,
+.resource-nav a.active {
+    color: var(--color-primary, #4A90E2) !important;
+    background: rgba(74, 144, 226, 0.15) !important;
+    font-weight: 600;
+}

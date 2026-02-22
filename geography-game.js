@@ -4707,12 +4707,9 @@ class GeographyGame {
             confettiContainer.id = 'geoConfetti';
             confettiContainer.style.cssText = `
                 position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
+                inset: 0;
                 pointer-events: none;
-                z-index: 9999;
+                z-index: 10001;
                 overflow: hidden;
             `;
             document.body.appendChild(confettiContainer);
@@ -4721,28 +4718,28 @@ class GeographyGame {
         // Confetti colors
         const colors = ['#ffe66d', '#4ecdc4', '#ff6b6b', '#95e1d3', '#aa96da', '#fcbad3', '#f38181', '#a8e6cf', '#2ecc71', '#3498db', '#FFD700', '#FFC107'];
         
-        // Function to create confetti pieces
+        // Function to create confetti pieces - use left animation for drift (more reliable than var in keyframes)
         const createConfettiPiece = () => {
             const confetti = document.createElement('div');
+            const startLeft = Math.random() * 100;
+            const drift = (Math.random() - 0.5) * 150;
+            const duration = Math.random() * 2 + 2;
+            const delay = Math.random() * 0.5;
+            
             confetti.style.cssText = `
                 position: absolute;
                 width: ${Math.random() * 8 + 6}px;
                 height: ${Math.random() * 8 + 6}px;
                 background: ${colors[Math.floor(Math.random() * colors.length)]};
-                left: ${Math.random() * 100}%;
+                left: ${startLeft}%;
                 top: -10px;
                 opacity: 1;
                 border-radius: ${Math.random() > 0.5 ? '50%' : '0%'};
                 box-shadow: 0 0 4px rgba(255, 255, 255, 0.5);
             `;
             
-            // Random animation duration and delay
-            const duration = Math.random() * 2 + 2;
-            const delay = Math.random() * 0.5;
-            const horizontalDrift = (Math.random() - 0.5) * 200;
-            
             confetti.style.animation = `geoConfettiFall ${duration}s linear ${delay}s forwards`;
-            confetti.style.setProperty('--drift', horizontalDrift + 'px');
+            confetti.style.setProperty('--drift', drift + 'px');
             
             confettiContainer.appendChild(confetti);
             
@@ -4754,7 +4751,7 @@ class GeographyGame {
             }, (duration + delay) * 1000);
         };
         
-        // Add CSS animation if not already added
+        // Add CSS animation - uses translateX(var(--drift)) for horizontal drift (constant per piece)
         if (!document.getElementById('geoConfettiStyle')) {
             const style = document.createElement('style');
             style.id = 'geoConfettiStyle';
@@ -5043,7 +5040,7 @@ class GeographyGame {
         // Show game complete screen
         const gameOver = document.getElementById('gameOverGeo');
         if (gameOver) {
-            gameOver.style.display = 'block';
+            gameOver.style.display = 'flex';
             
             // Update celebration for perfect game
             const titleEl = gameOver.querySelector('.game-over-title');

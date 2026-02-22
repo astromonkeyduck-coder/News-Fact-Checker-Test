@@ -673,7 +673,7 @@
                 <h2>📝 Contact Form</h2>
                 <p>Fill out the form below and we'll get back to you as soon as possible. All fields marked with an asterisk (*) are required.</p>
                 
-                <form id="contactForm" action="/.netlify/functions/send-email" method="POST" style="margin-top: 20px;">
+                <form id="contactForm" action="/.netlify/functions/send-contact-form" method="POST" style="margin-top: 20px;">
                     <div class="form-group">
                         <label for="contactName">Your Name *</label>
                         <input type="text" id="contactName" name="name" required placeholder="Your name">
@@ -968,7 +968,7 @@
                 }
                 
                 try {
-                    const response = await fetch('/.netlify/functions/send-email', {
+                    const response = await fetch('/.netlify/functions/send-contact-form', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(jsonData)
@@ -1018,9 +1018,10 @@
         });
     </script>
     
-    <!-- Background Music - Shared across all pages -->
+    <!-- Background Music - Shared across all pages (matches index.html) -->
     <audio id="backgroundMusic" preload="metadata">
-        <source src="TheMoneyMaker 🤑.mp3" type="audio/mpeg">
+        <source src="NWaudiongl.m4a" type="audio/mp4">
+        <source src="NWaudiongl.m4a" type="audio/x-m4a">
         Your browser does not support the audio element.
     </audio>
     
@@ -1030,7 +1031,13 @@
         Your browser does not support the audio element.
     </audio>
     
-    <!-- Third track (loops after second) -->
+    <!-- Third track (plays after second) -->
+    <audio id="backgroundMusicThird" preload="metadata">
+        <source src="TheMoneyMaker 🤑.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <!-- Loop track (plays after third) -->
     <audio id="backgroundMusicLoop" preload="metadata" loop>
         <source src="Audiolandingpage.m4a" type="audio/mp4">
         Your browser does not support the audio element.
