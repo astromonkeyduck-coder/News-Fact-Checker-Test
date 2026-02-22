@@ -57,7 +57,23 @@ class CiaMissionGlobe {
     
     this.loadLocationCache();
     
-    this.loadDependencies().then(() => this.init());
+    // Timeout: if globe doesn't load in 15s, hide spinner so page stays usable
+    this.loadTimeout = setTimeout(() => {
+      if (this.rootEl && this.rootEl.classList.contains('is-loading')) {
+        console.warn('[Globe] Load timeout - hiding spinner');
+        this.setLoadingState(false);
+        this.updateLoadingMessage('Globe unavailable - try refreshing');
+      }
+    }, 15000);
+    
+    this.loadDependencies()
+      .then(() => this.init())
+      .then(() => clearTimeout(this.loadTimeout))
+      .catch((err) => {
+        clearTimeout(this.loadTimeout);
+        console.error('[Globe] Init failed:', err);
+        if (this.rootEl) this.setLoadingState(false);
+      });
   }
 
   loadLocationCache() {

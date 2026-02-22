@@ -307,8 +307,10 @@ function openMediaLightbox(media, index = 0) {
 
 /**
  * Render enhanced post card
+ * @param {Object} post - Post data
+ * @param {number} [index=0] - Card index (0 = first/above-fold); used for loading="eager" on first 6
  */
-function renderEnhancedPostCard(post) {
+function renderEnhancedPostCard(post, index = 0) {
   const postDate = post.createdAt || post.datePosted || new Date().toISOString();
   const timestamp = formatRelativeTime(postDate);
   const timestampTooltip = formatAbsoluteTime(postDate);
@@ -704,12 +706,17 @@ function renderEnhancedPostCard(post) {
   const primaryImageUrl = getPrimaryImageUrl(post);
   const primaryVideoUrl = getPrimaryVideoUrl(post);
 
+  // Above-fold cards (first 6): load images immediately. Rest: lazy load.
+  const isAboveFold = index < 6;
+  const imgLoading = isAboveFold ? 'eager' : 'lazy';
+  const imgFetchPriority = index < 2 ? ' fetchpriority="high"' : '';
+
   // Editorial card: image-first (or video when no image), headline, excerpt, metadata
   return `
     <article class="feed-post-card editorial-card" role="listitem" data-post-type="${post.postType || 'text'}" data-post-id="${post.id || ''}" onclick="window.location.href='${articleLink}'" title="${escapeHtml(displayHeadline)}">
       ${primaryImageUrl ? `
       <div class="editorial-card-image">
-        <img src="${String(primaryImageUrl).replace(/"/g, '&quot;').replace(/'/g, '&#x27;')}" alt="" loading="lazy" onerror="this.parentElement.style.display='none'" />
+        <img src="${String(primaryImageUrl).replace(/"/g, '&quot;').replace(/'/g, '&#x27;')}" alt="" loading="${imgLoading}"${imgFetchPriority} onerror="this.parentElement.style.display='none'" />
       </div>
       ` : primaryVideoUrl ? `
       <div class="editorial-card-image">
@@ -1226,9 +1233,18 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
     // PRIORITY 3: Fetch directly if no valid prefetched data
     if (!data) {
       console.log('[Enhanced Feed] Fetching posts directly from API...');
-      const response = await fetch(`${endpoint}?limit=${limit}`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      data = await response.json();
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout - never hang forever
+      try {
+        const response = await fetch(`${endpoint}?limit=${limit}`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        data = await response.json();
+      } catch (fetchErr) {
+        clearTimeout(timeoutId);
+        if (fetchErr.name === 'AbortError') throw new Error('Request timed out');
+        throw fetchErr;
+      }
       console.log('[Enhanced Feed] Direct fetch result:', Array.isArray(data) ? data.length + ' posts' : (data?.posts?.length || data?.data?.length || 0) + ' posts');
     }
     
@@ -1486,7 +1502,7 @@ function renderEnhancedFeed() {
     // Use fallback posts so we never show permanent "No posts yet" - keeps feed looking active
     const toRender = enhancedCurrentPosts.length === 0 ? FALLBACK_POSTS : [];
     if (toRender.length > 0) {
-      container.innerHTML = toRender.map(post => renderEnhancedPostCard(post)).join('');
+      container.innerHTML = toRender.map((post, idx) => renderEnhancedPostCard(post, idx)).join('');
       return;
     }
     // Only show empty state if we truly have nothing (shouldn't happen with FALLBACK_POSTS)
@@ -1504,7 +1520,7 @@ function renderEnhancedFeed() {
   const staleCacheNotice = window.__ENHANCED_FEED_USING_STALE_CACHE__
     ? '<div class="feed-fallback-notice" style="grid-column: 1 / -1; padding: 0.5rem 1rem; margin-bottom: 0.5rem; background: rgba(255,193,7,0.12); border: 1px solid rgba(255,193,7,0.3); border-radius: 8px; color: rgba(255,255,255,0.9); font-size: 0.8125rem;">Showing cached posts. Refresh to fetch latest.</div>'
     : '';
-  container.innerHTML = staleCacheNotice + postsToRender.map(post => renderEnhancedPostCard(post)).join('');
+  container.innerHTML = staleCacheNotice + postsToRender.map((post, idx) => renderEnhancedPostCard(post, idx)).join('');
   
   // Add sentinel element for infinite scroll if there are more posts to load
   // Note: For horizontal scrolling, we use scroll event listener instead of sentinel

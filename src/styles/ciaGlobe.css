@@ -79,6 +79,7 @@
   gap: 16px;
   text-align: center;
   padding: 2rem;
+  pointer-events: none; /* Never block page interaction - user can scroll/refresh */
 }
 
 .cia-globe-root:not(.is-loading) .cia-globe-loading {
