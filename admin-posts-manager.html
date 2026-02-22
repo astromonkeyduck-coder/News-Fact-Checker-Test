@@ -1426,15 +1426,29 @@
             };
             
             if (allMediaUrls.length > 0) {
-                postData.image = allMediaUrls[0];
-                postData.images = allMediaUrls;
+                // Separate videos from images so they display correctly
+                const isVideoUrl = (url) => {
+                    if (!url || typeof url !== 'string') return false;
+                    const u = url.toLowerCase();
+                    return u.match(/\.(mp4|webm|mov|m4v)(\?|$)/i) || u.includes('youtube.com') || u.includes('youtu.be');
+                };
+                const imageUrls = allMediaUrls.filter(u => !isVideoUrl(u));
+                const videoUrls = allMediaUrls.filter(u => isVideoUrl(u));
+                if (imageUrls.length > 0) {
+                    postData.image = imageUrls[0];
+                    postData.images = imageUrls;
+                }
+                if (videoUrls.length > 0) {
+                    postData.video_url = videoUrls[0];
+                    postData.videos = videoUrls;
+                }
             }
             
             // Remove undefined/null values (but keep 0 values for metrics)
             Object.keys(postData).forEach(key => {
                 if (postData[key] === undefined || postData[key] === null) {
                     delete postData[key];
-                } else if (key !== 'postId' && key !== 'datePosted' && key !== 'story' && key !== 'text' && key !== 'link' && key !== 'image' && key !== 'images' && postData[key] === '') {
+                } else if (key !== 'postId' && key !== 'datePosted' && key !== 'story' && key !== 'text' && key !== 'link' && key !== 'image' && key !== 'images' && key !== 'video_url' && key !== 'videos' && postData[key] === '') {
                     delete postData[key];
                 }
             });
@@ -1595,16 +1609,22 @@
             deleteBtn.disabled = true;
             
             try {
-                // Search in all posts
-                const response = await fetch(`${API_BASE}/.netlify/functions/posts-read?limit=500`);
+                // Direct lookup by ID (bypasses index - fixes "not found" after editing)
+                const response = await fetch(`${API_BASE}/.netlify/functions/posts-read?id=${encodeURIComponent(postId)}`);
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}`);
                 }
                 
                 const allPosts = await response.json();
-                const foundPost = Array.isArray(allPosts) 
-                    ? allPosts.find(p => p.id === postId || p.postId === postId)
-                    : null;
+                let foundPost = Array.isArray(allPosts) && allPosts.length > 0 ? allPosts[0] : null;
+                // Fallback: search in full list if direct lookup returned nothing
+                if (!foundPost) {
+                    const listResponse = await fetch(`${API_BASE}/.netlify/functions/posts-read?limit=500`);
+                    if (listResponse.ok) {
+                        const list = await listResponse.json();
+                        foundPost = Array.isArray(list) ? list.find(p => p.id === postId || p.postId === postId) : null;
+                    }
+                }
                 
                 if (!foundPost) {
                     infoDiv.innerHTML = `<span style="color: var(--error);">❌ Post not found. It may have already been deleted or doesn't exist.</span>`;

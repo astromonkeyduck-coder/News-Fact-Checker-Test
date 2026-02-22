@@ -1062,12 +1062,12 @@ exports.handler = async (event, context) => {
     // Format time
     const eventTime = formatTime(earthquake.time_ms || earthquake.time);
     
-    // Build subject (works for all magnitudes)
-    const magnitude = parseFloat(earthquake.magnitude?.toFixed(1) || '0.0');
-    const magnitudeFormatted = magnitude.toFixed(1);
-    const severity = magnitude >= 7.0 ? "Major" : magnitude >= 6.0 ? "Strong" : magnitude >= 5.0 ? "Moderate" : magnitude >= 4.0 ? "Light" : "Minor";
-    const severityColor = magnitude >= 7.0 ? "#d32f2f" : magnitude >= 6.0 ? "#f57c00" : magnitude >= 5.0 ? "#fbc02d" : magnitude >= 4.0 ? "#388e3c" : "#1976d2";
-    const severityBg = magnitude >= 7.0 ? "#ffebee" : magnitude >= 6.0 ? "#fff3e0" : magnitude >= 5.0 ? "#fffde7" : magnitude >= 4.0 ? "#e8f5e9" : "#e3f2fd";
+    // Build subject (works for all magnitudes) - reuse magnitude from above
+    const magnitudeVal = parseFloat(earthquake.magnitude?.toFixed(1) || '0.0');
+    const magnitudeFormatted = magnitudeVal.toFixed(1);
+    const severity = magnitudeVal >= 7.0 ? "Major" : magnitudeVal >= 6.0 ? "Strong" : magnitudeVal >= 5.0 ? "Moderate" : magnitudeVal >= 4.0 ? "Light" : "Minor";
+    const severityColor = magnitudeVal >= 7.0 ? "#d32f2f" : magnitudeVal >= 6.0 ? "#f57c00" : magnitudeVal >= 5.0 ? "#fbc02d" : magnitudeVal >= 4.0 ? "#388e3c" : "#1976d2";
+    const severityBg = magnitudeVal >= 7.0 ? "#ffebee" : magnitudeVal >= 6.0 ? "#fff3e0" : magnitudeVal >= 5.0 ? "#fffde7" : magnitudeVal >= 4.0 ? "#e8f5e9" : "#e3f2fd";
     const locationDisplay = earthquake.location_display || 'Unknown Location';
     const subject = `🚨 BREAKING: ${severity} Earthquake (M${magnitudeFormatted}) Near ${locationDisplay}`;
     

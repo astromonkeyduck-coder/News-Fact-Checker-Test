@@ -3,7 +3,7 @@
  * Send earthquake alerts rollout newsletter to full Resend audience.
  * Usage: node scripts/send-earthquake-newsletter-to-audience.js [NEWSLETTER_KEY]
  *   If NEWSLETTER_KEY omitted, uses env NEWSLETTER_KEY or .env
- * Optional: NEWSLETTER_KEY forceSend  (e.g. Hujik4ever true) to bypass 24h cooldown.
+ * Optional: NEWSLETTER_KEY forceSend  (e.g. your-secret-key true) to bypass 24h cooldown.
  */
 
 const fs = require('fs');

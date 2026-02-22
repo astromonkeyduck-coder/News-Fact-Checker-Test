@@ -69,6 +69,42 @@ exports.handler = async (event) => {
       };
     }
 
+    // Direct lookup by ID - bypasses index so edited posts are always findable
+    const requestedId = event.queryStringParameters?.id;
+    if (requestedId && requestedId.trim()) {
+      const rawId = requestedId.trim();
+      // Normalize: "post-123" -> "123" for blob key (blob is always post-{id}.json)
+      const blobId = rawId.startsWith("post-") ? rawId.substring(5) : rawId;
+      const postKey = `post-${blobId}.json`;
+      try {
+        const post = await store.get(postKey, { type: "json" });
+        if (post) {
+          console.log(`[posts-read] Direct lookup found post ${blobId}`);
+          return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify([post]),
+          };
+        }
+      } catch (err) {
+        // Post not found - try with raw id in case blob uses different format
+        if (blobId !== rawId) {
+          try {
+            const post = await store.get(`post-${rawId}.json`, { type: "json" });
+            if (post) {
+              return { statusCode: 200, headers, body: JSON.stringify([post]) };
+            }
+          } catch (_) {}
+        }
+      }
+      console.log(`[posts-read] Direct lookup: post ${blobId} not found`);
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify([]),
+      };
+    }
+
     // Read index
     let indexData = { ids: [] };
     try {

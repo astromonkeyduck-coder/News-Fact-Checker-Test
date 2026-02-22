@@ -1614,13 +1614,14 @@
         bodyElement.innerHTML = '<div class="skeleton" style="height: 400px; margin-bottom: 20px;"></div><div class="skeleton" style="height: 200px;"></div>';
 
         try {
-            // Fetch posts
+            // Fetch post by ID directly (bypasses index - fixes "not found" after editing)
             let response;
             let retries = 2;
-            
+            const directUrl = `/.netlify/functions/posts-read?id=${encodeURIComponent(articleId)}`;
+
             while (retries >= 0) {
                 try {
-                    response = await fetch('/.netlify/functions/posts-read?limit=200', {
+                    response = await fetch(directUrl, {
                         cache: 'default',
                         headers: { 'Accept': 'application/json' }
                     });
@@ -1633,47 +1634,49 @@
                     await new Promise(resolve => setTimeout(resolve, 1000 * (3 - retries)));
                 }
             }
-            
+
             if (!response || !response.ok) {
                 throw new Error(`Failed to fetch posts: ${response?.status || 'Network error'}`);
             }
-            
-            const posts = await response.json();
+
+            let posts = await response.json();
             if (!Array.isArray(posts)) {
                 throw new Error('Invalid response format from API');
             }
-            
-            console.log('[ArticleLoader] Fetched', posts.length, 'posts, looking for articleId:', articleId);
-            
-            // Find the post - try multiple ID formats
-            // Posts can have id as: articleId, post-{articleId}, usgs-{eventId}, or stored as postId field
-            const post = posts.find(p => {
-                // Direct match
-                if (p.id === articleId) return true;
-                // Match with post- prefix
-                if (p.id === `post-${articleId}`) return true;
-                // Match usgs- prefix (e.g., usgs-ak2026ahhwhz)
-                if (articleId.startsWith('usgs-')) {
-                    const eventId = articleId.substring(5); // Remove 'usgs-' prefix
-                    // Try matching with post-usgs- prefix
-                    if (p.id === `post-usgs-${eventId}` || p.id === `post-${articleId}`) return true;
-                    // Try matching event_id or canonical_id
-                    if (p.event_id === eventId || p.canonical_id === `usgs:${eventId}`) return true;
+
+            // If direct lookup returned empty, fall back to full list (legacy ID formats)
+            let post = posts[0] || null;
+            if (!post && posts.length === 0) {
+                const fallbackResponse = await fetch('/.netlify/functions/posts-read?limit=200', {
+                    cache: 'default',
+                    headers: { 'Accept': 'application/json' }
+                });
+                if (fallbackResponse.ok) {
+                    const allPosts = await fallbackResponse.json();
+                    if (Array.isArray(allPosts)) {
+                        post = allPosts.find(p => {
+                            if (p.id === articleId) return true;
+                            if (p.id === `post-${articleId}`) return true;
+                            if (articleId.startsWith('usgs-')) {
+                                const eventId = articleId.substring(5);
+                                if (p.id === `post-usgs-${eventId}` || p.id === `post-${articleId}`) return true;
+                                if (p.event_id === eventId || p.canonical_id === `usgs:${eventId}`) return true;
+                            }
+                            if (p.postId === articleId || p.postId === `post-${articleId}`) return true;
+                            if (articleId.startsWith('post-') && p.id === articleId.substring(5)) return true;
+                            if (p.id && p.id.startsWith('post-') && p.id.substring(5) === articleId) return true;
+                            return false;
+                        }) || null;
+                    }
                 }
-                // Match postId field if it exists
-                if (p.postId === articleId || p.postId === `post-${articleId}`) return true;
-                // Match if articleId has post- prefix and p.id doesn't
-                if (articleId.startsWith('post-') && p.id === articleId.substring(5)) return true;
-                // Match if p.id has post- prefix and articleId doesn't
-                if (p.id && p.id.startsWith('post-') && p.id.substring(5) === articleId) return true;
-                return false;
-            });
-            
+            }
+
             if (!post) {
                 console.error('[ArticleLoader] Post not found. ArticleId:', articleId);
-                console.log('[ArticleLoader] First 5 post IDs:', posts.slice(0, 5).map(p => ({ id: p.id, postId: p.postId, title: (p.title || p.story || p.text || '').substring(0, 50) })));
+                const debugPosts = Array.isArray(posts) ? posts : [];
+                console.log('[ArticleLoader] First 5 post IDs:', debugPosts.slice(0, 5).map(p => ({ id: p.id, postId: p.postId, title: (p.title || p.story || p.text || '').substring(0, 50) })));
                 headingElement.textContent = 'Article Not Found';
-                bodyElement.innerHTML = `<p>Article with ID "${articleId}" not found. Please return to the <a href="/index.html" style="color: #4A90E2;">homepage</a>.</p><p style="margin-top: 1rem; font-size: 0.875rem; color: rgba(255,255,255,0.6);">Debug: Found ${posts.length} posts total.</p>`;
+                bodyElement.innerHTML = `<p>Article with ID "${articleId}" not found. Please return to the <a href="/index.html" style="color: #4A90E2;">homepage</a>.</p><p style="margin-top: 1rem; font-size: 0.875rem; color: rgba(255,255,255,0.6);">Debug: Direct lookup returned ${Array.isArray(posts) ? posts.length : 0} post(s).</p>`;
                 return;
             }
             
@@ -1834,6 +1837,8 @@
                 }
             };
             
+            // Filter for video URLs (used below)
+            const isVideoUrl = (url) => url && typeof url === 'string' && /\.(mp4|webm|mov|m4v)(\?|$)/i.test(url.toLowerCase());
             // STEP 3: Canonical image resolution (SINGLE SOURCE OF TRUTH)
             // For earthquakes, fall back to USGS images if no primary
             let primary = post.primary_image_url || post.image_url || post.image || null;
@@ -1842,15 +1847,17 @@
                 const firstUsgs = usgsImages[0];
                 primary = firstUsgs ? (typeof firstUsgs === 'string' ? firstUsgs : firstUsgs?.url) : null;
             }
+            // Don't treat video URLs as primary image (legacy data may have mixed)
+            if (primary && isVideoUrl(primary)) primary = null;
             
-            // STEP 4: Build deduplicated secondary image list (NEVER includes primary)
+            // STEP 4: Build deduplicated secondary image list (NEVER includes primary, excludes videos)
             const secondaryCandidates = [
                 ...(post.secondary_images || []),
                 ...(post.images || []),
                 ...(post.assets?.images || []),
                 ...(post.usgs_images || []),
                 ...(post.assets?.usgs_images || [])
-            ].filter(Boolean);
+            ].filter(Boolean).filter(u => !isVideoUrl(u));
             
             // Normalize primary URL for comparison
             const primaryNormalized = primary ? normalizeUrl(ensureAbsoluteImageUrl(primary)) : null;
@@ -1930,6 +1937,25 @@
                     </div>`;
                 });
             }
+
+            // Render videos (MP4, WebM, etc. - from admin upload or post data)
+            const articleVideos = [...(post.videos || [])];
+            if (post.video_url || post.video) articleVideos.unshift(post.video_url || post.video);
+            const videoUrls = articleVideos.filter(u => u && isVideoUrl(u));
+            if (videoUrls.length > 0 && !primary) {
+                // Video as hero when no primary image
+                const videoUrl = ensureAbsoluteImageUrl(videoUrls[0]);
+                bodyHTML += `<div class="article-media article-media-hero">
+                    <video src="${escapeHtml(videoUrl)}" controls style="width:100%;max-height:500px;border-radius:12px;" playsinline></video>
+                </div>`;
+            }
+            videoUrls.forEach((vUrl, idx) => {
+                if (idx === 0 && !primary) return; // Already rendered as hero
+                const absoluteVideoUrl = ensureAbsoluteImageUrl(vUrl);
+                bodyHTML += `<div class="article-media" style="margin-top: 1.5rem;">
+                    <video src="${escapeHtml(absoluteVideoUrl)}" controls style="width:100%;max-height:500px;border-radius:12px;" playsinline></video>
+                </div>`;
+            });
             
             // Add post text - preserve line breaks as paragraphs
             bodyHTML += formatPostText(story);

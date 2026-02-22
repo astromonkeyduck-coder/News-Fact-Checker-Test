@@ -18,23 +18,14 @@ const ENHANCED_CACHE_KEY = 'noteworthy-posts-cache-enhanced';
 const ENHANCED_CACHE_EXPIRY = 2 * 60 * 1000; // 2 minutes
 const ENHANCED_CACHE_VERSION = '5'; // Increment when sort/display logic changes
 
-/** Fallback posts when API is unavailable or returns empty (e.g. local dev without netlify dev) */
+/** Fallback when API is unavailable and no cache (e.g. local dev without netlify dev) */
 const FALLBACK_POSTS = [
   {
     id: 'fallback-1',
-    text: 'Breaking news cards load from the API. When the API is unavailable, you see these sample posts. Run "netlify dev" locally or deploy to Netlify to load live posts.',
-    title: 'Breaking news cards load from the API',
+    text: 'Posts will appear here once they\'re added. Import via the Admin Posts Manager or run "netlify dev" locally.',
+    title: 'Posts loading',
     datePosted: new Date().toISOString(),
     createdAt: new Date().toISOString(),
-    author: { handle: 'newsnoteworthy', name: 'Noteworthy News' },
-    link: 'https://x.com/newsnoteworthy'
-  },
-  {
-    id: 'fallback-2',
-    text: 'Stay informed with fact-checked stories and in-depth analysis. Add posts via your Netlify functions or admin to see them here.',
-    title: 'Stay informed with fact-checked stories',
-    datePosted: new Date(Date.now() - 3600000).toISOString(),
-    createdAt: new Date(Date.now() - 3600000).toISOString(),
     author: { handle: 'newsnoteworthy', name: 'Noteworthy News' },
     link: 'https://x.com/newsnoteworthy'
   }
@@ -493,6 +484,11 @@ function renderEnhancedPostCard(post) {
     }
     
     const secondaryImages = post.images || post.secondary_images || [];
+    // Videos: explicit videos array + video_url + filter video URLs out of images (admin may have sent videos in images)
+    const isVideoUrl = (url) => url && typeof url === 'string' && /\.(mp4|webm|mov|m4v)(\?|$)/i.test(url.toLowerCase());
+    let videos = [...(post.videos || [])];
+    if (post.video_url || post.video) videos.push(post.video_url || post.video);
+    (secondaryImages || []).forEach(u => { if (isVideoUrl(u) && !videos.includes(u)) videos.push(u); });
     
     // DEBUG: Log image fields for troubleshooting
     if (!primaryImage && (post.category === 'Earthquake' || post.source === 'USGS')) {
@@ -508,19 +504,17 @@ function renderEnhancedPostCard(post) {
       });
     }
     
-    // Combine primary + secondary, filtering out duplicates
+    // Combine primary + secondary, filtering out duplicates and video URLs (videos go to videos array)
     const allImages = [];
-    if (primaryImage) {
+    if (primaryImage && !isVideoUrl(primaryImage)) {
       allImages.push(primaryImage);
     }
-    // Add secondary images that aren't duplicates of primary
     secondaryImages.forEach(img => {
-      if (img && img !== primaryImage && !allImages.includes(img)) {
+      if (img && !isVideoUrl(img) && img !== primaryImage && !allImages.includes(img)) {
         allImages.push(img);
       }
     });
     const images = allImages;
-    const videos = post.videos || [];
     
     if (images.length > 0 || videos.length > 0) {
       mediaHtml = '<div class="modern-post-media" style="margin: 1.25rem 0; border-radius: 12px; overflow: hidden;">';
@@ -667,7 +661,7 @@ function renderEnhancedPostCard(post) {
     `).join('');
   };
   
-  // Editorial: get primary image URL for image-first layout
+  // Editorial: get primary image or video URL for image-first layout
   const getPrimaryImageUrl = (p) => {
     let url = p.primary_image_url || p.image_url || p.image || null;
     if (!url && (p.category === 'Earthquake' || p.source === 'USGS')) {
@@ -675,6 +669,10 @@ function renderEnhancedPostCard(post) {
       if (usgs.length > 0) url = typeof usgs[0] === 'string' ? usgs[0] : (usgs[0]?.url || null);
     }
     return url;
+  };
+  const getPrimaryVideoUrl = (p) => {
+    const v = p.video_url || p.video || (p.videos && p.videos[0]);
+    return v && /\.(mp4|webm|mov|m4v)(\?|$)/i.test(String(v).toLowerCase()) ? v : null;
   };
 
   // Editorial: plain text for headline/excerpt (strip URLs)
@@ -690,13 +688,18 @@ function renderEnhancedPostCard(post) {
 
   const category = escapeHtml((post.category || 'Breaking').toString());
   const primaryImageUrl = getPrimaryImageUrl(post);
+  const primaryVideoUrl = getPrimaryVideoUrl(post);
 
-  // Editorial card: image-first, headline, excerpt, metadata
+  // Editorial card: image-first (or video when no image), headline, excerpt, metadata
   return `
     <article class="feed-post-card editorial-card" role="listitem" data-post-type="${post.postType || 'text'}" data-post-id="${post.id || ''}" onclick="window.location.href='${articleLink}'" title="${escapeHtml(displayHeadline)}">
       ${primaryImageUrl ? `
       <div class="editorial-card-image">
         <img src="${String(primaryImageUrl).replace(/"/g, '&quot;').replace(/'/g, '&#x27;')}" alt="" loading="lazy" onerror="this.parentElement.style.display='none'" />
+      </div>
+      ` : primaryVideoUrl ? `
+      <div class="editorial-card-image">
+        <video src="${String(primaryVideoUrl).replace(/"/g, '&quot;').replace(/'/g, '&#x27;')}" muted playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.innerHTML='<div class=\\'editorial-card-placeholder\\'></div>'"></video>
       </div>
       ` : `
       <div class="editorial-card-placeholder"></div>
@@ -1220,8 +1223,32 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
     enhancedCurrentPosts = (posts || []).filter(
       post => !isLowMagnitudeEarthquakeEnhanced(post) && !isExcludedAlertEnhanced(post)
     );
-    // When API returns empty: show empty state in renderEnhancedFeed, don't use fallback
-    
+
+    // When API returns empty, try stale cache as fallback (API may be temporarily empty)
+    if (enhancedCurrentPosts.length === 0) {
+      try {
+        const cached = localStorage.getItem(ENHANCED_CACHE_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          const cachedPosts = parsed?.posts;
+          if (Array.isArray(cachedPosts) && cachedPosts.length > 0) {
+            const filtered = cachedPosts.filter(
+              p => !(p.id || '').toString().startsWith('fallback-')
+            );
+            if (filtered.length > 0) {
+              enhancedCurrentPosts = filtered.filter(
+                post => !isLowMagnitudeEarthquakeEnhanced(post) && !isExcludedAlertEnhanced(post)
+              );
+              if (enhancedCurrentPosts.length > 0) {
+                console.log('[Enhanced Feed] API returned 0, using stale cache:', enhancedCurrentPosts.length, 'posts');
+                window.__ENHANCED_FEED_USING_STALE_CACHE__ = true;
+              }
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
     console.log('[Enhanced Feed] Loaded', enhancedCurrentPosts.length, 'posts');
 
     // Cache only real posts (never cache fallback)
@@ -1231,6 +1258,7 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
         timestamp: Date.now(),
         version: ENHANCED_CACHE_VERSION,
       }));
+      delete window.__ENHANCED_FEED_USING_STALE_CACHE__; // Clear when we have fresh data
     }
     
     // Update current limit
@@ -1245,16 +1273,38 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
     }
   } catch (error) {
     console.error('[Enhanced Feed] Load error:', error);
-    // Use fallback only when API is unreachable (404, network error) - don't cache
-    enhancedCurrentPosts = [...FALLBACK_POSTS];
+    // Try cache first - don't overwrite good content with fallback
+    let usedCache = false;
+    try {
+      const cached = localStorage.getItem(ENHANCED_CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        const cachedPosts = parsed?.posts;
+        if (Array.isArray(cachedPosts) && cachedPosts.length > 0) {
+          const filtered = cachedPosts.filter(p => !(p.id || '').toString().startsWith('fallback-'));
+          if (filtered.length > 0) {
+            enhancedCurrentPosts = filtered.filter(
+              post => !isLowMagnitudeEarthquakeEnhanced(post) && !isExcludedAlertEnhanced(post)
+            );
+            if (enhancedCurrentPosts.length > 0) {
+              usedCache = true;
+              console.log('[Enhanced Feed] API error, using cached posts:', enhancedCurrentPosts.length);
+              window.__ENHANCED_FEED_USING_STALE_CACHE__ = true;
+            }
+          }
+        }
+      }
+    } catch (_) {}
+    if (!usedCache) {
+      enhancedCurrentPosts = [...FALLBACK_POSTS];
+      const notice = document.createElement('div');
+      notice.className = 'feed-fallback-notice';
+      notice.style.cssText = 'grid-column: 1 / -1; padding: 0.75rem 1rem; margin-bottom: 0.5rem; background: rgba(79, 172, 254, 0.15); border: 1px solid rgba(79, 172, 254, 0.3); border-radius: 8px; color: rgba(255,255,255,0.9); font-size: 0.875rem;';
+      const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+      notice.innerHTML = 'API unavailable. ' + (isLocal ? 'Run <code>netlify dev</code> to load live posts.' : 'Check your connection or try again later.');
+      container.insertBefore(notice, container.firstChild);
+    }
     renderEnhancedFeed();
-    // Prepend notice so user knows API is unavailable
-    const notice = document.createElement('div');
-    notice.className = 'feed-fallback-notice';
-    notice.style.cssText = 'grid-column: 1 / -1; padding: 0.75rem 1rem; margin-bottom: 0.5rem; background: rgba(79, 172, 254, 0.15); border: 1px solid rgba(79, 172, 254, 0.3); border-radius: 8px; color: rgba(255,255,255,0.9); font-size: 0.875rem;';
-    const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-    notice.innerHTML = 'API unavailable. ' + (isLocal ? 'Run <code>netlify dev</code> to load live posts.' : 'Check your connection or try again later.');
-    container.insertBefore(notice, container.firstChild);
   } finally {
     // Remove loading indicator
     const loadingIndicator = document.getElementById('enhanced-feed-loading');
@@ -1394,7 +1444,10 @@ function renderEnhancedFeed() {
   
   // Only render posts up to the displayed count
   const postsToRender = sorted.slice(0, enhancedDisplayedCount);
-  container.innerHTML = postsToRender.map(post => renderEnhancedPostCard(post)).join('');
+  const staleCacheNotice = window.__ENHANCED_FEED_USING_STALE_CACHE__
+    ? '<div class="feed-fallback-notice" style="grid-column: 1 / -1; padding: 0.5rem 1rem; margin-bottom: 0.5rem; background: rgba(255,193,7,0.12); border: 1px solid rgba(255,193,7,0.3); border-radius: 8px; color: rgba(255,255,255,0.9); font-size: 0.8125rem;">Showing cached posts. Refresh to fetch latest.</div>'
+    : '';
+  container.innerHTML = staleCacheNotice + postsToRender.map(post => renderEnhancedPostCard(post)).join('');
   
   // Add sentinel element for infinite scroll if there are more posts to load
   // Note: For horizontal scrolling, we use scroll event listener instead of sentinel
@@ -1737,13 +1790,14 @@ function initEnhancedFeed(containerId = 'articlesTrack', endpoint = '/.netlify/f
                   container.innerHTML.includes('skeleton') ||
                   container.innerHTML.includes('Failed to load');
   
-  // Allow re-initialization if container changed or if not initialized yet
+  // Prevent duplicate init from overwriting displayed posts
   if (enhancedInitDone && lastContainerId === containerId) {
-    // But still try to load posts if container is empty
-    if (isEmpty && !enhancedIsLoading) {
-      console.log('[Enhanced Feed] Re-initializing for empty container');
-      // Allow re-init if container is truly empty and not loading
-    } else {
+    const hasRealPosts = container.querySelector('.editorial-card, .feed-post-card') && !container.querySelector('.skeleton');
+    if (hasRealPosts) {
+      console.log('[Enhanced Feed] Already showing posts, skipping duplicate init');
+      return;
+    }
+    if (!isEmpty || enhancedIsLoading) {
       console.warn('[Enhanced Feed] Already initialized for this container, skipping duplicate init');
       return;
     }
