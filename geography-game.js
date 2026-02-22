@@ -100,8 +100,7 @@ class GeographyGame {
         this.flashInterval = null; // For continuous flashing
         this.typingRevealedLetters = 0; // Track how many letters are revealed in typing mode
         this.typingWrongAttempts = 0; // Track wrong attempts for current country in typing mode
-        this.typingRevealedLetters = 0; // Track how many letters are revealed in typing mode
-        this.typingWrongAttempts = 0; // Track wrong attempts for current country in typing mode
+        this.factDisplayTimeout = null; // Track fact popup timeout for cleanup
         
         // Enhancement features
         this.combo = 0; // Combo multiplier for consecutive correct answers
@@ -295,7 +294,7 @@ class GeographyGame {
                 }
                 
                 if (!this.gameActive) {
-                    this.feedbackEl.textContent = 'Click "Start Game" to begin!';
+                    this.feedbackEl.textContent = 'Click "Play" to begin!';
                     this.feedbackEl.className = 'feedback-message incorrect';
                     
                     // Show message on map and highlight start button
@@ -533,7 +532,7 @@ class GeographyGame {
             animation: pulse 2s ease-in-out infinite;
             max-width: 400px;
         `;
-        message.textContent = 'Click "Start Game" to begin!';
+        message.textContent = 'Click "Play" to begin!';
         
         // Create arrow pointing UP to start button
         const arrow = document.createElement('div');
@@ -1530,12 +1529,6 @@ class GeographyGame {
         } catch (e) {
             console.log('Error fading out NeonDreams:', e);
         }
-        // Fade out NeonDreams.wav and resume background music if playing
-        try {
-            this.fadeOutNeonDreamsAndResume();
-        } catch (e) {
-            console.log('Error fading out NeonDreams:', e);
-        }
         
         // Stop any ongoing game activity
         this.gameActive = false;
@@ -1639,14 +1632,11 @@ class GeographyGame {
         }
         
         // Remove any existing country fact displays
-        const existingFact = document.querySelector('.country-fact-display');
-        if (existingFact) {
-            existingFact.remove();
-        }
+        this.hideCountryFact(true);
         
         // Reset UI elements
         if (this.promptEl) {
-        this.promptEl.textContent = 'Click "Start Game" to begin!';
+        this.promptEl.textContent = 'Click "Play" to begin!';
             this.promptEl.style.display = 'block';
             this.promptEl.style.visibility = 'visible';
         }
@@ -1838,6 +1828,9 @@ class GeographyGame {
     }
     
     getNextCountry() {
+        // Dismiss any country fact popup so it doesn't block the next question
+        this.hideCountryFact();
+        
         // Clear clicked countries for the new question - re-enable all countries
         this.clickedThisQuestion.clear();
         
@@ -2641,6 +2634,9 @@ class GeographyGame {
         // Flash viewport green
         this.flashViewport(true);
         
+        // Brief "Correct!" celebration
+        this.showCorrectToast();
+        
         // Update score and stats
         const questionTime = (Date.now() - this.questionStartTime) / 1000;
         let speedBonus = 0;
@@ -3120,6 +3116,13 @@ class GeographyGame {
                     console.log('Error flashing viewport:', e);
                 }
                 
+                // Brief "Correct!" celebration
+                try {
+                    this.showCorrectToast();
+                } catch (e) {
+                    console.log('Error showing correct toast:', e);
+                }
+                
                 // Create particle effects
                 try {
                     this.createParticleEffect(clickedCountryPaths[0]);
@@ -3382,8 +3385,12 @@ class GeographyGame {
     updateStats() {
         this.scoreEl.textContent = this.score;
         
-        // Combo stat panel removed - only popup notifications are shown
-        // Combo tracking still works for notifications and scoring
+        // Show combo when active (2+), hide when 0 or 1
+        if (this.comboStat && this.comboEl) {
+            this.comboEl.textContent = `${this.combo}x`;
+            this.comboStat.style.display = this.combo >= 2 ? 'flex' : 'none';
+            this.comboStat.classList.toggle('combo-active', this.combo >= 2);
+        }
         
         // Update progress bar
         if (this.progressBarFill && this.progressText) {
@@ -3684,7 +3691,7 @@ class GeographyGame {
         };
         
         if (!this.gameActive) {
-            this.promptEl.innerHTML = prompts[this.gameMode] || 'Click "Start Game" to begin!';
+            this.promptEl.innerHTML = prompts[this.gameMode] || 'Click "Play" to begin!';
         }
     }
     
@@ -4183,6 +4190,18 @@ class GeographyGame {
         }
     }
     
+    showCorrectToast() {
+        const toast = document.createElement('div');
+        toast.className = 'correct-toast';
+        toast.innerHTML = '<span class="correct-toast-icon">✓</span> Correct!';
+        document.body.appendChild(toast);
+        requestAnimationFrame(() => toast.classList.add('show'));
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 800);
+    }
+    
     showComboNotification(combo, bonus) {
         if (combo < 5) return; // Only show for combos of 5+ (less frequent)
         
@@ -4375,16 +4394,29 @@ class GeographyGame {
         }
     }
     
+    hideCountryFact(immediate = false) {
+        const existingFact = document.querySelector('.country-fact-display');
+        if (existingFact) {
+            if (immediate) {
+                existingFact.remove();
+            } else {
+                existingFact.classList.remove('show');
+                setTimeout(() => existingFact.remove(), 400); // Match transition
+            }
+        }
+        if (this.factDisplayTimeout) {
+            clearTimeout(this.factDisplayTimeout);
+            this.factDisplayTimeout = null;
+        }
+    }
+    
     showCountryFact(country) {
         if (!country || !this.countryFacts[country.code]) return;
         
-        const fact = this.countryFacts[country.code];
+        // Clear any existing fact and its timeout first (immediate when replacing)
+        this.hideCountryFact(true);
         
-        // Remove any existing fact display first
-        const existingFact = document.querySelector('.country-fact-display');
-        if (existingFact) {
-            existingFact.remove();
-        }
+        const fact = this.countryFacts[country.code];
         
         // Get country flag emoji
         const flag = this.getCountryFlag(country.code);
@@ -4497,18 +4529,22 @@ class GeographyGame {
             document.body.appendChild(factDisplay);
         }
         
+        // Click/tap to dismiss
+        factDisplay.addEventListener('click', () => this.hideCountryFact());
+        
         setTimeout(() => {
             factDisplay.classList.add('show');
         }, 10);
         
-        setTimeout(() => {
+        this.factDisplayTimeout = setTimeout(() => {
+            this.factDisplayTimeout = null;
             factDisplay.classList.remove('show');
             setTimeout(() => {
                 if (factDisplay.parentNode) {
                     factDisplay.remove();
                 }
             }, 500);
-        }, 8000); // Display for 8 seconds (increased from 3)
+        }, 3500); // Display for 3.5 seconds - informative but not obstructive
     }
     
     checkAchievements() {
@@ -5007,6 +5043,21 @@ class GeographyGame {
         const gameOver = document.getElementById('gameOverGeo');
         if (gameOver) {
             gameOver.style.display = 'block';
+            
+            // Update celebration for perfect game
+            const titleEl = gameOver.querySelector('.game-over-title');
+            const subtitleEl = gameOver.querySelector('.game-over-subtitle');
+            if (titleEl && subtitleEl) {
+                if (isPerfectGame) {
+                    titleEl.textContent = 'Perfect Score!';
+                    titleEl.classList.add('perfect-game-title');
+                    subtitleEl.textContent = '50/50 with zero mistakes. Outstanding!';
+                } else {
+                    titleEl.textContent = 'Challenge Complete!';
+                    titleEl.classList.remove('perfect-game-title');
+                    subtitleEl.textContent = 'Great work! Here\'s how you did.';
+                }
+            }
             
             // Populate stats
             const finalScoreEl = document.getElementById('finalScoreGeo');

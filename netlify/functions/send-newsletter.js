@@ -557,6 +557,7 @@ exports.handler = async (event, context) => {
 
     const testEmail = newsletterData.testEmail; // Check early if this is a test
     const sendToEmails = newsletterData.sendToEmails; // Check if sending to specific emails
+    const includeFailedRecipients = newsletterData.includeFailedRecipients === true; // Include failed emails in response (admin only)
     
     // Check if audience ID is configured (only required for mass audience sends)
     // sendToEmails and testEmail don't need audience ID
@@ -1319,6 +1320,9 @@ exports.handler = async (event, context) => {
           error: e.error?.substring(0, 100) || 'Unknown error'
           // Don't include email address
         })) : [],
+        ...(includeFailedRecipients && errors.length > 0 ? {
+          failedRecipients: errors.map(e => ({ email: e.email, error: (e.error || 'Unknown error').substring(0, 120) })),
+        } : {}),
         bouncedCount: errors.filter(e => {
           const err = e.error?.toLowerCase() || '';
           return err.includes('bounce') || err.includes('suppressed') || err.includes('invalid');

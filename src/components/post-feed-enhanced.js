@@ -16,7 +16,7 @@
 
 const ENHANCED_CACHE_KEY = 'noteworthy-posts-cache-enhanced';
 const ENHANCED_CACHE_EXPIRY = 2 * 60 * 1000; // 2 minutes
-const ENHANCED_CACHE_VERSION = '3'; // Increment this to invalidate all caches
+const ENHANCED_CACHE_VERSION = '5'; // Increment when sort/display logic changes
 
 /** Fallback posts when API is unavailable or returns empty (e.g. local dev without netlify dev) */
 const FALLBACK_POSTS = [
@@ -62,9 +62,11 @@ function isExcludedAlertEnhanced(post) {
   const category = (post.category || '').toLowerCase();
   const eventType = (post.event_type || post.eventType || '').toLowerCase();
   const source = (post.source || '').toLowerCase();
-  const tags = Array.isArray(post.tags) ? post.tags.join(' ').toLowerCase() : '';
-  const text = (post.text || post.title || post.story || '').toLowerCase();
-  const combined = `${category} ${eventType} ${source} ${tags} ${text}`;
+  // Only exclude automated USGS-style alerts (volcano observatory, embassy seismometers).
+  // Do NOT exclude regular news that mentions volcano/embassy in the story.
+  const isAutomatedAlert = category === 'earthquake' || eventType === 'earthquake' || source === 'usgs';
+  if (!isAutomatedAlert) return false;
+  const combined = `${category} ${eventType} ${source}`;
   return ENHANCED_EXCLUDED_KEYWORDS.some(keyword => combined.includes(keyword));
 }
 
@@ -77,7 +79,7 @@ try {
   const cached = localStorage.getItem('user-location');
   if (cached) enhancedUserLocation = JSON.parse(cached);
 } catch (_) {}
-let enhancedDisplayedCount = 5; // Number of posts currently displayed
+let enhancedDisplayedCount = 6; // Number of posts currently displayed
 let enhancedPostsPerChunk = 15; // Number of posts to load per scroll
 let enhancedScrollObserver = null; // Intersection Observer for infinite scroll
 let expandedPosts = new Set(); // Track which posts are expanded
@@ -1096,7 +1098,7 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
   
   // Reset display count if this is a fresh load
   if (resetDisplayCount) {
-    enhancedDisplayedCount = 5; // Always start with 5 posts
+    enhancedDisplayedCount = 6; // Always start with 6 posts
     
     // Try to load from cache first for instant display
     try {
@@ -1370,11 +1372,13 @@ function renderEnhancedFeed() {
   const sorted = [...pinned, ...sortEnhancedPosts(unpinned, enhancedCurrentSort)];
 
   if (sorted.length === 0) {
-    // Show clear empty state (no skeleton/shimmer)
+    // Show clear empty state with import instructions for admins
+    const adminUrl = `${window.location.origin}/admin-posts-manager.html`;
     container.innerHTML = `
       <div class="feed-empty-state" style="grid-column: 1 / -1; padding: 3rem 2rem; text-align: center; background: rgba(13, 31, 58, 0.4); border-radius: 16px; border: 1px solid rgba(74, 158, 255, 0.15); color: rgba(255,255,255,0.9);">
         <p style="font-size: 1.125rem; margin: 0 0 0.5rem 0; font-weight: 600;">No posts yet</p>
-        <p style="font-size: 0.9375rem; margin: 0; color: rgba(255,255,255,0.7);">Check back soon for breaking news and updates.</p>
+        <p style="font-size: 0.9375rem; margin: 0 0 1rem 0; color: rgba(255,255,255,0.7);">Import your CSV via the <a href="${adminUrl}" style="color: #4A90E2; text-decoration: underline;">Admin Posts Manager</a> to add breaking news.</p>
+        <p style="font-size: 0.875rem; margin: 0; color: rgba(255,255,255,0.5);">Check back soon for updates.</p>
       </div>
     `;
     return;
@@ -1803,7 +1807,7 @@ function initEnhancedFeed(containerId = 'articlesTrack', endpoint = '/.netlify/f
       enhancedCurrentSearch = searchInput.value;
       localStorage.setItem('feed-search', enhancedCurrentSearch);
       if (searchClearBtn) searchClearBtn.style.display = enhancedCurrentSearch ? 'block' : 'none';
-      enhancedDisplayedCount = 5;
+      enhancedDisplayedCount = 6;
       if (enhancedScrollObserver) {
         enhancedScrollObserver.disconnect();
         enhancedScrollObserver = null;
@@ -1831,7 +1835,7 @@ function initEnhancedFeed(containerId = 'articlesTrack', endpoint = '/.netlify/f
         localStorage.setItem('feed-search', '');
         searchClearBtn.style.display = 'none';
         searchInput.focus();
-        enhancedDisplayedCount = 5;
+        enhancedDisplayedCount = 6;
         if (enhancedScrollObserver) { enhancedScrollObserver.disconnect(); enhancedScrollObserver = null; }
         renderEnhancedFeed();
         setupInfiniteScroll();
@@ -1843,7 +1847,7 @@ function initEnhancedFeed(containerId = 'articlesTrack', endpoint = '/.netlify/f
     sortSelect.addEventListener('change', (e) => {
       enhancedCurrentSort = e.target.value;
       localStorage.setItem('feed-sort', enhancedCurrentSort);
-      enhancedDisplayedCount = 5;
+      enhancedDisplayedCount = 6;
       if (enhancedScrollObserver) { enhancedScrollObserver.disconnect(); enhancedScrollObserver = null; }
       renderEnhancedFeed();
       setupInfiniteScroll();
@@ -1881,7 +1885,7 @@ function initEnhancedFeed(containerId = 'articlesTrack', endpoint = '/.netlify/f
         }
         enhancedCurrentSort = newSort;
         localStorage.setItem('feed-sort', enhancedCurrentSort);
-        enhancedDisplayedCount = 5;
+        enhancedDisplayedCount = 6;
         if (enhancedScrollObserver) { enhancedScrollObserver.disconnect(); enhancedScrollObserver = null; }
         updateSortBtnStyles();
         renderEnhancedFeed();

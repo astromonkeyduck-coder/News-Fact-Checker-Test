@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Send earthquake alerts rollout newsletter test to a specific email
- * Usage: node scripts/send-earthquake-newsletter-test.js [email] [NEWSLETTER_KEY]
+ * Send Noteworthy News showcase newsletter test to a specific email
+ * Usage: node scripts/send-noteworthy-showcase-test.js [email] [NEWSLETTER_KEY] [recipientName]
  *   If NEWSLETTER_KEY omitted, uses env NEWSLETTER_KEY or .env
  */
 
@@ -10,9 +10,9 @@ const path = require('path');
 
 const testEmail = process.argv[2] || 'mr.pangolinman@gmail.com';
 const keyArg = process.argv[3];
-const recipientName = process.argv[4]; // e.g. "Chase Weyrauch" -> firstName: Chase, fullName: Chase Weyrauch
+const recipientName = process.argv[4];
 
-const newsletterPath = path.join(__dirname, '../newsletter-earthquake-alerts-rollout.html');
+const newsletterPath = path.join(__dirname, '../newsletter-noteworthy-showcase.html');
 if (!fs.existsSync(newsletterPath)) {
   console.error('❌ Newsletter file not found:', newsletterPath);
   process.exit(1);
@@ -26,19 +26,17 @@ const textContent = htmlContent
   .trim();
 
 async function sendTest() {
-  // Load .env for NEWSLETTER_KEY
   require('dotenv').config({ path: path.join(__dirname, '../.env') });
   const token = keyArg || process.env.NEWSLETTER_KEY;
   if (!token) {
     console.error('❌ NEWSLETTER_KEY required. Either:');
     console.error('   • Add NEWSLETTER_KEY to .env');
-    console.error('   • Or: node scripts/send-earthquake-newsletter-test.js mr.pangolinman@gmail.com YOUR_KEY');
+    console.error('   • Or: node scripts/send-noteworthy-showcase-test.js email@example.com YOUR_KEY');
     process.exit(1);
   }
 
-  console.log(`📧 Sending earthquake alerts newsletter test to ${testEmail}...\n`);
+  console.log(`📧 Sending Noteworthy News showcase test to ${testEmail}...\n`);
 
-  // Ensure sample map image exists (generate if needed)
   const baseUrl = process.env.URL || process.env.NETLIFY_URL || 'https://noteworthynews.co';
   try {
     const genRes = await fetch(`${baseUrl.replace(/\/$/, '')}/.netlify/functions/generate-sample-earthquake-map`);
@@ -54,7 +52,7 @@ async function sendTest() {
   const fullName = recipientName || 'Reader';
   const payload = {
     token,
-    subject: 'Noteworthy News: Earthquake Alerts Now Live',
+    subject: 'Noteworthy News: Real News. Real Time.',
     html: htmlContent.replace(/\{\{DATE_PLACEHOLDER\}\}/g, dateStr),
     text: textContent,
     includeRecentPosts: false,

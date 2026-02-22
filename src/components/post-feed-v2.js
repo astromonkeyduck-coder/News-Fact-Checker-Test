@@ -63,9 +63,11 @@ function isExcludedAlert(post) {
   const category = (post.category || '').toLowerCase();
   const eventType = (post.event_type || post.eventType || '').toLowerCase();
   const source = (post.source || '').toLowerCase();
-  const tags = Array.isArray(post.tags) ? post.tags.join(' ').toLowerCase() : '';
-  const text = (post.text || post.title || post.story || '').toLowerCase();
-  const combined = `${category} ${eventType} ${source} ${tags} ${text}`;
+  // Only exclude automated USGS-style alerts (volcano observatory, embassy seismometers).
+  // Do NOT exclude regular news that mentions volcano/embassy in the story.
+  const isAutomatedAlert = category === 'earthquake' || eventType === 'earthquake' || source === 'usgs';
+  if (!isAutomatedAlert) return false;
+  const combined = `${category} ${eventType} ${source}`;
   return EXCLUDED_ALERT_KEYWORDS.some(keyword => combined.includes(keyword));
 }
 

@@ -924,6 +924,9 @@ exports.handler = async (event, context) => {
   }
   
   try {
+    // Parse body early so we can use magnitude for preference-based recipient filtering
+    const body = JSON.parse(event.body || "{}");
+
     // Get notification emails from AI_NOTIFICATION_EMAILS (same as other functions)
     let notificationEmails = [];
     if (process.env.AI_NOTIFICATION_EMAILS) {
@@ -966,13 +969,31 @@ exports.handler = async (event, context) => {
       console.warn('[send-earthquake-alert] ⚠️ Failed to get sender emails from webhooks (non-blocking):', error.message);
       // Continue without sender emails - don't fail the alert
     }
+
+    // Get users who opted in to earthquake alerts (respects earthquakeMagnitudeMin per user)
+    const magnitude = parseFloat(body.earthquake?.magnitude) || 0;
+    try {
+      const { getEarthquakeAlertRecipients } = require('./lib/getEarthquakeAlertUsers');
+      const prefRecipients = await getEarthquakeAlertRecipients(magnitude);
+      if (prefRecipients.length > 0) {
+        console.log('[send-earthquake-alert] 📧 Found earthquake alert subscribers:', prefRecipients.length, '(magnitude', magnitude, 'meets their thresholds)');
+        for (const email of prefRecipients) {
+          const normalized = email.toLowerCase().trim();
+          if (!notificationEmails.some((e) => e.toLowerCase().trim() === normalized)) {
+            notificationEmails.push(email);
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('[send-earthquake-alert] ⚠️ Failed to get earthquake alert subscribers (non-blocking):', error.message);
+    }
     
     if (notificationEmails.length === 0) {
       return {
         statusCode: 500,
         headers,
         body: JSON.stringify({
-          error: "AI_NOTIFICATION_EMAILS or ALERT_TO_EMAIL not configured",
+          error: "No recipients: configure AI_NOTIFICATION_EMAILS/ALERT_TO_EMAIL, or users must opt in to earthquake alerts in preferences",
         }),
       };
     }
@@ -988,7 +1009,6 @@ exports.handler = async (event, context) => {
       };
     }
     
-    const body = JSON.parse(event.body || "{}");
     const { earthquake, imageUrl, videoUrl } = body;
     
     console.log('[send-earthquake-alert] 📧 Function called', {

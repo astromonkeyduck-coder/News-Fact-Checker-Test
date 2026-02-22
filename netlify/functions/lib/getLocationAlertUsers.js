@@ -31,14 +31,13 @@ async function getLocationAlertUsers() {
     const users = [];
     
     try {
-      // List all keys in the store
-      // Note: Netlify Blobs list() may have pagination - check docs
-      const list = await store.list();
-      
-      for await (const entry of list) {
+      // List all keys in the store (prefix "user-" for user-data keys)
+      const { blobs } = await store.list({ prefix: "user-" });
+
+      for (const blob of blobs || []) {
         try {
           // Get user data
-          const userData = await store.get(entry.key, { type: "json" });
+          const userData = await store.get(blob.key, { type: "json" });
           
           if (userData && userData.preferences && userData.preferences.location) {
             const locationPrefs = userData.preferences.location;
@@ -67,7 +66,7 @@ async function getLocationAlertUsers() {
           }
         } catch (error) {
           // Skip this user if there's an error
-          console.error(`[Location Alert Users] Error processing user ${entry.key}:`, error);
+          console.error(`[Location Alert Users] Error processing user ${blob.key}:`, error);
           continue;
         }
       }

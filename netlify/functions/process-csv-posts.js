@@ -3,8 +3,6 @@
  * Accepts CSV file upload and processes it similar to add-and-update-posts-from-csv.js
  */
 
-const { getStore } = require("@netlify/blobs");
-
 const headers = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -115,7 +113,7 @@ function parseCSV(csvText) {
       reposts: parseNumber(parts[11]),
     };
     
-    if (post.id && post.date && post.link) {
+    if (post.id && post.date && post.link && !post.link.includes('undefined')) {
       posts.push(post);
     }
   }
@@ -123,36 +121,7 @@ function parseCSV(csvText) {
   return posts;
 }
 
-const ADD_POST_ENDPOINT = process.env.NETLIFY_FUNCTION_URL || 'https://noteworthynews.co/.netlify/functions/fetch-tweets-simple';
 const UPDATE_POST_ENDPOINT = process.env.NETLIFY_FUNCTION_URL || 'https://noteworthynews.co/.netlify/functions/update-post-data';
-
-async function addPost(tweetUrl) {
-  try {
-    const response = await fetch(ADD_POST_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ tweetUrl }),
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      if (response.status === 200) {
-        const result = await response.json();
-        if (result.message && result.message.includes('already exists')) {
-          return { success: true, alreadyExists: true };
-        }
-      }
-      throw new Error(`HTTP ${response.status}: ${errorText}`);
-    }
-    
-    const result = await response.json();
-    return { success: true, alreadyExists: false, postData: result };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-}
 
 async function updatePost(postData) {
   const postId = postData.id;
@@ -323,19 +292,11 @@ exports.handler = async (event) => {
     };
 
     // Process first 40 posts synchronously (to avoid timeout)
+    // Skip fetch-tweets-simple - update-post-data creates posts from CSV data directly (X blocks scraping)
     const maxPosts = Math.min(posts.length, 40);
     for (let i = 0; i < maxPosts; i++) {
       const post = posts[i];
       
-      // Add post
-      const addResult = await addPost(post.link);
-      if (addResult.success && !addResult.alreadyExists) {
-        results.added++;
-      }
-      
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Update post
       const updateResult = await updatePost(post);
       if (updateResult.success) {
         results.updated++;
@@ -346,7 +307,7 @@ exports.handler = async (event) => {
       }
       
       results.processed++;
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, 150));
     }
 
     // For remaining posts, return info that they need to be processed in batches

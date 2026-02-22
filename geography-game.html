@@ -9,7 +9,7 @@
     <link rel="shortcut icon" type="image/png" href="IMG_5794.PNG">
     <link rel="apple-touch-icon" href="IMG_5794.PNG" sizes="180x180">
     <link rel="mask-icon" href="IMG_5794.PNG" color="#0f234a">
-    <title>Noteworthy News - 50 Most Populous Countries</title>
+    <title>Geography Challenge | Noteworthy News</title>
     <link rel="stylesheet" href="styles/responsive.css">
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
@@ -258,18 +258,28 @@
             padding: 0 10px;
         }
         
-        .game-header h1 {
+        .game-header h1,
+        .game-header .game-title {
             font-size: 2.25rem;
-            font-weight: 700;
-            margin-bottom: 12px;
+            font-weight: 800;
+            margin-bottom: 6px;
             color: #FFFFFF;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4), 0 0 24px rgba(74, 144, 226, 0.3);
             letter-spacing: -0.5px;
         }
         
-        .game-header p {
-            font-size: 0.95rem;
-            color: rgba(255, 255, 255, 0.85);
+        .game-tagline {
+            font-size: 1rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.95);
+            margin-bottom: 8px;
+            letter-spacing: 0.3px;
+        }
+        
+        .game-header p,
+        .game-legend {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
             line-height: 1.6;
         }
         
@@ -387,6 +397,28 @@
         
         #geoSpeed {
             color: #2ECC71;
+        }
+        
+        .stat-combo {
+            display: none;
+            border-color: rgba(255, 165, 0, 0.3) !important;
+            background: rgba(255, 165, 0, 0.06) !important;
+        }
+        
+        .stat-combo.combo-active {
+            border-color: rgba(255, 165, 0, 0.6) !important;
+            background: rgba(255, 165, 0, 0.15) !important;
+            animation: combo-pulse 1.5s ease-in-out infinite;
+        }
+        
+        .stat-combo.combo-active #geoCombo {
+            color: #FFA500;
+            font-weight: 800;
+        }
+        
+        @keyframes combo-pulse {
+            0%, 100% { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); }
+            50% { box-shadow: 0 0 16px rgba(255, 165, 0, 0.4); }
         }
         
         .question-timer {
@@ -1422,6 +1454,38 @@
             }
         }
         
+        /* Correct Answer Toast */
+        .correct-toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.5);
+            background: linear-gradient(135deg, rgba(46, 204, 113, 0.95), rgba(39, 174, 96, 0.95));
+            color: white;
+            padding: 16px 32px;
+            border-radius: 12px;
+            box-shadow: 0 4px 24px rgba(46, 204, 113, 0.5);
+            z-index: 10001;
+            font-size: 1.25rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+            pointer-events: none;
+        }
+        
+        .correct-toast.show {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+        
+        .correct-toast-icon {
+            font-size: 1.5rem;
+            font-weight: 900;
+        }
+        
         /* Combo Notification - Smaller and less intrusive */
         .combo-notification {
             position: fixed;
@@ -1827,9 +1891,20 @@
                 font-size: 3.5rem;
             }
             
-            .game-over-title {
-                font-size: 2.5rem;
-            }
+        .game-over-title {
+            font-size: 2.5rem;
+        }
+        
+        .game-over-title.perfect-game-title {
+            color: #FFD700;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+            animation: perfect-glow 2s ease-in-out infinite;
+        }
+        
+        @keyframes perfect-glow {
+            0%, 100% { text-shadow: 0 0 20px rgba(255, 215, 0, 0.6); }
+            50% { text-shadow: 0 0 30px rgba(255, 215, 0, 0.9); }
+        }
             
             .game-over-content {
                 gap: 16px;
@@ -1848,7 +1923,8 @@
                 flex-direction: column;
                 max-width: 500px;
                 min-width: 280px;
-                max-height: 400px;
+                max-height: 180px;
+                overflow-y: auto;
                 bottom: 15px;
                 left: 20px;
                 right: auto;
@@ -3134,7 +3210,7 @@
                 </div>
                 <div class="brand-info">
                     <h1><span class="brand-name">Noteworthy News</span></h1>
-                    <p>Geography Game</p>
+                    <p>Geography Challenge</p>
                 </div>
             </div>
             <div class="header-right">
@@ -3151,8 +3227,9 @@
     <div class="container pixel-noise">
         <div class="geography-game-container">
                 <div class="game-header">
-                <h1>50 Most Populous Countries</h1>
-                <p>Click the prompted country on the map. <span class="legend-item"><span class="legend-color legend-green"></span> Not answered</span> • <span class="legend-item"><span class="legend-color legend-correct"></span> Correct</span> • <span class="legend-item"><span class="legend-color legend-incorrect"></span> Incorrect</span></p>
+                <h1 class="game-title">Geography Challenge</h1>
+                <p class="game-tagline">Find the 50 most populous countries on the world map</p>
+                <p class="game-legend">Click the prompted country. <span class="legend-item"><span class="legend-color legend-green"></span> Not answered</span> • <span class="legend-item"><span class="legend-color legend-correct"></span> Correct</span> • <span class="legend-item"><span class="legend-color legend-incorrect"></span> Incorrect</span></p>
             </div>
             
             <!-- Progress Bar -->
@@ -3172,7 +3249,7 @@
                     <div class="stat-label-geo">Score</div>
                     <div class="stat-value-geo" id="geoScore">0</div>
                 </div>
-                <div class="stat-item-geo stat-combo" id="comboStat" style="display: none !important;">
+                <div class="stat-item-geo stat-combo" id="comboStat">
                     <div class="stat-label-geo">Combo</div>
                     <div class="stat-value-geo" id="geoCombo">0x</div>
                 </div>
@@ -3206,7 +3283,7 @@
                 <button class="btn-leaderboard" id="leaderboardBtnGeo">
                     <span class="btn-text">Leaderboard</span>
                 </button>
-                <button class="btn-geo btn-primary" id="startBtn">Start Game</button>
+                <button class="btn-geo btn-primary" id="startBtn">Play</button>
                 <button class="btn-geo btn-secondary" id="hintBtn" disabled style="display: none;">
                     <span class="btn-text">Hint</span>
                 </button>
@@ -3217,8 +3294,8 @@
             <div class="game-loading-screen" id="gameLoadingScreen" style="display: none;">
                 <div class="loading-content">
                     <div class="loading-logo">🌍</div>
-                    <div class="loading-title">Noteworthy News</div>
-                    <div class="loading-subtitle">Geography Game</div>
+                    <div class="loading-title">Geography Challenge</div>
+                    <div class="loading-subtitle">Noteworthy News</div>
                     <div class="loading-spinner">
                         <div class="spinner-ring"></div>
                         <div class="spinner-ring"></div>
@@ -3251,8 +3328,8 @@
             <div class="game-over-container">
                 <!-- Celebration Section -->
                 <div class="game-over-celebration">
-                    <h2 class="game-over-title">Game Complete!</h2>
-                    <p class="game-over-subtitle">Nice run! Here's how you did.</p>
+                    <h2 class="game-over-title">Challenge Complete!</h2>
+                    <p class="game-over-subtitle">Great work! Here's how you did.</p>
                 </div>
 
                 <!-- Main Content: Stats + Leaderboard -->
