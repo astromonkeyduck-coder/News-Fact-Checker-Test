@@ -520,28 +520,40 @@ exports.handler = async (event) => {
 
     // Handle different article ID formats
     // Posts are stored with .json extension (see createPost.js: postKey = `post-${postId}.json`)
+    // Earthquake-poller uses eq-{eventId}, USGS engine uses usgs-{eventId}
     let postKey;
     if (articleId.startsWith('post-')) {
-      // If it already has .json, use as-is; otherwise add it
       postKey = articleId.endsWith('.json') ? articleId : `${articleId}.json`;
     } else if (articleId.startsWith('usgs-')) {
       postKey = `post-${articleId}.json`;
     } else {
       postKey = `post-${articleId}.json`;
     }
-    
-    // Fetch post with timeout
+    const keysToTry = [postKey];
+    if (articleId.startsWith('post-usgs-') || articleId.startsWith('usgs-')) {
+      const eventId = articleId.replace(/^(post-)?usgs-/, '');
+      keysToTry.push(`post-eq-${eventId}.json`);
+    }
+
+    // Fetch post with timeout - try primary key first, then fallback
     let postData;
-    try {
-      // Posts are stored as JSON, so use type: 'json' for automatic parsing
-      const blobPromise = store.get(postKey, { type: 'json' });
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Blob storage timeout')), 10000)
-      );
-      postData = await Promise.race([blobPromise, timeoutPromise]);
-    } catch (blobError) {
+    let lastError;
+    for (const key of keysToTry) {
+      try {
+        const blobPromise = store.get(key, { type: 'json' });
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Blob storage timeout')), 10000)
+        );
+        postData = await Promise.race([blobPromise, timeoutPromise]);
+        if (postData) break;
+      } catch (blobError) {
+        lastError = blobError;
+      }
+    }
+    if (!postData) {
+      const blobError = lastError || new Error('Post not found');
       console.error('[article-preview] Blob storage error:', blobError.message);
-      console.error('[article-preview] Looking for key:', postKey);
+      console.error('[article-preview] Tried keys:', keysToTry.join(', '));
       // Return prerendered HTML with default image
       return {
         statusCode: 200,

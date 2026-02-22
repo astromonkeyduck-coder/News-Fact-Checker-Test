@@ -77,28 +77,28 @@ exports.handler = async (event) => {
       // Normalize: "post-123" -> "123" for blob key (blob is always post-{id}.json)
       const blobId = rawId.startsWith("post-") ? rawId.substring(5) : rawId;
       const postKey = `post-${blobId}.json`;
-      try {
-        const post = await store.get(postKey, { type: "json" });
-        if (post) {
-          console.log(`[posts-read] Direct lookup found post ${blobId}`);
-          return {
-            statusCode: 200,
-            headers,
-            body: JSON.stringify([post]),
-          };
-        }
-      } catch (err) {
-        // Post not found - try with raw id in case blob uses different format
-        if (blobId !== rawId) {
-          try {
-            const post = await store.get(`post-${rawId}.json`, { type: "json" });
-            if (post) {
-              return { statusCode: 200, headers, body: JSON.stringify([post]) };
-            }
-          } catch (_) {}
+      const keysToTry = [postKey];
+      // Fallback: post-usgs-us6000saws not found? Try post-eq-us6000saws (earthquake-poller uses eq- prefix)
+      if (blobId.startsWith("usgs-")) {
+        const eventId = blobId.substring(5);
+        keysToTry.push(`post-eq-${eventId}.json`);
+      }
+      for (const key of keysToTry) {
+        try {
+          const post = await store.get(key, { type: "json" });
+          if (post) {
+            console.log(`[posts-read] Direct lookup found post at ${key}`);
+            return {
+              statusCode: 200,
+              headers,
+              body: JSON.stringify([post]),
+            };
+          }
+        } catch (err) {
+          // Continue to next key
         }
       }
-      console.log(`[posts-read] Direct lookup: post ${blobId} not found`);
+      console.log(`[posts-read] Direct lookup: post ${blobId} not found (tried ${keysToTry.join(', ')})`);
       return {
         statusCode: 200,
         headers,
