@@ -16,7 +16,7 @@
 
 const ENHANCED_CACHE_KEY = 'noteworthy-posts-cache-enhanced';
 const ENHANCED_CACHE_EXPIRY = 2 * 60 * 1000; // 2 minutes
-const ENHANCED_CACHE_VERSION = '5'; // Increment when sort/display logic changes
+const ENHANCED_CACHE_VERSION = '6'; // Increment when sort/display logic changes (v6: no unfiltered fallback)
 
 /** Fallback when API is unavailable and no cache (e.g. local dev without netlify dev) */
 const FALLBACK_POSTS = [
@@ -1239,11 +1239,7 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
       post => !isLowMagnitudeEarthquakeEnhanced(post) && !isExcludedAlertEnhanced(post)
     );
 
-    // When all posts filtered out, use raw posts so we never show empty when API returned data
-    if (enhancedCurrentPosts.length === 0 && rawPosts.length > 0) {
-      console.log('[Enhanced Feed] All posts filtered, showing', rawPosts.length, 'unfiltered posts');
-      enhancedCurrentPosts = rawPosts;
-    }
+    // NEVER fall back to unfiltered - earthquakes below 2.5 must stay hidden
 
     // When API returns empty, try stale cache as fallback (API may be temporarily empty)
     if (enhancedCurrentPosts.length === 0) {
@@ -1260,9 +1256,7 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
               enhancedCurrentPosts = filtered.filter(
                 post => !isLowMagnitudeEarthquakeEnhanced(post) && !isExcludedAlertEnhanced(post)
               );
-              if (enhancedCurrentPosts.length === 0) {
-                enhancedCurrentPosts = filtered; // Use unfiltered cache when all would be filtered
-              }
+              // NEVER use unfiltered cache - earthquakes below 2.5 must stay hidden
               if (enhancedCurrentPosts.length > 0) {
                 console.log('[Enhanced Feed] API returned 0, using stale cache:', enhancedCurrentPosts.length, 'posts');
                 window.__ENHANCED_FEED_USING_STALE_CACHE__ = true;
