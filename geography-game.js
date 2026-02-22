@@ -1413,8 +1413,8 @@ class GeographyGame {
         const loadingScreen = document.getElementById('gameLoadingScreen');
         if (loadingScreen) {
             loadingScreen.style.display = 'flex';
-            // Trigger reflow to ensure display change is applied
-            loadingScreen.offsetHeight;
+            // Trigger reflow so opacity transition runs when adding .show
+            void loadingScreen.offsetHeight;
             loadingScreen.classList.add('show');
         }
     }
@@ -1425,6 +1425,7 @@ class GeographyGame {
             loadingScreen.classList.remove('show');
             setTimeout(() => {
                 loadingScreen.style.display = 'none';
+                loadingScreen.style.visibility = '';
             }, 500); // Wait for fade out animation
         }
     }

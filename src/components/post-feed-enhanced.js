@@ -151,20 +151,19 @@ function formatRelativeTime(dateString) {
   if (diffSec < 60) return `${diffSec}s`;
   if (diffMin < 60) return `${diffMin}m`;
   if (diffHour < 24) return `${diffHour}h`;
-  if (diffDay < 7) return `${diffDay}d`;
   
+  // For news: show actual date for posts older than 24h (clearer than "2d ago")
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const month = months[date.getMonth()];
   const day = date.getDate();
   const year = date.getFullYear();
   const currentYear = now.getFullYear();
-  
   if (year === currentYear) {
     return `${month} ${day}`;
-  } else {
-    return `${month} ${day}, ${year}`;
   }
+  return `${month} ${day}, ${year}`;
 }
+
 
 /**
  * Format absolute time for tooltip
@@ -668,38 +667,47 @@ function renderEnhancedPostCard(post) {
     `).join('');
   };
   
-  // Use November 23rd card design style (from post-feed-v2.js)
+  // Editorial: get primary image URL for image-first layout
+  const getPrimaryImageUrl = (p) => {
+    let url = p.primary_image_url || p.image_url || p.image || null;
+    if (!url && (p.category === 'Earthquake' || p.source === 'USGS')) {
+      const usgs = p.assets?.usgs_images || [];
+      if (usgs.length > 0) url = typeof usgs[0] === 'string' ? usgs[0] : (usgs[0]?.url || null);
+    }
+    return url;
+  };
+
+  // Editorial: plain text for headline/excerpt (strip URLs)
+  const plainText = (t) => (t || '').replace(/https?:\/\/[^\s]+/gi, '').replace(/\s+/g, ' ').trim();
+  const headlineLen = 80;
+  const excerptLen = 120;
+  const rawText = plainText(postText);
+  const headline = rawText || 'Breaking news';
+  const displayHeadline = headline.length > headlineLen ? headline.substring(0, headlineLen) + '…' : headline;
+  const excerptStart = Math.min(headlineLen, rawText.length);
+  const excerptRaw = rawText.substring(excerptStart).trim();
+  const excerpt = excerptRaw.length > excerptLen ? excerptRaw.substring(0, excerptLen) + '…' : excerptRaw;
+
+  const category = escapeHtml((post.category || 'Breaking').toString());
+  const primaryImageUrl = getPrimaryImageUrl(post);
+
+  // Editorial card: image-first, headline, excerpt, metadata
   return `
-    <article class="feed-post-card" role="listitem" data-post-type="${post.postType || 'text'}" data-post-id="${post.id || ''}" style="background: #111827; min-height: 520px; padding: 1.5rem; margin: 0; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); transition: background 0.2s ease, box-shadow 0.2s ease; display: block; width: 100%; max-width: 100%; box-sizing: border-box; cursor: pointer;" onmouseover="this.style.background='#1a2332'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.3)'" onmouseout="this.style.background='#111827'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.2)'" onclick="window.location.href='${articleLink}'">
-      <div style="display: flex; gap: 0.75rem; margin-bottom: 0.75rem; align-items: flex-start;">
-        <!-- Avatar -->
-        <a href="https://x.com/newsnoteworthy" target="_blank" rel="noopener noreferrer" style="flex-shrink: 0; text-decoration: none; display: block;" onclick="event.stopPropagation();">
-          <img src="/IMG_5794.PNG" alt="Noteworthy News" style="width: 56px; height: 56px; border-radius: 50%; object-fit: cover; display: block;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-          <div style="width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #1DA1F2 0%, #1a91da 100%); display: none; align-items: center; justify-content: center; font-weight: 700; font-size: 1.25rem; color: white;">
-            NW
-          </div>
-        </a>
-      
-        <!-- Post Content -->
-        <div style="flex: 1; min-width: 0;">
-          <!-- Header: Username, handle, timestamp -->
-          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; flex-wrap: wrap;">
-            <a href="https://x.com/newsnoteworthy" target="_blank" rel="noopener noreferrer" style="font-weight: 700; font-size: 0.938rem; color: rgb(231, 233, 234); text-decoration: none; line-height: 1.25rem;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'" onclick="event.stopPropagation();">Noteworthy News</a>
-            <span style="color: rgb(113, 118, 123); font-size: 0.938rem; line-height: 1.25rem;">@newsnoteworthy</span>
-            <span style="color: rgb(113, 118, 123); font-size: 0.938rem; line-height: 1.25rem;">·</span>
-            <a href="${articleLink}" style="color: rgb(113, 118, 123); font-size: 0.938rem; text-decoration: none; line-height: 1.25rem;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'" onclick="event.stopPropagation();">${timestamp}</a>
-          </div>
-          
-          <!-- Post Text -->
-          <div style="color: rgb(231, 233, 234); font-size: 0.938rem; line-height: 1.375rem; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; margin: 0 0 0.75rem 0; padding: 0; text-align: left; text-indent: 0;">${formatStory(postText)}</div>
-      
-          <!-- Media -->
-          ${renderMedia(post)}
-          
-          <!-- Engagement Bar (Twitter-style) -->
-          <div style="display: flex; align-items: center; justify-content: space-between; max-width: 425px; margin-top: 0.75rem; padding-top: 0.5rem;" onclick="event.stopPropagation();">
-            ${renderEngagementBar(post, articleLink)}
-          </div>
+    <article class="feed-post-card editorial-card" role="listitem" data-post-type="${post.postType || 'text'}" data-post-id="${post.id || ''}" onclick="window.location.href='${articleLink}'" title="${escapeHtml(displayHeadline)}">
+      ${primaryImageUrl ? `
+      <div class="editorial-card-image">
+        <img src="${String(primaryImageUrl).replace(/"/g, '&quot;').replace(/'/g, '&#x27;')}" alt="" loading="lazy" onerror="this.parentElement.style.display='none'" />
+      </div>
+      ` : `
+      <div class="editorial-card-placeholder"></div>
+      `}
+      <div class="editorial-card-body">
+        <span class="editorial-card-badge">${category}</span>
+        <h3 class="editorial-card-headline">${escapeHtml(displayHeadline)}</h3>
+        ${excerpt ? `<p class="editorial-card-excerpt">${escapeHtml(excerpt)}</p>` : ''}
+        <div class="editorial-card-meta">
+          <time datetime="${postDate}" title="${escapeHtml(timestampTooltip)}">${escapeHtml(timestamp)}</time>
+          <a href="${articleLink}" class="editorial-card-readmore" onclick="event.stopPropagation();">Read full story</a>
         </div>
       </div>
     </article>

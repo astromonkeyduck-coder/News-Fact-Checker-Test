@@ -118,7 +118,10 @@ exports.handler = async (event) => {
         }
         
         // Update other fields
-        if (datePosted) updatedPost.datePosted = datePosted;
+        if (datePosted) {
+          updatedPost.datePosted = datePosted;
+          updatedPost.createdAt = datePosted; // Alias for consistency
+        }
         if (views !== undefined) updatedPost.views = views;
         if (likes !== undefined) updatedPost.likes = likes;
         if (reposts !== undefined) updatedPost.reposts = reposts;

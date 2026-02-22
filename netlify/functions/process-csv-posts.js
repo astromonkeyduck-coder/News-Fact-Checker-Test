@@ -121,7 +121,10 @@ function parseCSV(csvText) {
   return posts;
 }
 
-const UPDATE_POST_ENDPOINT = process.env.NETLIFY_FUNCTION_URL || 'https://noteworthynews.co/.netlify/functions/update-post-data';
+const getUpdateEndpoint = () => {
+  const base = process.env.NETLIFY_FUNCTION_URL || process.env.DEPLOY_PRIME_URL || process.env.URL || 'https://noteworthynews.co';
+  return `${base.replace(/\/$/, '')}/.netlify/functions/update-post-data`;
+};
 
 async function updatePost(postData) {
   const postId = postData.id;
@@ -158,7 +161,7 @@ async function updatePost(postData) {
   });
   
   try {
-    const response = await fetch(UPDATE_POST_ENDPOINT, {
+    const response = await fetch(getUpdateEndpoint(), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -291,12 +294,11 @@ exports.handler = async (event) => {
       processed: 0,
     };
 
-    // Process first 40 posts synchronously (to avoid timeout)
-    // Skip fetch-tweets-simple - update-post-data creates posts from CSV data directly (X blocks scraping)
-    const maxPosts = Math.min(posts.length, 40);
+    // Process first 60 posts per run (to avoid timeout; ~9s at 150ms/post)
+    const maxPosts = Math.min(posts.length, 60);
+    console.log(`[process-csv-posts] Processing ${maxPosts} of ${posts.length} posts, endpoint: ${getUpdateEndpoint()}`);
     for (let i = 0; i < maxPosts; i++) {
       const post = posts[i];
-      
       const updateResult = await updatePost(post);
       if (updateResult.success) {
         results.updated++;
@@ -304,21 +306,22 @@ exports.handler = async (event) => {
         results.skipped++;
       } else {
         results.failed++;
+        console.warn(`[process-csv-posts] Failed post ${post.id}:`, updateResult.error);
       }
-      
       results.processed++;
       await new Promise(resolve => setTimeout(resolve, 150));
     }
+    console.log(`[process-csv-posts] Done: ${results.updated} updated, ${results.failed} failed, ${results.skipped} skipped`);
 
     // For remaining posts, return info that they need to be processed in batches
-    if (posts.length > 40) {
+    if (posts.length > maxPosts) {
       return {
         statusCode: 200,
         headers,
         body: JSON.stringify({
           ...results,
-          message: `✅ Successfully processed first 40 posts - they are now live on the site! ${posts.length - 40} remaining. Upload the CSV again to process the next batch.`,
-          remaining: posts.length - 40,
+          message: `✅ Successfully processed first ${maxPosts} posts - they are now live on the site! ${posts.length - maxPosts} remaining. Upload the CSV again to process the next batch.`,
+          remaining: posts.length - maxPosts,
         }),
       };
     }
