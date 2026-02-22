@@ -364,13 +364,16 @@ async function createEarthquakePost(earthquakeData, imageUrl) {
   });
   
   // Create post object matching the site's post structure
+  // CRITICAL: Set primary_image_url so earthquake-generated image shows on cards
   const post = {
     id: postId,
     title: `M${earthquakeData.magnitude} Earthquake Near ${earthquakeData.location_display}`,
     story: `A magnitude ${earthquakeData.magnitude} earthquake was detected by the U.S. Geological Survey near ${earthquakeData.location_display} at ${localTime}.`,
     text: `A magnitude ${earthquakeData.magnitude} earthquake was detected by the U.S. Geological Survey near ${earthquakeData.location_display} at ${localTime}.`,
+    primary_image_url: imageUrl,
     image: imageUrl,
-    images: [imageUrl],
+    image_url: imageUrl,
+    images: imageUrl ? [imageUrl] : [],
     link: earthquakeData.usgs_event_url,
     url: earthquakeData.usgs_event_url,
     datePosted: earthquakeData.time,

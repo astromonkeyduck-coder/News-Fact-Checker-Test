@@ -466,19 +466,22 @@ function renderEnhancedPostCard(post) {
   const renderMedia = (post) => {
     let mediaHtml = '';
     // Collect all images: primary first, then secondary
-    // Check canonical primary_image_url, then legacy image/image_url, then images array
-    // Also check assets.usgs_images for earthquake posts
+    // For earthquakes: prefer generated image (get-uploaded-image) over raw usgs_images
+    const isEarthquake = post.category === 'Earthquake' || post.source === 'USGS';
+    const isGeneratedImage = (u) => u && typeof u === 'string' && u.includes('get-uploaded-image') && u.includes('earthquake');
     let primaryImage = post.primary_image_url || post.image_url || post.image || null;
-    
-    // Fallback: Check assets.usgs_images for earthquake posts if no primary image
-    if (!primaryImage && (post.category === 'Earthquake' || post.source === 'USGS')) {
-      const usgsImages = post.assets?.usgs_images || [];
-      if (usgsImages.length > 0) {
-        // Use first USGS image as fallback
-        const firstUsgsImage = typeof usgsImages[0] === 'string' ? usgsImages[0] : (usgsImages[0]?.url || null);
-        if (firstUsgsImage) {
-          primaryImage = firstUsgsImage;
-          console.log('[PostFeedEnhanced] Using USGS image as fallback:', firstUsgsImage);
+    if (isEarthquake) {
+      const fromAssets = post.assets?.standard_image || post.assets?.image_url || post.assets?.generated_image;
+      if (fromAssets) primaryImage = primaryImage || fromAssets;
+      if (!primaryImage && post.images && post.images.length > 0) {
+        const generated = post.images.find(u => isGeneratedImage(u));
+        if (generated) primaryImage = generated;
+      }
+      if (!primaryImage) {
+        const usgsImages = post.assets?.usgs_images || [];
+        if (usgsImages.length > 0) {
+          const firstUsgs = typeof usgsImages[0] === 'string' ? usgsImages[0] : (usgsImages[0]?.url || null);
+          if (firstUsgs) primaryImage = firstUsgs;
         }
       }
     }
@@ -662,11 +665,22 @@ function renderEnhancedPostCard(post) {
   };
   
   // Editorial: get primary image or video URL for image-first layout
+  // For earthquakes: prefer generated image (get-uploaded-image) over raw usgs_images
   const getPrimaryImageUrl = (p) => {
+    const isGenerated = (u) => u && typeof u === 'string' && u.includes('get-uploaded-image') && u.includes('earthquake');
     let url = p.primary_image_url || p.image_url || p.image || null;
-    if (!url && (p.category === 'Earthquake' || p.source === 'USGS')) {
-      const usgs = p.assets?.usgs_images || [];
-      if (usgs.length > 0) url = typeof usgs[0] === 'string' ? usgs[0] : (usgs[0]?.url || null);
+    if (p.category === 'Earthquake' || p.source === 'USGS') {
+      const candidate = url || p.assets?.standard_image || p.assets?.image_url || p.assets?.generated_image;
+      if (candidate) url = candidate;
+      if (!url) {
+        const usgs = p.assets?.usgs_images || [];
+        if (usgs.length > 0) url = typeof usgs[0] === 'string' ? usgs[0] : (usgs[0]?.url || null);
+      }
+      // Prefer generated image over raw USGS if we have both (e.g. in images array)
+      if (p.images && p.images.length > 0) {
+        const generated = p.images.find(u => isGenerated(u));
+        if (generated) url = generated;
+      }
     }
     return url;
   };
@@ -699,10 +713,10 @@ function renderEnhancedPostCard(post) {
       </div>
       ` : primaryVideoUrl ? `
       <div class="editorial-card-image">
-        <video src="${String(primaryVideoUrl).replace(/"/g, '&quot;').replace(/'/g, '&#x27;')}" muted playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.innerHTML='<div class=\\'editorial-card-placeholder\\'></div>'"></video>
+        <video src="${String(primaryVideoUrl).replace(/"/g, '&quot;').replace(/'/g, '&#x27;')}" muted playsinline autoplay loop preload="auto" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.innerHTML='<div class=\\'editorial-card-placeholder editorial-card-placeholder-crt\\'><span class=\\'crt-text\\'>CLICK TO SEE STORY</span></div>'"></video>
       </div>
       ` : `
-      <div class="editorial-card-placeholder"></div>
+      <div class="editorial-card-placeholder editorial-card-placeholder-crt"><span class="crt-text">CLICK TO SEE STORY</span></div>
       `}
       <div class="editorial-card-body">
         <span class="editorial-card-badge">${category}</span>
@@ -1220,9 +1234,16 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
     
     // Handle both array response and object with posts property
     let posts = Array.isArray(data) ? data : (data.posts || data.data || []);
-    enhancedCurrentPosts = (posts || []).filter(
+    const rawPosts = (posts || []).filter(p => p && !(p.id || '').toString().startsWith('fallback-'));
+    enhancedCurrentPosts = rawPosts.filter(
       post => !isLowMagnitudeEarthquakeEnhanced(post) && !isExcludedAlertEnhanced(post)
     );
+
+    // When all posts filtered out, use raw posts so we never show empty when API returned data
+    if (enhancedCurrentPosts.length === 0 && rawPosts.length > 0) {
+      console.log('[Enhanced Feed] All posts filtered, showing', rawPosts.length, 'unfiltered posts');
+      enhancedCurrentPosts = rawPosts;
+    }
 
     // When API returns empty, try stale cache as fallback (API may be temporarily empty)
     if (enhancedCurrentPosts.length === 0) {
@@ -1239,6 +1260,9 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
               enhancedCurrentPosts = filtered.filter(
                 post => !isLowMagnitudeEarthquakeEnhanced(post) && !isExcludedAlertEnhanced(post)
               );
+              if (enhancedCurrentPosts.length === 0) {
+                enhancedCurrentPosts = filtered; // Use unfiltered cache when all would be filtered
+              }
               if (enhancedCurrentPosts.length > 0) {
                 console.log('[Enhanced Feed] API returned 0, using stale cache:', enhancedCurrentPosts.length, 'posts');
                 window.__ENHANCED_FEED_USING_STALE_CACHE__ = true;
@@ -1249,8 +1273,26 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
       } catch (_) {}
     }
 
-    console.log('[Enhanced Feed] Loaded', enhancedCurrentPosts.length, 'posts');
+    // Retry once if still empty (API may have been temporarily unavailable)
+    if (enhancedCurrentPosts.length === 0 && resetDisplayCount && !window.__ENHANCED_FEED_RETRY_DONE__) {
+      window.__ENHANCED_FEED_RETRY_DONE__ = true;
+      console.log('[Enhanced Feed] Empty result, retrying in 2s...');
+      container.innerHTML = `
+        <div style="grid-column: 1 / -1; padding: 3rem 2rem; text-align: center; color: rgba(255,255,255,0.85);">
+          <p style="font-size: 1.125rem; margin: 0; font-weight: 500;">Loading posts…</p>
+          <p style="font-size: 0.875rem; margin: 0.5rem 0 0 0; color: rgba(255,255,255,0.6);">Retrying…</p>
+        </div>
+      `;
+      setTimeout(() => {
+        window.__ENHANCED_FEED_RETRY_DONE__ = false;
+        loadEnhancedPosts(endpoint, Math.max(limit, 50), true);
+      }, 2000);
+      enhancedIsLoading = false;
+      return;
+    }
 
+    console.log('[Enhanced Feed] Loaded', enhancedCurrentPosts.length, 'posts');
+    
     // Cache only real posts (never cache fallback)
     if (enhancedCurrentPosts.length > 0 && !enhancedCurrentPosts.some(p => (p.id || '').toString().startsWith('fallback-'))) {
       localStorage.setItem(ENHANCED_CACHE_KEY, JSON.stringify({
@@ -1430,12 +1472,17 @@ function renderEnhancedFeed() {
   const sorted = [...pinned, ...sortEnhancedPosts(unpinned, enhancedCurrentSort)];
 
   if (sorted.length === 0) {
-    // Show clear empty state with import instructions for admins
+    // Use fallback posts so we never show permanent "No posts yet" - keeps feed looking active
+    const toRender = enhancedCurrentPosts.length === 0 ? FALLBACK_POSTS : [];
+    if (toRender.length > 0) {
+      container.innerHTML = toRender.map(post => renderEnhancedPostCard(post)).join('');
+      return;
+    }
+    // Only show empty state if we truly have nothing (shouldn't happen with FALLBACK_POSTS)
     container.innerHTML = `
       <div class="feed-empty-state" style="grid-column: 1 / -1; padding: 3rem 2rem; text-align: center; background: rgba(13, 31, 58, 0.4); border-radius: 16px; border: 1px solid rgba(74, 158, 255, 0.15); color: rgba(255,255,255,0.9);">
-        <p style="font-size: 1.125rem; margin: 0 0 0.5rem 0; font-weight: 600;">No posts yet</p>
-        <p style="font-size: 0.9375rem; margin: 0 0 1rem 0; color: rgba(255,255,255,0.7);">More breaking news coming soon.</p>
-        <p style="font-size: 0.875rem; margin: 0; color: rgba(255,255,255,0.5);">Check back for updates.</p>
+        <p style="font-size: 1.125rem; margin: 0 0 0.5rem 0; font-weight: 600;">Loading posts…</p>
+        <p style="font-size: 0.9375rem; margin: 0 0 1rem 0; color: rgba(255,255,255,0.7);">Check back in a moment.</p>
       </div>
     `;
     return;

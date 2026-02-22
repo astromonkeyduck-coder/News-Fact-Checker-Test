@@ -1840,12 +1840,20 @@
             // Filter for video URLs (used below)
             const isVideoUrl = (url) => url && typeof url === 'string' && /\.(mp4|webm|mov|m4v)(\?|$)/i.test(url.toLowerCase());
             // STEP 3: Canonical image resolution (SINGLE SOURCE OF TRUTH)
-            // For earthquakes, fall back to USGS images if no primary
+            // For earthquakes: prefer generated image (get-uploaded-image) over raw usgs_images
             let primary = post.primary_image_url || post.image_url || post.image || null;
-            if (!primary && (post.category === 'Earthquake' || post.source === 'USGS')) {
-                const usgsImages = post.assets?.usgs_images || post.usgs_images || [];
-                const firstUsgs = usgsImages[0];
-                primary = firstUsgs ? (typeof firstUsgs === 'string' ? firstUsgs : firstUsgs?.url) : null;
+            if (post.category === 'Earthquake' || post.source === 'USGS') {
+                const fromAssets = post.assets?.standard_image || post.assets?.image_url || post.assets?.generated_image;
+                if (fromAssets) primary = primary || fromAssets;
+                if (!primary && post.images && post.images.length > 0) {
+                    const generated = post.images.find(u => u && typeof u === 'string' && u.includes('get-uploaded-image') && u.includes('earthquake'));
+                    if (generated) primary = generated;
+                }
+                if (!primary) {
+                    const usgsImages = post.assets?.usgs_images || post.usgs_images || [];
+                    const firstUsgs = usgsImages[0];
+                    primary = firstUsgs ? (typeof firstUsgs === 'string' ? firstUsgs : firstUsgs?.url) : null;
+                }
             }
             // Don't treat video URLs as primary image (legacy data may have mixed)
             if (primary && isVideoUrl(primary)) primary = null;
@@ -1939,9 +1947,15 @@
             }
 
             // Render videos (MP4, WebM, etc. - from admin upload or post data)
-            const articleVideos = [...(post.videos || [])];
-            if (post.video_url || post.video) articleVideos.unshift(post.video_url || post.video);
-            const videoUrls = articleVideos.filter(u => u && isVideoUrl(u));
+            // Deduplicate: video_url/video/assets.video_url may also appear in post.videos
+            const articleVideosRaw = [
+                ...(post.video_url || post.video || post.assets?.video_url ? [post.video_url || post.video || post.assets?.video_url] : []),
+                ...(post.videos || [])
+            ].filter(Boolean);
+            const videoUrls = articleVideosRaw
+                .filter(u => u && isVideoUrl(u))
+                .map(u => ensureAbsoluteImageUrl(u))
+                .filter((url, i, arr) => arr.findIndex(u => normalizeUrl(u) === normalizeUrl(url)) === i);
             if (videoUrls.length > 0 && !primary) {
                 // Video as hero when no primary image
                 const videoUrl = ensureAbsoluteImageUrl(videoUrls[0]);

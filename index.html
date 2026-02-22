@@ -6724,24 +6724,25 @@
             font-weight: 500;
         }
         
-        /* Content Row with Image and Text */
+        /* Content Row - always stack media above caption for consistent layout */
         .hero-module-content-row {
             display: flex;
-            gap: 1rem;
-            align-items: flex-start;
+            flex-direction: column;
+            gap: 0.75rem;
             margin-bottom: 0.75rem;
             flex: 1;
+            min-height: 0;
         }
         
         .hero-module-media {
             width: 100%;
+            flex-shrink: 0;
             border-radius: 12px;
             overflow: hidden;
-            max-height: 400px;
+            max-height: 280px;
             background: rgba(0, 0, 0, 0.2);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
-            margin-bottom: 1rem;
         }
         
         .hero-module-media:hover {
@@ -6749,21 +6750,36 @@
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
         }
         
-        .hero-module-media img,
+        .hero-module-media img {
+            width: 100%;
+            height: auto;
+            max-height: 280px;
+            object-fit: cover;
+            display: block;
+            border-radius: 12px;
+        }
+        
         .hero-module-media video {
             width: 100%;
             height: auto;
+            max-height: 280px;
+            object-fit: contain;
             display: block;
             border-radius: 12px;
         }
         
         .hero-module-media iframe {
+            width: 100%;
+            height: 100%;
+            min-height: 200px;
+            max-height: 280px;
             border-radius: 12px;
         }
         
         .hero-module-text-content {
             flex: 1;
             min-width: 0;
+            flex-shrink: 0;
         }
         
         .hero-module-image-wrapper {
@@ -6868,7 +6884,6 @@
             }
             
             .hero-module-content-row {
-                flex-direction: column;
                 align-items: center;
             }
             
@@ -14610,7 +14625,7 @@
             <!-- Content Row with Text and Media -->
             <div class="hero-module-content-row">
                 <!-- Media Container (shown when media exists) -->
-                <div class="hero-module-media" id="heroModuleMedia" style="display: none; margin-bottom: 1rem; border-radius: 12px; overflow: hidden; max-height: 400px; background: rgba(0, 0, 0, 0.2);"></div>
+                <div class="hero-module-media" id="heroModuleMedia" style="display: none;"></div>
                 
                 <div class="hero-module-text-content">
                     <!-- Headline -->
@@ -14737,16 +14752,31 @@
                         return dateB - dateA; // Newest first
                     });
                     
-                    // Find breaking news post from sorted array
-                    let breakingPost = sortedPosts.find(post => {
+                    // Exclude earthquake posts from hero module (they belong in situation monitor / earthquake feed)
+                    const isEarthquakePost = (post) => {
+                        if (!post) return false;
+                        const id = (post.id || '').toString();
+                        const category = (post.category || '').toLowerCase();
+                        const source = (post.source || '').toLowerCase();
+                        return id.startsWith('eq-') || category === 'earthquake' || source === 'usgs';
+                    };
+                    const nonEarthquakePosts = sortedPosts.filter(p => !isEarthquakePost(p));
+                    
+                    // Find breaking news post from sorted array (excluding earthquakes)
+                    let breakingPost = nonEarthquakePosts.find(post => {
                         if (!post) return false;
                         const text = (post.text || post.title || post.story || '').toUpperCase();
                         return text.includes('BREAKING') || post.breaking === true || post.category === 'breaking';
                     });
                     
-                    // Use breaking post if found, otherwise use the first (newest) post
-                    const latestPost = breakingPost || sortedPosts[0];
+                    // Use breaking post if found, otherwise use the first (newest) non-earthquake post
+                    const latestPost = breakingPost || nonEarthquakePosts[0];
                     if (!latestPost) {
+                        // All posts are earthquakes - retry for non-earthquake content
+                        if (retryCount < 5) {
+                            setTimeout(() => loadLatestBreakingNews(retryCount + 1), 2000);
+                            return;
+                        }
                         throw new Error('No valid posts found');
                     }
                     
@@ -14817,18 +14847,18 @@
                                         </div>`;
                                     }
                                 } else {
-                                    // Regular video
-                                    mediaHTML = `<video src="${video}" controls style="width: 100%; max-height: 400px; border-radius: 12px; display: block;" onerror="this.style.display='none'; this.parentElement.style.display='none';"></video>`;
+                                    // Regular video - constrained to prevent layout break
+                                    mediaHTML = `<video src="${video}" controls style="width: 100%; max-height: 280px; object-fit: contain; border-radius: 12px; display: block;" onerror="this.style.display='none'; this.parentElement.style.display='none';"></video>`;
                                 }
                             } else if (images.length > 0) {
                                 // Display images
                                 if (images.length === 1) {
                                     // Single image
-                                    mediaHTML = `<img src="${images[0]}" alt="Breaking news image" loading="eager" style="width: 100%; height: auto; max-height: 400px; object-fit: cover; display: block; border-radius: 12px;" onerror="this.style.display='none'; this.parentElement.style.display='none';" />`;
+                                    mediaHTML = `<img src="${images[0]}" alt="Breaking news image" loading="eager" style="width: 100%; height: auto; max-height: 280px; object-fit: cover; display: block; border-radius: 12px;" onerror="this.style.display='none'; this.parentElement.style.display='none';" />`;
                                 } else {
                                     // Multiple images - show in grid
                                     const gridCols = images.length === 2 ? '1fr 1fr' : 'repeat(2, 1fr)';
-                                    mediaHTML = `<div style="display: grid; grid-template-columns: ${gridCols}; gap: 4px; max-height: 400px; overflow: hidden; border-radius: 12px;">
+                                    mediaHTML = `<div style="display: grid; grid-template-columns: ${gridCols}; gap: 4px; max-height: 280px; overflow: hidden; border-radius: 12px;">
                                         ${images.slice(0, 4).map((img, idx) => {
                                             const isLastIn3 = images.length === 3 && idx === 2;
                                             return `<div style="aspect-ratio: ${isLastIn3 ? '2/1' : '1'}; overflow: hidden; background: rgba(0,0,0,0.3); ${isLastIn3 ? 'grid-column: 1 / -1;' : ''}">
@@ -20065,7 +20095,7 @@
                 const estNow = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + (estOffset * 60000));
                 
                 // Calculate target date: one week from last git push (December 23, 2025) at 7:45 PM EST
-                const lastPushDate = new Date('2026-02-22T19:45:00-05:00'); // February 22, 2026 7:45 PM EST // February 22, 2026 7:45 PM EST // February 22, 2026 7:45 PM EST // February 22, 2026 7:45 PM EST // February 22, 2026 7:45 PM EST // February 18, 2026 7:45 PM EST // February 18, 2026 7:45 PM EST // February 18, 2026 7:45 PM EST // February 18, 2026 7:45 PM EST // February 18, 2026 7:45 PM EST // February 18, 2026 7:45 PM EST // February 18, 2026 7:45 PM EST // February 18, 2026 7:45 PM EST // February 18, 2026 7:45 PM EST // February 18, 2026 7:45 PM EST // February 18, 2026 7:45 PM EST // February 18, 2026 7:45 PM EST // February 16, 2026 7:45 PM EST // February 16, 2026 7:45 PM EST // February 16, 2026 7:45 PM EST // February 1, 2026 7:45 PM EST // February 1, 2026 7:45 PM EST // February 1, 2026 7:45 PM EST // February 1, 2026 7:45 PM EST // February 1, 2026 7:45 PM EST // February 1, 2026 7:45 PM EST // February 1, 2026 7:45 PM EST // February 1, 2026 7:45 PM EST // February 1, 2026 7:45 PM EST // January 15, 2026 7:45 PM EST // January 15, 2026 7:45 PM EST // January 15, 2026 7:45 PM EST // January 15, 2026 7:45 PM EST // January 15, 2026 7:45 PM EST // January 15, 2026 7:45 PM EST // January 14, 2026 7:45 PM EST // January 14, 2026 7:45 PM EST // January 14, 2026 7:45 PM EST // January 14, 2026 7:45 PM EST // January 14, 2026 7:45 PM EST // January 14, 2026 7:45 PM EST // January 14, 2026 7:45 PM EST // January 14, 2026 7:45 PM EST // January 14, 2026 7:45 PM EST // January 14, 2026 7:45 PM EST // January 14, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 9, 2026 7:45 PM EST // January 5, 2026 7:45 PM EST // January 5, 2026 7:45 PM EST // January 5, 2026 7:45 PM EST // January 5, 2026 7:45 PM EST // January 5, 2026 7:45 PM EST // January 5, 2026 7:45 PM EST // January 5, 2026 7:45 PM EST // January 5, 2026 7:45 PM EST // January 5, 2026 7:45 PM EST // January 5, 2026 7:45 PM EST // January 5, 2026 7:45 PM EST // January 5, 2026 7:45 PM EST // January 5, 2026 7:45 PM EST // January 5, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST
+                const lastPushDate = new Date('2026-02-22T19:45:00-05:00'); // February 22, 2026 7:45 PM EST // February 22, 2026 7:45 PM EST // February 22, 2026 7:45 PM EST // February 22, 2026 7:45 PM EST // February 22, 2026 7:45 PM EST // February 22, 2026 7:45 PM EST // February 18, 2026 7:45 PM EST // February 18, 2026 7:45 PM EST // February 18, 2026 7:45 PM EST // February 18, 2026 7:45 PM EST // February 18, 2026 7:45 PM EST // February 18, 2026 7:45 PM EST // February 18, 2026 7:45 PM EST // February 18, 2026 7:45 PM EST // February 18, 2026 7:45 PM EST // February 18, 2026 7:45 PM EST // February 18, 2026 7:45 PM EST // February 18, 2026 7:45 PM EST // February 16, 2026 7:45 PM EST // February 16, 2026 7:45 PM EST // February 16, 2026 7:45 PM EST // February 1, 2026 7:45 PM EST // February 1, 2026 7:45 PM EST // February 1, 2026 7:45 PM EST // February 1, 2026 7:45 PM EST // February 1, 2026 7:45 PM EST // February 1, 2026 7:45 PM EST // February 1, 2026 7:45 PM EST // February 1, 2026 7:45 PM EST // February 1, 2026 7:45 PM EST // January 15, 2026 7:45 PM EST // January 15, 2026 7:45 PM EST // January 15, 2026 7:45 PM EST // January 15, 2026 7:45 PM EST // January 15, 2026 7:45 PM EST // January 15, 2026 7:45 PM EST // January 14, 2026 7:45 PM EST // January 14, 2026 7:45 PM EST // January 14, 2026 7:45 PM EST // January 14, 2026 7:45 PM EST // January 14, 2026 7:45 PM EST // January 14, 2026 7:45 PM EST // January 14, 2026 7:45 PM EST // January 14, 2026 7:45 PM EST // January 14, 2026 7:45 PM EST // January 14, 2026 7:45 PM EST // January 14, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 12, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 11, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 10, 2026 7:45 PM EST // January 9, 2026 7:45 PM EST // January 5, 2026 7:45 PM EST // January 5, 2026 7:45 PM EST // January 5, 2026 7:45 PM EST // January 5, 2026 7:45 PM EST // January 5, 2026 7:45 PM EST // January 5, 2026 7:45 PM EST // January 5, 2026 7:45 PM EST // January 5, 2026 7:45 PM EST // January 5, 2026 7:45 PM EST // January 5, 2026 7:45 PM EST // January 5, 2026 7:45 PM EST // January 5, 2026 7:45 PM EST // January 5, 2026 7:45 PM EST // January 5, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST
                 const oneWeekInMs = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
                 const target = new Date(lastPushDate.getTime() + oneWeekInMs); // December 30, 2025 7:45 PM EST
                 
