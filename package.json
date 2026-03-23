@@ -20,7 +20,8 @@
     "test:earthquake": "node test-earthquake-visual.js",
     "test:earthquake-full": "node test-full-earthquake-pipeline.js",
     "test:earthquake-last": "node test-last-earthquake.js",
-    "test:video": "node test-video-generation-local.js"
+    "test:video": "node test-video-generation-local.js",
+    "upload:csv": "node scripts/upload-csv-to-breaking-news.js"
   },
   "dependencies": {
     "@auth0/auth0-spa-js": "^2.8.0",

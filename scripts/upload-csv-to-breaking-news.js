@@ -1,8 +1,19 @@
 #!/usr/bin/env node
 /**
  * Upload CSV file to process-csv-posts function to update breaking news cards
- * Usage: node scripts/upload-csv-to-breaking-news.js
+ *
+ * Auth (one required):
+ *   - ADMIN_ANALYTICS_TOKEN — same secret as Netlify env; sent as X-Admin-Token
+ *   - NETLIFY_ADMIN_JWT — Auth0 access token (admin user), sent as Authorization: Bearer
+ *
+ * Loads .env from repo root when present (via dotenv).
+ *
+ * Usage:
+ *   node scripts/upload-csv-to-breaking-news.js [path-to.csv]
+ *   NETLIFY_FUNCTION_URL=http://localhost:8888 node scripts/upload-csv-to-breaking-news.js ./export.csv
  */
+
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 
 const fs = require('fs');
 const path = require('path');
@@ -21,7 +32,7 @@ try {
 
 async function uploadCSV() {
     const csvArg = process.argv[2];
-    const csvFile = csvArg || 'account_analytics_content_2025-02-16_2026-02-16.csv';
+    const csvFile = csvArg || 'account_analytics_content_2026-02-22_2026-03-23.csv';
     const csvPath = path.isAbsolute(csvFile) ? csvFile : path.join(__dirname, '..', csvFile);
     
     if (!fs.existsSync(csvPath)) {
@@ -47,23 +58,49 @@ async function uploadCSV() {
         csvContent +
         `\r\n--${boundary}--\r\n`;
     
-    // Determine endpoint
-    const endpoint = process.env.NETLIFY_FUNCTION_URL 
-        ? `${process.env.NETLIFY_FUNCTION_URL}/.netlify/functions/process-csv-posts`
-        : 'https://noteworthynews.co/.netlify/functions/process-csv-posts';
-    
+    // Determine endpoint (NETLIFY_FUNCTION_URL = origin only, e.g. https://noteworthynews.co or http://localhost:8888)
+    const base = (process.env.NETLIFY_FUNCTION_URL || 'https://noteworthynews.co').replace(/\/$/, '');
+    const endpoint = `${base}/.netlify/functions/process-csv-posts`;
+
+    const adminToken = process.env.ADMIN_ANALYTICS_TOKEN;
+    let bearer = process.env.NETLIFY_ADMIN_JWT || process.env.AUTH0_ACCESS_TOKEN;
+    if (bearer && /^Bearer\s+/i.test(bearer)) {
+        bearer = bearer.replace(/^Bearer\s+/i, '');
+    }
+
+    if (!adminToken && !bearer) {
+        console.error('❌ Missing auth: set ADMIN_ANALYTICS_TOKEN or NETLIFY_ADMIN_JWT in .env or the environment.');
+        console.error('   (Netlify dashboard → Site settings → Environment variables → ADMIN_ANALYTICS_TOKEN)');
+        process.exit(1);
+    }
+
+    const reqHeaders = {
+        'Content-Type': `multipart/form-data; boundary=${boundary}`,
+    };
+    if (bearer) {
+        reqHeaders.Authorization = `Bearer ${bearer}`;
+    }
+    if (adminToken) {
+        reqHeaders['X-Admin-Token'] = adminToken;
+    }
+
     console.log(`🌐 Endpoint: ${endpoint}`);
     
     try {
         const response = await fetch(endpoint, {
             method: 'POST',
             body: formData,
-            headers: {
-                'Content-Type': `multipart/form-data; boundary=${boundary}`
-            }
+            headers: reqHeaders,
         });
         
-        const result = await response.json();
+        const text = await response.text();
+        let result = {};
+        try {
+            result = text ? JSON.parse(text) : {};
+        } catch (_) {
+            console.error('\n❌ Non-JSON response:', text.slice(0, 500));
+            process.exit(1);
+        }
         
         if (response.ok) {
             console.log('\n✅ Success!');

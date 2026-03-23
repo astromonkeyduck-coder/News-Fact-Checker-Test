@@ -3,7 +3,7 @@
  * Creates a new post if one doesn't exist for the given ID.
  */
 
-const { requireAdminAuth } = require("./middleware/requireAuth");
+const { requireAdminAuthOrSecret } = require("./middleware/requireAuth");
 const {
   getPostStore,
   readPost,
@@ -16,7 +16,7 @@ const {
 const headers = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "PATCH, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Admin-Token",
   "Content-Type": "application/json",
 };
 
@@ -25,7 +25,7 @@ exports.handler = async (event) => {
     return { statusCode: 204, headers, body: "" };
   }
 
-  const auth = await requireAdminAuth(event);
+  const auth = await requireAdminAuthOrSecret(event, "ADMIN_ANALYTICS_TOKEN");
   if (auth.statusCode) return auth;
 
   if (event.httpMethod !== "POST" && event.httpMethod !== "PATCH") {

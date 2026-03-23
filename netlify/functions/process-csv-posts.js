@@ -3,12 +3,12 @@
  * Accepts CSV file upload and processes it similar to add-and-update-posts-from-csv.js
  */
 
-const { requireAdminAuth } = require("./middleware/requireAuth");
+const { requireAdminAuthOrSecret } = require("./middleware/requireAuth");
 
 const headers = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Admin-Token",
   "Content-Type": "application/json",
 };
 
@@ -128,7 +128,7 @@ const getUpdateEndpoint = () => {
   return `${base.replace(/\/$/, '')}/.netlify/functions/update-post-data`;
 };
 
-async function updatePost(postData, authorizationHeader) {
+async function updatePost(postData, forwardHeaders) {
   const postId = postData.id;
   const dateISO = parseDate(postData.date);
   
@@ -163,13 +163,10 @@ async function updatePost(postData, authorizationHeader) {
   });
   
   try {
-    const headers = { 'Content-Type': 'application/json' };
-    if (authorizationHeader) {
-      headers.Authorization = authorizationHeader;
-    }
+    const reqHeaders = { 'Content-Type': 'application/json', ...forwardHeaders };
     const response = await fetch(getUpdateEndpoint(), {
       method: 'POST',
-      headers,
+      headers: reqHeaders,
       body: JSON.stringify(updatePayload),
     });
     
@@ -200,11 +197,20 @@ exports.handler = async (event) => {
     };
   }
 
-  const auth = await requireAdminAuth(event);
+  const auth = await requireAdminAuthOrSecret(event, "ADMIN_ANALYTICS_TOKEN");
   if (auth.statusCode) return auth;
 
+  const forwardHeaders = {};
   const authorizationHeader =
-    event.headers.authorization || event.headers.Authorization || '';
+    event.headers.authorization || event.headers.Authorization || "";
+  if (authorizationHeader) {
+    forwardHeaders.Authorization = authorizationHeader;
+  }
+  const adminToken =
+    event.headers["x-admin-token"] || event.headers["X-Admin-Token"];
+  if (adminToken) {
+    forwardHeaders["X-Admin-Token"] = adminToken;
+  }
 
   try {
     // Parse CSV from request body
@@ -309,7 +315,7 @@ exports.handler = async (event) => {
     console.log(`[process-csv-posts] Processing ${maxPosts} of ${posts.length} posts, endpoint: ${getUpdateEndpoint()}`);
     for (let i = 0; i < maxPosts; i++) {
       const post = posts[i];
-      const updateResult = await updatePost(post, authorizationHeader);
+      const updateResult = await updatePost(post, forwardHeaders);
       if (updateResult.success) {
         results.updated++;
       } else if (updateResult.skipped) {
