@@ -51,6 +51,7 @@
 <body>
 
   <div class="top-rule" aria-hidden="true"></div>
+  <div class="scanline-sweep" aria-hidden="true"></div>
 
   <!-- ─── Header ─────────────────────────────────── -->
   <header class="site-header">
@@ -219,9 +220,15 @@
           <div class="email-preview-window">
             <div class="email-preview-chrome">
               <div class="email-preview-dots" aria-hidden="true">
-                <span></span><span></span><span></span>
+                <span class="dot-red"></span><span class="dot-yellow"></span><span class="dot-green"></span>
               </div>
-              <span class="email-preview-tab">Inbox</span>
+              <div class="email-preview-chrome-tabs">
+                <span class="email-preview-tab is-active">
+                  <span class="email-preview-unread">1</span>
+                  Inbox
+                </span>
+                <span class="email-preview-tab">Sent</span>
+              </div>
             </div>
             <div class="email-preview-meta">
               <div class="email-preview-meta-row">

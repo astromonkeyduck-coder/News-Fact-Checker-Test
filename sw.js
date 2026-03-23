@@ -3,7 +3,7 @@
  * Provides offline support, caching, and faster page loads
  */
 
-const CACHE_VERSION = 'v2.0.0-cutover';
+const CACHE_VERSION = 'v2.1.0-broadcast';
 const CACHE_NAME = `noteworthy-news-${CACHE_VERSION}`;
 
 // Helper function to check if a URL is cacheable
