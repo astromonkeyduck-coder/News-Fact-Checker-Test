@@ -2,17 +2,63 @@
  * Noteworthy News V2 — Auth Module
  *
  * Thin Auth0 SPA integration. SDK is loaded lazily — only fetched when
- * needed (auth callback in URL, or user clicks Sign In/Sign Up).
+ * needed (auth callback in URL, or user clicks Sign In/ Sign Up).
  *
  * If Auth0 config is absent (dev without env vars), degrades silently.
+ *
+ * --- If browser shows 403 on .../authorize?client_id=... ---
+ * That response comes from Auth0, not this app. Typical fixes:
+ * 1. Auth0 Dashboard → Applications → your app → Settings:
+ *    - Application type must be "Single Page Application" (PKCE).
+ *    - Allowed Callback URLs: include the EXACT redirect_uri, e.g.
+ *      https://noteworthynews.co/  AND  https://noteworthynews.co/v2/index.html
+ *      if you open the site from that path (match trailing slash to what the
+ *      browser sends — check the full authorize URL query string).
+ *    - Allowed Logout URLs: https://noteworthynews.co/
+ *    - Allowed Web Origins: https://noteworthynews.co  (no path)
+ * 2. Ensure the Client ID matches this application (not a M2M app).
+ * 3. Tenant Attack Protection / bot rules: try another network or disable
+ *    for testing.
  */
 
 const SDK_URL = 'https://cdn.auth0.com/js/auth0-spa-js/2.4/auth0-spa-js.production.js';
+
+const AUTH0_CONFIG_URL = '/.netlify/functions/get-auth0-config';
 
 let client = null;
 let currentUser = null;
 let onAuthChangeFn = null;
 let sdkPromise = null;
+let configMergeAttempted = false;
+
+/**
+ * Prefer Netlify env (get-auth0-config) once per page load so V2 works even
+ * when HTML still has build placeholders, and local dev can use netlify dev.
+ */
+async function mergeAuth0ConfigFromServer() {
+  if (configMergeAttempted) return;
+  configMergeAttempted = true;
+  try {
+    const res = await fetch(AUTH0_CONFIG_URL);
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.domain && data.clientId && !data.error) {
+      window.AUTH0_DOMAIN = data.domain;
+      window.AUTH0_CLIENT_ID = data.clientId;
+    }
+  } catch (_) {
+    // Offline or function missing — keep inline/build values
+  }
+}
+
+/** Callback URL must match Auth0 "Allowed Callback URLs" exactly. */
+function getRedirectUri() {
+  const { origin, pathname } = window.location;
+  if (!pathname || pathname === '/') {
+    return `${origin}/`;
+  }
+  return origin + pathname;
+}
 
 function getAuth0Factory() {
   if (typeof createAuth0Client === 'function') return createAuth0Client;
@@ -36,6 +82,7 @@ function loadSDK() {
 
 async function createClient() {
   if (client) return client;
+  await mergeAuth0ConfigFromServer();
   const domain = window.AUTH0_DOMAIN;
   const clientId = window.AUTH0_CLIENT_ID;
   if (!domain || !clientId) return null;
@@ -47,7 +94,7 @@ async function createClient() {
     domain,
     clientId,
     authorizationParams: {
-      redirect_uri: window.location.origin + window.location.pathname,
+      redirect_uri: getRedirectUri(),
     },
     cacheLocation: 'memory',
   });
@@ -65,6 +112,7 @@ async function createClient() {
  */
 export async function initAuth(onAuthChange) {
   onAuthChangeFn = onAuthChange;
+  await mergeAuth0ConfigFromServer();
   const domain = window.AUTH0_DOMAIN;
   const clientId = window.AUTH0_CLIENT_ID;
 
@@ -120,10 +168,17 @@ export async function login() {
     const c = await createClient();
     if (!c) return;
     await c.loginWithRedirect({
-      authorizationParams: { screen_hint: 'login' },
+      authorizationParams: {
+        screen_hint: 'login',
+        redirect_uri: getRedirectUri(),
+      },
     });
   } catch (err) {
     console.error('[Auth] Login error:', err);
+    console.info(
+      '[Auth] If Auth0 returned 403, verify Dashboard: SPA app type, Callback URLs include',
+      getRedirectUri()
+    );
   }
 }
 
@@ -132,10 +187,17 @@ export async function signup() {
     const c = await createClient();
     if (!c) return;
     await c.loginWithRedirect({
-      authorizationParams: { screen_hint: 'signup' },
+      authorizationParams: {
+        screen_hint: 'signup',
+        redirect_uri: getRedirectUri(),
+      },
     });
   } catch (err) {
     console.error('[Auth] Signup error:', err);
+    console.info(
+      '[Auth] If Auth0 returned 403, verify Dashboard: SPA app type, Callback URLs include',
+      getRedirectUri()
+    );
   }
 }
 

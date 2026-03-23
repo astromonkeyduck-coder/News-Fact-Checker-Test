@@ -3,7 +3,7 @@
  * Provides offline support, caching, and faster page loads
  */
 
-const CACHE_VERSION = 'v2.2.1-audio';
+const CACHE_VERSION = 'v2.2.2-ui-sounds';
 const CACHE_NAME = `noteworthy-news-${CACHE_VERSION}`;
 
 // Helper function to check if a URL is cacheable
@@ -28,6 +28,7 @@ const STATIC_ASSETS = [
   '/v2/js/feed.js',
   '/v2/js/auth.js',
   '/v2/js/ambient-audio.js',
+  '/v2/js/ui-sounds.js',
   '/NewsfeedGlow.mp3',
   '/game.html',
   '/geography-game.html',

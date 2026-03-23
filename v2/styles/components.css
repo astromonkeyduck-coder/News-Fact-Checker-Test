@@ -2059,8 +2059,8 @@
 }
 
 .audio-toggle.is-playing {
-  color: #00ff41;
-  border-color: rgba(0, 255, 65, 0.3);
+  color: var(--color-accent);
+  border-color: rgba(var(--color-accent-rgb), 0.35);
 }
 
 

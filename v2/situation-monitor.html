@@ -211,9 +211,45 @@
   <!-- ── Init ────────────────────────────────────── -->
   <script type="module">
     import { SituationMonitorV2 } from './js/situation-monitor/SituationMonitorV2.js';
+    import { UISounds } from './js/ui-sounds.js';
 
     const monitor = new SituationMonitorV2('sitmon-root');
     window.situationMonitor = monitor;
+
+    const h = document.querySelector('.site-header');
+    const toggle = document.getElementById('nav-toggle');
+    const menu = document.getElementById('nav-menu');
+    function closeNav() {
+      if (!menu || !menu.classList.contains('open')) return;
+      UISounds.tap();
+      menu.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+      document.body.style.overflow = '';
+    }
+    if (toggle && menu) {
+      toggle.addEventListener('click', () => {
+        UISounds.tap();
+        const open = menu.classList.toggle('open');
+        toggle.setAttribute('aria-expanded', String(open));
+        document.body.style.overflow = open ? 'hidden' : '';
+      });
+      menu.addEventListener('click', (e) => {
+        if (e.target === menu || e.target.closest('.nav-link')) {
+          closeNav();
+        }
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && menu.classList.contains('open')) {
+          closeNav();
+          toggle.focus();
+        }
+      });
+    }
+    if (h) {
+      window.addEventListener('scroll', () => {
+        h.classList.toggle('scrolled', window.scrollY > 10);
+      }, { passive: true });
+    }
   </script>
 
   <!-- ── Mobile Nav Toggle ───────────────────────── -->
@@ -258,37 +294,6 @@
       </div>
     </div>
   </footer>
-
-  <script>
-    (function () {
-      var h = document.querySelector('.site-header');
-      var toggle = document.getElementById('nav-toggle');
-      var menu = document.getElementById('nav-menu');
-      if (toggle && menu) {
-        toggle.addEventListener('click', function () {
-          var open = menu.classList.toggle('open');
-          toggle.setAttribute('aria-expanded', open);
-          document.body.style.overflow = open ? 'hidden' : '';
-        });
-        menu.addEventListener('click', function (e) {
-          if (e.target === menu || e.target.closest('.nav-link')) {
-            menu.classList.remove('open');
-            toggle.setAttribute('aria-expanded', 'false');
-            document.body.style.overflow = '';
-          }
-        });
-        document.addEventListener('keydown', function (e) {
-          if (e.key === 'Escape' && menu.classList.contains('open')) {
-            menu.classList.remove('open');
-            toggle.setAttribute('aria-expanded', 'false');
-            document.body.style.overflow = '';
-            toggle.focus();
-          }
-        });
-      }
-      if (h) window.addEventListener('scroll', function () { h.classList.toggle('scrolled', window.scrollY > 10); }, { passive: true });
-    })();
-  </script>
 
 </body>
 </html>

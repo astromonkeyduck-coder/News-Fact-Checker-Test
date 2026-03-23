@@ -128,7 +128,7 @@ const getUpdateEndpoint = () => {
   return `${base.replace(/\/$/, '')}/.netlify/functions/update-post-data`;
 };
 
-async function updatePost(postData) {
+async function updatePost(postData, authorizationHeader) {
   const postId = postData.id;
   const dateISO = parseDate(postData.date);
   
@@ -163,11 +163,13 @@ async function updatePost(postData) {
   });
   
   try {
+    const headers = { 'Content-Type': 'application/json' };
+    if (authorizationHeader) {
+      headers.Authorization = authorizationHeader;
+    }
     const response = await fetch(getUpdateEndpoint(), {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify(updatePayload),
     });
     
@@ -200,6 +202,9 @@ exports.handler = async (event) => {
 
   const auth = await requireAdminAuth(event);
   if (auth.statusCode) return auth;
+
+  const authorizationHeader =
+    event.headers.authorization || event.headers.Authorization || '';
 
   try {
     // Parse CSV from request body
@@ -304,7 +309,7 @@ exports.handler = async (event) => {
     console.log(`[process-csv-posts] Processing ${maxPosts} of ${posts.length} posts, endpoint: ${getUpdateEndpoint()}`);
     for (let i = 0; i < maxPosts; i++) {
       const post = posts[i];
-      const updateResult = await updatePost(post);
+      const updateResult = await updatePost(post, authorizationHeader);
       if (updateResult.success) {
         results.updated++;
       } else if (updateResult.skipped) {

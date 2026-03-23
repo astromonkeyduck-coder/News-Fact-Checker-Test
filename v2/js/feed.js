@@ -5,6 +5,8 @@
  * engine-sourced Alerts, and renders each into its own section.
  */
 
+import { UISounds } from './ui-sounds.js';
+
 const FEED_API = '/.netlify/functions/posts-read';
 const FETCH_LIMIT = 80;
 const BREAKING_DISPLAY = 8;
@@ -292,8 +294,10 @@ export async function initFeed() {
     _allBreaking = gridSource;
     initFilters(gridSource);
     initLoadMore(gridSource);
+    UISounds.success();
   } catch (err) {
     console.error('[Feed] Failed to load:', err);
+    UISounds.error();
     const errorHtml = renderError();
     if (breakingEl) {
       breakingEl.innerHTML = errorHtml;
@@ -303,6 +307,7 @@ export async function initFeed() {
     const retryBtn = breakingEl?.querySelector('.feed-retry-btn');
     if (retryBtn) {
       retryBtn.addEventListener('click', () => {
+        UISounds.tap();
         _cachedPosts = null;
         if (breakingEl) {
           breakingEl.classList.remove('feed-loaded');
@@ -375,6 +380,7 @@ function initFilters(breaking) {
   container.addEventListener('click', (e) => {
     const chip = e.target.closest('.filter-chip');
     if (!chip) return;
+    UISounds.tap();
     _activeFilter = chip.dataset.filter;
     _displayCount = BREAKING_DISPLAY;
     container.querySelectorAll('.filter-chip').forEach(c =>
@@ -392,6 +398,7 @@ function initLoadMore(breaking) {
   btn.hidden = remaining <= 0;
 
   btn.addEventListener('click', () => {
+    UISounds.tap();
     _displayCount += BREAKING_LOAD_MORE;
     renderBreakingGrid(breaking);
   });

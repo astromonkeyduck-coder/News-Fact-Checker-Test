@@ -3,11 +3,13 @@
  *
  * Plays NewsfeedGlow.mp3 on loop, with a header mute/unmute toggle.
  * Draws a real-time frequency-bar visualizer on a fixed canvas at the
- * bottom of the viewport, styled with CRT phosphor-green glow.
+ * bottom of the viewport, styled with accent-blue glow.
  *
  * Audio is opt-in (muted by default). State persisted in localStorage.
  * AudioContext is only created after the first user gesture.
  */
+
+import { UISounds } from './ui-sounds.js';
 
 const STORAGE_KEY = 'nw-ambient-audio';
 const SRC = '/NewsfeedGlow.mp3';
@@ -91,8 +93,10 @@ function stopPlayback() {
 
 export function toggleAudio() {
   if (playing) {
+    UISounds.toggle(false);
     stopPlayback();
   } else {
+    UISounds.toggle(true);
     startPlayback();
   }
 }
@@ -124,10 +128,10 @@ function draw() {
   }
 
   const grad = cCtx.createLinearGradient(0, h, 0, 0);
-  grad.addColorStop(0, '#00ff41');
-  grad.addColorStop(1, '#00e5ff');
+  grad.addColorStop(0, '#3B8BF2');
+  grad.addColorStop(1, '#7DD3FC');
 
-  cCtx.shadowColor = '#00ff41';
+  cCtx.shadowColor = '#3B8BF2';
   cCtx.shadowBlur = playing ? 8 * dpr : 2 * dpr;
   cCtx.fillStyle = grad;
   cCtx.globalAlpha = playing ? 0.85 : 0.3;

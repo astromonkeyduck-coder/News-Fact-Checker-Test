@@ -9,6 +9,7 @@ import { initFeed } from './feed.js';
 import { initAuth, login, signup, logout } from './auth.js';
 import { initAmbientAudio } from './ambient-audio.js';
 import { initScrollReveal } from './scroll-reveal.js';
+import { UISounds } from './ui-sounds.js';
 
 (function () {
   'use strict';
@@ -20,6 +21,8 @@ import { initScrollReveal } from './scroll-reveal.js';
 
   // ── Mobile nav toggle ────────────────────────────
   function closeNav() {
+    if (!navMenu.classList.contains('open')) return;
+    UISounds.tap();
     navMenu.classList.remove('open');
     navToggle.setAttribute('aria-expanded', 'false');
     document.body.style.overflow = '';
@@ -27,6 +30,7 @@ import { initScrollReveal } from './scroll-reveal.js';
 
   if (navToggle && navMenu) {
     navToggle.addEventListener('click', () => {
+      UISounds.tap();
       const isOpen = navMenu.classList.toggle('open');
       navToggle.setAttribute('aria-expanded', String(isOpen));
       document.body.style.overflow = isOpen ? 'hidden' : '';
@@ -83,12 +87,14 @@ import { initScrollReveal } from './scroll-reveal.js';
             hint.classList.remove('is-error');
             hint.classList.add('is-success');
           }
+          UISounds.success();
         } else {
           if (hint) {
             hint.textContent = data.message || 'Something went wrong. Please try again.';
             hint.classList.remove('is-success');
             hint.classList.add('is-error');
           }
+          UISounds.error();
         }
       } catch {
         if (hint) {
@@ -96,6 +102,7 @@ import { initScrollReveal } from './scroll-reveal.js';
           hint.classList.remove('is-success');
           hint.classList.add('is-error');
         }
+        UISounds.error();
       } finally {
         btn.disabled = false;
         btn.textContent = 'Subscribe';
@@ -158,9 +165,9 @@ import { initScrollReveal } from './scroll-reveal.js';
     }
   }
 
-  if (signinBtn) signinBtn.addEventListener('click', () => login());
-  if (signupBtn) signupBtn.addEventListener('click', () => signup());
-  if (logoutBtn) logoutBtn.addEventListener('click', () => logout());
+  if (signinBtn) signinBtn.addEventListener('click', () => { UISounds.tap(); login(); });
+  if (signupBtn) signupBtn.addEventListener('click', () => { UISounds.tap(); signup(); });
+  if (logoutBtn) logoutBtn.addEventListener('click', () => { UISounds.tap(); logout(); });
 
   // ── Service worker registration ──────────────────
   if ('serviceWorker' in navigator) {

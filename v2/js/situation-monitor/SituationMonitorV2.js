@@ -23,6 +23,7 @@ import {
   normalizeEarthquake,
   normalizeWeatherAlert,
 } from '../../../src/components/situation-monitor/data/eventStore.js';
+import { UISounds } from '../ui-sounds.js';
 
 const REFRESH_INTERVAL_MS = 60_000;
 
@@ -63,11 +64,13 @@ export class SituationMonitorV2 {
       await this._initPanels();
       this._bindControls();
       this._bindEventStore();
-      await this.refresh();
+      const refreshOk = await this.refresh();
       this._startAutoRefresh();
       this._hideLoading(container);
+      if (refreshOk) UISounds.sweep();
     } catch (err) {
       console.error('[SitMonV2] Init failed:', err);
+      UISounds.error();
       this._showError(container, err.message);
     }
   }
@@ -154,7 +157,10 @@ export class SituationMonitorV2 {
   _bindControls() {
     const refreshBtn = document.getElementById('sitmon-refresh');
     if (refreshBtn) {
-      refreshBtn.addEventListener('click', () => this.refresh());
+      refreshBtn.addEventListener('click', () => {
+        UISounds.tap();
+        this.refresh({ manual: true });
+      });
     }
   }
 
@@ -176,8 +182,9 @@ export class SituationMonitorV2 {
     this._tickTimer = setInterval(() => this._updateTimeSinceRefresh(), 10_000);
   }
 
-  async refresh() {
-    if (this._refreshing) return;
+  async refresh(options = {}) {
+    const manual = options.manual === true;
+    if (this._refreshing) return false;
     this._refreshing = true;
 
     const btn = document.getElementById('sitmon-refresh');
@@ -228,10 +235,14 @@ export class SituationMonitorV2 {
       this.lastRefresh = new Date();
       this._setStatus('Live');
       this._updateTimeSinceRefresh();
+      if (manual) UISounds.sweep();
+      return true;
 
     } catch (err) {
       console.error('[SitMonV2] Refresh error:', err);
       this._setStatus('Error');
+      UISounds.error();
+      return false;
     } finally {
       this._refreshing = false;
       if (btn) {
@@ -305,6 +316,8 @@ export class SituationMonitorV2 {
       return;
     }
 
+    const wasVisible = banner.classList.contains('visible');
+    if (!wasVisible) UISounds.notify();
     banner.classList.add('visible');
     listEl.innerHTML = critical.map(ev => {
       const age = ev.getAgeHours ? ev.getAgeHours() : 0;
