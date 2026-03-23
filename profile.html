@@ -220,6 +220,12 @@
         .profile-toggle input:checked + .profile-toggle-slider { background: linear-gradient(135deg, #4A90E2, #2ECC71); }
         .profile-toggle input:checked + .profile-toggle-slider:before { transform: translateX(22px); }
     </style>
+  <!-- Auth0 Configuration - Inject environment variables for production -->
+    <script>
+      window.AUTH0_DOMAIN = null;
+      window.AUTH0_CLIENT_ID = null;
+    </script>
+  <!-- /Auth0 Configuration -->
 </head>
 <body>
     <div class="top-rule" aria-hidden="true"></div>
@@ -266,8 +272,8 @@
     })();
     </script>
 
-    <!-- Auth0 SDK -->
-    <script src="https://cdn.auth0.com/js/auth0-spa-js/2.2/auth0-spa-js.production.js"></script>
+    <!-- Auth0 SPA SDK (2.4+); auth0.js can inject again if this fails -->
+    <script src="https://cdn.auth0.com/js/auth0-spa-js/2.4/auth0-spa-js.production.js"></script>
     <script src="/src/auth/auth0.js"></script>
     
     <script>
@@ -276,15 +282,17 @@
             const contentDiv = document.getElementById('profileContent');
             
             try {
-                // Wait for auth0 to be available
-                let retries = 20;
+                if (typeof window.initAuth0 === 'function') {
+                    await window.initAuth0();
+                }
+                let retries = 40;
                 while (!window.auth0 && retries > 0) {
                     await new Promise(resolve => setTimeout(resolve, 100));
                     retries--;
                 }
                 
                 if (!window.auth0) {
-                    throw new Error('Auth0 not initialized');
+                    throw new Error('Auth0 not initialized (check domain/client ID and network)');
                 }
                 
                 const isAuthenticated = window.auth0.isAuthenticated();

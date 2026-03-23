@@ -29,6 +29,7 @@ const targets = [
   path.join(__dirname, '..', 'index.html'),
   path.join(__dirname, '..', 'admin', 'index.html'),
   path.join(__dirname, '..', 'v2', 'index.html'),
+  path.join(__dirname, '..', 'profile.html'),
 ];
 
 let injected = 0;

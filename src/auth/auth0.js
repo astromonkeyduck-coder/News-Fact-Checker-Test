@@ -24,6 +24,94 @@
 // These will be injected at build time via scripts/inject-auth0.js
 // For local development: Create a .env.local file or set window.AUTH0_DOMAIN and window.AUTH0_CLIENT_ID
 
+/** Same CDN as v2/js/auth.js — 2.2 path is deprecated / may fail. */
+const AUTH0_SDK_CDN =
+  'https://cdn.auth0.com/js/auth0-spa-js/2.4/auth0-spa-js.production.js';
+
+/** One shared fetch per page load (initAuth0 may run from profile + timers). */
+let auth0ConfigFetchPromise = null;
+
+/** Fill domain/client from Netlify when HTML has null placeholders (e.g. profile.html). */
+async function mergeAuth0ConfigFromServer() {
+  if (window.AUTH0_DOMAIN && window.AUTH0_CLIENT_ID) return;
+  if (!auth0ConfigFetchPromise) {
+    auth0ConfigFetchPromise = (async () => {
+      try {
+        const res = await fetch('/.netlify/functions/get-auth0-config');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.domain && data.clientId && !data.error) {
+          window.AUTH0_DOMAIN = data.domain;
+          window.AUTH0_CLIENT_ID = data.clientId;
+        }
+      } catch (_) {
+        // offline / adblock
+      }
+    })();
+  }
+  await auth0ConfigFetchPromise;
+}
+
+function getCreateAuth0ClientFactory() {
+  if (typeof createAuth0Client === 'function') return createAuth0Client;
+  if (window.auth0SpaJs && typeof window.auth0SpaJs.createAuth0Client === 'function') {
+    return window.auth0SpaJs.createAuth0Client;
+  }
+  if (window.auth0 && typeof window.auth0.createAuth0Client === 'function') {
+    return window.auth0.createAuth0Client;
+  }
+  return null;
+}
+
+/**
+ * Wait for an inline/legacy script tag, or load the SDK once from CDN.
+ */
+async function ensureAuth0SdkLoaded() {
+  if (getCreateAuth0ClientFactory()) return;
+
+  const tags = Array.from(
+    document.querySelectorAll(
+      'script[src*="auth0-spa-js"],script[src*="@auth0/auth0-spa-js"]'
+    )
+  );
+  for (const el of tags) {
+    await new Promise((resolve) => {
+      if (el.dataset.auth0Awaited === '1') {
+        resolve();
+        return;
+      }
+      el.dataset.auth0Awaited = '1';
+      el.addEventListener('load', resolve, { once: true });
+      el.addEventListener('error', resolve, { once: true });
+    });
+  }
+
+  for (let i = 0; i < 80; i++) {
+    if (getCreateAuth0ClientFactory()) return;
+    await new Promise((r) => setTimeout(r, 50));
+  }
+
+  if (getCreateAuth0ClientFactory()) return;
+
+  await new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = AUTH0_SDK_CDN;
+    s.async = true;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error('Failed to load Auth0 SDK'));
+    document.head.appendChild(s);
+  });
+
+  for (let i = 0; i < 80; i++) {
+    if (getCreateAuth0ClientFactory()) return;
+    await new Promise((r) => setTimeout(r, 50));
+  }
+
+  if (!getCreateAuth0ClientFactory()) {
+    throw new Error('Auth0 SDK did not expose createAuth0Client');
+  }
+}
+
 // Validate and get Auth0 configuration
 function getAuth0Config() {
   const domain = window.AUTH0_DOMAIN;
@@ -44,7 +132,8 @@ function getAuth0Config() {
     domain: domain,
     clientId: clientId,
     authorizationParams: {
-      redirect_uri: window.location.origin + window.location.pathname,
+      // Canonical callback — matches Netlify / → V2 rewrite and one Auth0 allowlist entry
+      redirect_uri: `${window.location.origin}/`,
     },
     cacheLocation: 'localstorage',
     useRefreshTokens: false, // Disable refresh tokens for SPA
@@ -54,76 +143,60 @@ function getAuth0Config() {
 let auth0Client = null;
 let auth0Initializing = false;
 let auth0Initialized = false;
+/** Await this so concurrent callers (e.g. profile loadProfile + startAuth0) share one run. */
+let initAuth0InFlight = null;
+let bindAuthButtonsAttempts = 0;
+const MAX_BIND_AUTH_BUTTON_ATTEMPTS = 24;
 
 /**
- * Initialize Auth0 (idempotent - only runs once)
+ * Initialize Auth0 (idempotent — concurrent calls await the same work)
  */
 async function initAuth0() {
-  // Prevent double initialization
-  if (auth0Initialized || auth0Initializing) {
-    console.log('[Auth0] Already initialized or initializing, skipping');
-    return;
+  if (auth0Initialized) return;
+  if (!initAuth0InFlight) {
+    initAuth0InFlight = (async () => {
+      auth0Initializing = true;
+      try {
+        await runInitAuth0Body();
+      } finally {
+        auth0Initializing = false;
+        initAuth0InFlight = null;
+      }
+    })();
   }
-  
-  auth0Initializing = true;
-  
+  await initAuth0InFlight;
+}
+
+async function runInitAuth0Body() {
   try {
     console.log('[Auth0] Starting initialization...');
-    console.log('[Auth0] Checking for SDK...', { 
+    console.log('[Auth0] Checking for SDK...', {
       createAuth0Client: typeof createAuth0Client,
       auth0: typeof auth0,
       windowAuth0: typeof window.auth0,
-      auth0SpaJs: typeof window.auth0SpaJs
+      auth0SpaJs: typeof window.auth0SpaJs,
     });
-    
-    // Wait for Auth0 SDK to load - check for createAuth0Client function
-    // The Auth0 SPA SDK exposes createAuth0Client globally
-    let retries = 50; // Increased retries
-    while (
-      typeof createAuth0Client === 'undefined' && 
-      !(window.auth0SpaJs && typeof window.auth0SpaJs.createAuth0Client === 'function') &&
-      !(window.auth0 && typeof window.auth0.createAuth0Client === 'function') &&
-      retries > 0
-    ) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      retries--;
-    }
-    
-    // Try different ways to get createAuth0Client
-    let createClient = null;
-    
-    // Check global createAuth0Client (most common from CDN)
-    if (typeof createAuth0Client !== 'undefined') {
-      createClient = createAuth0Client;
-      console.log('[Auth0] Using global createAuth0Client');
-    }
-    // Check window.auth0SpaJs.createAuth0Client (alternative CDN exposure)
-    else if (window.auth0SpaJs && typeof window.auth0SpaJs.createAuth0Client === 'function') {
-      createClient = window.auth0SpaJs.createAuth0Client;
-      console.log('[Auth0] Using window.auth0SpaJs.createAuth0Client');
-    }
-    // Check window.auth0.createAuth0Client (fallback)
-    else if (window.auth0 && typeof window.auth0.createAuth0Client === 'function') {
-      createClient = window.auth0.createAuth0Client;
-      console.log('[Auth0] Using window.auth0.createAuth0Client');
-    }
-    
-    if (!createClient) {
-      console.error('[Auth0] Auth0 SDK not loaded. Check:');
-      console.error('[Auth0] 1. Script tag is before auth0.js');
-      console.error('[Auth0] 2. CDN URL is correct');
-      console.error('[Auth0] 3. Network connection is working');
-      console.error('[Auth0] Current globals:', {
-        createAuth0Client: typeof createAuth0Client,
-        'window.auth0': typeof window.auth0,
-        'window.auth0SpaJs': typeof window.auth0SpaJs,
-        'auth0': typeof auth0
-      });
-      // Error notification suppressed
-      auth0Initializing = false; // Reset flag on early return
+
+    try {
+      await mergeAuth0ConfigFromServer();
+      await ensureAuth0SdkLoaded();
+    } catch (loadErr) {
+      console.error('[Auth0] SDK load error:', loadErr.message || loadErr);
+      console.error('[Auth0] Check CDN / ad blockers, or network.');
+      auth0Initializing = false;
       return;
     }
-    
+
+    const createClient = getCreateAuth0ClientFactory();
+    if (!createClient) {
+      console.error('[Auth0] Auth0 SDK not loaded. Check:');
+      console.error('[Auth0] 1. Script tag is before auth0.js (or async order)');
+      console.error('[Auth0] 2. CDN URL is correct');
+      console.error('[Auth0] 3. Network connection is working');
+      auth0Initializing = false;
+      return;
+    }
+
     console.log('[Auth0] SDK loaded, creating client...');
 
     // Get and validate Auth0 configuration
@@ -264,11 +337,17 @@ async function bindAuthButtons() {
   console.log('[Auth0] Found buttons:', { signinBtn: !!signinBtn, signupBtn: !!signupBtn });
   
   if (!signinBtn || !signupBtn) {
+    bindAuthButtonsAttempts += 1;
+    if (bindAuthButtonsAttempts > MAX_BIND_AUTH_BUTTON_ATTEMPTS) {
+      console.log('[Auth0] No signinBtn/signupBtn on this page — stopping bind retries (e.g. profile.html)');
+      return;
+    }
     console.warn('[Auth0] Buttons not found in DOM yet, retrying...');
-    // Retry after a delay if buttons aren't found
     setTimeout(() => bindAuthButtons(), 500);
     return;
   }
+
+  bindAuthButtonsAttempts = 0;
   
   // Check actual auth state
   let currentAuthState = false;
