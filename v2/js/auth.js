@@ -14,8 +14,15 @@ let currentUser = null;
 let onAuthChangeFn = null;
 let sdkPromise = null;
 
+function getAuth0Factory() {
+  if (typeof createAuth0Client === 'function') return createAuth0Client;
+  if (window.auth0 && typeof window.auth0.createAuth0Client === 'function') return window.auth0.createAuth0Client;
+  if (typeof auth0 !== 'undefined' && typeof auth0.createAuth0Client === 'function') return auth0.createAuth0Client;
+  return null;
+}
+
 function loadSDK() {
-  if (typeof createAuth0Client !== 'undefined') return Promise.resolve();
+  if (getAuth0Factory()) return Promise.resolve();
   if (sdkPromise) return sdkPromise;
   sdkPromise = new Promise((resolve, reject) => {
     const script = document.createElement('script');
@@ -34,7 +41,9 @@ async function createClient() {
   if (!domain || !clientId) return null;
 
   await loadSDK();
-  client = await createAuth0Client({
+  const factory = getAuth0Factory();
+  if (!factory) throw new Error('Auth0 SDK loaded but createAuth0Client not found');
+  client = await factory({
     domain,
     clientId,
     authorizationParams: {
