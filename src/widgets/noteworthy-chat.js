@@ -18,7 +18,13 @@ class NoteworthyChat extends HTMLElement {
     const endpoint = this.getAttribute('data-endpoint') || '/.netlify/functions/noteworthy-chat';
     const openOnLoad = this.getAttribute('data-open') === 'true';
     const initialAudioState = localStorage.getItem('noteworthy-ai-audio') === 'true';
-    
+    const brandTitle = (this.getAttribute('data-brand-title') || 'Noteworthy News AI').trim();
+    const brandTitleAttr = brandTitle.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    const brandTitleHtml = brandTitle
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+
     // Compute base path for assets - handles both file:// and http(s):// protocols
     const basePath = (() => {
       // Get the document's base URL
@@ -27,8 +33,13 @@ class NoteworthyChat extends HTMLElement {
       const lastSlash = baseUrl.lastIndexOf('/');
       return lastSlash > 0 ? baseUrl.substring(0, lastSlash + 1) : '';
     })();
-    // Full path to the logo image
-    const logoPath = basePath + 'actualNWlogo!USETHIS.png';
+    const logoAttr = this.getAttribute('data-logo');
+    const logoPath =
+      logoAttr && logoAttr.trim()
+        ? logoAttr.trim()
+        : window.location.protocol === 'file:'
+          ? basePath + 'IMG_5794.PNG'
+          : '/IMG_5794.PNG';
     
     // Feature flag: Enable/disable ElevenLabs voices in UI
     // Set to true to show ElevenLabs voice options, false to hide them
@@ -3033,19 +3044,19 @@ class NoteworthyChat extends HTMLElement {
         }
       </style>
       
-      <button class="launcher" aria-label="Open Noteworthy AI">
+      <button class="launcher" aria-label="Open ${brandTitleAttr}">
         <span class="launcher-icon"><img src="${logoPath}" alt="Noteworthy News" /></span>
-        Noteworthy AI
+        ${brandTitleHtml}
       </button>
       
-      <div class="wrap${openOnLoad ? ' open' : ''}" role="dialog" aria-label="Noteworthy AI" aria-modal="true">
+      <div class="wrap${openOnLoad ? ' open' : ''}" role="dialog" aria-label="${brandTitleAttr}" aria-modal="true">
         <div class="head">
           <div class="head-left">
             <div class="logo" aria-hidden="true">
               <img src="${logoPath}" alt="Noteworthy News" />
             </div>
             <div class="title-group">
-              <div class="title">Noteworthy AI</div>
+              <div class="title">${brandTitleHtml}</div>
               <div class="sub">Fast • Factual • Truth-Seeking</div>
             </div>
           </div>
@@ -3461,7 +3472,7 @@ class NoteworthyChat extends HTMLElement {
         <div class="tutorial-modal">
           <div class="tutorial-header">
             <div class="tutorial-header-left">
-              <h2>Noteworthy AI</h2>
+              <h2>${brandTitleHtml}</h2>
               <span class="tutorial-header-badge">GPT-5</span>
             </div>
             <button class="tutorial-skip" id="tutorialSkip">Skip</button>
@@ -4554,7 +4565,7 @@ class NoteworthyChat extends HTMLElement {
     helpBtn.className = 'help-btn';
     helpBtn.innerHTML = '❓';
     helpBtn.setAttribute('aria-label', 'Show tutorial');
-    helpBtn.title = 'How to use Noteworthy AI';
+    helpBtn.title = `How to use ${brandTitle}`;
     helpBtn.style.cssText = `
       background: transparent;
       border: none;
@@ -6909,7 +6920,7 @@ class NoteworthyChat extends HTMLElement {
               console.log('[Voice Mode] 👋 Triggering AI to speak first...');
               try {
                 // Send response.create to trigger AI to generate and speak the greeting
-                // The instructions in the session already tell it to greet with "Hey, It's Noteworthy AI"
+                // The instructions in the session already tell it to greet with "Hey, It's Noteworthy News AI"
                 hasActiveResponse = true; // Mark as active before sending
                 websocket.send(JSON.stringify({
                   type: 'response.create'

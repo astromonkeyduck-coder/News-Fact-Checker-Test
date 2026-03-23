@@ -25,7 +25,12 @@ body {
   font-weight: var(--weight-normal);
   line-height: var(--leading-normal);
   color: var(--color-text);
-  background-color: var(--color-bg);
+  background: var(--color-bg) linear-gradient(
+    180deg,
+    var(--color-bg) 0%,
+    hsl(220 30% 5%) 50%,
+    var(--color-bg) 100%
+  );
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;

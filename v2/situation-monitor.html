@@ -27,9 +27,13 @@
 <body>
 
   <!-- ── Header ──────────────────────────────────── -->
+  <div class="top-rule" aria-hidden="true"></div>
   <header class="site-header">
-    <div class="container site-nav">
-      <a href="/" class="site-logo">Noteworthy News</a>
+    <nav class="site-nav container" aria-label="Primary">
+      <a class="site-logo" href="/">
+        <img class="site-logo-icon" src="/IMG_5794.PNG" alt="" width="28" height="28">
+        <span>Noteworthy News</span>
+      </a>
       <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
         <svg class="nav-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
           <line x1="3" y1="6" x2="21" y2="6"/>
@@ -37,13 +41,13 @@
           <line x1="3" y1="18" x2="21" y2="18"/>
         </svg>
       </button>
-      <nav class="nav-menu" id="nav-menu">
-        <a href="/" class="nav-link">Home</a>
-        <a href="/archive.html" class="nav-link">Archive</a>
-        <a href="/contact.html" class="nav-link">Contact</a>
-        <a href="#" class="nav-link active">Situation Monitor</a>
-      </nav>
-    </div>
+      <div class="nav-menu" id="nav-menu">
+        <a class="nav-link" href="/">Home</a>
+        <a class="nav-link" href="/archive.html">Archive</a>
+        <a class="nav-link" href="/contact.html">Contact</a>
+        <a class="nav-link active" href="/v2/situation-monitor.html">Monitor</a>
+      </div>
+    </nav>
   </header>
 
   <!-- ── Main ────────────────────────────────────── -->
@@ -213,15 +217,76 @@
   </script>
 
   <!-- ── Mobile Nav Toggle ───────────────────────── -->
+  <!-- V2 Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <p class="footer-brand-name">Noteworthy News</p>
+          <p class="footer-brand-tagline">Fact-checked journalism and media literacy tools. Think critically about the world.</p>
+        </div>
+        <nav aria-label="Footer navigation">
+          <p class="footer-nav-title">Explore</p>
+          <ul class="footer-nav-list">
+            <li><a class="footer-nav-link" href="/archive.html">Stories</a></li>
+            <li><a class="footer-nav-link" href="/game.html">Fact-Checker Game</a></li>
+            <li><a class="footer-nav-link" href="/geography-game.html">Geography Game</a></li>
+            <li><a class="footer-nav-link" href="/v2/situation-monitor.html">Situation Monitor</a></li>
+            <li><a class="footer-nav-link" href="/contact.html">Contact</a></li>
+          </ul>
+        </nav>
+        <nav aria-label="Resources">
+          <p class="footer-nav-title">Resources</p>
+          <ul class="footer-nav-list">
+            <li><a class="footer-nav-link" href="/media-literacy-guide.html">Media Literacy Guide</a></li>
+            <li><a class="footer-nav-link" href="/how-we-verify.html">How We Verify</a></li>
+            <li><a class="footer-nav-link" href="/fact-checking-tips.html">Fact-Checking Tips</a></li>
+            <li><a class="footer-nav-link" href="/newsletter-preferences.html">Newsletter Prefs</a></li>
+          </ul>
+        </nav>
+        <nav aria-label="Legal">
+          <p class="footer-nav-title">Legal</p>
+          <ul class="footer-nav-list">
+            <li><a class="footer-nav-link" href="/privacy.html">Privacy Policy</a></li>
+            <li><a class="footer-nav-link" href="/terms.html">Terms of Service</a></li>
+            <li><a class="footer-nav-link" href="/editorial-policy.html">Editorial Policy</a></li>
+          </ul>
+        </nav>
+      </div>
+      <div class="footer-bottom">
+        <p class="footer-copyright">&copy; 2026 Noteworthy News. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
   <script>
     (function () {
+      var h = document.querySelector('.site-header');
       var toggle = document.getElementById('nav-toggle');
       var menu = document.getElementById('nav-menu');
-      if (!toggle || !menu) return;
-      toggle.addEventListener('click', function () {
-        var open = menu.classList.toggle('open');
-        toggle.setAttribute('aria-expanded', open);
-      });
+      if (toggle && menu) {
+        toggle.addEventListener('click', function () {
+          var open = menu.classList.toggle('open');
+          toggle.setAttribute('aria-expanded', open);
+          document.body.style.overflow = open ? 'hidden' : '';
+        });
+        menu.addEventListener('click', function (e) {
+          if (e.target === menu || e.target.closest('.nav-link')) {
+            menu.classList.remove('open');
+            toggle.setAttribute('aria-expanded', 'false');
+            document.body.style.overflow = '';
+          }
+        });
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape' && menu.classList.contains('open')) {
+            menu.classList.remove('open');
+            toggle.setAttribute('aria-expanded', 'false');
+            document.body.style.overflow = '';
+            toggle.focus();
+          }
+        });
+      }
+      if (h) window.addEventListener('scroll', function () { h.classList.toggle('scrolled', window.scrollY > 10); }, { passive: true });
     })();
   </script>
 

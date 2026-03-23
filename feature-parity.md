@@ -203,10 +203,10 @@
 
 | Field | Value |
 |-------|-------|
-| **Business purpose** | AI-powered chat assistant for news questions, image generation, web search. |
-| **Current source** | `src/widgets/noteworthy-chat.js` (9,849 lines — custom element), `src/widgets/noteworthy-chat.ts` (TS source), `src/widgets/noteworthy-chat-compiled.js` (2,272 lines — compiled), `src/widgets/voice-audio-engine.js`, `noteworthy-chat.js` (Netlify function, 2,144 lines), `realtime-voice.js`, `chatgpt.js`, `chatgpt-stream.js` |
+| **Business purpose** | AI-powered assistant branded **Noteworthy News AI** for news questions, image generation, web search. |
+| **Current source** | `src/widgets/noteworthy-chat.js` (custom element; optional `data-brand-title`, `data-logo`), `src/widgets/noteworthy-chat.ts` (TS source), `src/widgets/noteworthy-chat-compiled.js` (compiled), `src/widgets/voice-audio-engine.js`, `noteworthy-chat.js` (Netlify function), `realtime-voice.js`, `chatgpt.js`, `chatgpt-stream.js` |
 | **Disposition** | **Isolate** |
-| **V2 destination** | Keep as lazy-loaded custom element. Ensure it does not block homepage paint. Server functions preserved. Consider whether compiled vs source versions need reconciliation. |
+| **V2 destination** | **V2 homepage** (`v2/index.html`): same widget, deferred init (~1s + first interaction), `data-brand-title="Noteworthy News AI"`, `data-logo="/IMG_5794.PNG"`, endpoint `/.netlify/functions/noteworthy-chat`. Legacy `index.html` uses widget defaults (same branding + `/IMG_5794.PNG` when `data-logo` omitted). Server/system prompts use **Noteworthy News AI** (`noteworthy-chat.js`, `realtime-voice.js`). |
 | **Migration dependencies** | Homepage rebuild (ensure lazy loading) |
 | **Validation** | Chat opens; text responses work; image generation works; voice mode works; rate limiting works |
 

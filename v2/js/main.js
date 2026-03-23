@@ -7,6 +7,8 @@
 
 import { initFeed } from './feed.js';
 import { initAuth, login, signup, logout } from './auth.js';
+import { initAmbientAudio } from './ambient-audio.js';
+import { initScrollReveal } from './scroll-reveal.js';
 
 (function () {
   'use strict';
@@ -182,8 +184,41 @@ import { initAuth, login, signup, logout } from './auth.js';
     setInterval(tick, 30000);
   }
 
-  // ── Initialize feed and auth ─────────────────────
+  // ── Scroll-to-top button ───────────────────────────
+  const scrollTopBtn = document.getElementById('scrollTopBtn');
+  if (scrollTopBtn) {
+    scrollTopBtn.hidden = false;
+    const heroSection = document.querySelector('.hero');
+    const updateScrollTop = () => {
+      const pastHero = heroSection
+        ? window.scrollY > heroSection.offsetHeight
+        : window.scrollY > 400;
+      scrollTopBtn.classList.toggle('visible', pastHero);
+    };
+    window.addEventListener('scroll', updateScrollTop, { passive: true });
+    scrollTopBtn.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // ── Mobile nav: swipe-right to close ──────────────
+  if (navMenu && navToggle) {
+    let touchStartX = 0;
+    navMenu.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches[0].clientX;
+    }, { passive: true });
+    navMenu.addEventListener('touchend', (e) => {
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      if (dx > 60 && navMenu.classList.contains('open')) {
+        closeNav();
+      }
+    }, { passive: true });
+  }
+
+  // ── Initialize modules ─────────────────────────────
   initFeed();
   initAuth(onAuthChange);
+  initAmbientAudio();
+  initScrollReveal();
 
 })();

@@ -1222,7 +1222,7 @@ The V2 homepage and Situation Monitor are now the primary public surfaces. V1 is
 |-----|------|--------|
 | No analytics tracker on V2 homepage | Visitor tracking paused on homepage | Add in next session |
 | No cookie banner on V2 homepage | V2 Auth0 uses `cacheLocation: 'memory'` — no cookies set by V2 itself | Add with analytics |
-| No chat widget on V2 homepage | Feature absent | Deferred (lazy-load later) |
+| ~~No chat widget on V2 homepage~~ | — | **Done:** Noteworthy News AI widget on `v2/index.html` (deferred init); see `feature-parity.md` §15 |
 | No globe visualization on V2 homepage | Feature absent | Deferred per plan |
 | V1 design on secondary pages | Visual inconsistency between homepage and subpages | Accepted — gradual migration |
 | `/v2/` visible in Situation Monitor URL | URL not fully clean | Convert to absolute paths + 200 rewrite later |

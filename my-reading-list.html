@@ -10,14 +10,21 @@
     
     <!-- Styles -->
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- V2 Design System -->
+    <link rel="stylesheet" href="/v2/styles/tokens.css">
+    <link rel="stylesheet" href="/v2/styles/layout.css">
+    <link rel="stylesheet" href="/v2/styles/components.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap"></noscript>
     
     <style>
         .reading-list-page {
             min-height: 100vh;
             background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%);
             color: white;
-            padding: 120px 20px 60px;
+            padding: 20px 20px 60px;
         }
 
         .reading-list-container {
@@ -222,8 +229,28 @@
     </style>
 </head>
 <body class="reading-list-page">
+    <div class="top-rule" aria-hidden="true"></div>
+    <header class="site-header">
+      <nav class="site-nav container" aria-label="Primary">
+        <a class="site-logo" href="/">
+          <img class="site-logo-icon" src="/IMG_5794.PNG" alt="" width="28" height="28">
+          <span>Noteworthy News</span>
+        </a>
+        <button class="nav-toggle" aria-expanded="false" aria-controls="nav-menu">
+          <svg class="nav-toggle-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+        <div class="nav-menu" id="nav-menu">
+          <a class="nav-link" href="/">Home</a>
+          <a class="nav-link" href="/archive.html">Archive</a>
+          <a class="nav-link" href="/contact.html">Contact</a>
+          <a class="nav-link" href="/v2/situation-monitor.html">Monitor</a>
+        </div>
+      </nav>
+    </header>
+
     <div class="reading-list-container">
-        <a href="index.html" class="back-link">← Back to Home</a>
         
         <div class="reading-list-header">
             <h1>My Reading List</h1>
@@ -234,6 +261,18 @@
             <div class="loading-state">Loading your reading list...</div>
         </div>
     </div>
+
+    <script>
+    (function(){
+      var h=document.querySelector('.site-header'),t=document.querySelector('.nav-toggle'),m=document.querySelector('.nav-menu');
+      if(t&&m){
+        t.addEventListener('click',function(){var o=m.classList.toggle('open');t.setAttribute('aria-expanded',String(o));document.body.style.overflow=o?'hidden':'';});
+        m.addEventListener('click',function(e){if(e.target===m||e.target.closest('.nav-link')){m.classList.remove('open');t.setAttribute('aria-expanded','false');document.body.style.overflow='';}});
+        document.addEventListener('keydown',function(e){if(e.key==='Escape'&&m.classList.contains('open')){m.classList.remove('open');t.setAttribute('aria-expanded','false');document.body.style.overflow='';t.focus();}});
+      }
+      if(h)window.addEventListener('scroll',function(){h.classList.toggle('scrolled',window.scrollY>10);},{passive:true});
+    })();
+    </script>
 
     <!-- Auth0 SDK -->
     <script src="https://cdn.auth0.com/js/auth0-spa-js/2.2/auth0-spa-js.production.js"></script>
@@ -412,6 +451,47 @@
             document.head.appendChild(style);
         }
     </script>
+
+    <footer class="site-footer">
+      <div class="container">
+        <div class="footer-grid">
+          <div class="footer-brand">
+            <p class="footer-brand-name">Noteworthy News</p>
+            <p class="footer-brand-tagline">Fact-checked journalism and media literacy tools. Think critically about the world.</p>
+          </div>
+          <nav aria-label="Footer navigation">
+            <p class="footer-nav-title">Explore</p>
+            <ul class="footer-nav-list">
+              <li><a class="footer-nav-link" href="/archive.html">Stories</a></li>
+              <li><a class="footer-nav-link" href="/game.html">Fact-Checker Game</a></li>
+              <li><a class="footer-nav-link" href="/geography-game.html">Geography Game</a></li>
+              <li><a class="footer-nav-link" href="/v2/situation-monitor.html">Situation Monitor</a></li>
+              <li><a class="footer-nav-link" href="/contact.html">Contact</a></li>
+            </ul>
+          </nav>
+          <nav aria-label="Resources">
+            <p class="footer-nav-title">Resources</p>
+            <ul class="footer-nav-list">
+              <li><a class="footer-nav-link" href="/media-literacy-guide.html">Media Literacy Guide</a></li>
+              <li><a class="footer-nav-link" href="/how-we-verify.html">How We Verify</a></li>
+              <li><a class="footer-nav-link" href="/fact-checking-tips.html">Fact-Checking Tips</a></li>
+              <li><a class="footer-nav-link" href="/newsletter-preferences.html">Newsletter Prefs</a></li>
+            </ul>
+          </nav>
+          <nav aria-label="Legal">
+            <p class="footer-nav-title">Legal</p>
+            <ul class="footer-nav-list">
+              <li><a class="footer-nav-link" href="/privacy.html">Privacy Policy</a></li>
+              <li><a class="footer-nav-link" href="/terms.html">Terms of Service</a></li>
+              <li><a class="footer-nav-link" href="/editorial-policy.html">Editorial Policy</a></li>
+            </ul>
+          </nav>
+        </div>
+        <div class="footer-bottom">
+          <p class="footer-copyright">&copy; 2026 Noteworthy News. All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
 </body>
 </html>
 

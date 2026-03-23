@@ -134,3 +134,15 @@
   background: var(--color-rule);
   border: none;
 }
+
+/* ── Wider container for dense sections ──────────── */
+.container-wide {
+  max-width: 1280px;
+}
+
+/* ── 4-column grid for large screens ────────────── */
+@media (min-width: 1200px) {
+  .feed-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

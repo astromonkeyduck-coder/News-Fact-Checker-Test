@@ -13,9 +13,14 @@
     <title>Contact Us - Noteworthy News</title>
     <!-- Shared design tokens and theme -->
     <link rel="stylesheet" href="styles/responsive.css">
+    <!-- V2 Design System -->
+    <link rel="stylesheet" href="/v2/styles/tokens.css">
+    <link rel="stylesheet" href="/v2/styles/layout.css">
+    <link rel="stylesheet" href="/v2/styles/components.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap"></noscript>
     <script src="christmas-config.js"></script>
     <script>if (typeof CHRISTMAS_CONFIG !== 'undefined') { window.CHRISTMAS_CONFIG = CHRISTMAS_CONFIG; }</script>
     <script src="christmas-theme-loader.js"></script>
@@ -173,47 +178,6 @@
             );
         }
         
-        /* Header */
-        .main-header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: rgba(7, 21, 42, 0.9);
-            backdrop-filter: blur(15px);
-            border-bottom: 1px solid var(--color-border);
-            z-index: 1000;
-            padding: 15px 20px;
-        }
-        
-        .header-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        
-        .header-logo {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .logo-link {
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .header-logo-n {
-            font-size: 2rem;
-            font-weight: 900;
-            color: white !important;
-            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
-        }
-        
         .header-logo-w {
             font-size: 2rem;
             font-weight: 900;
@@ -248,7 +212,7 @@
         .container {
             max-width: 1100px;
             margin: 0 auto;
-            padding: 120px 20px 60px;
+            padding: 20px 20px 60px;
         }
         
         .page-header {
@@ -624,29 +588,25 @@
     </style>
 </head>
 <body>
-    <!-- Floating particles -->
-    <div class="particles" id="particles"></div>
-    
-    <!-- Matrix rain effect -->
-    <div class="matrix-rain" id="matrixRain"></div>
-    
-    <!-- CRT scanlines and vignette overlay -->
-    <div class="crt-overlay" aria-hidden="true"></div>
-    
-    <!-- Header -->
-    <header class="main-header">
-        <div class="header-container">
-            <div class="header-logo">
-                <a href="index.html" class="logo-link">
-                    <img src="IMG_5794.PNG" alt="Noteworthy News Logo" style="height: 32px; width: 32px; max-width: 32px; max-height: 32px; display: block;">
-                </a>
-                <div class="brand-info">
-                    <h1>Noteworthy News</h1>
-                    <p>Contact Us</p>
-                </div>
-            </div>
-            <a href="index.html" class="back-link">← Back to Home</a>
+    <div class="top-rule" aria-hidden="true"></div>
+    <header class="site-header">
+      <nav class="site-nav container" aria-label="Primary">
+        <a class="site-logo" href="/">
+          <img class="site-logo-icon" src="/IMG_5794.PNG" alt="" width="28" height="28">
+          <span>Noteworthy News</span>
+        </a>
+        <button class="nav-toggle" aria-expanded="false" aria-controls="nav-menu">
+          <svg class="nav-toggle-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+        <div class="nav-menu" id="nav-menu">
+          <a class="nav-link" href="/">Home</a>
+          <a class="nav-link" href="/archive.html">Archive</a>
+          <a class="nav-link active" href="/contact.html">Contact</a>
+          <a class="nav-link" href="/v2/situation-monitor.html">Monitor</a>
         </div>
+      </nav>
     </header>
     
     <!-- Main Content -->
@@ -820,10 +780,6 @@
                 </a>
             </div>
         </div>
-    </div>
-    
-    <div class="footer-link">
-        <a href="index.html">← Back to Home</a> | <a href="privacy.html">Privacy Policy</a> | <a href="terms.html">Terms of Service</a>
     </div>
     
     <script>
@@ -1018,43 +974,60 @@
         });
     </script>
     
-    <!-- Background Music - Shared across all pages (matches index.html) -->
-    <audio id="backgroundMusic" preload="metadata">
-        <source src="NWaudiongl.m4a" type="audio/mp4">
-        <source src="NWaudiongl.m4a" type="audio/x-m4a">
-        Your browser does not support the audio element.
-    </audio>
-    
-    <!-- Second track (plays after first) -->
-    <audio id="backgroundMusicSecond" preload="metadata">
-        <source src="YEAHHHHHH.mp3" type="audio/mpeg">
-        Your browser does not support the audio element.
-    </audio>
-    
-    <!-- Third track (plays after second) -->
-    <audio id="backgroundMusicThird" preload="metadata">
-        <source src="TheMoneyMaker 🤑.mp3" type="audio/mpeg">
-        Your browser does not support the audio element.
-    </audio>
-    
-    <!-- Loop track (plays after third) -->
-    <audio id="backgroundMusicLoop" preload="metadata" loop>
-        <source src="Audiolandingpage.m4a" type="audio/mp4">
-        Your browser does not support the audio element.
-    </audio>
-    
-    <!-- Shared Music Manager Script -->
-    <script src="music-system.js"></script>
+    <script>
+    (function(){
+      var h=document.querySelector('.site-header'),t=document.querySelector('.nav-toggle'),m=document.querySelector('.nav-menu');
+      if(t&&m){
+        t.addEventListener('click',function(){var o=m.classList.toggle('open');t.setAttribute('aria-expanded',String(o));document.body.style.overflow=o?'hidden':'';});
+        m.addEventListener('click',function(e){if(e.target===m||e.target.closest('.nav-link')){m.classList.remove('open');t.setAttribute('aria-expanded','false');document.body.style.overflow='';}});
+        document.addEventListener('keydown',function(e){if(e.key==='Escape'&&m.classList.contains('open')){m.classList.remove('open');t.setAttribute('aria-expanded','false');document.body.style.overflow='';t.focus();}});
+      }
+      if(h)window.addEventListener('scroll',function(){h.classList.toggle('scrolled',window.scrollY>10);},{passive:true});
+    })();
+    </script>
     
     <!-- Cookie Consent Banner -->
     <script src="src/components/cookie-banner.js"></script>
     
-    <!-- Footer -->
-    <footer class="contact-footer">
-        <div class="contact-footer-inner">
-            <p>&lt;/&gt; Website designed, developed, and maintained by <strong>Richard</strong>, Co-Founder of Noteworthy News.</p>
-            <p>Press inquiries, partnerships, and verified tips: <a href="mailto:richard@noteworthynews.co">richard@noteworthynews.co</a></p>
+    <footer class="site-footer">
+      <div class="container">
+        <div class="footer-grid">
+          <div class="footer-brand">
+            <p class="footer-brand-name">Noteworthy News</p>
+            <p class="footer-brand-tagline">Fact-checked journalism and media literacy tools. Think critically about the world.</p>
+          </div>
+          <nav aria-label="Footer navigation">
+            <p class="footer-nav-title">Explore</p>
+            <ul class="footer-nav-list">
+              <li><a class="footer-nav-link" href="/archive.html">Stories</a></li>
+              <li><a class="footer-nav-link" href="/game.html">Fact-Checker Game</a></li>
+              <li><a class="footer-nav-link" href="/geography-game.html">Geography Game</a></li>
+              <li><a class="footer-nav-link" href="/v2/situation-monitor.html">Situation Monitor</a></li>
+              <li><a class="footer-nav-link" href="/contact.html">Contact</a></li>
+            </ul>
+          </nav>
+          <nav aria-label="Resources">
+            <p class="footer-nav-title">Resources</p>
+            <ul class="footer-nav-list">
+              <li><a class="footer-nav-link" href="/media-literacy-guide.html">Media Literacy Guide</a></li>
+              <li><a class="footer-nav-link" href="/how-we-verify.html">How We Verify</a></li>
+              <li><a class="footer-nav-link" href="/fact-checking-tips.html">Fact-Checking Tips</a></li>
+              <li><a class="footer-nav-link" href="/newsletter-preferences.html">Newsletter Prefs</a></li>
+            </ul>
+          </nav>
+          <nav aria-label="Legal">
+            <p class="footer-nav-title">Legal</p>
+            <ul class="footer-nav-list">
+              <li><a class="footer-nav-link" href="/privacy.html">Privacy Policy</a></li>
+              <li><a class="footer-nav-link" href="/terms.html">Terms of Service</a></li>
+              <li><a class="footer-nav-link" href="/editorial-policy.html">Editorial Policy</a></li>
+            </ul>
+          </nav>
         </div>
+        <div class="footer-bottom">
+          <p class="footer-copyright">&copy; 2026 Noteworthy News. All rights reserved.</p>
+        </div>
+      </div>
     </footer>
 </body>
 </html>

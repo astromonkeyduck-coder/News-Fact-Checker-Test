@@ -43,10 +43,13 @@
     <link rel="shortcut icon" type="image/png" href="IMG_5794.PNG">
     <link rel="apple-touch-icon" href="IMG_5794.PNG" sizes="180x180">
     <link rel="mask-icon" href="IMG_5794.PNG" color="#0f234a">
-    <meta name="theme-color" content="#07152a">
+    <meta name="theme-color" content="#080E1A">
     
-    <!-- Fonts - Professional News Typography -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Georgia:wght@400;700&family=Charter:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Fonts - V2 Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap"></noscript>
     
     <!-- Pre-render meta tags for crawlers (prevents 502 errors) -->
     <script>
@@ -76,6 +79,11 @@
     
     <!-- Styles -->
     <link rel="stylesheet" href="styles.css">
+    
+    <!-- V2 Design System (tokens + nav/footer components) -->
+    <link rel="stylesheet" href="/v2/styles/tokens.css">
+    <link rel="stylesheet" href="/v2/styles/layout.css">
+    <link rel="stylesheet" href="/v2/styles/components.css">
     
     <!-- Christmas Theme -->
     <script src="christmas-config.js"></script>
@@ -137,35 +145,39 @@
         <div class="reading-progress-bar" id="reading-progress-bar"></div>
     </div>
     
-    <!-- Professional News Header -->
-    <header class="main-header" style="position: fixed; top: 0; left: 0; right: 0; background: #ffffff; backdrop-filter: none; border-bottom: 1px solid #e5e5e5; z-index: 1000; padding: 12px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-        <div style="max-width: 1400px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between;">
-            <a href="index.html" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
-                <img src="IMG_5992.PNG" alt="Noteworthy News Logo" style="height: 28px; width: auto; max-width: 120px; display: block;">
-                <span style="font-weight: 700; color: #1a1a1a; margin-left: 5px; font-family: 'Inter', sans-serif; font-size: 1.125rem;">Noteworthy News</span>
-            </a>
-            <nav style="display: flex; align-items: center; gap: 12px;">
-                <div class="article-controls" style="display: flex; align-items: center; gap: 4px;">
-                    <button class="control-btn" id="text-size-decrease" aria-label="Decrease text size" title="Decrease text size" style="background: transparent; border: 1px solid #d5d5d5; color: #1a1a1a;">A-</button>
-                    <button class="control-btn" id="text-size-reset" aria-label="Reset text size" title="Reset text size" style="background: transparent; border: 1px solid #d5d5d5; color: #1a1a1a;">A</button>
-                    <button class="control-btn" id="text-size-increase" aria-label="Increase text size" title="Increase text size" style="background: transparent; border: 1px solid #d5d5d5; color: #1a1a1a;">A+</button>
-                    <button class="control-btn" id="print-btn" aria-label="Print article" title="Print article" style="background: transparent; border: 1px solid #d5d5d5; color: #1a1a1a;">🖨️</button>
-                </div>
-                <a href="index.html" style="color: #1a1a1a; text-decoration: none; font-weight: 500; font-family: 'Inter', sans-serif; font-size: 0.875rem;">← Back to Home</a>
-            </nav>
+    <!-- V2 Site Navigation -->
+    <header class="site-header">
+      <nav class="site-nav container" aria-label="Primary">
+        <a class="site-logo" href="/">
+          <img class="site-logo-icon" src="/IMG_5794.PNG" alt="" width="28" height="28">
+          <span>Noteworthy News</span>
+        </a>
+        <button class="nav-toggle" aria-expanded="false" aria-controls="nav-menu">
+          <svg class="nav-toggle-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+        <div class="nav-menu" id="nav-menu">
+          <a class="nav-link" href="/">Home</a>
+          <a class="nav-link" href="/archive.html">Archive</a>
+          <a class="nav-link" href="/contact.html">Contact</a>
+          <a class="nav-link" href="/v2/situation-monitor.html">Monitor</a>
         </div>
+      </nav>
     </header>
     
     <!-- Main Article Content -->
     <main class="article-container">
         <!-- Breadcrumb Row -->
         <div class="article-breadcrumb-row">
-            <a href="index.html" class="breadcrumb-back">
-                <span>←</span>
-                <span>Back to News</span>
-            </a>
             <div class="breadcrumb-meta">
                 <span class="category-chip" id="category-chip">BREAKING NEWS</span>
+            </div>
+            <div class="article-controls">
+                <button class="control-btn" id="text-size-decrease" aria-label="Decrease text size" title="Decrease text size">A-</button>
+                <button class="control-btn" id="text-size-reset" aria-label="Reset text size" title="Reset text size">A</button>
+                <button class="control-btn" id="text-size-increase" aria-label="Increase text size" title="Increase text size">A+</button>
+                <button class="control-btn" id="print-btn" aria-label="Print article" title="Print article">🖨️</button>
             </div>
         </div>
         
@@ -308,22 +320,46 @@
         </section>
     </main>
     
-    <!-- Professional Footer -->
-    <footer style="background: #ffffff; padding: 40px 20px; margin-top: 80px; border-top: 1px solid #e5e5e5;">
-        <div style="max-width: 1400px; margin: 0 auto; text-align: center; color: #666;">
-            <div style="margin-bottom: 20px;">
-                <a href="index.html" style="display: inline-block; text-decoration: none;">
-                    <img src="nw-logo.GIF" alt="Noteworthy News Logo" style="height: 40px; width: auto; max-width: 150px; display: block; margin: 0 auto;">
-                </a>
-            </div>
-            <p style="font-family: 'Inter', sans-serif; font-size: 0.875rem; margin: 0 0 16px 0;">&copy; 2025 Noteworthy News. All rights reserved.</p>
-            <nav style="margin-top: 20px; display: flex; justify-content: center; flex-wrap: wrap; gap: 16px;">
-                <a href="privacy.html" style="color: #1a1a1a; text-decoration: none; font-family: 'Inter', sans-serif; font-size: 0.875rem;">Privacy Policy</a>
-                <a href="terms.html" style="color: #1a1a1a; text-decoration: none; font-family: 'Inter', sans-serif; font-size: 0.875rem;">Terms of Service</a>
-                <a href="contact.html" style="color: #1a1a1a; text-decoration: none; font-family: 'Inter', sans-serif; font-size: 0.875rem;">Contact</a>
-                <a href="editorial-policy.html" style="color: #1a1a1a; text-decoration: none; font-family: 'Inter', sans-serif; font-size: 0.875rem;">Editorial Policy</a>
-            </nav>
+    <!-- V2 Footer -->
+    <footer class="site-footer">
+      <div class="container">
+        <div class="footer-grid">
+          <div class="footer-brand">
+            <p class="footer-brand-name">Noteworthy News</p>
+            <p class="footer-brand-tagline">Fact-checked journalism and media literacy tools. Think critically about the world.</p>
+          </div>
+          <nav aria-label="Footer navigation">
+            <p class="footer-nav-title">Explore</p>
+            <ul class="footer-nav-list">
+              <li><a class="footer-nav-link" href="/archive.html">Stories</a></li>
+              <li><a class="footer-nav-link" href="/game.html">Fact-Checker Game</a></li>
+              <li><a class="footer-nav-link" href="/geography-game.html">Geography Game</a></li>
+              <li><a class="footer-nav-link" href="/v2/situation-monitor.html">Situation Monitor</a></li>
+              <li><a class="footer-nav-link" href="/contact.html">Contact</a></li>
+            </ul>
+          </nav>
+          <nav aria-label="Resources">
+            <p class="footer-nav-title">Resources</p>
+            <ul class="footer-nav-list">
+              <li><a class="footer-nav-link" href="/media-literacy-guide.html">Media Literacy Guide</a></li>
+              <li><a class="footer-nav-link" href="/how-we-verify.html">How We Verify</a></li>
+              <li><a class="footer-nav-link" href="/fact-checking-tips.html">Fact-Checking Tips</a></li>
+              <li><a class="footer-nav-link" href="/newsletter-preferences.html">Newsletter Prefs</a></li>
+            </ul>
+          </nav>
+          <nav aria-label="Legal">
+            <p class="footer-nav-title">Legal</p>
+            <ul class="footer-nav-list">
+              <li><a class="footer-nav-link" href="/privacy.html">Privacy Policy</a></li>
+              <li><a class="footer-nav-link" href="/terms.html">Terms of Service</a></li>
+              <li><a class="footer-nav-link" href="/editorial-policy.html">Editorial Policy</a></li>
+            </ul>
+          </nav>
         </div>
+        <div class="footer-bottom">
+          <p class="footer-copyright">&copy; 2026 Noteworthy News. All rights reserved.</p>
+        </div>
+      </div>
     </footer>
     
     <!-- Image Lightbox -->
@@ -334,6 +370,19 @@
         </div>
     </div>
     
+    <!-- V2 Nav Behavior -->
+    <script>
+    (function(){
+      var h=document.querySelector('.site-header'),t=document.querySelector('.nav-toggle'),m=document.querySelector('.nav-menu');
+      if(t&&m){
+        t.addEventListener('click',function(){var o=m.classList.toggle('open');t.setAttribute('aria-expanded',String(o));document.body.style.overflow=o?'hidden':'';});
+        m.addEventListener('click',function(e){if(e.target===m||e.target.closest('.nav-link')){m.classList.remove('open');t.setAttribute('aria-expanded','false');document.body.style.overflow='';}});
+        document.addEventListener('keydown',function(e){if(e.key==='Escape'&&m.classList.contains('open')){m.classList.remove('open');t.setAttribute('aria-expanded','false');document.body.style.overflow='';t.focus();}});
+      }
+      if(h)window.addEventListener('scroll',function(){h.classList.toggle('scrolled',window.scrollY>10);},{passive:true});
+    })();
+    </script>
+
     <!-- Article Page Scripts (extracted for caching) -->
     <script src="/js/article-page.js"></script>
     

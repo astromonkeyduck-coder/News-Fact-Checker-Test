@@ -11,6 +11,10 @@
     <link rel="apple-touch-icon" href="IMG_5794.PNG" sizes="180x180">
     <meta name="theme-color" content="#ffffff">
     <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <!-- V2 Design System -->
+    <link rel="stylesheet" href="/v2/styles/tokens.css">
+    <link rel="stylesheet" href="/v2/styles/layout.css">
+    <link rel="stylesheet" href="/v2/styles/components.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html {
@@ -23,13 +27,16 @@
             color: #1a1a1a;
             min-height: 100vh;
             display: flex;
-            align-items: center;
+            flex-direction: column;
+            align-items: stretch;
             justify-content: center;
             padding: 24px;
         }
         .preferences-container {
             max-width: 600px;
             width: 100%;
+            margin-left: auto;
+            margin-right: auto;
             background: #ffffff;
             padding: 48px 40px;
             border: 1px solid #dee2e6;
@@ -238,6 +245,27 @@
     </style>
 </head>
 <body>
+    <!-- V2 Navigation -->
+    <div class="top-rule" aria-hidden="true"></div>
+    <header class="site-header">
+      <nav class="site-nav container" aria-label="Primary">
+        <a class="site-logo" href="/">
+          <img class="site-logo-icon" src="/IMG_5794.PNG" alt="" width="28" height="28">
+          <span>Noteworthy News</span>
+        </a>
+        <button class="nav-toggle" aria-expanded="false" aria-controls="nav-menu">
+          <svg class="nav-toggle-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+        <div class="nav-menu" id="nav-menu">
+          <a class="nav-link" href="/">Home</a>
+          <a class="nav-link" href="/archive.html">Archive</a>
+          <a class="nav-link" href="/contact.html">Contact</a>
+          <a class="nav-link" href="/v2/situation-monitor.html">Monitor</a>
+        </div>
+      </nav>
+    </header>
     <div class="preferences-container">
         <a href="https://noteworthynews.co/" class="logo" aria-label="Noteworthy News">
             <img src="https://noteworthynews.co/IMG_5992.PNG" alt="Noteworthy News" loading="lazy">
@@ -422,6 +450,58 @@
     load();
 })();
     </script>
+    <script>
+    (function(){
+      var h=document.querySelector('.site-header'),t=document.querySelector('.nav-toggle'),m=document.querySelector('.nav-menu');
+      if(t&&m){
+        t.addEventListener('click',function(){var o=m.classList.toggle('open');t.setAttribute('aria-expanded',String(o));document.body.style.overflow=o?'hidden':'';});
+        m.addEventListener('click',function(e){if(e.target===m||e.target.closest('.nav-link')){m.classList.remove('open');t.setAttribute('aria-expanded','false');document.body.style.overflow='';}});
+        document.addEventListener('keydown',function(e){if(e.key==='Escape'&&m.classList.contains('open')){m.classList.remove('open');t.setAttribute('aria-expanded','false');document.body.style.overflow='';t.focus();}});
+      }
+      if(h)window.addEventListener('scroll',function(){h.classList.toggle('scrolled',window.scrollY>10);},{passive:true});
+    })();
+    </script>
+    <!-- V2 Footer -->
+    <footer class="site-footer">
+      <div class="container">
+        <div class="footer-grid">
+          <div class="footer-brand">
+            <p class="footer-brand-name">Noteworthy News</p>
+            <p class="footer-brand-tagline">Fact-checked journalism and media literacy tools. Think critically about the world.</p>
+          </div>
+          <nav aria-label="Footer navigation">
+            <p class="footer-nav-title">Explore</p>
+            <ul class="footer-nav-list">
+              <li><a class="footer-nav-link" href="/archive.html">Stories</a></li>
+              <li><a class="footer-nav-link" href="/game.html">Fact-Checker Game</a></li>
+              <li><a class="footer-nav-link" href="/geography-game.html">Geography Game</a></li>
+              <li><a class="footer-nav-link" href="/v2/situation-monitor.html">Situation Monitor</a></li>
+              <li><a class="footer-nav-link" href="/contact.html">Contact</a></li>
+            </ul>
+          </nav>
+          <nav aria-label="Resources">
+            <p class="footer-nav-title">Resources</p>
+            <ul class="footer-nav-list">
+              <li><a class="footer-nav-link" href="/media-literacy-guide.html">Media Literacy Guide</a></li>
+              <li><a class="footer-nav-link" href="/how-we-verify.html">How We Verify</a></li>
+              <li><a class="footer-nav-link" href="/fact-checking-tips.html">Fact-Checking Tips</a></li>
+              <li><a class="footer-nav-link" href="/newsletter-preferences.html">Newsletter Prefs</a></li>
+            </ul>
+          </nav>
+          <nav aria-label="Legal">
+            <p class="footer-nav-title">Legal</p>
+            <ul class="footer-nav-list">
+              <li><a class="footer-nav-link" href="/privacy.html">Privacy Policy</a></li>
+              <li><a class="footer-nav-link" href="/terms.html">Terms of Service</a></li>
+              <li><a class="footer-nav-link" href="/editorial-policy.html">Editorial Policy</a></li>
+            </ul>
+          </nav>
+        </div>
+        <div class="footer-bottom">
+          <p class="footer-copyright">&copy; 2026 Noteworthy News. All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
     <script src="src/components/cookie-banner.js"></script>
 </body>
 </html>
