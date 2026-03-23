@@ -8,7 +8,7 @@
   <!-- SEO -->
   <meta name="description" content="Noteworthy News delivers verified journalism, media literacy tools, and interactive fact-checking experiences. Think critically about the news.">
   <link rel="canonical" href="https://noteworthynews.co/">
-  <meta name="theme-color" content="#0B1426">
+  <meta name="theme-color" content="#080E1A">
 
   <!-- Open Graph -->
   <meta property="og:type" content="website">
@@ -27,13 +27,12 @@
   <meta name="twitter:description" content="Verified journalism, media literacy tools, and interactive fact-checking experiences.">
   <meta name="twitter:image" content="https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg?v=2">
 
-  <!-- Fonts — non-render-blocking: page paints with system fonts, swaps when ready -->
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" media="print" onload="this.media='all'">
-  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap"></noscript>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap"></noscript>
 
-  
   <!-- Auth0 SDK loaded lazily by v2/js/auth.js when needed -->
 
   <!-- Design System -->
@@ -41,9 +40,7 @@
   <link rel="stylesheet" href="/v2/styles/base.css">
   <link rel="stylesheet" href="/v2/styles/layout.css">
   <link rel="stylesheet" href="/v2/styles/components.css">
-  
-  
-  
+
   <!-- Auth0 Configuration - Inject environment variables for production -->
     <script>
       window.AUTH0_DOMAIN = '****************.com';
@@ -53,11 +50,13 @@
 </head>
 <body>
 
-  <!-- ─── Header / Navigation ───────────────────── -->
+  <div class="top-rule" aria-hidden="true"></div>
+
+  <!-- ─── Header ─────────────────────────────────── -->
   <header class="site-header">
     <nav class="site-nav container" aria-label="Primary">
       <a class="site-logo" href="/">
-        <img class="site-logo-icon" src="/IMG_5794.PNG" alt="" width="28" height="28">
+        <img class="site-logo-icon" src="/IMG_5794.PNG" alt="" width="24" height="24">
         <span>Noteworthy News</span>
       </a>
 
@@ -70,14 +69,13 @@
       </button>
 
       <div class="nav-menu" id="nav-menu">
-        <a class="nav-link" href="#stories">Stories</a>
+        <a class="nav-link" href="#stories">Feed</a>
         <a class="nav-link" href="/archive.html">Archive</a>
         <a class="nav-link" href="#subscribe">Newsletter</a>
         <a class="nav-link" href="/v2/situation-monitor.html">Monitor</a>
 
         <div class="nav-separator" aria-hidden="true"></div>
 
-        <!-- Auth: shown/hidden by JS based on login state -->
         <div class="nav-auth" id="nav-auth-out">
           <button class="btn btn-ghost btn-sm" id="signinBtn" type="button">Sign In</button>
           <button class="btn btn-primary btn-sm" id="signupBtn" type="button">Sign Up</button>
@@ -97,32 +95,33 @@
     <section class="hero">
       <div class="container">
         <div class="hero-content">
-          <p class="section-label">Fact-Checked Journalism</p>
+          <div class="hero-eyebrow">
+            <span class="hero-live"><span class="hero-live-dot"></span> Live</span>
+            <span class="hero-timestamp" id="hero-time"></span>
+          </div>
           <h1 class="hero-title">
-            News you can <span class="hero-accent">verify</span>.<br>
-            Skills to think <span class="hero-accent">critically</span>.
+            News you can <span class="hero-accent">verify</span>.
           </h1>
           <p class="hero-subtitle">
-            Noteworthy News delivers verified stories, real-time intelligence,
-            and interactive media literacy experiences, helping you understand
-            the news, not just read it.
+            Verified stories, real-time intelligence, and media literacy tools.
+            Understand the news. Don't just read it.
           </p>
           <div class="hero-actions">
-            <a class="btn btn-primary btn-lg" href="#stories">Read Latest Stories</a>
-            <a class="btn btn-secondary btn-lg" href="#about">Why Noteworthy</a>
+            <a class="btn btn-primary btn-lg" href="#stories">Latest Stories</a>
+            <a class="btn btn-secondary btn-lg" href="/v2/situation-monitor.html">Situation Monitor</a>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ─── Stories / Feed ────────────────────────── -->
-    <section id="stories" class="section section-alt">
+    <!-- ─── Feed ──────────────────────────────────── -->
+    <section id="stories" class="section">
       <div class="container">
         <div class="section-header">
-          <p class="section-label">Latest</p>
+          <p class="section-label">// Feed</p>
           <h2 class="section-title">Verified Stories</h2>
           <p class="section-subtitle">
-            Fact-checked reporting from around the world, updated in real time.
+            Fact-checked reporting from around the world. Updated in real time.
           </p>
         </div>
 
@@ -136,23 +135,14 @@
         </div>
 
         <div class="section-cta">
-          <a class="btn btn-secondary" href="/archive.html">View All Stories</a>
+          <a class="btn btn-secondary" href="/archive.html">View Full Archive</a>
         </div>
       </div>
     </section>
 
-    <!-- ─── About / Features ─────────────────────── -->
-    <section id="about" class="section section-compact">
+    <!-- ─── About ─────────────────────────────────── -->
+    <section id="about" class="section-compact section-alt">
       <div class="container">
-        <div class="section-header text-center">
-          <p class="section-label">Why Noteworthy</p>
-          <h2 class="section-title">Built for trust and clarity</h2>
-          <p class="section-subtitle">
-            Every story is verified. Every tool sharpens your
-            understanding of the media landscape.
-          </p>
-        </div>
-
         <div class="grid grid-3">
           <div class="card">
             <div class="card-icon" aria-hidden="true">
@@ -161,10 +151,10 @@
                 <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
               </svg>
             </div>
-            <h3 class="card-title">Verified Journalism</h3>
+            <h3 class="card-title">Verified Sources</h3>
             <p class="card-text">
-              Fact-checked against primary sources. No clickbait,
-              no sensationalism. Just accurate reporting.
+              Every story cross-checked against primary sources.
+              No clickbait. No spin.
             </p>
           </div>
 
@@ -177,8 +167,8 @@
             </div>
             <h3 class="card-title">Media Literacy</h3>
             <p class="card-text">
-              Games, guides, and tools to detect misinformation
-              and evaluate sources with a sharper eye.
+              Games and tools to sharpen your eye
+              for misinformation.
             </p>
           </div>
 
@@ -189,10 +179,10 @@
                 <polyline points="12 6 12 12 16 14"/>
               </svg>
             </div>
-            <h3 class="card-title">Real-Time Intelligence</h3>
+            <h3 class="card-title">Real-Time Monitoring</h3>
             <p class="card-text">
-              Live global monitoring of earthquakes, weather, and breaking
-              developments, powered by verified data feeds.
+              Earthquakes, weather, aviation, breaking events.
+              Verified data feeds.
             </p>
           </div>
         </div>
@@ -200,14 +190,13 @@
     </section>
 
     <!-- ─── Newsletter ────────────────────────────── -->
-    <section id="subscribe" class="section section-alt">
+    <section id="subscribe" class="section">
       <div class="container container-narrow text-center">
         <div class="section-header">
-          <p class="section-label">Stay Informed</p>
-          <h2 class="section-title">Get the full picture, weekly</h2>
+          <p class="section-label">// Subscribe</p>
+          <h2 class="section-title">Weekly Intelligence Brief</h2>
           <p class="section-subtitle">
-            Fact-checked stories and media literacy insights delivered to
-            your inbox. No spam, no noise. Just the news that matters.
+            The stories that matter. Fact-checked and delivered to your inbox.
           </p>
         </div>
 
@@ -223,21 +212,21 @@
           >
           <button type="submit" class="btn btn-primary">Subscribe</button>
         </form>
-        <p class="newsletter-hint">Free. Unsubscribe anytime. We respect your inbox.</p>
+        <p class="newsletter-hint">Free. No spam. Unsubscribe anytime.</p>
       </div>
     </section>
 
   </main>
 
-  <!-- ─── Footer ──────────────────────────────────── -->
+  <!-- ─── Footer ─────────────────────────────────── -->
   <footer class="site-footer">
     <div class="container">
       <div class="footer-grid">
         <div class="footer-brand">
           <p class="footer-brand-name">Noteworthy News</p>
           <p class="footer-brand-tagline">
-            Fact-checked journalism and media literacy tools,
-            built to help you think critically about the world.
+            Fact-checked journalism and media literacy tools.
+            Think critically about the world.
           </p>
         </div>
 
@@ -278,7 +267,6 @@
     </div>
   </footer>
 
-  <!-- V2 modules — no frameworks, no blocking -->
   <script type="module" src="/v2/js/main.js"></script>
 
 </body>

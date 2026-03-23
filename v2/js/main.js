@@ -169,6 +169,19 @@ import { initAuth, login, signup, logout } from './auth.js';
     });
   }
 
+  // ── Live timestamp in hero ──────────────────────
+  const heroTime = document.getElementById('hero-time');
+  if (heroTime) {
+    const tick = () => {
+      const now = new Date();
+      heroTime.textContent = now.toLocaleTimeString('en-US', {
+        hour: '2-digit', minute: '2-digit', hour12: false, timeZoneName: 'short'
+      });
+    };
+    tick();
+    setInterval(tick, 30000);
+  }
+
   // ── Initialize feed and auth ─────────────────────
   initFeed();
   initAuth(onAuthChange);
