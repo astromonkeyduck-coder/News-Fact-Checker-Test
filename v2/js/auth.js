@@ -7,7 +7,7 @@
  * If Auth0 config is absent (dev without env vars), degrades silently.
  */
 
-const SDK_URL = 'https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js';
+const SDK_URL = 'https://cdn.auth0.com/js/auth0-spa-js/2.4/auth0-spa-js.production.js';
 
 let client = null;
 let currentUser = null;

@@ -122,7 +122,7 @@ function renderEmpty() {
   return `
     <div class="feed-state">
       <p class="feed-state-title">No stories yet</p>
-      <p class="feed-state-text">Check back soon — we're working on the next update.</p>
+      <p class="feed-state-text">Check back soon. We're working on the next update.</p>
     </div>`;
 }
 
