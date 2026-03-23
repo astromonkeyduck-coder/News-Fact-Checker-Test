@@ -1305,7 +1305,7 @@ async function sendAutoReply(senderEmail, originalSubject, wasTriggered) {
     const fromEmail = process.env.RESEND_FROM_EMAIL || 'Noteworthy News <richard@noteworthynews.co>';
     
     // Determine message based on whether ingest was triggered
-    const magnitudeThreshold = process.env.EARTHQUAKE_MAGNITUDE_THRESHOLD || '4.5';
+    const magnitudeThreshold = process.env.EARTHQUAKE_MAGNITUDE_THRESHOLD || '6.0';
     const message = wasTriggered
       ? `<p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">Hey! I'll check for any earthquakes above M${magnitudeThreshold} and send them to you. Give me a minute or two please. Thanks.</p>`
       : `<p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">Hey! I've received your email.</p>

@@ -109,10 +109,26 @@ exports.handler = async (event, context) => {
           };
         }
 
+        let payload = userData;
+        if (userData.preferences?.emails?.earthquakeMagnitudeMin != null) {
+          const n = Number(userData.preferences.emails.earthquakeMagnitudeMin);
+          const clamped = Number.isFinite(n) ? Math.min(7, Math.max(6, n)) : 6;
+          payload = {
+            ...userData,
+            preferences: {
+              ...userData.preferences,
+              emails: {
+                ...userData.preferences.emails,
+                earthquakeMagnitudeMin: clamped,
+              },
+            },
+          };
+        }
+
         return {
           statusCode: 200,
           headers,
-          body: JSON.stringify(userData),
+          body: JSON.stringify(payload),
         };
       } catch (error) {
         console.error("Error getting user data:", error);
@@ -183,6 +199,13 @@ exports.handler = async (event, context) => {
               ...userData.preferences.emails,
               ...updates.preferences.emails,
             };
+            const mm = userData.preferences.emails.earthquakeMagnitudeMin;
+            if (mm !== undefined && mm !== null) {
+              const n = Number(mm);
+              userData.preferences.emails.earthquakeMagnitudeMin = Number.isFinite(n)
+                ? Math.min(7, Math.max(6, n))
+                : 6;
+            }
           }
           
           // Merge other preferences

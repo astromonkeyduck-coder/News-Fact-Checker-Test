@@ -1,7 +1,7 @@
 /**
  * Get All Users with Earthquake Alerts Enabled
  * Returns list of users who have opted in to earthquake email alerts
- * with their magnitude threshold (4, 5, 6, or 7 = 4.0+, 5.0+, 6.0+, 7.0+)
+ * with their magnitude threshold (6 or 7 = 6.0+, 7.0+; legacy stored 4/5 are treated as 6)
  */
 
 const { getStore } = require("@netlify/blobs");
@@ -43,10 +43,8 @@ async function getEarthquakeAlertUsers() {
           const email = userData.email;
           if (!email || typeof email !== "string" || !email.includes("@")) continue;
 
-          // earthquakeMagnitudeMin: 4|5|6|7 (default 6)
-          const minMag = [4, 5, 6, 7].includes(Number(emailPrefs.earthquakeMagnitudeMin))
-            ? Number(emailPrefs.earthquakeMagnitudeMin)
-            : 6;
+          // earthquakeMagnitudeMin: only 6 or 7 apply; 4/5 in storage are upgraded to 6
+          const minMag = Number(emailPrefs.earthquakeMagnitudeMin) === 7 ? 7 : 6;
 
           users.push({
             email: email.toLowerCase().trim(),

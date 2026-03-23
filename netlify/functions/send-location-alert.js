@@ -314,7 +314,7 @@ async function checkAndSendLocationAlert(userEmail, userName, event, eventType) 
       if (eventMagnitude != null) {
         const { getUserEmailPreferences } = require('./lib/emailPreferences');
         const prefs = await getUserEmailPreferences(userEmail);
-        const minMag = prefs.earthquakeMagnitudeMin ?? 6;
+        const minMag = Math.max(6, prefs.earthquakeMagnitudeMin ?? 6);
         if (eventMagnitude < minMag) {
           return { success: false, reason: `Magnitude ${eventMagnitude} below user threshold ${minMag}` };
         }

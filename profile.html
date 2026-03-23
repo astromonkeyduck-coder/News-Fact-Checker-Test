@@ -383,8 +383,6 @@
                                 <p>Only alerts for earthquakes this size or larger</p>
                             </div>
                             <select id="emailPrefMagnitude" style="padding: 6px 10px; border-radius: 6px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white;">
-                                <option value="4">4.0+</option>
-                                <option value="5">5.0+</option>
                                 <option value="6">6.0+</option>
                                 <option value="7">7.0+</option>
                             </select>
@@ -431,7 +429,10 @@
                 if (streak) streak.checked = emails.streak !== false;
                 if (eqAlerts) eqAlerts.checked = emails.earthquakeAlerts === true;
                 if (loc) loc.checked = emails.location === true;
-                if (mag) mag.value = String(emails.earthquakeMagnitudeMin ?? 6);
+                if (mag) {
+                    const clamped = Math.min(7, Math.max(6, Number(emails.earthquakeMagnitudeMin) || 6));
+                    mag.value = String(clamped);
+                }
                 if (magRow) magRow.style.display = eqAlerts?.checked ? 'flex' : 'none';
 
                 function updateMagnitudeVisibility() {

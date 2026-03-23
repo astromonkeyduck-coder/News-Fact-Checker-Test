@@ -927,6 +927,29 @@ exports.handler = async (event, context) => {
     // Parse body early so we can use magnitude for preference-based recipient filtering
     const body = JSON.parse(event.body || "{}");
 
+    // Site-wide minimum: no earthquake alert emails below M6.0 (env list, webhook senders, or subscribers)
+    const earlyMag = parseFloat(body.earthquake?.magnitude);
+    if (
+      body.earthquake &&
+      Number.isFinite(earlyMag) &&
+      earlyMag > 0 &&
+      earlyMag < 6.0
+    ) {
+      console.log("[send-earthquake-alert] Skipping: magnitude below 6.0 email minimum", {
+        magnitude: earlyMag,
+      });
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          success: false,
+          skipped: true,
+          reason: "Earthquake alert emails are only sent for magnitude 6.0 and above",
+          magnitude: earlyMag,
+        }),
+      };
+    }
+
     // Get notification emails from AI_NOTIFICATION_EMAILS (same as other functions)
     let notificationEmails = [];
     if (process.env.AI_NOTIFICATION_EMAILS) {

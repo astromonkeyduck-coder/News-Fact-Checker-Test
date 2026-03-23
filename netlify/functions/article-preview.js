@@ -39,7 +39,7 @@ function getArticlePageShell() {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="app-version" content="Feb 2, 2026">
+    <meta name="app-version" content="Apr 3, 2026">
     
     <!-- Dynamic Meta Tags - Updated by article-loader.js -->
     <title id="article-title">Article - Noteworthy News</title>

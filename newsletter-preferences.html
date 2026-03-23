@@ -307,8 +307,6 @@
                         <p class="desc">Only alerts for earthquakes this size or larger</p>
                     </div>
                     <select id="magnitudeMin" class="magnitude-select">
-                        <option value="4">4.0+</option>
-                        <option value="5">5.0+</option>
                         <option value="6">6.0+</option>
                         <option value="7">7.0+</option>
                     </select>
@@ -381,7 +379,10 @@
                 toggleStreak.checked = data.preferences.streak !== false;
                 toggleEarthquakeAlerts.checked = data.preferences.earthquakeAlerts === true;
                 toggleLocation.checked = data.preferences.location === true;
-                if (magnitudeMin) magnitudeMin.value = String(data.preferences.earthquakeMagnitudeMin ?? 6);
+                if (magnitudeMin) {
+                    const clamped = Math.min(7, Math.max(6, Number(data.preferences.earthquakeMagnitudeMin) || 6));
+                    magnitudeMin.value = String(clamped);
+                }
                 updateMagnitudeVisibility();
             }
         } catch (e) {

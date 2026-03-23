@@ -92,7 +92,7 @@ exports.handler = async (event) => {
     for (const key of allowed) {
       if (key === "earthquakeMagnitudeMin") {
         const v = updates[key];
-        if ([4, 5, 6, 7].includes(Number(v))) {
+        if ([6, 7].includes(Number(v))) {
           sanitized[key] = Number(v);
         }
       } else if (key in updates && typeof updates[key] === "boolean") {
