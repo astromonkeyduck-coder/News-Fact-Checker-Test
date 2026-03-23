@@ -3,7 +3,7 @@
  * Provides offline support, caching, and faster page loads
  */
 
-const CACHE_VERSION = 'v2.1.0-broadcast';
+const CACHE_VERSION = 'v2.1.1-admin-sw';
 const CACHE_NAME = `noteworthy-news-${CACHE_VERSION}`;
 
 // Helper function to check if a URL is cacheable
@@ -129,6 +129,28 @@ self.addEventListener('fetch', (event) => {
           })
       );
     }
+    return;
+  }
+
+  // Admin shell (auth, API client): network-first so fixes deploy without stale SW cache.
+  if (
+    url.pathname.startsWith('/admin/') &&
+    (request.destination === 'script' ||
+      request.destination === 'style' ||
+      url.pathname.endsWith('.js') ||
+      url.pathname.endsWith('.css'))
+  ) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response && response.status === 200 && response.type === 'basic' && isCacheableUrl(request.url)) {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, responseToCache)).catch(() => {});
+          }
+          return response;
+        })
+        .catch(() => caches.match(request))
+    );
     return;
   }
 

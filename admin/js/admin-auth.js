@@ -9,7 +9,7 @@
 
 import { setTokenProvider } from './lib/api.js';
 
-const AUTH0_SDK_URL = 'https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js';
+const AUTH0_SDK_URL = 'https://cdn.auth0.com/js/auth0-spa-js/2.4/auth0-spa-js.production.js';
 let _auth0Client = null;
 
 function getConfig() {
@@ -19,8 +19,20 @@ function getConfig() {
   return { domain, clientId };
 }
 
+/** SDK v2.4 exposes createAuth0Client on window.auth0, not as a bare global. */
+function getAuth0Factory() {
+  if (typeof createAuth0Client === 'function') return createAuth0Client;
+  if (window.auth0 && typeof window.auth0.createAuth0Client === 'function') {
+    return window.auth0.createAuth0Client;
+  }
+  if (typeof auth0 !== 'undefined' && typeof auth0.createAuth0Client === 'function') {
+    return auth0.createAuth0Client;
+  }
+  return null;
+}
+
 async function loadSDK() {
-  if (typeof window.createAuth0Client === 'function') return;
+  if (getAuth0Factory()) return;
   await new Promise((resolve, reject) => {
     const s = document.createElement('script');
     s.src = AUTH0_SDK_URL;
@@ -73,9 +85,16 @@ export async function initAdminAuth() {
     return null;
   }
 
+  const factory = getAuth0Factory();
+  if (!factory) {
+    setStatus('Auth0 SDK loaded but createAuth0Client not found.', true);
+    console.error('[AdminAuth] createAuth0Client missing after SDK load');
+    return null;
+  }
+
   let client;
   try {
-    client = await window.createAuth0Client({
+    client = await factory({
       domain: config.domain,
       clientId: config.clientId,
       authorizationParams: {
