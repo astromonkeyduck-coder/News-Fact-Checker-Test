@@ -243,15 +243,22 @@ export async function initFeed() {
     const breaking = posts.filter(p => !isAlertPost(p));
     const alerts = posts.filter(p => isAlertPost(p));
 
-    populateTicker([...breaking.slice(0, 8), ...alerts.slice(0, 4)]);
+    const allForTicker = [...breaking.slice(0, 8), ...alerts.slice(0, 8)];
+    populateTicker(allForTicker);
 
-    if (heroEl && breaking.length > 0) {
-      heroEl.innerHTML = renderFeatured(breaking[0]);
-      heroEl.classList.add('feed-loaded');
+    // Featured story: prefer breaking, fall back to most recent alert
+    if (heroEl) {
+      const featuredPost = breaking.length > 0 ? breaking[0] : alerts[0];
+      if (featuredPost) {
+        heroEl.innerHTML = renderFeatured(featuredPost);
+        heroEl.classList.add('feed-loaded');
+      }
     }
 
+    // Breaking news grid: skip the featured post
+    const gridSource = breaking.length > 0 ? breaking : [];
     if (breakingEl) {
-      const grid = breaking.slice(1, BREAKING_DISPLAY + 1);
+      const grid = gridSource.slice(1, BREAKING_DISPLAY + 1);
       if (grid.length > 0) {
         breakingEl.innerHTML = grid.map((post, i) =>
           i === 0 ? renderCard(post, true) : renderCard(post)
@@ -264,9 +271,12 @@ export async function initFeed() {
       }
     }
 
+    // Alerts grid: skip featured if an alert was used there
+    const alertStart = (breaking.length === 0 && alerts.length > 0) ? 1 : 0;
     if (alertsEl) {
-      if (alerts.length > 0) {
-        alertsEl.innerHTML = alerts.slice(0, ALERTS_DISPLAY).map(renderAlertCard).join('');
+      const alertSlice = alerts.slice(alertStart, alertStart + ALERTS_DISPLAY);
+      if (alertSlice.length > 0) {
+        alertsEl.innerHTML = alertSlice.map(renderAlertCard).join('');
         alertsEl.classList.remove('feed-placeholder');
         alertsEl.classList.add('feed-grid', 'feed-loaded');
       } else {
@@ -279,9 +289,9 @@ export async function initFeed() {
       alertCountEl.textContent = `${alerts.length} active alert${alerts.length !== 1 ? 's' : ''}`;
     }
 
-    _allBreaking = breaking;
-    initFilters(breaking);
-    initLoadMore(breaking);
+    _allBreaking = gridSource;
+    initFilters(gridSource);
+    initLoadMore(gridSource);
   } catch (err) {
     console.error('[Feed] Failed to load:', err);
     const errorHtml = renderError();
@@ -347,7 +357,7 @@ function renderBreakingGrid(posts) {
 
   const loadMoreBtn = document.getElementById('load-more-btn');
   if (loadMoreBtn) {
-    loadMoreBtn.hidden = filtered.length <= _displayCount;
+    loadMoreBtn.hidden = visible.length === 0 || filtered.length <= _displayCount;
   }
 }
 
