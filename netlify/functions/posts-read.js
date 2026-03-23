@@ -1,14 +1,14 @@
-// JavaScript version of posts-read function for better compatibility
-// Load environment variables if needed
 if (process.env.NETLIFY_DEV) {
   try {
     require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
-  } catch (e) {
-    // dotenv not needed if not available
-  }
+  } catch (e) {}
 }
 
-const { getStore } = require("@netlify/blobs");
+const {
+  getPostStore,
+  readIndex,
+  readPost,
+} = require("./lib/postStore");
 
 /**
  * Read latest posts from blob storage
@@ -34,71 +34,34 @@ exports.handler = async (event) => {
   }
 
   try {
-    // Get limit from query (default 30)
     const limit = parseInt(event.queryStringParameters?.limit || "30", 10);
-    const maxLimit = Math.min(limit, 200); // Cap at 200
+    const maxLimit = Math.min(limit, 200);
 
-    // Get siteID and token from environment (Netlify automatically sets these)
-    // For Functions, we need to explicitly pass them if auto-detection fails
-    const siteID = process.env.NETLIFY_SITE_ID || event.headers['x-nf-site-id'];
-    const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN || event.headers['x-nf-token'];
-    
-    let store;
-    try {
-      // Try with explicit siteID and token if available
-      if (siteID && token) {
-        console.log('[posts-read] Using explicit siteID and token');
-        store = getStore({
-          name: "x-posts",
-          siteID: siteID,
-          token: token,
-        });
-      } else {
-        // Fallback: try automatic detection (works in most Netlify environments)
-        console.log('[posts-read] Using automatic detection');
-        store = getStore({ name: "x-posts" });
-      }
-    } catch (storeErr) {
-      console.error('[posts-read] Failed to create store:', storeErr);
-      return {
-        statusCode: 503,
-        headers,
-        body: JSON.stringify({
-          error: "Storage configuration error",
-          message: storeErr.message,
-        }),
-      };
-    }
+    const store = getPostStore();
 
-    // Direct lookup by ID - bypasses index so edited posts are always findable
+    // Direct lookup by ID
     const requestedId = event.queryStringParameters?.id;
     if (requestedId && requestedId.trim()) {
-      const rawId = requestedId.trim();
-      // Normalize: "post-123" -> "123" for blob key (blob is always post-{id}.json)
-      const blobId = rawId.startsWith("post-") ? rawId.substring(5) : rawId;
-      const postKey = `post-${blobId}.json`;
-      const keysToTry = [postKey];
-      // Fallback: post-usgs-us6000saws not found? Try post-eq-us6000saws (earthquake-poller uses eq- prefix)
-      if (blobId.startsWith("usgs-")) {
-        const eventId = blobId.substring(5);
-        keysToTry.push(`post-eq-${eventId}.json`);
+      const blobId = requestedId.trim().replace(/^post-/, "");
+      const post = await readPost(store, blobId);
+      if (post) {
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify([post]),
+        };
       }
-      for (const key of keysToTry) {
-        try {
-          const post = await store.get(key, { type: "json" });
-          if (post) {
-            console.log(`[posts-read] Direct lookup found post at ${key}`);
-            return {
-              statusCode: 200,
-              headers,
-              body: JSON.stringify([post]),
-            };
-          }
-        } catch (err) {
-          // Continue to next key
+      // Legacy fallback: eq- prefix may still exist for older earthquake posts
+      if (blobId.startsWith("usgs-")) {
+        const eqPost = await readPost(store, `eq-${blobId.substring(5)}`);
+        if (eqPost) {
+          return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify([eqPost]),
+          };
         }
       }
-      console.log(`[posts-read] Direct lookup: post ${blobId} not found (tried ${keysToTry.join(', ')})`);
       return {
         statusCode: 200,
         headers,
@@ -106,16 +69,8 @@ exports.handler = async (event) => {
       };
     }
 
-    // Read index
-    let indexData = { ids: [] };
-    try {
-      const indexBlob = await store.get("index.json", { type: "json" });
-      if (indexBlob && Array.isArray(indexBlob.ids)) {
-        indexData = indexBlob;
-      }
-    } catch (err) {
-      // Index doesn't exist yet - return empty array
-      console.log('[posts-read] No index found, returning empty array');
+    const ids = await readIndex(store);
+    if (ids.length === 0) {
       return {
         statusCode: 200,
         headers,
@@ -123,48 +78,25 @@ exports.handler = async (event) => {
       };
     }
 
-    // Fetch all posts (up to 200) so we can sort by date - index order may not match date order
-    const idsToFetch = indexData.ids.slice(0, 200);
-    
-    console.log(`[posts-read] Fetching ${idsToFetch.length} posts from index (requested ${maxLimit}, will sort and return top ${maxLimit})`);
+    const idsToFetch = ids.slice(0, 200);
 
-    // Fetch all posts in parallel
-    const postPromises = idsToFetch.map(async (id) => {
-      const postKey = `post-${id}.json`;
-      try {
-        const postBlob = await store.get(postKey, { type: "json" });
-        return postBlob;
-      } catch (err) {
-        // Post doesn't exist (maybe was deleted or index is stale)
-        console.log(`[posts-read] Post ${id} not found`);
-        return null;
-      }
-    });
+    console.log(`[posts-read] Fetching ${idsToFetch.length} posts (returning top ${maxLimit})`);
 
-    const posts = await Promise.all(postPromises);
-    
-    // Filter out nulls
-    const validPosts = posts.filter(post => post !== null);
-    
-    // Sort by date (newest first) - this ensures recent posts appear first
+    const posts = await Promise.all(
+      idsToFetch.map((id) => readPost(store, id))
+    );
+
+    const validPosts = posts.filter((post) => post !== null);
+
     validPosts.sort((a, b) => {
       const dateA = new Date(a.datePosted || a.createdAt || a.created_at || a.Date || 0);
       const dateB = new Date(b.datePosted || b.createdAt || b.created_at || b.Date || 0);
-      // Newest first (descending order)
       return dateB.getTime() - dateA.getTime();
     });
-    
-    // Return only the requested number of most recent posts
+
     const topPosts = validPosts.slice(0, maxLimit);
 
-    console.log(`[posts-read] Fetched ${validPosts.length} valid posts, returning top ${topPosts.length} (newest first)`);
-    
-    // Log date range for debugging
-    if (topPosts.length > 0) {
-      const newestDate = new Date(topPosts[0].datePosted || topPosts[0].createdAt || topPosts[0].created_at || topPosts[0].Date || 0);
-      const oldestDate = new Date(topPosts[topPosts.length - 1].datePosted || topPosts[topPosts.length - 1].createdAt || topPosts[topPosts.length - 1].created_at || topPosts[topPosts.length - 1].Date || 0);
-      console.log(`[posts-read] Date range: ${oldestDate.toISOString()} to ${newestDate.toISOString()}`);
-    }
+    console.log(`[posts-read] Returning ${topPosts.length} of ${validPosts.length} valid posts`);
 
     return {
       statusCode: 200,

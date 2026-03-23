@@ -1675,7 +1675,7 @@ This is an automated notification from your website.`,
 exports.handler = async (event, context) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Admin-Token",
     "Access-Control-Allow-Methods": "POST, OPTIONS, GET",
   };
 
@@ -1706,17 +1706,10 @@ exports.handler = async (event, context) => {
     }
 
     if (event.httpMethod === "GET") {
-      // SECURITY: Require admin token for viewing logs (GET requests)
-      const adminToken = process.env.ADMIN_ANALYTICS_TOKEN;
-      const providedToken = event.queryStringParameters?.token || event.headers["x-admin-token"];
-      
-      if (adminToken && providedToken !== adminToken) {
-        return {
-          statusCode: 401,
-          headers,
-          body: JSON.stringify({ error: "Unauthorized - Admin token required" }),
-        };
-      }
+      // SECURITY: Require admin JWT or legacy ADMIN_ANALYTICS_TOKEN
+      const { requireAdminAuthOrSecret } = require("./middleware/requireAuth");
+      const authResult = await requireAdminAuthOrSecret(event, "ADMIN_ANALYTICS_TOKEN");
+      if (authResult.statusCode) return { ...authResult, headers: { ...headers, ...authResult.headers } };
       
       // Check environment variables and initialize store first
       if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_BLOB_READ_WRITE_TOKEN) {

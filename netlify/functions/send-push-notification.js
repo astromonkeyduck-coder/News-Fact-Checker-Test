@@ -56,8 +56,17 @@ exports.handler = async (event, context) => {
     // Verify API key for security (prevent abuse)
     const authHeader = event.headers.authorization || event.headers.Authorization;
     const apiKey = process.env.PUSH_API_KEY;
-    
-    if (apiKey && authHeader !== `Bearer ${apiKey}`) {
+
+    if (!apiKey) {
+      console.error('[Security] PUSH_API_KEY is not configured — denying access (fail-closed).');
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ error: "Security configuration error" }),
+      };
+    }
+
+    if (authHeader !== `Bearer ${apiKey}`) {
       console.warn("[Send Push] Unauthorized request");
       return {
         statusCode: 401,

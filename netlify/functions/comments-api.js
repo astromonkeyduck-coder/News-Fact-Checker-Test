@@ -1,9 +1,12 @@
 /**
  * Comments API - Store and retrieve article comments
- * Uses Netlify Blobs for persistent storage across devices
+ * Uses Netlify Blobs for persistent storage across devices.
+ * DELETE requires a verified Auth0 JWT — ownership is checked
+ * against the JWT's sub/email, not a client-supplied authorId.
  */
 
 const { validateUserName } = require("./user-validation");
+const { verifyToken } = require("./middleware/requireAuth");
 
 let getStore;
 try {
@@ -16,7 +19,7 @@ exports.handler = async (event, context) => {
   // CORS headers
   const headers = {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
     "Content-Type": "application/json",
   };
@@ -247,21 +250,34 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // DELETE: Delete a comment
+    // DELETE: Delete a comment (requires verified JWT)
     if (event.httpMethod === "DELETE") {
-      if (!articleId || !commentId || !authorId) {
+      if (!articleId || !commentId) {
         return {
           statusCode: 400,
           headers,
           body: JSON.stringify({
-            error: "articleId, commentId, and authorId are required",
+            error: "articleId and commentId are required",
           }),
         };
       }
 
+      // Verify caller identity via JWT
+      const tokenResult = await verifyToken(event);
+      if (!tokenResult) {
+        return {
+          statusCode: 401,
+          headers,
+          body: JSON.stringify({ error: "Unauthorized — valid Bearer token required to delete comments" }),
+        };
+      }
+
+      const verifiedSub = tokenResult.payload.sub;
+      const verifiedEmail = tokenResult.payload.email ||
+        tokenResult.payload["https://noteworthynews.co/email"];
+
       const commentsKey = `comments_${articleId}`;
       
-      // Load existing comments
       let comments = [];
       try {
         const existing = await store.get(commentsKey, { type: "json" });
@@ -274,7 +290,6 @@ exports.handler = async (event, context) => {
         };
       }
 
-      // Find and verify comment ownership
       const commentIndex = comments.findIndex((c) => c.id === commentId);
       if (commentIndex === -1) {
         return {
@@ -284,8 +299,13 @@ exports.handler = async (event, context) => {
         };
       }
 
+      // Ownership check against server-verified identity
       const comment = comments[commentIndex];
-      if (comment.authorId !== authorId && comment.authorEmail !== event.headers["x-user-email"]) {
+      const ownsComment =
+        (verifiedSub && comment.authorId === verifiedSub) ||
+        (verifiedEmail && comment.authorEmail === verifiedEmail);
+
+      if (!ownsComment) {
         return {
           statusCode: 403,
           headers,
@@ -293,10 +313,7 @@ exports.handler = async (event, context) => {
         };
       }
 
-      // Remove comment
       comments.splice(commentIndex, 1);
-
-      // Save back to store using setJSON
       await store.setJSON(commentsKey, comments);
 
       return {

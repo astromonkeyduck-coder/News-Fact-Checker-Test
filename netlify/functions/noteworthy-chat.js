@@ -10,51 +10,24 @@ try {
   console.warn('@netlify/blobs not available, rate limiting will be disabled');
 }
 
+// Canonical post store for x-posts reads
+const postStore = require('./lib/postStore');
+
 /**
  * Fetch recent posts from blob storage for AI context
  */
 async function fetchRecentPosts(event, limit = 10) {
   try {
-    const siteID = process.env.NETLIFY_SITE_ID || event.headers['x-nf-site-id'];
-    const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN || event.headers['x-nf-token'];
-    
-    let store;
-    if (siteID && token) {
-      store = getStore({
-        name: "x-posts",
-        siteID: siteID,
-        token: token,
-      });
-    } else {
-      store = getStore({ name: "x-posts" });
-    }
+    const store = postStore.getPostStore();
+    const ids = await postStore.readIndex(store);
 
-    // Read index
-    let indexData = { ids: [] };
-    try {
-      const indexBlob = await store.get("index.json", { type: "json" });
-      if (indexBlob && Array.isArray(indexBlob.ids)) {
-        indexData = indexBlob;
-      }
-    } catch (err) {
-      console.log('[Noteworthy Chat] No posts index found');
-      return [];
-    }
+    if (ids.length === 0) return [];
 
-    if (!indexData.ids || indexData.ids.length === 0) {
-      return [];
-    }
+    const postIds = ids.slice(0, Math.min(limit, ids.length));
 
-    // Get most recent posts (first N from index, which should be sorted by date)
-    const postIds = indexData.ids.slice(0, Math.min(limit, indexData.ids.length));
-    
-    // Fetch posts in parallel
     const postPromises = postIds.map(async (id) => {
       try {
-        // Posts are stored with key format: post-${id}.json
-        const postKey = `post-${id}.json`;
-        const post = await store.get(postKey, { type: "json" });
-        return post;
+        return await postStore.readPost(store, id);
       } catch (err) {
         console.error(`[Noteworthy Chat] Error fetching post ${id}:`, err);
         return null;

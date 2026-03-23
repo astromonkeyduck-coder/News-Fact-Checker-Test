@@ -1,57 +1,29 @@
 // OpenAI Realtime API integration for voice conversations
 // Creates a session token for the client to connect directly to OpenAI's WebSocket
 
-const { getStore } = require("@netlify/blobs");
+const postStoreLib = require("./lib/postStore");
 
 /**
  * Fetch recent posts from blob storage for AI context
  */
 async function fetchRecentPosts(event, limit = 5) {
   try {
-    const siteID = process.env.NETLIFY_SITE_ID || event.headers['x-nf-site-id'];
-    const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN || event.headers['x-nf-token'];
-    
-    let store;
-    if (siteID && token) {
-      store = getStore({
-        name: "x-posts",
-        siteID: siteID,
-        token: token,
-      });
-    } else {
-      store = getStore({ name: "x-posts" });
-    }
+    const store = postStoreLib.getPostStore();
+    const ids = await postStoreLib.readIndex(store);
 
-    // Read index
-    let indexData = { ids: [] };
-    try {
-      const indexBlob = await store.get("index.json", { type: "json" });
-      if (indexBlob && Array.isArray(indexBlob.ids)) {
-        indexData = indexBlob;
-      }
-    } catch (err) {
-      return [];
-    }
+    if (ids.length === 0) return [];
 
-    if (!indexData.ids || indexData.ids.length === 0) {
-      return [];
-    }
+    const postIds = ids.slice(0, Math.min(limit, ids.length));
 
-    // Get most recent posts
-    const postIds = indexData.ids.slice(0, Math.min(limit, indexData.ids.length));
-    
-    // Fetch posts in parallel
     const postPromises = postIds.map(async (id) => {
       try {
-        const post = await store.get(id, { type: "json" });
-        return post;
+        return await postStoreLib.readPost(store, id);
       } catch (err) {
         return null;
       }
     });
 
     const posts = await Promise.all(postPromises);
-    // Filter out nulls and sort by timestamp (newest first)
     const validPosts = posts
       .filter(p => p !== null)
       .sort((a, b) => {

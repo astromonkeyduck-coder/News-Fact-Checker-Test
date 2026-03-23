@@ -426,6 +426,7 @@ async function run(logger) {
     let countUpdated = 0;
     let countErrors = 0;
     let countSkipped = 0;
+    const notifiableEvents = [];
     
     // Process each alert
     for (const feature of alertData.features) {
@@ -434,6 +435,24 @@ async function run(logger) {
         if (result) {
           if (result.isNew) {
             countNew++;
+            if (result.event) {
+              notifiableEvents.push({
+                id: result.event.canonical_id,
+                source: 'nws',
+                type: 'weather',
+                severity: result.event.severity || 1,
+                title: result.event.title || '',
+                summary: result.event.summary || '',
+                location: {
+                  display: result.event.location_display || '',
+                  lat: result.event.lat || result.event.latitude || null,
+                  lon: result.event.lon || result.event.longitude || null,
+                },
+                publishedAt: result.event.published_at || new Date().toISOString(),
+                sourceUrl: result.event.source_url || null,
+                assets: {},
+              });
+            }
           } else {
             countUpdated++;
           }
@@ -452,6 +471,7 @@ async function run(logger) {
       updated: countUpdated,
       skipped: countSkipped,
       errors: countErrors,
+      notifiable: notifiableEvents.length,
     });
     
     return {
@@ -459,6 +479,7 @@ async function run(logger) {
       count_new: countNew,
       count_updated: countUpdated,
       count_total_seen: alertData.features.length,
+      notifiableEvents,
     };
   } catch (error) {
     logger.error('Fatal error in NWS engine', error);
@@ -468,6 +489,7 @@ async function run(logger) {
       count_new: 0,
       count_updated: 0,
       count_total_seen: 0,
+      notifiableEvents: [],
     };
   }
 }

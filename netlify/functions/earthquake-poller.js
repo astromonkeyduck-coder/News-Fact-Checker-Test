@@ -1,15 +1,20 @@
 /**
- * Earthquake Pipeline - USGS Poller
- * Scheduled function that polls USGS for new earthquakes and creates posts
- * 
- * Schedule: Every 3 minutes (configure in Netlify dashboard)
- * 
- * Environment Variables Required:
- * - ALERT_TO_EMAIL: Email address to receive alerts for all earthquakes
- * - AI_NOTIFICATION_EMAILS: Comma-separated list or JSON array of email addresses
- * - RESEND_API_KEY: Resend API key for sending emails
- * - NETLIFY_SITE_ID: Netlify site ID (auto-set in Netlify)
- * - NETLIFY_BLOB_READ_WRITE_TOKEN: Netlify Blob token (auto-set in Netlify)
+ * DEPRECATED — Earthquake Pipeline - USGS Poller
+ *
+ * This function is superseded by engines/usgs.js (run via ingest-all).
+ * Both poll the same USGS feed, create the same posts, generate the same
+ * images, and send the same email alerts.  Running both causes duplicate
+ * processing and potential double-notification.
+ *
+ * Migration path:
+ *  1. Disable this function's schedule in the Netlify dashboard.
+ *  2. Verify engines/usgs.js (via ingest-all, every 5 min) covers all
+ *     earthquake detection, post creation, image generation, and alerting.
+ *  3. Once validated, delete this file.
+ *
+ * Set EARTHQUAKE_POLLER_DISABLED=true to no-op immediately.
+ *
+ * Original schedule: Every 3 minutes (Netlify dashboard)
  */
 
 const { getStore } = require("@netlify/blobs");
@@ -324,34 +329,22 @@ async function storeEarthquake(store, earthquakeData) {
 }
 
 /**
- * Create earthquake post on website
+ * Create earthquake post on website.
+ * Uses usgs- prefix (same as engines/usgs.js via createPost) for ID consistency.
  */
 async function createEarthquakePost(earthquakeData, imageUrl) {
-  const siteID = process.env.NETLIFY_SITE_ID;
-  const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN;
-  
-  // Use the same store as regular posts
-  const store = getStore({
-    name: "x-posts",
-    siteID: siteID,
-    token: token,
-  });
-  
-  const postId = `eq-${earthquakeData.event_id}`;
-  const postKey = `post-${postId}.json`;
-  
-  // Check if post already exists
-  try {
-    const existing = await store.get(postKey);
-    if (existing) {
-      console.log(`[earthquake-poller] Post ${postId} already exists, skipping`);
-      return { exists: true, postId };
-    }
-  } catch (err) {
-    // Post doesn't exist, continue
+  const { getPostStore, readPost, writePost, addToIndex } = require("./lib/postStore");
+  const store = getPostStore();
+
+  // Unified ID scheme: usgs-{event_id} (matches createPostFromEvent in engines)
+  const postId = `usgs-${earthquakeData.event_id}`;
+
+  const existing = await readPost(store, postId);
+  if (existing) {
+    console.log(`[earthquake-poller] Post ${postId} already exists, skipping`);
+    return { exists: true, postId };
   }
-  
-  // Format time for display
+
   const eventTime = new Date(earthquakeData.time);
   const localTime = eventTime.toLocaleString('en-US', {
     timeZone: 'America/New_York',
@@ -362,9 +355,7 @@ async function createEarthquakePost(earthquakeData, imageUrl) {
     minute: '2-digit',
     hour12: true,
   });
-  
-  // Create post object matching the site's post structure
-  // CRITICAL: Set primary_image_url so earthquake-generated image shows on cards
+
   const post = {
     id: postId,
     title: `M${earthquakeData.magnitude} Earthquake Near ${earthquakeData.location_display}`,
@@ -385,34 +376,10 @@ async function createEarthquakePost(earthquakeData, imageUrl) {
     location: earthquakeData.location_display,
     eventId: earthquakeData.event_id,
   };
-  
-  // Store post
-  await store.set(postKey, JSON.stringify(post), {
-    contentType: "application/json",
-  });
-  
-  // Add to index
-  let indexData = { ids: [], urls: [] };
-  try {
-    const indexBlob = await store.get("index.json", { type: "json" });
-    if (indexBlob) {
-      indexData = indexBlob;
-    }
-  } catch (err) {
-    // Index doesn't exist yet
-  }
-  
-  // Remove duplicates and prepend new post
-  const existingIds = (indexData.ids || []).filter(id => id !== postId);
-  const existingUrls = (indexData.urls || []).filter((url, idx) => (indexData.ids || [])[idx] !== postId);
-  
-  const newIds = [postId, ...existingIds].slice(0, 200);
-  const newUrls = [post.url || post.link, ...existingUrls].slice(0, 200);
-  
-  await store.set("index.json", JSON.stringify({ ids: newIds, urls: newUrls }), {
-    contentType: "application/json",
-  });
-  
+
+  await writePost(store, postId, post);
+  await addToIndex(store, postId);
+
   console.log(`[earthquake-poller] Created post: ${postId}`);
   return { exists: false, postId, post };
 }
@@ -427,7 +394,17 @@ exports.handler = async (event, context) => {
     "Access-Control-Allow-Headers": "Content-Type",
     "Content-Type": "application/json",
   };
-  
+
+  // DEPRECATED: skip processing when disabled (use engines/usgs.js via ingest-all instead)
+  if (process.env.EARTHQUAKE_POLLER_DISABLED === 'true') {
+    console.log('[earthquake-poller] Disabled via EARTHQUAKE_POLLER_DISABLED. Use ingest-all + engines/usgs.js.');
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({ success: true, message: 'earthquake-poller is deprecated and disabled. Earthquakes are processed by engines/usgs.js via ingest-all.' }),
+    };
+  }
+
   // Handle OPTIONS
   if (event.httpMethod === "OPTIONS") {
     return { statusCode: 204, headers, body: "" };

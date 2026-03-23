@@ -9,7 +9,7 @@ exports.handler = async (event, context) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Admin-Token",
     "Content-Type": "application/json",
   };
 
@@ -35,17 +35,10 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // SECURITY: Require admin token for viewing profiles
-    const adminToken = process.env.ADMIN_ANALYTICS_TOKEN;
-    const providedToken = event.queryStringParameters?.token || event.headers["x-admin-token"];
-    
-    if (adminToken && providedToken !== adminToken) {
-      return {
-        statusCode: 401,
-        headers,
-        body: JSON.stringify({ error: "Unauthorized - Admin token required" }),
-      };
-    }
+    // SECURITY: Require admin JWT or legacy ADMIN_ANALYTICS_TOKEN
+    const { requireAdminAuthOrSecret } = require("./middleware/requireAuth");
+    const authResult = await requireAdminAuthOrSecret(event, "ADMIN_ANALYTICS_TOKEN");
+    if (authResult.statusCode) return { ...authResult, headers: { ...headers, ...authResult.headers } };
 
     const userEmail = event.queryStringParameters?.email;
     

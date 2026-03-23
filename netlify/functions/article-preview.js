@@ -10,7 +10,7 @@
  * Netlify redirects with force=true ensure static files are overridden.
  */
 
-const { getStore } = require("@netlify/blobs");
+const { getPostStore, readPost } = require("./lib/postStore");
 
 // Embedded article page shell template (for regular users)
 // This is the full AP-style article.html template embedded to avoid fragile fs.readFileSync
@@ -512,35 +512,26 @@ exports.handler = async (event) => {
       };
     }
 
-    const store = getStore({
-      name: 'x-posts',
-      siteID: siteID,
-      token: token,
-    });
+    const store = getPostStore();
 
-    // Handle different article ID formats
-    // Posts are stored with .json extension (see createPost.js: postKey = `post-${postId}.json`)
-    // Earthquake-poller uses eq-{eventId}, USGS engine uses usgs-{eventId}
-    let postKey;
-    if (articleId.startsWith('post-')) {
-      postKey = articleId.endsWith('.json') ? articleId : `${articleId}.json`;
-    } else if (articleId.startsWith('usgs-')) {
-      postKey = `post-${articleId}.json`;
-    } else {
-      postKey = `post-${articleId}.json`;
-    }
-    const keysToTry = [postKey];
-    if (articleId.startsWith('post-usgs-') || articleId.startsWith('usgs-')) {
-      const eventId = articleId.replace(/^(post-)?usgs-/, '');
-      keysToTry.push(`post-eq-${eventId}.json`);
+    // Normalize article ID — strip leading "post-" and trailing ".json" so
+    // postStore.readPost builds the canonical key.
+    let cleanId = articleId;
+    if (cleanId.startsWith('post-')) cleanId = cleanId.slice(5);
+    if (cleanId.endsWith('.json')) cleanId = cleanId.slice(0, -5);
+
+    // Try canonical ID first, then legacy eq- fallback for old earthquake posts
+    const idsToTry = [cleanId];
+    if (cleanId.startsWith('usgs-')) {
+      const eventId = cleanId.replace(/^usgs-/, '');
+      idsToTry.push(`eq-${eventId}`);
     }
 
-    // Fetch post with timeout - try primary key first, then fallback
     let postData;
     let lastError;
-    for (const key of keysToTry) {
+    for (const id of idsToTry) {
       try {
-        const blobPromise = store.get(key, { type: 'json' });
+        const blobPromise = readPost(store, id);
         const timeoutPromise = new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Blob storage timeout')), 10000)
         );

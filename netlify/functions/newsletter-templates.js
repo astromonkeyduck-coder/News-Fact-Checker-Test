@@ -28,43 +28,14 @@ exports.handler = async (event, context) => {
     };
   }
 
-  // SECURITY: Require newsletter key with timing-safe comparison
-  const newsletterKey = process.env.NEWSLETTER_KEY;
-  const providedToken = event.queryStringParameters?.token || 
-                       event.headers['x-admin-token'] || 
-                       (event.body ? (() => {
-                         try {
-                           return JSON.parse(event.body || '{}').token;
-                         } catch {
-                           return null;
-                         }
-                       })() : null);
-  
-  // Timing-safe comparison to prevent timing attacks
-  function secureCompare(a, b) {
-    if (!a || !b || a.length !== b.length) {
-      return false;
-    }
-    let result = 0;
-    for (let i = 0; i < a.length; i++) {
-      result |= a.charCodeAt(i) ^ b.charCodeAt(i);
-    }
-    return result === 0;
-  }
-  
-  if (newsletterKey) {
-    if (!providedToken || !secureCompare(newsletterKey, providedToken)) {
-      // Log failed attempt (without exposing the token)
-      console.log('[Security] Failed newsletter authentication attempt');
-      return {
-        statusCode: 401,
-        headers,
-        body: JSON.stringify({ 
-          error: 'Unauthorized - Newsletter key required',
-          message: 'This endpoint requires newsletter authentication.'
-        }),
-      };
-    }
+  // SECURITY: Require admin JWT or legacy NEWSLETTER_KEY
+  const { requireAdminAuthOrSecret } = require("./middleware/requireAuth");
+  const authResult = await requireAdminAuthOrSecret(event, "NEWSLETTER_KEY");
+  if (authResult.statusCode) {
+    return {
+      ...authResult,
+      headers: { ...headers, ...authResult.headers },
+    };
   }
 
   try {

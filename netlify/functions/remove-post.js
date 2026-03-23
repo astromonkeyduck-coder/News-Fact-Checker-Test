@@ -1,9 +1,15 @@
-const { getStore } = require("@netlify/blobs");
+const { requireAdminAuth } = require("./middleware/requireAuth");
+const {
+  getPostStore,
+  readIndex,
+  readPost,
+  deletePost,
+} = require("./lib/postStore");
 
 const headers = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
   "Content-Type": "application/json",
 };
 
@@ -20,9 +26,12 @@ exports.handler = async (event) => {
     };
   }
 
+  const auth = await requireAdminAuth(event);
+  if (auth.statusCode) return auth;
+
   try {
     const { postId } = JSON.parse(event.body || "{}");
-    
+
     if (!postId) {
       return {
         statusCode: 400,
@@ -31,107 +40,32 @@ exports.handler = async (event) => {
       };
     }
 
-    const siteID = process.env.NETLIFY_SITE_ID;
-    const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN;
-    
-    let store;
-    try {
-      if (siteID && token) {
-        store = getStore({
-          name: "x-posts",
-          siteID: siteID,
-          token: token,
-        });
-      } else {
-        store = getStore({ name: "x-posts" });
-      }
-    } catch (storeErr) {
-      return {
-        statusCode: 503,
-        headers,
-        body: JSON.stringify({
-          error: "Storage configuration error",
-          message: storeErr.message,
-        }),
-      };
-    }
+    const store = getPostStore();
 
-    // Get current index
-    let indexData = { ids: [], urls: [] };
-    try {
-      const indexBlob = await store.get("index.json", { type: "json" });
-      if (indexBlob) {
-        indexData = indexBlob;
-      }
-    } catch (err) {
-      return {
-        statusCode: 404,
-        headers,
-        body: JSON.stringify({ error: "Index not found" }),
-      };
-    }
+    const indexBefore = await readIndex(store);
+    const wasInIndex = indexBefore.includes(postId);
 
-    // Check if post is in index
-    if (!indexData.ids || !indexData.ids.includes(postId)) {
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({ 
-          success: true, 
-          message: `Post ${postId} is not in the index`,
-          removed: false
-        }),
-      };
-    }
+    await deletePost(store, postId);
 
-    // Delete post from storage (if it exists)
-    const postKey = `post-${postId}.json`;
-    let deletedFromStorage = false;
-    try {
-      const postExists = await store.get(postKey);
-      if (postExists) {
-        await store.delete(postKey);
-        deletedFromStorage = true;
-        console.log(`[remove-post] Deleted post ${postId} from storage`);
-      }
-    } catch (err) {
-      // Post doesn't exist in storage, that's okay
-      console.log(`[remove-post] Post ${postId} not found in storage (may have been deleted already)`);
-    }
+    const indexAfter = await readIndex(store);
 
-    // Remove post from index
-    const existingIds = indexData.ids || [];
-    const existingUrls = indexData.urls || [];
-    
-    // Filter out the post ID (remove all instances to prevent duplicates)
-    const filteredIds = existingIds.filter(id => id !== postId);
-    const filteredUrls = existingUrls.filter((url, idx) => existingIds[idx] !== postId);
-    
-    let removedFromIndex = false;
-    if (filteredIds.length < existingIds.length) {
-      // Save updated index
-      await store.set("index.json", JSON.stringify({ ids: filteredIds, urls: filteredUrls }), {
-        contentType: "application/json",
-      });
-      removedFromIndex = true;
-      console.log(`[remove-post] Removed post ${postId} from index`);
-    }
+    console.log(`[remove-post] Deleted post ${postId}`);
 
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ 
-        success: true, 
-        message: `Post ${postId} deleted${removedFromIndex ? ' from index' : ''}${deletedFromStorage ? ' and storage' : ''}`,
-        removed: removedFromIndex || deletedFromStorage,
-        deletedFromStorage: deletedFromStorage,
-        removedFromIndex: removedFromIndex,
-        previousCount: existingIds.length,
-        newCount: filteredIds.length
+      body: JSON.stringify({
+        success: true,
+        message: `Post ${postId} deleted`,
+        removed: wasInIndex,
+        deletedFromStorage: true,
+        removedFromIndex: wasInIndex,
+        previousCount: indexBefore.length,
+        newCount: indexAfter.length,
       }),
     };
   } catch (error) {
-    console.error('[remove-post] Error:', error);
+    console.error("[remove-post] Error:", error);
     return {
       statusCode: 500,
       headers,
@@ -141,12 +75,3 @@ exports.handler = async (event) => {
     };
   }
 };
-
-
-
-
-
-
-
-
-

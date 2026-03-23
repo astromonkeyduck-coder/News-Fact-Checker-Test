@@ -9,10 +9,11 @@
  */
 
 import { Handler } from "@netlify/functions";
-import { getStore } from "@netlify/blobs";
 import { fetchTweetOEmbed } from "../../src/lib/posts/oembed-fetch";
 import { extractTweetId } from "../../src/lib/posts/oembed-fetch";
 import { extractEnhancedData } from "../../src/lib/posts/enhanced-extract";
+
+const postStoreLib = require("./lib/postStore");
 
 interface IndexData {
   ids: string[];
@@ -46,19 +47,8 @@ interface CardPost {
  * Falls back to checking existing posts and manual addition
  */
 async function checkForNewPosts(store: any, lastCheckTime?: number): Promise<number> {
-  const siteID = process.env.NETLIFY_SITE_ID;
-  const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN;
-  
-  // Read current index
-  let indexData: IndexData = { ids: [], urls: [] };
-  try {
-    const indexBlob = await store.get("index.json", { type: "json" });
-    if (indexBlob) {
-      indexData = indexBlob as IndexData;
-    }
-  } catch (err) {
-    console.log('[auto-sync] No index found, starting fresh');
-  }
+  const ids = await postStoreLib.readIndex(store);
+  const indexData: IndexData = { ids, urls: [] };
 
   // For now, we'll return 0 since X blocks automated scraping
   // This function can be extended with:
@@ -89,20 +79,9 @@ export const handler: Handler = async (event, context) => {
   }
 
   try {
-    const siteID = process.env.NETLIFY_SITE_ID;
-    const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN;
-    
     let store;
     try {
-      if (siteID && token) {
-        store = getStore({
-          name: "x-posts",
-          siteID: siteID,
-          token: token,
-        });
-      } else {
-        store = getStore({ name: "x-posts" });
-      }
+      store = postStoreLib.getPostStore();
     } catch (storeErr: any) {
       console.error('[auto-sync] Failed to create store:', storeErr);
       return {

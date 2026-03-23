@@ -3,18 +3,15 @@
  * Provides offline support, caching, and faster page loads
  */
 
-const CACHE_VERSION = 'v1.2.0-feed-fix';
+const CACHE_VERSION = 'v2.0.0-cutover';
 const CACHE_NAME = `noteworthy-news-${CACHE_VERSION}`;
 
 // Helper function to check if a URL is cacheable
 function isCacheableUrl(url) {
   try {
     const urlObj = new URL(url);
-    // Only cache http:// and https:// URLs
-    // Skip chrome-extension://, file://, data:, blob:, etc.
     return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
   } catch (e) {
-    // Invalid URL, don't cache
     return false;
   }
 }
@@ -22,10 +19,14 @@ function isCacheableUrl(url) {
 // Assets to cache immediately on install
 const STATIC_ASSETS = [
   '/',
-  '/index.html',
-  '/styles/responsive.css',  // Modern responsive foundation
-  '/styles.css',             // Legacy (for other pages)
-  '/script.js',
+  '/v2/index.html',
+  '/v2/styles/tokens.css',
+  '/v2/styles/base.css',
+  '/v2/styles/layout.css',
+  '/v2/styles/components.css',
+  '/v2/js/main.js',
+  '/v2/js/feed.js',
+  '/v2/js/auth.js',
   '/game.html',
   '/geography-game.html',
   '/geography-game.js',

@@ -774,21 +774,10 @@ function extractKeywords(text) {
  */
 async function findMatchingPost(emailSubject, emailBody) {
   try {
-    const { getStore } = require('@netlify/blobs');
-    const store = getStore({
-      name: 'x-posts',
-      siteID: process.env.NETLIFY_SITE_ID,
-      token: process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
-    });
+    const { getPostStore, readIndex, readPost } = require('./lib/postStore');
+    const store = getPostStore();
 
-    let indexData;
-    try {
-      indexData = await store.get('index.json', { type: 'json' });
-    } catch {
-      console.warn('[Inbound Email] No posts index found');
-      return null;
-    }
-    const ids = (indexData?.ids || []).slice(0, 50);
+    const ids = (await readIndex(store)).slice(0, 50);
     if (ids.length === 0) return null;
 
     const emailText = `${emailSubject || ''} ${emailBody || ''}`;
@@ -799,12 +788,7 @@ async function findMatchingPost(emailSubject, emailBody) {
     let mostRecentPost = null;
 
     for (const id of ids) {
-      let post;
-      try {
-        post = await store.get(`post-${id}.json`, { type: 'json' });
-      } catch {
-        continue;
-      }
+      const post = await readPost(store, id);
       if (!post) continue;
       if (!mostRecentPost) mostRecentPost = { ...post, _id: id };
 
@@ -846,22 +830,14 @@ async function findMatchingPost(emailSubject, emailBody) {
  */
 async function updatePostWithMedia(postId, mediaUrl, isVideo, emailMessage, appendOnly = false) {
   try {
-    const { getStore } = require('@netlify/blobs');
-    const store = getStore({
-      name: 'x-posts',
-      siteID: process.env.NETLIFY_SITE_ID,
-      token: process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
-    });
+    const { getPostStore, readPost, writePost } = require('./lib/postStore');
+    const store = getPostStore();
 
-    const postKey = `post-${postId}.json`;
-    let post;
-    try {
-      post = await store.get(postKey, { type: 'json' });
-    } catch {
+    const post = await readPost(store, postId);
+    if (!post) {
       console.warn('[Inbound Email] Post not found:', postId);
       return false;
     }
-    if (!post) return false;
 
     const updatedPost = { ...post };
     const messageSnippet = !appendOnly && emailMessage ? String(emailMessage).trim().substring(0, 500) : '';
@@ -890,7 +866,7 @@ async function updatePostWithMedia(postId, mediaUrl, isVideo, emailMessage, appe
       updatedPost.text = updatedPost.story;
     }
 
-    await store.setJSON(postKey, updatedPost);
+    await writePost(store, postId, updatedPost);
     console.log('[Inbound Email] ✅ Updated post with media:', { postId, isVideo, hasMessage: !!messageSnippet });
     return true;
   } catch (err) {

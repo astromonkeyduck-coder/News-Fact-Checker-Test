@@ -2075,6 +2075,7 @@ async function run(logger) {
     let countNew = 0;
     let countUpdated = 0;
     let countErrors = 0;
+    const notifiableEvents = [];
     
     // Process each earthquake
     // Always send email for the first (most recent) earthquake, even if alert_sent is true
@@ -2111,6 +2112,35 @@ async function run(logger) {
               eventId: feature.id 
             });
           }
+          // Collect notifiable events for the unified alert dispatcher.
+          // The engine's own notification logic still runs (backward compat),
+          // but the orchestrator can also use these to dispatch via the
+          // unified pipeline when USE_UNIFIED_ALERTS is enabled.
+          if (result.isNew && result.event) {
+            notifiableEvents.push({
+              id: result.event.canonical_id,
+              source: 'usgs',
+              type: 'earthquake',
+              severity: result.event.severity || normalizeEarthquakeSeverity(magnitude),
+              title: result.event.title || feature.properties?.title || '',
+              summary: result.event.summary || feature.properties?.place || '',
+              location: {
+                display: result.event.location_display || feature.properties?.place || '',
+                lat: result.event.latitude || feature.geometry?.coordinates?.[1] || null,
+                lon: result.event.longitude || feature.geometry?.coordinates?.[0] || null,
+              },
+              publishedAt: result.event.published_at || new Date(feature.properties?.time).toISOString(),
+              sourceUrl: result.event.source_url || feature.properties?.url || null,
+              assets: {
+                magnitude,
+                depth: feature.geometry?.coordinates?.[2] || null,
+                imageUrl: result.event.image_url || null,
+                mapUrl: '/situation-monitor.html',
+                impact: result.event.assets?.impact_assessment || null,
+                tsunami: result.event.assets?.tsunami_assessment || null,
+              },
+            });
+          }
         } else {
           logger.debug('Earthquake not processed (filtered or skipped)', { 
             eventId: feature.id,
@@ -2128,6 +2158,7 @@ async function run(logger) {
       new: countNew,
       updated: countUpdated,
       errors: countErrors,
+      notifiable: notifiableEvents.length,
     });
     
     return {
@@ -2135,6 +2166,7 @@ async function run(logger) {
       count_new: countNew,
       count_updated: countUpdated,
       count_total_seen: feedData.features.length,
+      notifiableEvents,
     };
   } catch (error) {
     logger.error('Fatal error in USGS engine', error);
@@ -2144,6 +2176,7 @@ async function run(logger) {
       count_new: 0,
       count_updated: 0,
       count_total_seen: 0,
+      notifiableEvents: [],
     };
   }
 }

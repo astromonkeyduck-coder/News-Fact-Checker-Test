@@ -1,14 +1,22 @@
 /**
- * Update individual post data (dates, stats)
- * This function allows updating existing posts with correct dates and engagement stats
+ * Update individual post data (dates, stats, media)
+ * Creates a new post if one doesn't exist for the given ID.
  */
 
-const { getStore } = require("@netlify/blobs");
+const { requireAdminAuth } = require("./middleware/requireAuth");
+const {
+  getPostStore,
+  readPost,
+  writePost,
+  addToIndex,
+  readIndex,
+  writeIndex,
+} = require("./lib/postStore");
 
 const headers = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "PATCH, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
   "Content-Type": "application/json",
 };
 
@@ -17,272 +25,180 @@ exports.handler = async (event) => {
     return { statusCode: 204, headers, body: "" };
   }
 
-  try {
-    const siteID = process.env.NETLIFY_SITE_ID || event.headers['x-nf-site-id'];
-    const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN || event.headers['x-nf-token'];
-    
-    let store;
-    try {
-      if (siteID && token) {
-        store = getStore({
-          name: "x-posts",
-          siteID: siteID,
-          token: token,
-        });
-      } else {
-        store = getStore({ name: "x-posts" });
-      }
-    } catch (storeErr) {
-      console.error('[update-post-data] Failed to create store:', storeErr);
-      return {
-        statusCode: 503,
-        headers,
-        body: JSON.stringify({
-          error: "Storage configuration error",
-          message: storeErr.message,
-        }),
-      };
-    }
+  const auth = await requireAdminAuth(event);
+  if (auth.statusCode) return auth;
 
-    if (event.httpMethod === "POST" || event.httpMethod === "PATCH") {
-      const body = JSON.parse(event.body || "{}");
-      const { postId, datePosted, views, likes, reposts, replies, engagements, bookmarks, shares, story, text, link, url, image, images, videos, video, video_url, primary_image_url } = body;
-
-      if (!postId) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({ error: "postId is required" }),
-        };
-      }
-
-      try {
-        // Get existing post or create new one
-        const postKey = `post-${postId}.json`;
-        let post = null;
-        let isNewPost = false;
-        
-        try {
-          const existing = await store.get(postKey, { type: "json" });
-          if (existing) {
-            post = existing;
-          } else {
-            // Post doesn't exist - create new one
-            isNewPost = true;
-            post = {
-              id: postId,
-              link: link || url || `https://x.com/newsnoteworthy/status/${postId}`,
-              url: url || link || `https://x.com/newsnoteworthy/status/${postId}`,
-            };
-          }
-        } catch (err) {
-          // Post doesn't exist - create new one
-          isNewPost = true;
-          post = {
-            id: postId,
-            link: link || url || `https://x.com/newsnoteworthy/status/${postId}`,
-            url: url || link || `https://x.com/newsnoteworthy/status/${postId}`,
-          };
-        }
-
-        // Ensure post object exists (safety check)
-        if (!post) {
-          isNewPost = true;
-          post = {
-            id: postId,
-            link: link || url || `https://x.com/newsnoteworthy/status/${postId}`,
-            url: url || link || `https://x.com/newsnoteworthy/status/${postId}`,
-          };
-        }
-
-        // Update post with new data
-        // Ensure ID and link are preserved (they might be missing in corrupted posts)
-        const updatedPost = {
-          ...(post || {}), // Safely spread post (handle null case)
-          id: (post && post.id) || postId, // Ensure ID is always set
-          link: link || url || (post && post.link) || `https://x.com/newsnoteworthy/status/${postId}`, // Ensure link is always set
-          url: url || link || (post && post.url) || (post && post.link) || `https://x.com/newsnoteworthy/status/${postId}`, // Ensure url is always set
-        };
-        
-        // Update text/story fields - use provided values if available, otherwise keep existing
-        if (story !== undefined && story !== null && story !== '') {
-          updatedPost.story = story;
-          updatedPost.text = story;
-        } else if (text !== undefined && text !== null && text !== '') {
-          updatedPost.story = text;
-          updatedPost.text = text;
-        } else if (!updatedPost.story && !updatedPost.text) {
-          // Only set default if both are missing
-          updatedPost.story = (post && (post.story || post.text || post.title)) || '';
-          updatedPost.text = (post && (post.text || post.story || post.title)) || '';
-        }
-        
-        // Update other fields
-        if (datePosted) {
-          updatedPost.datePosted = datePosted;
-          updatedPost.createdAt = datePosted; // Alias for consistency
-        }
-        if (views !== undefined) updatedPost.views = views;
-        if (likes !== undefined) updatedPost.likes = likes;
-        if (reposts !== undefined) updatedPost.reposts = reposts;
-        if (replies !== undefined) updatedPost.replies = replies;
-        if (engagements !== undefined) updatedPost.engagements = engagements;
-        if (bookmarks !== undefined) updatedPost.bookmarks = bookmarks;
-        if (shares !== undefined) updatedPost.shares = shares;
-        
-        // Update image fields
-        if (primary_image_url !== undefined && primary_image_url !== null && primary_image_url !== '') {
-          updatedPost.primary_image_url = primary_image_url;
-          updatedPost.image = primary_image_url; // Legacy compatibility
-          updatedPost.image_url = primary_image_url; // Legacy compatibility
-        } else if (image !== undefined && image !== null && image !== '') {
-          updatedPost.image = image;
-          updatedPost.primary_image_url = image; // Set as primary if no primary_image_url provided
-          updatedPost.image_url = image; // Legacy compatibility
-        }
-        if (images !== undefined && Array.isArray(images) && images.length > 0) {
-          updatedPost.images = images;
-          // Set primary if not already set
-          if (!updatedPost.primary_image_url && images[0]) {
-            updatedPost.primary_image_url = images[0];
-            updatedPost.image = images[0];
-          }
-        }
-        
-        // Update video fields
-        if (video_url !== undefined && video_url !== null && video_url !== '') {
-          updatedPost.video_url = video_url;
-          updatedPost.video = video_url; // Legacy compatibility
-        } else if (video !== undefined && video !== null && video !== '') {
-          updatedPost.video = video;
-          updatedPost.video_url = video;
-        }
-        if (videos !== undefined && Array.isArray(videos) && videos.length > 0) {
-          updatedPost.videos = videos;
-          // Set primary video if not already set
-          if (!updatedPost.video_url && videos[0]) {
-            updatedPost.video_url = videos[0];
-            updatedPost.video = videos[0];
-          }
-        }
-
-        // Save updated/created post
-        await store.setJSON(postKey, updatedPost);
-        
-        // If this is a new post, add it to the index so it appears on the site
-        // CRITICAL: Always check for duplicates in index to prevent duplicates
-        if (isNewPost) {
-          try {
-            let indexData = { ids: [], urls: [] };
-            try {
-              const indexBlob = await store.get("index.json", { type: "json" });
-              if (indexBlob) {
-                indexData = indexBlob;
-              }
-            } catch (err) {
-              // Index doesn't exist yet, will create it
-            }
-            
-            // Add post to index if not already there (DUPLICATE PREVENTION)
-            const existingIds = indexData.ids || [];
-            const existingUrls = indexData.urls || [];
-            
-            // Remove any existing instances of this postId to prevent duplicates
-            const filteredIds = existingIds.filter(id => id !== postId);
-            const filteredUrls = existingUrls.filter((url, idx) => existingIds[idx] !== postId);
-            
-            if (!existingIds.includes(postId)) {
-              // Prepend new post to index (only if not already there)
-              const newIds = [postId, ...filteredIds];
-              const newUrls = [updatedPost.link || updatedPost.url, ...filteredUrls];
-              
-              // Cap at 200 posts
-              const updatedIds = newIds.slice(0, 200);
-              const updatedUrls = newUrls.slice(0, 200);
-              
-              await store.set("index.json", JSON.stringify({ ids: updatedIds, urls: updatedUrls }), {
-                contentType: "application/json",
-              });
-              
-              console.log(`[update-post-data] Added new post ${postId} to index`);
-            } else {
-              console.log(`[update-post-data] Post ${postId} already in index, skipping to prevent duplicate`);
-            }
-          } catch (indexErr) {
-            console.error('[update-post-data] Failed to update index:', indexErr);
-            // Don't fail the whole request if index update fails
-          }
-        } else {
-          // Even for existing posts, ensure no duplicates in index
-          try {
-            let indexData = { ids: [], urls: [] };
-            try {
-              const indexBlob = await store.get("index.json", { type: "json" });
-              if (indexBlob) {
-                indexData = indexBlob;
-              }
-            } catch (err) {
-              // Index doesn't exist yet
-            }
-            
-            const existingIds = indexData.ids || [];
-            const existingUrls = indexData.urls || [];
-            
-            // Check if postId appears multiple times in index (duplicate detection)
-            const duplicateCount = existingIds.filter(id => id === postId).length;
-            if (duplicateCount > 1) {
-              console.log(`[update-post-data] ⚠️ Found ${duplicateCount} duplicate entries for post ${postId} in index, removing duplicates`);
-              
-              // Remove all instances, then add back once
-              const filteredIds = existingIds.filter(id => id !== postId);
-              const filteredUrls = existingUrls.filter((url, idx) => existingIds[idx] !== postId);
-              
-              // Add back at the beginning (most recent)
-              const deduplicatedIds = [postId, ...filteredIds].slice(0, 200);
-              const deduplicatedUrls = [updatedPost.link || updatedPost.url, ...filteredUrls].slice(0, 200);
-              
-              await store.set("index.json", JSON.stringify({ ids: deduplicatedIds, urls: deduplicatedUrls }), {
-                contentType: "application/json",
-              });
-              
-              console.log(`[update-post-data] ✅ Removed duplicates for post ${postId}`);
-            }
-          } catch (indexErr) {
-            console.error('[update-post-data] Failed to check/clean index:', indexErr);
-          }
-        }
-
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify({ success: true, post: updatedPost }),
-        };
-      } catch (error) {
-        console.error('[update-post-data] Error:', error);
-        return {
-          statusCode: 500,
-          headers,
-          body: JSON.stringify({
-            error: error?.message || "Failed to update post",
-          }),
-        };
-      }
-    }
-
+  if (event.httpMethod !== "POST" && event.httpMethod !== "PATCH") {
     return {
       statusCode: 405,
       headers,
       body: JSON.stringify({ error: "Method not allowed" }),
     };
+  }
+
+  try {
+    const body = JSON.parse(event.body || "{}");
+    const {
+      postId,
+      datePosted,
+      views,
+      likes,
+      reposts,
+      replies,
+      engagements,
+      bookmarks,
+      shares,
+      story,
+      text,
+      link,
+      url,
+      image,
+      images,
+      videos,
+      video,
+      video_url,
+      primary_image_url,
+    } = body;
+
+    if (!postId) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: "postId is required" }),
+      };
+    }
+
+    const store = getPostStore();
+    let post = await readPost(store, postId);
+    let isNewPost = !post;
+
+    if (!post) {
+      post = {
+        id: postId,
+        link: link || url || `https://x.com/newsnoteworthy/status/${postId}`,
+        url: url || link || `https://x.com/newsnoteworthy/status/${postId}`,
+      };
+    }
+
+    const updatedPost = {
+      ...post,
+      id: post.id || postId,
+      link:
+        link ||
+        url ||
+        post.link ||
+        `https://x.com/newsnoteworthy/status/${postId}`,
+      url:
+        url ||
+        link ||
+        post.url ||
+        post.link ||
+        `https://x.com/newsnoteworthy/status/${postId}`,
+    };
+
+    // Text / story
+    if (story !== undefined && story !== null && story !== "") {
+      updatedPost.story = story;
+      updatedPost.text = story;
+    } else if (text !== undefined && text !== null && text !== "") {
+      updatedPost.story = text;
+      updatedPost.text = text;
+    } else if (!updatedPost.story && !updatedPost.text) {
+      updatedPost.story = post.story || post.text || post.title || "";
+      updatedPost.text = post.text || post.story || post.title || "";
+    }
+
+    // Dates
+    if (datePosted) {
+      updatedPost.datePosted = datePosted;
+      updatedPost.createdAt = datePosted;
+    }
+
+    // Engagement stats
+    if (views !== undefined) updatedPost.views = views;
+    if (likes !== undefined) updatedPost.likes = likes;
+    if (reposts !== undefined) updatedPost.reposts = reposts;
+    if (replies !== undefined) updatedPost.replies = replies;
+    if (engagements !== undefined) updatedPost.engagements = engagements;
+    if (bookmarks !== undefined) updatedPost.bookmarks = bookmarks;
+    if (shares !== undefined) updatedPost.shares = shares;
+
+    // Images
+    if (
+      primary_image_url !== undefined &&
+      primary_image_url !== null &&
+      primary_image_url !== ""
+    ) {
+      updatedPost.primary_image_url = primary_image_url;
+      updatedPost.image = primary_image_url;
+      updatedPost.image_url = primary_image_url;
+    } else if (image !== undefined && image !== null && image !== "") {
+      updatedPost.image = image;
+      updatedPost.primary_image_url = image;
+      updatedPost.image_url = image;
+    }
+    if (images !== undefined && Array.isArray(images) && images.length > 0) {
+      updatedPost.images = images;
+      if (!updatedPost.primary_image_url && images[0]) {
+        updatedPost.primary_image_url = images[0];
+        updatedPost.image = images[0];
+      }
+    }
+
+    // Videos
+    if (video_url !== undefined && video_url !== null && video_url !== "") {
+      updatedPost.video_url = video_url;
+      updatedPost.video = video_url;
+    } else if (video !== undefined && video !== null && video !== "") {
+      updatedPost.video = video;
+      updatedPost.video_url = video;
+    }
+    if (videos !== undefined && Array.isArray(videos) && videos.length > 0) {
+      updatedPost.videos = videos;
+      if (!updatedPost.video_url && videos[0]) {
+        updatedPost.video_url = videos[0];
+        updatedPost.video = videos[0];
+      }
+    }
+
+    await writePost(store, postId, updatedPost);
+
+    if (isNewPost) {
+      await addToIndex(store, postId);
+      console.log(`[update-post-data] Created new post ${postId} and added to index`);
+    } else {
+      // Deduplicate index if needed
+      const ids = await readIndex(store);
+      const count = ids.filter((id) => id === postId).length;
+      if (count > 1) {
+        console.log(
+          `[update-post-data] Found ${count} duplicates for ${postId}, deduplicating`
+        );
+        const deduped = [];
+        const seen = new Set();
+        for (const id of ids) {
+          if (!seen.has(id)) {
+            seen.add(id);
+            deduped.push(id);
+          }
+        }
+        await writeIndex(store, deduped);
+      }
+    }
+
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({ success: true, post: updatedPost }),
+    };
   } catch (error) {
-    console.error('[update-post-data] Fatal error:', error);
+    console.error("[update-post-data] Error:", error);
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({
-        error: error?.message || "Internal server error",
+        error: error?.message || "Failed to update post",
       }),
     };
   }
 };
-

@@ -6,7 +6,7 @@
  * Redirects to Twitter with current relative time
  */
 
-const { getStore } = require("@netlify/blobs");
+const { getPostStore, readPost } = require("./lib/postStore");
 
 /**
  * Format relative time like "2 minutes and 36 seconds ago"
@@ -189,26 +189,12 @@ exports.handler = async (event, context) => {
     let locationDetails = null;
     if (eventId) {
       try {
-        const siteID = process.env.NETLIFY_SITE_ID;
-        const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN;
-        
-        if (siteID && token) {
-          const store = getStore({
-            name: 'x-posts',
-            siteID: siteID,
-            token: token,
-          });
-          
-          const postKey = `post-usgs-${eventId}`;
-          const postData = await store.get(postKey, { type: 'text' });
-          
-          if (postData) {
-            const post = JSON.parse(postData);
-            locationDetails = post.locationDetails || null;
-          }
+        const store = getPostStore();
+        const post = await readPost(store, `usgs-${eventId}`);
+        if (post) {
+          locationDetails = post.locationDetails || null;
         }
       } catch (error) {
-        // Ignore errors - locationDetails is optional
         console.warn('[twitter-share] Could not fetch location details:', error.message);
       }
     }

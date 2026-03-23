@@ -16,11 +16,16 @@ function requireCamsToken(event) {
   // Read token from environment variable
   const expectedToken = process.env.CAMS_TOKEN;
   
-  // If CAMS_TOKEN is not configured, allow requests (for development)
-  // In production, CAMS_TOKEN should always be set
   if (!expectedToken) {
-    console.warn('[requireCamsToken] CAMS_TOKEN not configured - allowing request (development mode)');
-    return null;
+    console.error('[Security] CAMS_TOKEN is not configured — denying access (fail-closed).');
+    return {
+      statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+      },
+      body: JSON.stringify({ error: 'Security configuration error' })
+    };
   }
   
   // Get token from request header (case-insensitive)

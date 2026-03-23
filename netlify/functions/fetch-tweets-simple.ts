@@ -5,17 +5,18 @@
  */
 
 import { Handler } from "@netlify/functions";
-import { getStore } from "@netlify/blobs";
 import { fetchTweetOEmbed, extractTweetId, extractUsername } from "../../src/lib/posts/oembed-fetch";
 import { normalizeTweetToCard, toTitle, readTimeFromText } from "../../src/lib/posts/normalize";
 import { extractEnhancedData } from "../../src/lib/posts/enhanced-extract";
-// XIRI METHOD: Try to extract media using photo page approach (like Discord bots)
 import { extractTwitterMedia } from "../../src/lib/posts/twitter-media-extract";
 
-interface IndexData {
-  ids: string[];
-  urls: string[]; // Store URLs since we're using oEmbed
-}
+const {
+  getPostStore,
+  readIndex,
+  readPost,
+  writePost,
+  addToIndex,
+} = require("./lib/postStore");
 
 /**
  * Convert oEmbed response to our Card format with enhanced data
@@ -102,11 +103,13 @@ async function oEmbedToCard(oembed: any, tweetUrl: string): Promise<any> {
   };
 }
 
+const { requireAdminAuth } = require("./middleware/requireAuth");
+
 export const handler: Handler = async (event) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Content-Type": "application/json",
   };
 
@@ -114,62 +117,24 @@ export const handler: Handler = async (event) => {
     return { statusCode: 204, headers, body: "" };
   }
 
+  // POST writes new tweets — require admin auth
+  if (event.httpMethod === "POST") {
+    const auth = await requireAdminAuth(event);
+    if (auth.statusCode) return auth;
+  }
+
   try {
-    // Get siteID and token from environment
-    const siteID = process.env.NETLIFY_SITE_ID || (event as any).headers?.['x-nf-site-id'];
-    const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN || (event as any).headers?.['x-nf-token'];
-    
-    let store;
-    try {
-      if (siteID && token) {
-        store = getStore({
-          name: "x-posts",
-          siteID: siteID,
-          token: token,
-        });
-      } else {
-        store = getStore({ name: "x-posts" });
-      }
-    } catch (storeErr: any) {
-      console.error('[fetch-tweets-simple] Failed to create store:', storeErr);
-      return {
-        statusCode: 503,
-        headers,
-        body: JSON.stringify({
-          error: "Storage configuration error",
-          message: storeErr.message,
-        }),
-      };
-    }
+    const store = getPostStore();
 
     // GET: Read posts
     if (event.httpMethod === "GET") {
-      let indexData: IndexData = { ids: [], urls: [] };
-      try {
-        const indexBlob = await store.get("index.json", { type: "json" });
-        if (indexBlob && Array.isArray((indexBlob as any).ids)) {
-          indexData = indexBlob as IndexData;
-        }
-      } catch (err) {
-        return {
-          statusCode: 200,
-          headers,
-          body: JSON.stringify([]),
-        };
-      }
+      const ids = await readIndex(store);
 
       const limit = parseInt(event.queryStringParameters?.limit || "30", 10);
-      const idsToFetch = indexData.ids.slice(0, Math.min(limit, 200));
+      const idsToFetch = ids.slice(0, Math.min(limit, 200));
 
       const posts = await Promise.all(
-        idsToFetch.map(async (id) => {
-          try {
-            const post = await store.get(`post-${id}.json`, { type: "json" });
-            return post;
-          } catch {
-            return null;
-          }
-        })
+        idsToFetch.map((id: string) => readPost(store, id))
       );
 
       return {
@@ -179,7 +144,7 @@ export const handler: Handler = async (event) => {
           "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
           "Netlify-CDN-Cache-Control": "public, max-age=60, stale-while-revalidate=300",
         },
-        body: JSON.stringify(posts.filter(p => p !== null)),
+        body: JSON.stringify(posts.filter((p: any) => p !== null)),
       };
     }
 
@@ -208,26 +173,13 @@ export const handler: Handler = async (event) => {
         };
       }
 
-      // Check for duplicates in storage
-      let postExists = false;
-      let existingPost = null;
-      try {
-        const existing = await store.get(`post-${tweetId}.json`, { type: "json" });
-        if (existing) {
-          postExists = true;
-          existingPost = existing;
-        }
-      } catch {}
-      
-      // Always extract media (even for existing posts) to ensure media is up-to-date
-      // Convert to Card format (this includes media extraction)
+      const existingPost = await readPost(store, tweetId);
+      const postExists = !!existingPost;
+
       const card = await oEmbedToCard(oembed, tweetUrl);
-      
-      // If post exists, merge with existing data (preserve datePosted and other fields)
+
       if (postExists && existingPost) {
-        // Preserve existing datePosted (it's more accurate than oEmbed)
         card.datePosted = existingPost.datePosted || card.datePosted;
-        // Preserve existing engagement stats if they're better
         if (existingPost.views && (!card.views || existingPost.views > card.views)) {
           card.views = existingPost.views;
         }
@@ -240,7 +192,6 @@ export const handler: Handler = async (event) => {
         if (existingPost.replies && (!card.replies || existingPost.replies > card.replies)) {
           card.replies = existingPost.replies;
         }
-        // Preserve other existing fields
         if (existingPost.story && !card.story) {
           card.story = existingPost.story;
           card.text = existingPost.story;
@@ -248,42 +199,8 @@ export const handler: Handler = async (event) => {
         console.log('[fetch-tweets-simple] Post already exists, updating with fresh media extraction:', tweetId);
       }
 
-      // Store post (with fresh media)
-      await store.set(`post-${tweetId}.json`, JSON.stringify(card), {
-        contentType: "application/json",
-      });
-
-      // Always update index (even if post already existed in storage)
-      // This ensures posts are added to index if they were missing
-      let indexData: IndexData = { ids: [], urls: [] };
-      try {
-        const indexBlob = await store.get("index.json", { type: "json" });
-        if (indexBlob) {
-          indexData = indexBlob as IndexData;
-        }
-      } catch {}
-
-      // Smart index update: keep top-performing posts
-      // Strategy: Always include top 50 by views, then add newest
-      const existingIds = indexData.ids || [];
-      const existingUrls = indexData.urls || [];
-      
-      // If post already exists in index, remove it first (will re-add at correct position)
-      const filteredIds = existingIds.filter(id => id !== tweetId);
-      const filteredUrls = existingUrls.filter((url, idx) => existingIds[idx] !== tweetId);
-      
-      // Prepend new post
-      const newIds = [tweetId, ...filteredIds];
-      const newUrls = [tweetUrl, ...filteredUrls];
-      
-      // If we have stats, prioritize high-view posts
-      // For now, just cap at 200 and let rebuild-index handle optimization
-      const updatedIds = newIds.slice(0, 200);
-      const updatedUrls = newUrls.slice(0, 200);
-      
-      await store.set("index.json", JSON.stringify({ ids: updatedIds, urls: updatedUrls }), {
-        contentType: "application/json",
-      });
+      await writePost(store, tweetId, card);
+      await addToIndex(store, tweetId);
 
       return {
         statusCode: 200,

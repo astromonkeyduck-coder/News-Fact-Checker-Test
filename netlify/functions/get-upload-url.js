@@ -16,8 +16,8 @@ const crypto = require("crypto");
 function checkToken(event) {
   const requiredToken = process.env.CLEMS_TOKEN;
   if (!requiredToken) {
-    // Token not configured, allow access
-    return true;
+    console.error('[Security] CLEMS_TOKEN is not configured — denying access (fail-closed).');
+    return false;
   }
 
   // Check header first

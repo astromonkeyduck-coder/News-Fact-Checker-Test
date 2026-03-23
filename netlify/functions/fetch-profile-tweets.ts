@@ -4,14 +4,16 @@
  */
 
 import { Handler } from "@netlify/functions";
-import { getStore } from "@netlify/blobs";
 import { fetchTweetOEmbed } from "../../src/lib/posts/oembed-fetch";
 import { extractTweetId, extractUsername } from "../../src/lib/posts/oembed-fetch";
 
-interface IndexData {
-  ids: string[];
-  urls: string[];
-}
+const { requireAdminAuth } = require("./middleware/requireAuth");
+const {
+  getPostStore,
+  readPost,
+  writePost,
+  addToIndex,
+} = require("./lib/postStore");
 
 /**
  * Extract tweet URLs from profile HTML
@@ -89,7 +91,7 @@ export const handler: Handler = async (event) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Content-Type": "application/json",
   };
 
@@ -97,32 +99,12 @@ export const handler: Handler = async (event) => {
     return { statusCode: 204, headers, body: "" };
   }
 
-  // Get siteID and token from environment (shared for both GET and POST)
-  const siteID = process.env.NETLIFY_SITE_ID || (event as any).headers?.['x-nf-site-id'];
-  const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN || (event as any).headers?.['x-nf-token'];
-  
-  let store;
-  try {
-    if (siteID && token) {
-      store = getStore({
-        name: "x-posts",
-        siteID: siteID,
-        token: token,
-      });
-    } else {
-      store = getStore({ name: "x-posts" });
-    }
-  } catch (storeErr: any) {
-    console.error('[fetch-profile-tweets] Failed to create store:', storeErr);
-    return {
-      statusCode: 503,
-      headers,
-      body: JSON.stringify({
-        error: "Storage configuration error",
-        message: storeErr.message,
-      }),
-    };
+  if (event.httpMethod === "POST") {
+    const auth = await requireAdminAuth(event);
+    if (auth.statusCode) return auth;
   }
+
+  const store = getPostStore();
 
   // GET: Fetch tweets from profile and return as cards
   if (event.httpMethod === "GET") {
@@ -202,25 +184,13 @@ export const handler: Handler = async (event) => {
 
         const validCards = cards.filter(c => c !== null);
 
-        // Store fetched tweets
-        const indexData: IndexData = { ids: [], urls: [] };
-        try {
-          const existing = await store.get("index.json", { type: "json" });
-          if (existing) {
-            indexData.ids = (existing as any).ids || [];
-            indexData.urls = (existing as any).urls || [];
-          }
-        } catch {}
-
-        // Add new tweets to storage
-        let storedCount = 0;
+        const newIds: string[] = [];
         for (const card of validCards) {
-          if (!indexData.ids.includes(card.id)) {
+          const existing = await readPost(store, card.id);
+          if (!existing) {
             try {
-              await store.setJSON(`post-${card.id}.json`, card);
-              indexData.ids.unshift(card.id);
-              indexData.urls.unshift(card.link);
-              storedCount++;
+              await writePost(store, card.id, card);
+              newIds.push(card.id);
               console.log(`[fetch-profile-tweets] Stored post ${card.id}: ${card.title?.substring(0, 50)}`);
             } catch (storeErr: any) {
               console.error(`[fetch-profile-tweets] Failed to store post ${card.id}:`, storeErr);
@@ -230,14 +200,9 @@ export const handler: Handler = async (event) => {
           }
         }
 
-        // Update index (cap at 200)
-        indexData.ids = indexData.ids.slice(0, 200);
-        indexData.urls = indexData.urls.slice(0, 200);
-        try {
-          await store.setJSON("index.json", indexData);
-          console.log(`[fetch-profile-tweets] Updated index with ${indexData.ids.length} posts (${storedCount} new)`);
-        } catch (indexErr: any) {
-          console.error('[fetch-profile-tweets] Failed to update index:', indexErr);
+        if (newIds.length > 0) {
+          await addToIndex(store, newIds);
+          console.log(`[fetch-profile-tweets] Added ${newIds.length} new posts to index`);
         }
 
         return {
@@ -285,48 +250,18 @@ export const handler: Handler = async (event) => {
         const card = oEmbedToCard(oembed, tweetUrl);
         const tweetId = card.id;
 
-        // Check for duplicates
-        try {
-          const existing = await store.get(`post-${tweetId}.json`);
-          if (existing) {
-            return {
-              statusCode: 200,
-              headers,
-              body: JSON.stringify({ message: "Tweet already exists", card }),
-            };
-          }
-        } catch {}
-
-        // Store using setJSON
-        try {
-          await store.setJSON(`post-${tweetId}.json`, card);
-          console.log(`[fetch-profile-tweets] Stored post ${tweetId}: ${card.title?.substring(0, 50)}`);
-        } catch (storeErr: any) {
-          console.error(`[fetch-profile-tweets] Failed to store post:`, storeErr);
-          throw storeErr;
+        const existing = await readPost(store, tweetId);
+        if (existing) {
+          return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({ message: "Tweet already exists", card }),
+          };
         }
 
-        // Update index
-        let indexData: IndexData = { ids: [], urls: [] };
-        try {
-          const existing = await store.get("index.json", { type: "json" });
-          if (existing) {
-            indexData.ids = (existing as any).ids || [];
-            indexData.urls = (existing as any).urls || [];
-          }
-        } catch {}
-
-        indexData.ids.unshift(tweetId);
-        indexData.urls.unshift(tweetUrl);
-        indexData.ids = indexData.ids.slice(0, 200);
-        indexData.urls = indexData.urls.slice(0, 200);
-
-        try {
-          await store.setJSON("index.json", indexData);
-          console.log(`[fetch-profile-tweets] Updated index, total posts: ${indexData.ids.length}`);
-        } catch (indexErr: any) {
-          console.error('[fetch-profile-tweets] Failed to update index:', indexErr);
-        }
+        await writePost(store, tweetId, card);
+        await addToIndex(store, tweetId);
+        console.log(`[fetch-profile-tweets] Stored post ${tweetId}: ${card.title?.substring(0, 50)}`);
 
         return {
           statusCode: 200,

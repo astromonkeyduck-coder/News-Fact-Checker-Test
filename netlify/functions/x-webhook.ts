@@ -1,13 +1,15 @@
 import { Handler } from "@netlify/functions";
-import { getStore } from "@netlify/blobs";
 import { createHmac } from "crypto";
 import { normalizeTweetToCard } from "../../src/lib/posts/normalize";
 
-const SKIP_REPLIES_AND_RTS = true;
+const {
+  getPostStore,
+  readPost,
+  writePost,
+  addToIndex,
+} = require("./lib/postStore");
 
-interface IndexData {
-  ids: string[];
-}
+const SKIP_REPLIES_AND_RTS = true;
 
 /**
  * Handle CRC challenge (GET request with crc_token)
@@ -39,61 +41,26 @@ async function handleWebhookEvent(body: any): Promise<{ status: string; processe
     throw new Error("X_USER_ID not configured");
   }
 
-  // Validate body structure
   if (!body || typeof body !== "object") {
     throw new Error("Invalid webhook payload");
   }
 
-  // Check for tweet_create_events
   const tweetCreateEvents = body.tweet_create_events || [];
   
   if (!Array.isArray(tweetCreateEvents)) {
     return { status: "no events", processed: 0 };
   }
 
-  // Get blob store
-  const siteID = process.env.NETLIFY_SITE_ID;
-  const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN;
-  
-  let store;
-  try {
-    if (siteID && token) {
-      store = getStore({
-        name: "x-posts",
-        siteID: siteID,
-        token: token,
-      });
-    } else {
-      store = getStore({ name: "x-posts" });
-    }
-  } catch (storeErr: any) {
-    console.error('[x-webhook] Failed to create store:', storeErr);
-    throw new Error(`Storage configuration error: ${storeErr.message}`);
-  }
-  
-  // Read current index
-  let indexData: IndexData = { ids: [] };
-  try {
-    const indexBlob = await store.get("index.json", { type: "json" });
-    if (indexBlob && Array.isArray((indexBlob as any).ids)) {
-      indexData = indexBlob as IndexData;
-    }
-  } catch (err) {
-    // Index doesn't exist yet, start fresh
-    indexData = { ids: [] };
-  }
+  const store = getPostStore();
 
   let processed = 0;
   const newIds: string[] = [];
 
-  // Process each event
   for (const event of tweetCreateEvents) {
-    // Skip if not from our user
     if (!event?.user || event.user.id_str !== userId) {
       continue;
     }
 
-    // Skip retweets and replies if configured
     if (SKIP_REPLIES_AND_RTS) {
       if (event.retweeted_status || event.in_reply_to_status_id) {
         continue;
@@ -105,49 +72,23 @@ async function handleWebhookEvent(body: any): Promise<{ status: string; processe
       continue;
     }
 
-    // Check for duplicates
-    const postKey = `post-${tweetId}.json`;
-    try {
-      const existing = await store.get(postKey);
-      if (existing) {
-        // Already exists, skip
-        continue;
-      }
-    } catch (err) {
-      // Doesn't exist, continue
+    const existing = await readPost(store, tweetId);
+    if (existing) {
+      continue;
     }
 
-    // Normalize tweet to Card
     try {
       const card = normalizeTweetToCard(event, event.user?.screen_name);
-      
-      // Store post
-      await store.set(postKey, JSON.stringify(card), {
-        contentType: "application/json",
-      });
-
-      // Add to index (prepend)
+      await writePost(store, tweetId, card);
       newIds.push(tweetId);
       processed++;
     } catch (err) {
-      // Log error but continue processing other events
       console.error(`Error processing tweet ${tweetId}:`, err);
     }
   }
 
-  // Update index if we have new posts
-  // Smart indexing: remove duplicates and keep within 200 limit
   if (newIds.length > 0) {
-    // Remove any duplicates from existing index
-    const existingIds = indexData.ids.filter(id => !newIds.includes(id));
-    // Prepend new IDs (newest first)
-    const updatedIds = [...newIds, ...existingIds].slice(0, 200);
-    await store.set("index.json", JSON.stringify({ ids: updatedIds }), {
-      contentType: "application/json",
-    });
-    
-    // Note: For top-performing posts, run rebuild-index function periodically
-    // This ensures high-view posts don't get pushed out permanently
+    await addToIndex(store, newIds);
   }
 
   return { status: "ok", processed };

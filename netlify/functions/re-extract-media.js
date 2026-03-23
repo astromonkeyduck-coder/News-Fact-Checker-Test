@@ -3,35 +3,20 @@
  * This function can be called to update all posts with media extraction
  */
 
-const { getStore } = require("@netlify/blobs");
-
-const headers = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-  "Content-Type": "application/json",
-};
+const { getPostStore, readIndex, readPost } = require("./lib/postStore");
+const { requireAdminAuth } = require("./middleware/requireAuth");
+const { corsHeaders: headers, optionsResponse } = require("./lib/corsHeaders");
 
 exports.handler = async (event) => {
-  if (event.httpMethod === "OPTIONS") {
-    return { statusCode: 204, headers, body: "" };
-  }
+  if (event.httpMethod === "OPTIONS") return optionsResponse;
+
+  const auth = await requireAdminAuth(event);
+  if (auth.statusCode) return auth;
 
   try {
-    const siteID = process.env.NETLIFY_SITE_ID || event.headers['x-nf-site-id'];
-    const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN || event.headers['x-nf-token'];
-    
     let store;
     try {
-      if (siteID && token) {
-        store = getStore({
-          name: "x-posts",
-          siteID: siteID,
-          token: token,
-        });
-      } else {
-        store = getStore({ name: "x-posts" });
-      }
+      store = getPostStore();
     } catch (storeErr) {
       console.error('[re-extract-media] Failed to create store:', storeErr);
       return {
@@ -44,23 +29,9 @@ exports.handler = async (event) => {
       };
     }
 
-    // Read index
-    let indexData = { ids: [] };
-    try {
-      const indexBlob = await store.get("index.json", { type: "json" });
-      if (indexBlob && Array.isArray(indexBlob.ids)) {
-        indexData = indexBlob;
-      }
-    } catch (err) {
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({ error: "Failed to read index", message: err.message }),
-      };
-    }
-
+    const ids = await readIndex(store);
     const limit = parseInt(event.queryStringParameters?.limit || "10", 10);
-    const postIds = indexData.ids.slice(0, limit);
+    const postIds = ids.slice(0, limit);
     
     console.log(`[re-extract-media] Processing ${postIds.length} posts`);
 
@@ -76,8 +47,7 @@ exports.handler = async (event) => {
 
     for (const postId of postIds) {
       try {
-        const postKey = `post-${postId}.json`;
-        const post = await store.get(postKey, { type: "json" });
+        const post = await readPost(store, postId);
         
         if (!post) {
           results.skipped++;
@@ -121,8 +91,7 @@ exports.handler = async (event) => {
           continue;
         }
         
-        // Re-read the post to get updated media
-        const updatedPost = await store.get(postKey, { type: "json" });
+        const updatedPost = await readPost(store, postId);
         
         if (updatedPost && (updatedPost.primary_image_url || (updatedPost.images && updatedPost.images.length > 0) || (updatedPost.videos && updatedPost.videos.length > 0))) {
           console.log(`[re-extract-media] ✅ Media extracted for ${postId}:`, {

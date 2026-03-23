@@ -1,15 +1,22 @@
 /**
  * Remove long posts from volcano and weather alerts
- * This function removes posts that are too verbose
+ * Posts with story/text > 300 chars from these sources are pruned.
  */
 
-const { getStore } = require("@netlify/blobs");
+const { requireAdminAuth } = require("./middleware/requireAuth");
+const {
+  getPostStore,
+  readIndex,
+  readPost,
+  writeIndex,
+  postKey,
+} = require("./lib/postStore");
 
 exports.handler = async (event, context) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Content-Type": "application/json",
   };
 
@@ -17,32 +24,14 @@ exports.handler = async (event, context) => {
     return { statusCode: 204, headers, body: "" };
   }
 
+  const auth = await requireAdminAuth(event);
+  if (auth.statusCode) return auth;
+
   try {
-    const siteID = process.env.NETLIFY_SITE_ID;
-    const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN;
+    const store = getPostStore();
+    const ids = await readIndex(store);
 
-    if (!siteID || !token) {
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({ error: "Missing credentials" }),
-      };
-    }
-
-    const store = getStore({
-      name: "x-posts",
-      siteID: siteID,
-      token: token,
-    });
-
-    // Read index
-    let indexData = { ids: [] };
-    try {
-      const indexBlob = await store.get("index.json", { type: "json" });
-      if (indexBlob && Array.isArray(indexBlob.ids)) {
-        indexData = indexBlob;
-      }
-    } catch (err) {
+    if (ids.length === 0) {
       return {
         statusCode: 200,
         headers,
@@ -53,44 +42,29 @@ exports.handler = async (event, context) => {
     const removed = [];
     const kept = [];
 
-    // Check each post
-    for (const postId of indexData.ids) {
-      const postKey = `post-${postId}.json`;
-      let post = null;
-      let shouldRemove = false;
-      
+    for (const postId of ids) {
       try {
-        // Try to read the post
-        post = await store.get(postKey, { type: "json" });
-        
+        const post = await readPost(store, postId);
+
         if (!post) {
-          // Post doesn't exist in blob storage, but is in index - keep it in index for now
-          // (it might be a transient issue, or already deleted)
           kept.push(postId);
           continue;
         }
 
-        // Remove volcano and weather posts that are too long
-        const isVolcano = post.category === 'Volcano Alert' || post.source === 'USGS' && post.event_type === 'volcano';
-        const isWeather = post.category === 'Weather Alert' || post.source === 'NWS' || post.event_type === 'weather';
-        
-        // Check if post is too long (more than 300 characters in story/text)
-        const storyLength = (post.story || post.text || '').length;
+        const isVolcano =
+          post.category === "Volcano Alert" ||
+          (post.source === "USGS" && post.event_type === "volcano");
+        const isWeather =
+          post.category === "Weather Alert" ||
+          post.source === "NWS" ||
+          post.event_type === "weather";
+
+        const storyLength = (post.story || post.text || "").length;
         const isTooLong = storyLength > 300;
 
         if ((isVolcano || isWeather) && isTooLong) {
-          shouldRemove = true;
-        } else {
-          // Post should be kept
-          kept.push(postId);
-          continue;
-        }
-        
-        // If we determined the post should be removed, try to delete it
-        if (shouldRemove) {
           try {
-            // Only remove from index if deletion succeeds
-            await store.delete(postKey);
+            await store.delete(postKey(postId));
             removed.push({
               id: postId,
               category: post.category,
@@ -98,24 +72,20 @@ exports.handler = async (event, context) => {
               length: storyLength,
               title: post.title,
             });
-            // Don't add to kept - it's been successfully removed
           } catch (deleteErr) {
-            // Deletion failed - keep the post in the index to prevent orphaned data
             console.error(`Error deleting post ${postId}:`, deleteErr);
             kept.push(postId);
           }
+        } else {
+          kept.push(postId);
         }
       } catch (err) {
-        // Error reading post - keep it in index to be safe (prevents orphaned data)
         console.error(`Error processing post ${postId}:`, err);
         kept.push(postId);
       }
     }
 
-    // Update index to only include kept posts
-    await store.set("index.json", JSON.stringify({ ids: kept }), {
-      contentType: "application/json",
-    });
+    await writeIndex(store, kept);
 
     return {
       statusCode: 200,
@@ -138,4 +108,3 @@ exports.handler = async (event, context) => {
     };
   }
 };
-

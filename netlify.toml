@@ -20,6 +20,26 @@
 # Netlify automatically serves 404.html for 404 errors
 # Make sure 404.html is in the root directory (publish directory)
 
+# ── V2 Homepage Cutover (ACTIVE) ───────────────────────────────────
+# Serves V2 homepage at /. V2 uses absolute asset paths
+# (/v2/styles/..., /v2/js/...) so the rewrite is transparent.
+# V1 index.html remains accessible at /index.html as a fallback.
+# Rollback: comment out the rewrite below and redeploy.
+[[redirects]]
+  from = "/"
+  to = "/v2/index.html"
+  status = 200
+  force = true
+
+# V2 Situation Monitor — redirect old URL to V2 version
+# Uses 301 (not 200 rewrite) because V2 SM uses relative asset paths
+[[redirects]]
+  from = "/situation-monitor.html"
+  to = "/v2/situation-monitor.html"
+  status = 301
+  force = true
+# ────────────────────────────────────────────────────────────────────
+
 # Favicon redirect (browsers request /favicon.ico by default)
 [[redirects]]
   from = "/favicon.ico"
@@ -70,29 +90,61 @@
   force = false
   headers = { X-From = "/api/noteworthy" }
 
-[[redirects]]
-  from = "/datalogging"
-  to = "/admin-analytics.html"
-  status = 200
-  force = false
-
+# Admin UI — all admin paths redirect to new authenticated admin surface
 [[redirects]]
   from = "/admin"
-  to = "/admin-newsletter.html"
-  status = 200
+  to = "/admin/"
+  status = 301
   force = false
 
 [[redirects]]
-  from = "/media"
-  to = "/media.html"
-  status = 200
-  force = false
+  from = "/datalogging"
+  to = "/admin/#analytics"
+  status = 301
+  force = true
 
 [[redirects]]
   from = "/adminnewsletter"
-  to = "/admin-newsletter.html"
-  status = 200
-  force = false
+  to = "/admin/#newsletter"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/media"
+  to = "/admin/#ingestion"
+  status = 301
+  force = true
+
+# Legacy admin pages — redirect to new admin (old pages are deprecated)
+[[redirects]]
+  from = "/admin-posts-manager.html"
+  to = "/admin/#posts"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/admin-remove-post.html"
+  to = "/admin/#posts"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/admin-add-tweets.html"
+  to = "/admin/#ingestion"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/admin-newsletter.html"
+  to = "/admin/#newsletter"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/admin-analytics.html"
+  to = "/admin/#analytics"
+  status = 301
+  force = true
 
 # Route ALL article.html requests to article-preview.js (force=true to override static file)
 # article-preview.js serves pre-rendered HTML for crawlers, interactive page for regular users
@@ -236,9 +288,6 @@
   node_bundler = "zisi"  # Use zip-it-and-ship-it which handles native .node modules
   included_files = ["netlify/functions/**/*.png", "netlify/functions/fonts-base64.js"]
   timeout = 26  # Max for Netlify sync (Pro); keep under to avoid 504
-
-[functions."test-generate"]
-  node_bundler = "zisi"  # Use zip-it-and-ship-it which handles native modules
 
 # ingest-all and retry-usgs-images import engines/usgs which imports generate-earthquake-image
 # So they also need zisi bundler to handle native modules

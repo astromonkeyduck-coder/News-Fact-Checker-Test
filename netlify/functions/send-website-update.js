@@ -36,12 +36,21 @@ exports.handler = async (event, context) => {
     // Verify authorization
     const authHeader = event.headers.authorization || event.headers.Authorization;
     const apiKey = process.env.PUSH_API_KEY || process.env.ADMIN_API_KEY;
-    
-    // Allow if API key matches or if triggered by Netlify deploy
+
+    if (!apiKey) {
+      console.error('[Security] PUSH_API_KEY/ADMIN_API_KEY is not configured — denying access (fail-closed).');
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ error: "Security configuration error" }),
+      };
+    }
+
+    // Allow if API key matches or if triggered by Netlify deploy hook
     const isNetlifyDeploy = event.headers['x-netlify-deploy'] === 'true';
-    const isAuthorized = (apiKey && authHeader === `Bearer ${apiKey}`) || isNetlifyDeploy;
-    
-    if (!isAuthorized && apiKey) {
+    const isAuthorized = authHeader === `Bearer ${apiKey}` || isNetlifyDeploy;
+
+    if (!isAuthorized) {
       console.warn("[Website Update] Unauthorized request");
       return {
         statusCode: 401,

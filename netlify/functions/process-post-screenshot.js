@@ -4,11 +4,12 @@
  */
 
 const { getStore } = require("@netlify/blobs");
+const { requireAdminAuth } = require("./middleware/requireAuth");
 
 const headers = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
   "Content-Type": "application/json",
 };
 
@@ -24,6 +25,9 @@ exports.handler = async (event) => {
       body: JSON.stringify({ error: "Method not allowed" }),
     };
   }
+
+  const auth = await requireAdminAuth(event);
+  if (auth.statusCode) return auth;
 
   try {
     const apiKey = process.env.OPENAI_API_KEY;

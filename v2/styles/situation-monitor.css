@@ -1,0 +1,650 @@
+/*
+ * Noteworthy News V2 — Situation Monitor
+ *
+ * Consumes tokens.css. No raw values.
+ * Scoped to .sitmon-v2 to avoid leaking into other pages.
+ */
+
+/* ── Page Root ──────────────────────────────────── */
+.sitmon-v2 {
+  padding-top: calc(var(--header-height) + var(--space-md));
+  min-height: 100vh;
+}
+
+/* ── Status Bar ─────────────────────────────────── */
+.sitmon-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--space-lg);
+  flex-wrap: wrap;
+}
+
+.sitmon-status-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  flex-wrap: wrap;
+}
+
+.sitmon-status-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.sitmon-status-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
+.sitmon-status-label {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+.sitmon-status-value {
+  color: var(--color-text);
+  font-weight: var(--weight-medium);
+}
+
+.sitmon-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-success);
+  flex-shrink: 0;
+}
+
+.sitmon-live-dot.offline {
+  background: var(--color-error);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sitmon-live-dot:not(.offline) {
+    animation: sitmon-pulse 2s ease-in-out infinite;
+  }
+}
+
+@keyframes sitmon-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.sitmon-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-md);
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.sitmon-refresh-btn:hover {
+  color: var(--color-text);
+  border-color: var(--color-border-hover);
+  background: var(--color-bg-surface);
+}
+
+.sitmon-refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sitmon-refresh-btn.loading .sitmon-refresh-icon {
+  animation: sitmon-spin 1s linear infinite;
+}
+
+@keyframes sitmon-spin {
+  to { transform: rotate(360deg); }
+}
+
+.sitmon-refresh-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+/* ── Alert Banner ───────────────────────────────── */
+.sitmon-alert-banner {
+  display: none;
+  background: var(--color-error-muted);
+  border: 1px solid var(--color-error-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md) var(--space-lg);
+  margin-bottom: var(--space-lg);
+}
+
+.sitmon-alert-banner.visible {
+  display: block;
+}
+
+.sitmon-alert-banner-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xs);
+}
+
+.sitmon-alert-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125em 0.5em;
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-radius: var(--radius-sm);
+  background: var(--color-error-badge);
+  color: var(--color-error);
+}
+
+.sitmon-alert-badge.warning {
+  background: var(--color-warning-muted);
+  color: var(--color-warning);
+}
+
+.sitmon-alert-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.sitmon-alert-item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  line-height: var(--leading-snug);
+}
+
+.sitmon-alert-severity {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-error);
+  margin-top: 0.4em;
+}
+
+.sitmon-alert-severity.high {
+  background: var(--color-warning);
+}
+
+.sitmon-alert-time {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-left: auto;
+  padding-left: var(--space-md);
+}
+
+/* ── Map Container ──────────────────────────────── */
+.sitmon-map-section {
+  margin-bottom: var(--space-xl);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+  position: relative;
+}
+
+.sitmon-map-container {
+  width: 100%;
+  height: 260px;
+  position: relative;
+}
+
+@media (min-width: 768px) {
+  .sitmon-map-container {
+    height: 380px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .sitmon-map-container {
+    height: 420px;
+  }
+}
+
+.sitmon-map-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--color-text-muted);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+}
+
+/* ── Panel Grid ─────────────────────────────────── */
+.sitmon-panel-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-xl);
+}
+
+@media (min-width: 768px) {
+  .sitmon-panel-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .sitmon-panel-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ── Panel Card ─────────────────────────────────── */
+.sitmon-panel {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 200px;
+  max-height: 480px;
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.sitmon-panel:hover {
+  border-color: var(--color-border-hover);
+}
+
+.sitmon-panel.has-critical {
+  border-color: var(--color-error-panel);
+}
+
+.sitmon-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.sitmon-panel-title {
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  letter-spacing: 0.01em;
+}
+
+.sitmon-panel-badge {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.sitmon-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-md) var(--space-lg);
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.sitmon-panel-body::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sitmon-panel-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sitmon-panel-body::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--radius-full);
+}
+
+/* ── Section Divider ────────────────────────────── */
+.sitmon-section-label {
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* ── Panel Body Overrides ───────────────────────── */
+/*
+ * Existing panel classes (EarthquakePanel, NewsPanel, etc.) render
+ * content inside their container. These rules normalize their
+ * internal styling to align with V2 tokens without modifying
+ * the panel source files.
+ */
+
+.sitmon-panel-body .sitmon-earthquake-item,
+.sitmon-panel-body .sitmon-news-item,
+.sitmon-panel-body .sitmon-weather-item {
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sitmon-panel-body .sitmon-earthquake-item:last-child,
+.sitmon-panel-body .sitmon-news-item:last-child,
+.sitmon-panel-body .sitmon-weather-item:last-child {
+  border-bottom: none;
+}
+
+.sitmon-panel-body .sitmon-earthquake-magnitude {
+  font-family: var(--font-mono);
+  font-weight: var(--weight-bold);
+}
+
+.sitmon-panel-body .sitmon-earthquake-time,
+.sitmon-panel-body .sitmon-earthquake-details,
+.sitmon-panel-body .sitmon-earthquake-precise-time {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
+.sitmon-panel-body .sitmon-earthquake-place {
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  margin: var(--space-xs) 0;
+}
+
+.sitmon-panel-body .sitmon-earthquake-link {
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  color: var(--color-accent);
+}
+
+.sitmon-panel-body .sitmon-earthquake-link:hover {
+  color: var(--color-accent-hover);
+}
+
+.sitmon-panel-body .sitmon-earthquake-actions {
+  display: flex;
+  gap: var(--space-md);
+  margin-top: var(--space-sm);
+}
+
+.sitmon-panel-body .sitmon-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xl);
+  color: var(--color-text-muted);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  text-align: center;
+  min-height: 120px;
+}
+
+.sitmon-panel-body .sitmon-empty-state-icon {
+  width: 32px;
+  height: 32px;
+  margin-bottom: var(--space-md);
+  color: var(--color-text-muted);
+}
+
+.sitmon-panel-body .sitmon-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: sitmon-spin 0.8s linear infinite;
+  margin-bottom: var(--space-md);
+}
+
+.sitmon-panel-body .sitmon-retry-btn {
+  margin-top: var(--space-md);
+  padding: var(--space-xs) var(--space-lg);
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-accent);
+  background: var(--color-accent-muted);
+  border: 1px solid var(--color-accent-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.sitmon-panel-body .sitmon-retry-btn:hover {
+  background: var(--color-accent-border);
+}
+
+/* ── News panel normalization ───────────────────── */
+.sitmon-panel-body .sitmon-rss-headline {
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sitmon-panel-body .sitmon-rss-headline:last-child {
+  border-bottom: none;
+}
+
+.sitmon-panel-body .sitmon-rss-headline-title {
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+  line-height: var(--leading-snug);
+}
+
+.sitmon-panel-body .sitmon-rss-headline-title a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.sitmon-panel-body .sitmon-rss-headline-title a:hover {
+  color: var(--color-accent);
+}
+
+.sitmon-panel-body .sitmon-rss-headline-meta {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+/* ── Markets panel normalization ────────────────── */
+.sitmon-panel-body .sitmon-market-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sitmon-panel-body .sitmon-market-item:last-child {
+  border-bottom: none;
+}
+
+.sitmon-panel-body .sitmon-market-name {
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+}
+
+.sitmon-panel-body .sitmon-market-price {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+
+.sitmon-panel-body .sitmon-market-change {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.sitmon-panel-body .sitmon-market-change.positive {
+  color: var(--color-success);
+}
+
+.sitmon-panel-body .sitmon-market-change.negative {
+  color: var(--color-error);
+}
+
+/* ── Weather panel normalization ────────────────── */
+.sitmon-panel-body .sitmon-weather-alert-severity {
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+}
+
+.sitmon-panel-body .sitmon-weather-alert-title {
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+  margin: var(--space-xs) 0;
+}
+
+.sitmon-panel-body .sitmon-weather-alert-area {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
+/* ── Correlation / Analysis panel normalization ──── */
+.sitmon-panel-body .sitmon-entity-item,
+.sitmon-panel-body .sitmon-correlation-item,
+.sitmon-panel-body .sitmon-narrative-item {
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--color-border);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+
+.sitmon-panel-body .sitmon-entity-item:last-child,
+.sitmon-panel-body .sitmon-correlation-item:last-child,
+.sitmon-panel-body .sitmon-narrative-item:last-child {
+  border-bottom: none;
+}
+
+/* ── RSS Intelligence panel normalization ────────── */
+.sitmon-panel-body .sitmon-rss-source {
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sitmon-panel-body .sitmon-rss-source:last-child {
+  border-bottom: none;
+}
+
+/* ── Loading Skeleton ───────────────────────────── */
+.sitmon-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3xl) var(--space-xl);
+  color: var(--color-text-muted);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  gap: var(--space-md);
+}
+
+.sitmon-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: sitmon-spin 0.8s linear infinite;
+}
+
+/* ── Error State ────────────────────────────────── */
+.sitmon-error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3xl) var(--space-xl);
+  text-align: center;
+}
+
+.sitmon-error-state p {
+  color: var(--color-text-secondary);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-md);
+}
+
+/* ── Footer ─────────────────────────────────────── */
+.sitmon-footer {
+  padding: var(--space-xl) 0;
+  border-top: 1px solid var(--color-border);
+  margin-top: var(--space-xl);
+  text-align: center;
+}
+
+.sitmon-footer-text {
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  line-height: var(--leading-normal);
+}
+
+/* ── Map Tooltip ────────────────────────────────── */
+.sitmon-tooltip {
+  position: absolute;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  pointer-events: none;
+  z-index: var(--z-elevated);
+  max-width: 280px;
+  box-shadow: var(--shadow-lg);
+}
+
+/* ── Print ──────────────────────────────────────── */
+@media print {
+  .sitmon-status-bar,
+  .sitmon-refresh-btn {
+    display: none;
+  }
+
+  .sitmon-panel {
+    break-inside: avoid;
+    border: 1px solid #ccc;
+    max-height: none;
+  }
+
+  .sitmon-map-section {
+    height: 300px;
+  }
+}

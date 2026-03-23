@@ -1,8 +1,11 @@
 /**
- * Premium Design Tokens
- * Reusable design system foundation for premium UI polish
- * 
- * Usage: Import this file first, then premium-components.css
+ * DEPRECATED — V1 Design Tokens (legacy)
+ *
+ * This file is the V1 token system. It is consumed by V1 pages only.
+ * The canonical V2 design tokens live at v2/styles/tokens.css.
+ * Do NOT add new tokens here. All new UI work should use V2 tokens.
+ *
+ * This file will be removed when V1 pages are retired.
  */
 
 :root {

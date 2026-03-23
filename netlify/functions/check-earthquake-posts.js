@@ -3,20 +3,12 @@
  * GET /.netlify/functions/check-earthquake-posts
  */
 
-const { getStore } = require("@netlify/blobs");
+const { getPostStore, readIndex, readPost } = require("./lib/postStore");
 const supabase = require('./lib/supabaseClient');
+const { corsHeaders: headers, optionsResponse } = require("./lib/corsHeaders");
 
 exports.handler = async (event, context) => {
-  const headers = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-    "Content-Type": "application/json",
-  };
-
-  if (event.httpMethod === "OPTIONS") {
-    return { statusCode: 204, headers, body: "" };
-  }
+  if (event.httpMethod === "OPTIONS") return optionsResponse;
 
   try {
     const results = {
@@ -60,35 +52,16 @@ exports.handler = async (event, context) => {
 
     // Check blob storage (posts)
     try {
-      const siteID = process.env.NETLIFY_SITE_ID;
-      const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN;
+      try {
+        const store = getPostStore();
+        const ids = await readIndex(store);
 
-      if (siteID && token) {
-        const store = getStore({
-          name: "x-posts",
-          siteID: siteID,
-          token: token,
-        });
-
-        // Read index
-        let indexData = { ids: [] };
-        try {
-          const indexBlob = await store.get("index.json", { type: "json" });
-          if (indexBlob && Array.isArray(indexBlob.ids)) {
-            indexData = indexBlob;
-          }
-        } catch (err) {
-          // No index
-        }
-
-        // Get earthquake posts
-        const earthquakePostIds = indexData.ids.filter(id => id.startsWith('usgs-'));
+        const earthquakePostIds = ids.filter(id => id.startsWith('usgs-'));
         results.blob_storage.total = earthquakePostIds.length;
 
-        // Get details for first 5
         for (const postId of earthquakePostIds.slice(0, 5)) {
           try {
-            const post = await store.get(`post-${postId}.json`, { type: "json" });
+            const post = await readPost(store, postId);
             if (post) {
               results.blob_storage.posts.push({
                 id: postId,
@@ -103,10 +76,7 @@ exports.handler = async (event, context) => {
             // Post not found
           }
         }
-      } else {
-        results.blob_storage.error = "Missing NETLIFY_SITE_ID or NETLIFY_BLOB_READ_WRITE_TOKEN";
-      }
-    } catch (blobErr) {
+      } catch (blobErr) {
       results.blob_storage.error = blobErr.message;
     }
 

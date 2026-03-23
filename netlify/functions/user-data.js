@@ -2,10 +2,13 @@
  * User Data API
  * GET/POST /.netlify/functions/user-data
  * 
- * Allows authenticated users to get and update their own profile data
+ * Allows authenticated users to get and update their own profile data.
+ * Identity is verified server-side via Auth0 JWT — the email is extracted
+ * from the token claims, NOT from the request body/query.
  */
 
 const { getStore } = require("@netlify/blobs");
+const { requireAuth } = require("./middleware/requireAuth");
 
 exports.handler = async (event, context) => {
   const headers = {
@@ -15,7 +18,6 @@ exports.handler = async (event, context) => {
     "Content-Type": "application/json",
   };
 
-  // CORS preflight
   if (event.httpMethod === "OPTIONS") {
     return {
       statusCode: 204,
@@ -25,36 +27,22 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    // Verify Auth0 token
-    const authHeader = event.headers.authorization || event.headers.Authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return {
-        statusCode: 401,
-        headers,
-        body: JSON.stringify({ error: "Unauthorized - Valid token required" }),
-      };
-    }
+    const auth = await requireAuth(event);
+    if (auth.statusCode) return auth;
 
-    const token = authHeader.replace('Bearer ', '');
-    
-    // Verify token with Auth0 (simplified - in production, verify with Auth0 API)
-    // For now, we'll extract user info from the token payload
-    // In production, you should verify the token with Auth0 Management API
-    
-    // Get user email from query or body
-    let userEmail = null;
-    if (event.httpMethod === "GET") {
-      userEmail = event.queryStringParameters?.email;
-    } else if (event.httpMethod === "POST") {
-      const body = JSON.parse(event.body || "{}");
-      userEmail = body.email;
-    }
+    // Extract email from verified JWT claims (server-authoritative identity)
+    const userEmail =
+      auth.user.email ||
+      auth.user["https://noteworthynews.co/email"] ||
+      null;
 
     if (!userEmail) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: "Missing 'email' parameter" }),
+        body: JSON.stringify({
+          error: "Token does not contain an email claim. Ensure your Auth0 rules include email in the token.",
+        }),
       };
     }
 

@@ -23,17 +23,16 @@
  */
 
 const { getHouseStyleTemplate, STYLE_GUIDE } = require('./house-style-template');
+const { requireAdminAuthOrSecret } = require("./middleware/requireAuth");
 
 exports.handler = async (event, context) => {
-  // Enable CORS
   const headers = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Admin-Token',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Content-Type': 'application/json',
   };
 
-  // Handle preflight
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers, body: '' };
   }
@@ -45,6 +44,9 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({ error: 'Method not allowed' }),
     };
   }
+
+  const auth = await requireAdminAuthOrSecret(event, "NEWSLETTER_KEY");
+  if (auth.statusCode) return auth;
 
   try {
     let body;

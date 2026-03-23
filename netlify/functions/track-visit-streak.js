@@ -15,6 +15,7 @@ if (process.env.NETLIFY_DEV || !process.env.RESEND_API_KEY) {
 
 const { getStore } = require("@netlify/blobs");
 const { Resend } = require('resend');
+const { requireAuth } = require("./middleware/requireAuth");
 
 /**
  * Get today's date string (YYYY-MM-DD)
@@ -359,18 +360,7 @@ async function sendStreakCelebrationEmail(userEmail, userName, streakDays) {
   }
 }
 
-/**
- * Verify Auth0 token (simplified - in production, verify with Auth0 API)
- * For now, we'll check if Authorization header is present
- */
-function verifyAuthToken(authHeader) {
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return false;
-  }
-  // In production, verify token with Auth0 Management API
-  // For now, just check that token exists
-  return true;
-}
+// verifyAuthToken removed — replaced by requireAuth middleware
 
 /**
  * Main handler - can be called as a Netlify function or imported
@@ -396,24 +386,21 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    // Verify user is authenticated
-    const authHeader = event.headers.authorization || event.headers.Authorization;
-    if (!verifyAuthToken(authHeader)) {
-      return {
-        statusCode: 401,
-        headers,
-        body: JSON.stringify({ error: 'Unauthorized - Must be logged in' }),
-      };
-    }
+    const auth = await requireAuth(event);
+    if (auth.statusCode) return auth;
 
+    // Extract identity from verified JWT
+    const userEmail =
+      auth.user.email ||
+      auth.user["https://noteworthynews.co/email"];
     const body = JSON.parse(event.body || '{}');
-    const { userEmail, userName } = body;
+    const userName = body.userName;
 
     if (!userEmail) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: 'userEmail required' }),
+        body: JSON.stringify({ error: 'Token does not contain email claim' }),
       };
     }
 

@@ -249,9 +249,16 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Verify admin password by checking against configured token
     const adminToken = process.env.ADMIN_TOKEN || process.env.NEWSLETTER_TOKEN;
-    if (adminToken && admin_password !== adminToken) {
+    if (!adminToken) {
+      console.error('[Security] ADMIN_TOKEN/NEWSLETTER_TOKEN is not configured — denying access (fail-closed).');
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ error: 'Security configuration error' }),
+      };
+    }
+    if (admin_password !== adminToken) {
       return {
         statusCode: 401,
         headers,

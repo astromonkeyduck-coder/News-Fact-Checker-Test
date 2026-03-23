@@ -4,18 +4,22 @@
  */
 
 const { getStore } = require("@netlify/blobs");
+const { requireAdminAuth } = require("./middleware/requireAuth");
 
 exports.handler = async (event, context) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Content-Type": "application/json",
   };
 
   if (event.httpMethod === "OPTIONS") {
     return { statusCode: 204, headers, body: "" };
   }
+
+  const auth = await requireAdminAuth(event);
+  if (auth.statusCode) return auth;
 
   try {
     // Get credentials

@@ -4,8 +4,8 @@
   "description": "Test your media literacy skills with interactive games and fact-checking challenges. Stay informed with trusted journalism.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f234a",
-  "theme_color": "#0f234a",
+  "background_color": "#0B1426",
+  "theme_color": "#0B1426",
   "orientation": "portrait-primary",
   "icons": [
     {

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Noteworthy News — Fact-Checked Journalism & Media Literacy</title>
+
+  <!-- SEO -->
+  <meta name="description" content="Noteworthy News delivers verified journalism, media literacy tools, and interactive fact-checking experiences. Think critically about the news.">
+  <link rel="canonical" href="https://noteworthynews.co/">
+  <meta name="theme-color" content="#0B1426">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Noteworthy News — Fact-Checked Journalism & Media Literacy">
+  <meta property="og:description" content="Verified journalism, media literacy tools, and interactive fact-checking experiences.">
+  <meta property="og:url" content="https://noteworthynews.co/">
+  <meta property="og:site_name" content="Noteworthy News">
+  <meta property="og:image" content="https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg?v=2">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="en_US">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Noteworthy News — Fact-Checked Journalism">
+  <meta name="twitter:description" content="Verified journalism, media literacy tools, and interactive fact-checking experiences.">
+  <meta name="twitter:image" content="https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg?v=2">
+
+  <!-- Fonts — non-render-blocking: page paints with system fonts, swaps when ready -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap"></noscript>
+
+  
+  <!-- Auth0 SDK loaded lazily by v2/js/auth.js when needed -->
+
+  <!-- Design System -->
+  <link rel="stylesheet" href="/v2/styles/tokens.css">
+  <link rel="stylesheet" href="/v2/styles/base.css">
+  <link rel="stylesheet" href="/v2/styles/layout.css">
+  <link rel="stylesheet" href="/v2/styles/components.css">
+  
+  
+  
+  <!-- Auth0 Configuration - Inject environment variables for production -->
+    <script>
+      window.AUTH0_DOMAIN = '****************.com';
+      window.AUTH0_CLIENT_ID = '****************bCER';
+    </script>
+  <!-- /Auth0 Configuration -->
+</head>
+<body>
+
+  <!-- ─── Header / Navigation ───────────────────── -->
+  <header class="site-header">
+    <nav class="site-nav container" aria-label="Primary">
+      <a class="site-logo" href="/">
+        <svg class="site-logo-icon" width="28" height="28" viewBox="0 0 200 200" aria-hidden="true">
+          <circle cx="100" cy="100" r="95" fill="currentColor"/>
+          <path d="M 70 50 L 70 150 L 80 150 L 80 75 L 130 150 L 140 150 L 140 50 L 130 50 L 130 125 L 80 50 Z" fill="var(--color-bg)"/>
+        </svg>
+        <span>Noteworthy News</span>
+      </a>
+
+      <button class="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-menu">
+        <svg class="nav-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+
+      <div class="nav-menu" id="nav-menu">
+        <a class="nav-link" href="#stories">Stories</a>
+        <a class="nav-link" href="/archive.html">Archive</a>
+        <a class="nav-link" href="#subscribe">Newsletter</a>
+        <a class="nav-link" href="/v2/situation-monitor.html">Monitor</a>
+
+        <div class="nav-separator" aria-hidden="true"></div>
+
+        <!-- Auth: shown/hidden by JS based on login state -->
+        <div class="nav-auth" id="nav-auth-out">
+          <button class="btn btn-ghost btn-sm" id="signinBtn" type="button">Sign In</button>
+          <button class="btn btn-primary btn-sm" id="signupBtn" type="button">Sign Up</button>
+        </div>
+        <div class="nav-auth" id="nav-auth-in" hidden>
+          <span class="nav-user-name" id="nav-user-name"></span>
+          <a class="btn btn-ghost btn-sm" href="/profile.html">Profile</a>
+          <button class="btn btn-ghost btn-sm" id="logoutBtn" type="button">Log Out</button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- ─── Hero ──────────────────────────────────── -->
+    <section class="hero">
+      <div class="container">
+        <div class="hero-content">
+          <p class="section-label">Fact-Checked Journalism</p>
+          <h1 class="hero-title">
+            News you can <span class="hero-accent">verify</span>.<br>
+            Skills to think <span class="hero-accent">critically</span>.
+          </h1>
+          <p class="hero-subtitle">
+            Noteworthy News delivers verified stories, real-time intelligence,
+            and interactive media literacy experiences — helping you understand
+            the news, not just read it.
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-primary btn-lg" href="#stories">Read Latest Stories</a>
+            <a class="btn btn-secondary btn-lg" href="#about">Why Noteworthy</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── Stories / Feed ────────────────────────── -->
+    <section id="stories" class="section section-alt">
+      <div class="container">
+        <div class="section-header">
+          <p class="section-label">Latest</p>
+          <h2 class="section-title">Verified Stories</h2>
+          <p class="section-subtitle">
+            Fact-checked reporting from around the world, updated in real time.
+          </p>
+        </div>
+
+        <div class="feed-placeholder" id="feed-container" aria-label="News feed loading">
+          <div class="feed-skeleton" aria-hidden="true"></div>
+          <div class="feed-skeleton" aria-hidden="true"></div>
+          <div class="feed-skeleton" aria-hidden="true"></div>
+          <div class="feed-skeleton" aria-hidden="true"></div>
+          <div class="feed-skeleton" aria-hidden="true"></div>
+          <div class="feed-skeleton" aria-hidden="true"></div>
+        </div>
+
+        <div class="section-cta">
+          <a class="btn btn-secondary" href="/archive.html">View All Stories</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── About / Features ─────────────────────── -->
+    <section id="about" class="section section-compact">
+      <div class="container">
+        <div class="section-header text-center">
+          <p class="section-label">Why Noteworthy</p>
+          <h2 class="section-title">Built for trust and clarity</h2>
+          <p class="section-subtitle">
+            Every story is verified. Every tool sharpens your
+            understanding of the media landscape.
+          </p>
+        </div>
+
+        <div class="grid grid-3">
+          <div class="card">
+            <div class="card-icon" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 11l3 3L22 4"/>
+                <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+              </svg>
+            </div>
+            <h3 class="card-title">Verified Journalism</h3>
+            <p class="card-text">
+              Fact-checked against primary sources. No clickbait,
+              no sensationalism — just accurate reporting.
+            </p>
+          </div>
+
+          <div class="card">
+            <div class="card-icon" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 16v-4M12 8h.01"/>
+              </svg>
+            </div>
+            <h3 class="card-title">Media Literacy</h3>
+            <p class="card-text">
+              Games, guides, and tools to detect misinformation
+              and evaluate sources with a sharper eye.
+            </p>
+          </div>
+
+          <div class="card">
+            <div class="card-icon" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+            </div>
+            <h3 class="card-title">Real-Time Intelligence</h3>
+            <p class="card-text">
+              Live global monitoring — earthquakes, weather, breaking
+              developments — powered by verified data feeds.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── Newsletter ────────────────────────────── -->
+    <section id="subscribe" class="section section-alt">
+      <div class="container container-narrow text-center">
+        <div class="section-header">
+          <p class="section-label">Stay Informed</p>
+          <h2 class="section-title">Get the full picture, weekly</h2>
+          <p class="section-subtitle">
+            Fact-checked stories and media literacy insights delivered to
+            your inbox. No spam, no noise — just the news that matters.
+          </p>
+        </div>
+
+        <form class="newsletter-form" aria-label="Newsletter signup">
+          <label for="newsletter-email" class="sr-only">Email address</label>
+          <input
+            id="newsletter-email"
+            class="newsletter-input"
+            type="email"
+            placeholder="you@example.com"
+            required
+            autocomplete="email"
+          >
+          <button type="submit" class="btn btn-primary">Subscribe</button>
+        </form>
+        <p class="newsletter-hint">Free. Unsubscribe anytime. We respect your inbox.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ─── Footer ──────────────────────────────────── -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <p class="footer-brand-name">Noteworthy News</p>
+          <p class="footer-brand-tagline">
+            Fact-checked journalism and media literacy tools,
+            built to help you think critically about the world.
+          </p>
+        </div>
+
+        <nav aria-label="Footer navigation">
+          <p class="footer-nav-title">Explore</p>
+          <ul class="footer-nav-list">
+            <li><a class="footer-nav-link" href="/archive.html">Stories</a></li>
+            <li><a class="footer-nav-link" href="/game.html">Fact-Checker Game</a></li>
+            <li><a class="footer-nav-link" href="/geography-game.html">Geography Game</a></li>
+            <li><a class="footer-nav-link" href="/v2/situation-monitor.html">Situation Monitor</a></li>
+            <li><a class="footer-nav-link" href="/contact.html">Contact</a></li>
+          </ul>
+        </nav>
+
+        <nav aria-label="Resources">
+          <p class="footer-nav-title">Resources</p>
+          <ul class="footer-nav-list">
+            <li><a class="footer-nav-link" href="/media-literacy-guide.html">Media Literacy Guide</a></li>
+            <li><a class="footer-nav-link" href="/how-we-verify.html">How We Verify</a></li>
+            <li><a class="footer-nav-link" href="/fact-checking-tips.html">Fact-Checking Tips</a></li>
+            <li><a class="footer-nav-link" href="/newsletter-preferences.html">Newsletter Prefs</a></li>
+          </ul>
+        </nav>
+
+        <nav aria-label="Legal">
+          <p class="footer-nav-title">Legal</p>
+          <ul class="footer-nav-list">
+            <li><a class="footer-nav-link" href="/privacy-policy.html">Privacy Policy</a></li>
+            <li><a class="footer-nav-link" href="/terms-of-service.html">Terms of Service</a></li>
+            <li><a class="footer-nav-link" href="/editorial-policy.html">Editorial Policy</a></li>
+          </ul>
+        </nav>
+      </div>
+
+      <div class="footer-bottom">
+        <p class="footer-copyright">&copy; 2026 Noteworthy News. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- V2 modules — no frameworks, no blocking -->
+  <script type="module" src="/v2/js/main.js"></script>
+
+</body>
+</html>
