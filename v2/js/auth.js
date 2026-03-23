@@ -10,10 +10,11 @@
  * That response comes from Auth0, not this app. Typical fixes:
  * 1. Auth0 Dashboard → Applications → your app → Settings:
  *    - Application type must be "Single Page Application" (PKCE).
- *    - Allowed Callback URLs: include the EXACT redirect_uri, e.g.
- *      https://noteworthynews.co/  AND  https://noteworthynews.co/v2/index.html
- *      if you open the site from that path (match trailing slash to what the
- *      browser sends — check the full authorize URL query string).
+ *    - Allowed Callback URLs: include https://noteworthynews.co/ (with slash).
+ *      This app always uses origin + "/" as redirect_uri so it matches the
+ *      Netlify "/" → v2 rewrite even if you opened /v2/index.html directly.
+ *    - Netlify Deploy Previews: add each preview origin too, e.g.
+ *      https://deploy-preview-123--yoursite.netlify.app/
  *    - Allowed Logout URLs: https://noteworthynews.co/
  *    - Allowed Web Origins: https://noteworthynews.co  (no path)
  * 2. Ensure the Client ID matches this application (not a M2M app).
@@ -51,13 +52,13 @@ async function mergeAuth0ConfigFromServer() {
   }
 }
 
-/** Callback URL must match Auth0 "Allowed Callback URLs" exactly. */
+/**
+ * Callback URL must match Auth0 "Allowed Callback URLs" exactly.
+ * Always use site root so one allowlist entry works with Netlify’s "/" rewrite
+ * to V2 and avoids 403 when users land on /v2/index.html vs /.
+ */
 function getRedirectUri() {
-  const { origin, pathname } = window.location;
-  if (!pathname || pathname === '/') {
-    return `${origin}/`;
-  }
-  return origin + pathname;
+  return `${window.location.origin}/`;
 }
 
 function getAuth0Factory() {
