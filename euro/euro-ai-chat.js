@@ -444,9 +444,9 @@
     function renderWelcome() {
       const div = document.createElement('div');
       div.className = 'eac-welcome';
-      const title = clemensMode ? 'Alright my dear interlocutor, let\'s get to it!' : 'Ready to ace AP Euro?';
+      const title = clemensMode ? 'Alright you guys, buckle up!' : 'Ready to ace AP Euro?';
       const desc = clemensMode
-        ? 'If you\'re ready to get them brain cows milked, pick a study mode and let\'s crush this exam. I know every topic, every date, and I\'ll make it stick.'
+        ? 'If you\'re ready to get them brain cows milked, pick a study mode and let\'s crush this exam. I know every topic, every date, every bonehead move every king ever made, and I\'ll make it all stick.'
         : 'I know every topic from the Renaissance to the EU. I\'ll give you real evidence, specific dates, and push you toward a 5. Pick a study mode:';
       div.innerHTML = `
         <h4>${title}</h4>
