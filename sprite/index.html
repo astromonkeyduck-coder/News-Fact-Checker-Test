@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Geo-SPRITE Master System | AP European History | Noteworthy News</title>
+<meta name="description" content="Interactive Geo-SPRITE analysis system for AP European History. 7-lens framework for contextualization, causation, comparison, and complexity.">
+<link rel="stylesheet" href="/v2/styles/tokens.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@400;500;600;700;800&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-ui);background:var(--color-bg);color:var(--color-text);line-height:var(--leading-normal);min-height:100vh}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select{font-family:inherit;color:inherit}
+a{color:var(--color-accent);text-decoration:none}
+
+:root{
+  --gs-geo:#34D399;--gs-soc:#F59E0B;--gs-pol:#3B82F6;
+  --gs-rel:#8B5CF6;--gs-int:#14B8A6;--gs-tech:#94A3B8;--gs-econ:#EAB308;
+}
+
+.app{display:flex;flex-direction:column;min-height:100vh}
+
+/* Header */
+.header{display:flex;align-items:center;justify-content:space-between;padding:var(--space-sm) var(--space-lg);background:var(--color-bg-secondary);border-bottom:1px solid var(--color-border);position:sticky;top:0;z-index:100}
+.header h1{font-family:var(--font-heading);font-size:var(--text-lg);font-weight:var(--weight-bold);display:flex;align-items:center;gap:var(--space-sm)}
+.header .sub{font-size:var(--text-xs);color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:var(--tracking-wide);font-weight:var(--weight-medium)}
+.header-links{display:flex;gap:var(--space-sm)}
+.btn{display:inline-flex;align-items:center;gap:var(--space-xs);padding:var(--space-xs) var(--space-sm);border-radius:var(--radius-md);font-size:var(--text-xs);font-weight:var(--weight-semibold);background:rgba(240,242,245,0.05);border:1px solid var(--color-border);transition:all 120ms;white-space:nowrap}
+.btn:hover{background:rgba(240,242,245,0.1);border-color:var(--color-border-hover)}
+.btn.active{background:var(--color-accent-muted);border-color:var(--color-accent-border);color:var(--color-accent)}
+
+/* Breadcrumb */
+.breadcrumb{padding:var(--space-xs) var(--space-lg);font-size:var(--text-xs);color:var(--color-text-muted);background:var(--color-bg-elevated);border-bottom:1px solid var(--color-border)}
+.breadcrumb a{color:var(--color-accent)}
+.breadcrumb span{margin:0 var(--space-xs)}
+
+/* Hero / Landing */
+.hero{display:flex;flex-direction:column;align-items:center;padding:var(--space-3xl) var(--space-lg);text-align:center;max-width:900px;margin:0 auto}
+.hero h2{font-family:var(--font-heading);font-size:var(--text-4xl);font-weight:var(--weight-black);letter-spacing:var(--tracking-tight);margin-bottom:var(--space-md)}
+.hero p{font-size:var(--text-lg);color:var(--color-text-secondary);max-width:600px;margin-bottom:var(--space-xl)}
+
+/* Geo-SPRITE Wheel */
+.sprite-wheel{display:flex;gap:var(--space-md);flex-wrap:wrap;justify-content:center;margin-bottom:var(--space-2xl)}
+.sprite-lens{display:flex;flex-direction:column;align-items:center;gap:var(--space-xs);padding:var(--space-md);border-radius:var(--radius-lg);background:var(--color-bg-card);border:2px solid var(--color-border);width:100px;transition:all 180ms}
+.sprite-lens:hover{transform:translateY(-4px);box-shadow:0 8px 24px rgba(0,0,0,0.3)}
+.sprite-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:var(--text-lg);font-weight:var(--weight-black);color:#fff}
+.sprite-lens-label{font-size:var(--text-2xs);font-weight:var(--weight-bold);text-transform:uppercase;letter-spacing:var(--tracking-wider);color:var(--color-text-muted)}
+
+/* Mode Picker */
+.mode-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:var(--space-md);width:100%;max-width:1000px;margin:0 auto;padding:0 var(--space-lg)}
+.mode-card{background:var(--color-bg-card);border:1px solid var(--color-border);border-radius:var(--radius-xl);padding:var(--space-lg);cursor:pointer;transition:all 180ms;display:flex;flex-direction:column;gap:var(--space-xs)}
+.mode-card:hover{border-color:var(--color-accent-border);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.2)}
+.mode-card h3{font-family:var(--font-heading);font-size:var(--text-base);font-weight:var(--weight-bold)}
+.mode-card p{font-size:var(--text-xs);color:var(--color-text-secondary);line-height:var(--leading-relaxed)}
+.mode-icon{font-size:var(--text-2xl);margin-bottom:var(--space-xs)}
+
+/* Content Area */
+.content{flex:1;padding:var(--space-lg);max-width:1200px;margin:0 auto;width:100%}
+.content.hidden{display:none}
+
+/* Toolbar for modes */
+.mode-toolbar{display:flex;flex-wrap:wrap;gap:var(--space-xs);padding:var(--space-sm) var(--space-lg);background:var(--color-bg-elevated);border-bottom:1px solid var(--color-border);align-items:center}
+.mode-toolbar .search-box{display:flex;align-items:center;gap:var(--space-xs);background:rgba(240,242,245,0.05);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:0 var(--space-sm)}
+.mode-toolbar .search-box input{background:none;border:none;outline:none;font-size:var(--text-xs);padding:var(--space-xs) 0;width:160px;color:var(--color-text)}
+.mode-toolbar .search-box input::placeholder{color:var(--color-text-muted)}
+.filter-sep{width:1px;height:20px;background:var(--color-border);margin:0 var(--space-xs)}
+
+/* Cards */
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:var(--space-md);margin-top:var(--space-md)}
+.card{background:var(--color-bg-card);border:1px solid var(--color-border);border-radius:var(--radius-xl);padding:var(--space-lg);transition:all 180ms;cursor:pointer;position:relative;overflow:hidden}
+.card:hover{border-color:var(--color-accent-border);box-shadow:0 4px 16px rgba(0,0,0,0.2)}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:var(--space-sm)}
+.card-title{font-family:var(--font-heading);font-size:var(--text-base);font-weight:var(--weight-bold);line-height:var(--leading-tight)}
+.card-date{font-size:var(--text-xs);color:var(--color-accent);font-weight:var(--weight-semibold);white-space:nowrap}
+.card-unit{font-size:var(--text-2xs);font-weight:var(--weight-bold);padding:2px 8px;border-radius:var(--radius-full);background:rgba(240,242,245,0.05);border:1px solid var(--color-border)}
+.card-desc{font-size:var(--text-sm);color:var(--color-text-secondary);margin-bottom:var(--space-sm);line-height:var(--leading-relaxed)}
+
+/* Heatmap dots on card */
+.heatmap-row{display:flex;gap:4px;margin-bottom:var(--space-sm)}
+.heat-cell{width:28px;height:20px;border-radius:var(--radius-xs);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:var(--weight-black);color:#fff;position:relative}
+.heat-cell .heat-label{position:absolute;top:-14px;font-size:7px;color:var(--color-text-muted);font-weight:var(--weight-bold);letter-spacing:0.05em}
+.heat-0{opacity:0.15}.heat-1{opacity:0.4}.heat-2{opacity:0.7}.heat-3{opacity:1}
+
+/* Funny hook */
+.funny-hook{font-size:var(--text-xs);color:var(--color-warning);font-style:italic;padding:var(--space-xs) var(--space-sm);background:rgba(234,179,8,0.06);border-radius:var(--radius-md);border-left:3px solid var(--color-warning);margin-bottom:var(--space-sm);display:none}
+.card:hover .funny-hook,.card.expanded .funny-hook{display:block}
+
+/* Card badges */
+.card-badges{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:var(--space-xs)}
+.badge{padding:2px 8px;border-radius:var(--radius-full);font-size:var(--text-2xs);font-weight:var(--weight-bold)}
+.badge-change{background:rgba(239,68,68,0.1);color:#EF4444;border:1px solid rgba(239,68,68,0.2)}
+.badge-cont{background:rgba(34,197,94,0.1);color:#22C55E;border:1px solid rgba(34,197,94,0.2)}
+.badge-bridge{background:rgba(59,139,242,0.1);color:var(--color-accent);border:1px solid var(--color-accent-border)}
+
+/* Causation chain */
+.cause-chain{font-size:var(--text-2xs);color:var(--color-text-muted);margin-top:var(--space-xs);padding-top:var(--space-xs);border-top:1px solid var(--color-border)}
+
+/* Comparison buddy */
+.compare-buddy{font-size:var(--text-2xs);color:var(--color-accent);margin-top:4px}
+
+/* Expanded card detail */
+.card-detail{display:none;margin-top:var(--space-md);padding-top:var(--space-md);border-top:1px solid var(--color-border)}
+.card.expanded .card-detail{display:block}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-sm)}
+.detail-item h5{font-size:var(--text-2xs);text-transform:uppercase;letter-spacing:var(--tracking-wider);color:var(--color-text-muted);margin-bottom:2px;font-weight:var(--weight-bold)}
+.detail-item p{font-size:var(--text-xs);color:var(--color-text-secondary);line-height:var(--leading-relaxed)}
+
+/* Exam chips */
+.exam-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:var(--space-sm)}
+.exam-chip{padding:3px 8px;border-radius:var(--radius-sm);font-size:var(--text-2xs);font-weight:var(--weight-semibold);background:var(--color-accent-muted);color:var(--color-accent);border:1px solid var(--color-accent-border)}
+
+/* Night-Before-Exam Mode */
+.nbx-container{display:flex;flex-direction:column;align-items:center;gap:var(--space-lg);padding:var(--space-2xl) var(--space-lg)}
+.nbx-card{background:var(--color-bg-card);border:2px solid var(--color-border);border-radius:var(--radius-xl);padding:var(--space-2xl);max-width:600px;width:100%;text-align:center;cursor:pointer;transition:all 200ms;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.nbx-card:hover{border-color:var(--color-accent-border)}
+.nbx-card .nbx-title{font-family:var(--font-heading);font-size:var(--text-2xl);font-weight:var(--weight-bold);margin-bottom:var(--space-sm)}
+.nbx-card .nbx-date{font-size:var(--text-sm);color:var(--color-accent);margin-bottom:var(--space-md)}
+.nbx-card .nbx-hook{font-size:var(--text-lg);color:var(--color-warning);font-style:italic;opacity:0;transition:opacity 300ms}
+.nbx-card.revealed .nbx-hook{opacity:1}
+.nbx-card .nbx-hint{font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--space-sm)}
+.nbx-controls{display:flex;gap:var(--space-md);align-items:center}
+.nbx-progress{font-size:var(--text-sm);color:var(--color-text-muted);font-variant-numeric:tabular-nums}
+
+/* Heatmap Mode */
+.heatmap-table{width:100%;border-collapse:collapse;font-size:var(--text-xs)}
+.heatmap-table th{position:sticky;top:0;background:var(--color-bg-elevated);padding:var(--space-xs) var(--space-sm);text-align:center;font-weight:var(--weight-bold);font-size:var(--text-2xs);text-transform:uppercase;letter-spacing:var(--tracking-wide);border-bottom:2px solid var(--color-border)}
+.heatmap-table td{padding:6px 8px;border-bottom:1px solid var(--color-border);text-align:center}
+.heatmap-table tr:hover td{background:rgba(240,242,245,0.03)}
+.heatmap-table .title-cell{text-align:left;font-weight:var(--weight-semibold);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hm-cell{width:24px;height:18px;border-radius:3px;display:inline-block}
+
+/* Status bar */
+.status{display:flex;justify-content:space-between;padding:var(--space-xs) var(--space-lg);background:var(--color-bg-secondary);border-top:1px solid var(--color-border);font-size:var(--text-2xs);color:var(--color-text-muted)}
+
+/* Responsive */
+@media(max-width:768px){
+  .mode-grid{grid-template-columns:1fr}
+  .card-grid{grid-template-columns:1fr}
+  .hero h2{font-size:var(--text-2xl)}
+  .sprite-wheel{gap:var(--space-xs)}
+  .sprite-lens{width:70px;padding:var(--space-sm)}
+  .detail-grid{grid-template-columns:1fr}
+}
+
+@media print{
+  body{background:#fff !important;color:#111 !important}
+  .header,.breadcrumb,.mode-toolbar,.status{display:none !important}
+  .card{break-inside:avoid;border-color:#ccc !important}
+  .funny-hook{display:block !important;color:#666 !important;border-left-color:#999 !important;background:#f9f9f9 !important}
+  .hm-cell{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+}
+
+.loading{display:flex;align-items:center;justify-content:center;padding:var(--space-3xl);flex-direction:column;gap:var(--space-md)}
+.spinner{width:32px;height:32px;border:3px solid var(--color-border);border-top-color:var(--color-accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <h1>
+      <a href="/" style="color:inherit;text-decoration:none">Noteworthy News</a>
+      <span class="sub">Geo-SPRITE &bull; AP European History</span>
+    </h1>
+    <div class="header-links">
+      <button class="btn" id="euro-sound-toggle" title="Mute sounds"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 010 14.14"/><path d="M15.54 8.46a5 5 0 010 7.08"/></svg></button>
+      <a href="/euro/" class="btn" style="text-decoration:none">Timeline</a>
+      <a href="/" class="btn" style="text-decoration:none">Home</a>
+    </div>
+  </header>
+
+  <nav class="breadcrumb" id="breadcrumb">
+    <a href="#" id="bcHome">Geo-SPRITE</a>
+  </nav>
+
+  <!-- Landing / Hero -->
+  <section id="landing">
+    <div class="hero">
+      <h2>Geo-SPRITE</h2>
+      <p>See all of European history through 7 lenses. Stop memorizing isolated facts. Start seeing patterns, causes, comparisons, and connections.</p>
+    </div>
+    <div class="sprite-wheel">
+      <div class="sprite-lens"><div class="sprite-dot" style="background:var(--gs-geo)">G</div><span class="sprite-lens-label">Geography</span></div>
+      <div class="sprite-lens"><div class="sprite-dot" style="background:var(--gs-soc)">S</div><span class="sprite-lens-label">Social</span></div>
+      <div class="sprite-lens"><div class="sprite-dot" style="background:var(--gs-pol)">P</div><span class="sprite-lens-label">Political</span></div>
+      <div class="sprite-lens"><div class="sprite-dot" style="background:var(--gs-rel)">R</div><span class="sprite-lens-label">Religious</span></div>
+      <div class="sprite-lens"><div class="sprite-dot" style="background:var(--gs-int)">I</div><span class="sprite-lens-label">Intellectual</span></div>
+      <div class="sprite-lens"><div class="sprite-dot" style="background:var(--gs-tech)">T</div><span class="sprite-lens-label">Technology</span></div>
+      <div class="sprite-lens"><div class="sprite-dot" style="background:var(--gs-econ)">E</div><span class="sprite-lens-label">Economic</span></div>
+    </div>
+    <div class="mode-grid" id="modeGrid">
+      <div class="mode-card" data-mode="heatmap"><div class="mode-icon">&#9632;&#9632;&#9632;</div><h3>Heatmap</h3><p>Which lenses matter most for each topic? See the full matrix at a glance.</p></div>
+      <div class="mode-card" data-mode="context"><div class="mode-icon">&#9998;</div><h3>Contextualization</h3><p>What do I write before my argument? Get fill-in-the-blank context starters.</p></div>
+      <div class="mode-card" data-mode="causation"><div class="mode-icon">&#10230;</div><h3>Causation</h3><p>What caused what? See cause-effect chains through every lens.</p></div>
+      <div class="mode-card" data-mode="comparison"><div class="mode-icon">&#8596;</div><h3>Comparison</h3><p>How are two things similar and different? Side-by-side Geo-SPRITE analysis.</p></div>
+      <div class="mode-card" data-mode="ccot"><div class="mode-icon">&#8644;</div><h3>CCOT</h3><p>What changed and what stayed the same? See continuity and change by lens.</p></div>
+      <div class="mode-card" data-mode="complexity"><div class="mode-icon">&#10022;</div><h3>Complexity</h3><p>How do I earn the complexity point? Add a second lens to any argument.</p></div>
+      <div class="mode-card" data-mode="dbq"><div class="mode-icon">&#128196;</div><h3>DBQ Toolkit</h3><p>7 documents, 7 lenses. Group, source, and analyze documents by Geo-SPRITE.</p></div>
+      <div class="mode-card" data-mode="leq"><div class="mode-icon">&#9997;</div><h3>LEQ Toolkit</h3><p>Pick the prompt with the best Geo-SPRITE coverage. Build thesis + evidence.</p></div>
+      <div class="mode-card" data-mode="nbx"><div class="mode-icon">&#127769;</div><h3>Night Before Exam</h3><p>Rapid-fire funny hooks. Tap to reveal. The only mode that makes you laugh while cramming.</p></div>
+      <div class="mode-card" data-mode="write"><div class="mode-icon">&#128221;</div><h3>Show Me What to Write</h3><p>Get paragraph templates with fill-in slots for context, evidence, and complexity.</p></div>
+    </div>
+  </section>
+
+  <!-- Mode Toolbar (hidden on landing) -->
+  <div class="mode-toolbar content hidden" id="modeToolbar">
+    <button class="btn" id="backToHome">&#8592; All Modes</button>
+    <div class="filter-sep"></div>
+    <div class="search-box">
+      <span style="font-size:var(--text-xs);color:var(--color-text-muted)">&#128269;</span>
+      <input type="text" id="searchInput" placeholder="Search..." aria-label="Search">
+    </div>
+    <div class="filter-sep"></div>
+    <select class="btn" id="filterUnit" aria-label="Filter by unit">
+      <option value="all">All Units</option>
+      <option value="1">Unit 1: Renaissance</option>
+      <option value="2">Unit 2: Reformation</option>
+      <option value="3">Unit 3: Absolutism</option>
+      <option value="4">Unit 4: Scientific/Enlightenment</option>
+      <option value="5">Unit 5: Revolution/Napoleon</option>
+      <option value="6">Unit 6: Industrialization</option>
+      <option value="7">Unit 7: 19th Century</option>
+      <option value="8">Unit 8: World Wars</option>
+      <option value="9">Unit 9: Cold War</option>
+    </select>
+    <select class="btn" id="filterTier" aria-label="Filter by tier">
+      <option value="all">All Tiers</option>
+      <option value="1">Tier 1: Must Know</option>
+      <option value="2">Tier 2: Important</option>
+      <option value="3">Tier 3: Enrichment</option>
+    </select>
+    <select class="btn" id="filterLens" aria-label="Filter by strongest lens">
+      <option value="all">All Lenses</option>
+      <option value="G">Geography</option>
+      <option value="S">Social</option>
+      <option value="P">Political</option>
+      <option value="R">Religious</option>
+      <option value="I">Intellectual</option>
+      <option value="T">Technology</option>
+      <option value="E">Economic</option>
+    </select>
+  </div>
+
+  <!-- Content panels -->
+  <div class="content hidden" id="heatmapView"></div>
+  <div class="content hidden" id="cardView"></div>
+  <div class="content hidden" id="nbxView"></div>
+
+  <footer class="status">
+    <span id="statusCount">Loading...</span>
+    <span>Geo-SPRITE &bull; 7 Lenses &bull; 9 AP Units &bull; c. 1450 &ndash; Present</span>
+  </footer>
+</div>
+
+<script>
+const LENS_COLORS={G:'#34D399',S:'#F59E0B',P:'#3B82F6',R:'#8B5CF6',I:'#14B8A6',T:'#94A3B8',E:'#EAB308'};
+const LENS_NAMES={G:'Geography',S:'Social',P:'Political',R:'Religious',I:'Intellectual',T:'Technology',E:'Economic'};
+const LENS_KEYS=['G','S','P','R','I','T','E'];
+const UNIT_NAMES={1:'Renaissance & Exploration',2:'Reformation',3:'Absolutism & Constitutionalism',4:'Scientific & Enlightenment',5:'Revolution & Napoleon',6:'Industrialization',7:'19th Century',8:'World Wars',9:'Cold War & Contemporary'};
+
+let DATA=[];
+let currentMode=null;
+let nbxIndex=0;
+let nbxShuffled=[];
+
+async function init(){
+  try{
+    const r=await fetch('geo_sprite_data.json');
+    DATA=await r.json();
+  }catch(e){document.getElementById('statusCount').textContent='Failed to load data';return;}
+  document.getElementById('statusCount').textContent=DATA.length+' Geo-SPRITE entries loaded';
+  bindEvents();
+}
+
+function bindEvents(){
+  document.querySelectorAll('.mode-card').forEach(c=>{
+    c.addEventListener('click',()=>openMode(c.dataset.mode));
+  });
+  document.getElementById('backToHome').addEventListener('click',goHome);
+  document.getElementById('bcHome').addEventListener('click',e=>{e.preventDefault();goHome();});
+  document.getElementById('searchInput').addEventListener('input',()=>renderCurrentMode());
+  document.getElementById('filterUnit').addEventListener('change',()=>renderCurrentMode());
+  document.getElementById('filterTier').addEventListener('change',()=>renderCurrentMode());
+  document.getElementById('filterLens').addEventListener('change',()=>renderCurrentMode());
+}
+
+function goHome(){
+  currentMode=null;
+  document.getElementById('landing').style.display='';
+  document.getElementById('modeToolbar').classList.add('hidden');
+  document.getElementById('heatmapView').classList.add('hidden');
+  document.getElementById('cardView').classList.add('hidden');
+  document.getElementById('nbxView').classList.add('hidden');
+  document.getElementById('breadcrumb').innerHTML='<a href="#" id="bcHome">Geo-SPRITE</a>';
+  document.getElementById('bcHome').addEventListener('click',e=>{e.preventDefault();goHome();});
+}
+
+function openMode(mode){
+  currentMode=mode;
+  document.getElementById('landing').style.display='none';
+  document.getElementById('modeToolbar').classList.remove('hidden');
+  const modeLabel={'heatmap':'Heatmap','context':'Contextualization','causation':'Causation','comparison':'Comparison','ccot':'CCOT','complexity':'Complexity','dbq':'DBQ Toolkit','leq':'LEQ Toolkit','nbx':'Night Before Exam','write':'Show Me What to Write'}[mode];
+  document.getElementById('breadcrumb').innerHTML='<a href="#" id="bcHome">Geo-SPRITE</a><span>&#8250;</span><span>'+modeLabel+'</span>';
+  document.getElementById('bcHome').addEventListener('click',e=>{e.preventDefault();goHome();});
+  renderCurrentMode();
+}
+
+function getFiltered(){
+  const q=(document.getElementById('searchInput').value||'').toLowerCase();
+  const u=document.getElementById('filterUnit').value;
+  const t=document.getElementById('filterTier').value;
+  const l=document.getElementById('filterLens').value;
+  return DATA.filter(d=>{
+    if(u!=='all'&&d.apUnit!==parseInt(u))return false;
+    if(t!=='all'&&d.tier!==parseInt(t))return false;
+    if(l!=='all'&&!(d.strongestLenses||[]).includes(l))return false;
+    if(q){const hay=(d.title+' '+d.description+' '+(d.funnyHook||'')).toLowerCase();if(!hay.includes(q))return false;}
+    return true;
+  });
+}
+
+function renderCurrentMode(){
+  const hm=document.getElementById('heatmapView');
+  const cv=document.getElementById('cardView');
+  const nx=document.getElementById('nbxView');
+  hm.classList.add('hidden');cv.classList.add('hidden');nx.classList.add('hidden');
+
+  if(currentMode==='heatmap'){hm.classList.remove('hidden');renderHeatmap(hm);}
+  else if(currentMode==='nbx'){nx.classList.remove('hidden');renderNBX(nx);}
+  else{cv.classList.remove('hidden');renderCards(cv);}
+}
+
+function heatCell(score,lens){
+  const c=LENS_COLORS[lens];
+  return '<span class="hm-cell heat-'+score+'" style="background:'+c+'" title="'+LENS_NAMES[lens]+': '+score+'">'+score+'</span>';
+}
+
+function renderHeatmap(el){
+  const data=getFiltered().sort((a,b)=>a.startYear-b.startYear);
+  let html='<table class="heatmap-table"><thead><tr><th>Date</th><th style="text-align:left">Event / Process</th><th>U</th>';
+  LENS_KEYS.forEach(k=>{html+='<th style="color:'+LENS_COLORS[k]+'">'+k+'</th>';});
+  html+='<th>Top Lenses</th></tr></thead><tbody>';
+  data.forEach(d=>{
+    const gs=d.geoSprite||{};
+    html+='<tr><td style="white-space:nowrap;font-variant-numeric:tabular-nums">'+d.date+'</td>';
+    html+='<td class="title-cell" title="'+(d.funnyHook||'').replace(/"/g,'&quot;')+'">'+d.title+'</td>';
+    html+='<td style="font-weight:700">'+d.apUnit+'</td>';
+    LENS_KEYS.forEach(k=>{
+      const s=gs[k]?gs[k].score:0;
+      html+='<td>'+heatCell(s,k)+'</td>';
+    });
+    html+='<td style="font-size:10px;font-weight:700">'+(d.strongestLenses||[]).join(', ')+'</td></tr>';
+  });
+  html+='</tbody></table>';
+  el.innerHTML=html;
+}
+
+function renderCards(el){
+  const data=getFiltered().sort((a,b)=>a.startYear-b.startYear);
+  let html='<div class="card-grid">';
+  data.forEach(d=>{
+    const gs=d.geoSprite||{};
+    html+='<div class="card" data-id="'+d.id+'" onclick="toggleCard(this)">';
+    html+='<div class="card-top"><div><span class="card-date">'+d.date+'</span> <span class="card-unit">Unit '+d.apUnit+'</span></div>';
+    html+='<div style="display:flex;gap:4px">'+(d.strongestLenses||[]).map(l=>'<span style="background:'+LENS_COLORS[l]+';color:#fff;padding:1px 6px;border-radius:99px;font-size:10px;font-weight:800">'+l+'</span>').join('')+'</div></div>';
+    html+='<div class="card-title">'+d.title+'</div>';
+    html+='<div class="card-desc">'+d.description+'</div>';
+    html+='<div class="funny-hook">'+(d.funnyHook||'')+'</div>';
+    html+='<div class="heatmap-row">';
+    LENS_KEYS.forEach(k=>{
+      const s=gs[k]?gs[k].score:0;
+      html+='<div class="heat-cell heat-'+s+'" style="background:'+LENS_COLORS[k]+'" title="'+LENS_NAMES[k]+': '+s+'"><span class="heat-label">'+k+'</span>'+s+'</div>';
+    });
+    html+='</div>';
+
+    html+='<div class="card-badges">';
+    if(d.ccotUse){
+      const parts=d.ccotUse.split('Continuity:');
+      if(parts[0])html+='<span class="badge badge-change">'+parts[0].replace('Change:','').trim().substring(0,50)+'</span>';
+      if(parts[1])html+='<span class="badge badge-cont">'+parts[1].trim().substring(0,50)+'</span>';
+    }
+    html+='</div>';
+
+    if(d.causationUse)html+='<div class="cause-chain">'+d.causationUse+'</div>';
+    if(d.comparisonUse)html+='<div class="compare-buddy">Compare: '+d.comparisonUse+'</div>';
+
+    html+='<div class="card-detail">';
+    if(currentMode==='context')html+=renderContextDetail(d);
+    else if(currentMode==='causation')html+=renderCausationDetail(d);
+    else if(currentMode==='comparison')html+=renderComparisonDetail(d);
+    else if(currentMode==='ccot')html+=renderCCOTDetail(d);
+    else if(currentMode==='complexity')html+=renderComplexityDetail(d);
+    else if(currentMode==='dbq')html+=renderDBQDetail(d);
+    else if(currentMode==='leq')html+=renderLEQDetail(d);
+    else if(currentMode==='write')html+=renderWriteDetail(d);
+    else html+=renderFullDetail(d);
+    html+='</div>';
+    html+='</div>';
+  });
+  html+='</div>';
+  el.innerHTML=html;
+  document.getElementById('statusCount').textContent=data.length+' of '+DATA.length+' entries';
+}
+
+function toggleCard(el){el.classList.toggle('expanded');}
+
+function renderFullDetail(d){
+  const gs=d.geoSprite||{};
+  let h='<div class="detail-grid">';
+  LENS_KEYS.forEach(k=>{
+    if(gs[k]&&gs[k].score>0){
+      h+='<div class="detail-item"><h5 style="color:'+LENS_COLORS[k]+'">'+LENS_NAMES[k]+' ('+gs[k].score+'/3)</h5><p>'+gs[k].evidence+'</p></div>';
+    }
+  });
+  h+='</div>';
+  h+='<div style="margin-top:var(--space-sm)"><div class="detail-item"><h5>Why Strongest Matter</h5><p>'+(d.whyStrongestMatter||'')+'</p></div></div>';
+  h+='<div class="detail-item" style="margin-top:var(--space-sm)"><h5>Complexity Move</h5><p style="color:var(--color-accent)">'+(d.complexityMove||'')+'</p></div>';
+  h+='<div class="detail-item" style="margin-top:var(--space-sm)"><h5>Common Mistake</h5><p style="color:var(--color-error)">'+(d.commonMistake||'')+'</p></div>';
+  h+='<div class="exam-chips">';
+  ['Contextualization','Causation','Comparison','CCOT','DBQ','LEQ'].forEach(c=>{h+='<span class="exam-chip">'+c+'</span>';});
+  h+='</div>';
+  return h;
+}
+
+function renderContextDetail(d){
+  return '<div class="detail-item"><h5>Contextualization Starter</h5><p style="font-family:var(--font-body);font-size:var(--text-sm)">'+(d.contextualizationUse||'')+'</p></div>';
+}
+function renderCausationDetail(d){
+  return '<div class="detail-item"><h5>Causation Chain</h5><p style="font-size:var(--text-base);font-weight:600">'+(d.causationUse||'')+'</p></div>'
+    +'<div class="detail-item" style="margin-top:var(--space-sm)"><h5>Outside Evidence</h5><p>'+(d.outsideEvidence||[]).join(' &bull; ')+'</p></div>';
+}
+function renderComparisonDetail(d){
+  return '<div class="detail-item"><h5>Comparison Use</h5><p>'+(d.comparisonUse||'')+'</p></div>';
+}
+function renderCCOTDetail(d){
+  return '<div class="detail-item"><h5>Continuity & Change</h5><p>'+(d.ccotUse||'')+'</p></div>';
+}
+function renderComplexityDetail(d){
+  return '<div class="detail-item"><h5>Complexity Move</h5><p style="color:var(--color-accent)">'+(d.complexityMove||'')+'</p></div>'
+    +'<div class="detail-item" style="margin-top:var(--space-sm)"><h5>Common Mistake to Avoid</h5><p style="color:var(--color-error)">'+(d.commonMistake||'')+'</p></div>';
+}
+function renderDBQDetail(d){
+  return '<div class="detail-item"><h5>DBQ Use</h5><p>'+(d.dbqUse||'')+'</p></div>'
+    +'<div class="detail-item" style="margin-top:var(--space-sm)"><h5>Outside Evidence</h5><p>'+(d.outsideEvidence||[]).join(' &bull; ')+'</p></div>';
+}
+function renderLEQDetail(d){
+  return '<div class="detail-item"><h5>LEQ Use</h5><p>'+(d.leqUse||'')+'</p></div>'
+    +'<div class="detail-item" style="margin-top:var(--space-sm)"><h5>Complexity Move</h5><p style="color:var(--color-accent)">'+(d.complexityMove||'')+'</p></div>';
+}
+function renderWriteDetail(d){
+  const gs=d.geoSprite||{};
+  const top=(d.strongestLenses||['P'])[0];
+  const topData=gs[top]||{evidence:'...'};
+  return '<div class="detail-item"><h5>Context Paragraph Template</h5>'
+    +'<p style="font-family:var(--font-body);font-size:var(--text-sm);line-height:1.8;background:rgba(240,242,245,0.03);padding:var(--space-sm);border-radius:var(--radius-md)">'
+    +'Before <strong>[prompt topic]</strong>, Europe was already experiencing '+(d.contextualizationUse||'significant changes')+'. '
+    +'This mattered because <strong>[connection to prompt]</strong>, creating the conditions for <strong>[prompt development]</strong>.</p></div>'
+    +'<div class="detail-item" style="margin-top:var(--space-sm)"><h5>Evidence Sentence</h5>'
+    +'<p style="font-family:var(--font-body);font-size:var(--text-sm)">For example, '+topData.evidence+'</p></div>'
+    +'<div class="detail-item" style="margin-top:var(--space-sm)"><h5>Complexity Sentence</h5>'
+    +'<p style="font-family:var(--font-body);font-size:var(--text-sm)">'+(d.complexityMove||'')+'</p></div>';
+}
+
+/* Night Before Exam */
+function renderNBX(el){
+  const tier1=DATA.filter(d=>d.tier===1&&d.funnyHook);
+  if(nbxShuffled.length===0){nbxShuffled=[...tier1].sort(()=>Math.random()-0.5);}
+  if(nbxIndex>=nbxShuffled.length)nbxIndex=0;
+  const d=nbxShuffled[nbxIndex];
+  el.innerHTML='<div class="nbx-container">'
+    +'<div class="nbx-progress">'+(nbxIndex+1)+' / '+nbxShuffled.length+' &bull; Tier 1 Must-Know</div>'
+    +'<div class="nbx-card" id="nbxCard" onclick="revealNBX()">'
+    +'<div class="nbx-title">'+d.title+'</div>'
+    +'<div class="nbx-date">'+d.date+' &bull; Unit '+d.apUnit+'</div>'
+    +'<div class="heatmap-row" style="justify-content:center;margin:var(--space-sm) 0">'
+    +LENS_KEYS.map(k=>{const s=(d.geoSprite&&d.geoSprite[k])?d.geoSprite[k].score:0;return '<div class="heat-cell heat-'+s+'" style="background:'+LENS_COLORS[k]+'">'+s+'</div>';}).join('')
+    +'</div>'
+    +'<div class="nbx-hook">'+d.funnyHook+'</div>'
+    +'<div class="nbx-hint">Tap to reveal the hook</div>'
+    +'</div>'
+    +'<div class="nbx-controls">'
+    +'<button class="btn" onclick="prevNBX()">&#8592; Previous</button>'
+    +'<button class="btn" onclick="shuffleNBX()">&#128256; Shuffle</button>'
+    +'<button class="btn" onclick="nextNBX()">Next &#8594;</button>'
+    +'</div></div>';
+}
+function revealNBX(){document.getElementById('nbxCard').classList.toggle('revealed');}
+function nextNBX(){nbxIndex++;renderNBX(document.getElementById('nbxView'));}
+function prevNBX(){if(nbxIndex>0)nbxIndex--;renderNBX(document.getElementById('nbxView'));}
+function shuffleNBX(){nbxShuffled.sort(()=>Math.random()-0.5);nbxIndex=0;renderNBX(document.getElementById('nbxView'));}
+
+init();
+</script>
+<script src="/euro/euro-ai-chat.js"></script>
+<script src="/euro/euro-sounds.js"></script>
+</body>
+</html>

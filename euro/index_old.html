@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AP European History Master Timeline | Noteworthy News</title>
+<meta name="description" content="Interactive AP European History master timeline covering c. 1450 to the present. Explore 500+ events across 9 AP units with swimlanes, filters, and study tools.">
+<link rel="stylesheet" href="/v2/styles/tokens.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@400;500;600;700;800&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+/* ── Reset & Base ──────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  font-family:var(--font-ui);
+  background:var(--color-bg);
+  color:var(--color-text);
+  line-height:var(--leading-normal);
+  overflow-x:hidden;
+  min-height:100vh;
+}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select{font-family:inherit;color:inherit}
+a{color:var(--color-accent);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ── AP Unit Colors ────────────────────────────── */
+:root{
+  --unit1:#D4A84B;--unit2:#E07B42;--unit3:#C45A5A;
+  --unit4:#4DA8A8;--unit5:#B84040;--unit6:#6B8DB5;
+  --unit7:#8FA85A;--unit8:#7A8B9A;--unit9:#9B7DB8;
+}
+
+/* ── Layout Shell ──────────────────────────────── */
+.app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+/* ── Header ────────────────────────────────────── */
+.app-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:var(--space-sm) var(--space-lg);
+  background:var(--color-bg-secondary);
+  border-bottom:1px solid var(--color-border);
+  flex-shrink:0;z-index:var(--z-sticky);
+  min-height:var(--header-height);
+}
+.app-header h1{
+  font-family:var(--font-heading);font-size:var(--text-lg);
+  font-weight:var(--weight-bold);letter-spacing:var(--tracking-tight);
+  display:flex;align-items:center;gap:var(--space-sm);
+}
+.app-header h1 .subtitle{
+  font-size:var(--text-xs);font-weight:var(--weight-medium);
+  color:var(--color-text-secondary);letter-spacing:var(--tracking-wide);
+  text-transform:uppercase;
+}
+.header-right{display:flex;align-items:center;gap:var(--space-sm)}
+
+/* ── Toolbar ───────────────────────────────────── */
+.toolbar{
+  display:flex;align-items:center;gap:var(--space-sm);
+  padding:var(--space-xs) var(--space-lg);
+  background:var(--color-bg-elevated);
+  border-bottom:1px solid var(--color-border);
+  flex-shrink:0;flex-wrap:wrap;
+}
+.toolbar-group{display:flex;align-items:center;gap:var(--space-xs)}
+.toolbar-sep{width:1px;height:20px;background:var(--color-border);margin:0 var(--space-xs)}
+
+.btn{
+  display:inline-flex;align-items:center;gap:var(--space-xs);
+  padding:var(--space-xs) var(--space-sm);
+  border-radius:var(--radius-md);font-size:var(--text-xs);
+  font-weight:var(--weight-semibold);
+  background:rgba(240,242,245,0.05);
+  border:1px solid var(--color-border);
+  transition:all var(--duration-fast) var(--ease-out);
+  white-space:nowrap;
+}
+.btn:hover{background:rgba(240,242,245,0.1);border-color:var(--color-border-hover)}
+.btn.active{background:var(--color-accent-muted);border-color:var(--color-accent-border);color:var(--color-accent)}
+.btn-icon{padding:var(--space-xs);aspect-ratio:1;justify-content:center}
+
+.search-box{
+  display:flex;align-items:center;gap:var(--space-xs);
+  background:rgba(240,242,245,0.05);border:1px solid var(--color-border);
+  border-radius:var(--radius-md);padding:0 var(--space-sm);
+}
+.search-box input{
+  background:none;border:none;outline:none;
+  font-size:var(--text-xs);padding:var(--space-xs) 0;
+  width:160px;color:var(--color-text);
+}
+.search-box input::placeholder{color:var(--color-text-muted)}
+
+/* ── Main Content Area ─────────────────────────── */
+.main-area{display:flex;flex:1;overflow:hidden;position:relative}
+
+/* ── Filter Sidebar ────────────────────────────── */
+.filter-sidebar{
+  width:240px;flex-shrink:0;
+  background:var(--color-bg-secondary);
+  border-right:1px solid var(--color-border);
+  overflow-y:auto;padding:var(--space-md);
+  display:flex;flex-direction:column;gap:var(--space-md);
+  transition:margin-left var(--duration-normal) var(--ease-out);
+}
+.filter-sidebar.collapsed{margin-left:-240px}
+.filter-section h3{
+  font-size:var(--text-2xs);font-weight:var(--weight-bold);
+  text-transform:uppercase;letter-spacing:var(--tracking-wider);
+  color:var(--color-text-muted);margin-bottom:var(--space-xs);
+}
+.filter-group{display:flex;flex-direction:column;gap:2px}
+.filter-item{
+  display:flex;align-items:center;gap:var(--space-xs);
+  padding:3px var(--space-xs);border-radius:var(--radius-sm);
+  font-size:var(--text-xs);cursor:pointer;
+  transition:background var(--duration-fast) var(--ease-out);
+}
+.filter-item:hover{background:rgba(240,242,245,0.05)}
+.filter-item input[type="checkbox"]{
+  width:14px;height:14px;accent-color:var(--color-accent);cursor:pointer;
+}
+.filter-item .color-dot{
+  width:10px;height:10px;border-radius:50%;flex-shrink:0;
+}
+.filter-count{
+  margin-left:auto;font-size:var(--text-2xs);
+  color:var(--color-text-muted);font-variant-numeric:tabular-nums;
+}
+
+/* ── Timeline Container ────────────────────────── */
+.timeline-container{
+  flex:1;display:flex;flex-direction:column;overflow:hidden;
+  position:relative;
+}
+
+/* ── Ruler ─────────────────────────────────────── */
+.ruler{
+  flex-shrink:0;height:56px;position:relative;
+  background:var(--color-bg-elevated);
+  border-bottom:1px solid var(--color-border);
+  overflow:hidden;
+}
+.ruler-track{position:absolute;top:0;left:0;height:100%;display:flex;flex-direction:column}
+.ruler-units{display:flex;height:24px}
+.ruler-unit{
+  height:100%;display:flex;align-items:center;justify-content:center;
+  font-size:var(--text-2xs);font-weight:var(--weight-semibold);
+  letter-spacing:var(--tracking-wide);cursor:pointer;
+  border-right:1px solid rgba(240,242,245,0.08);
+  transition:filter var(--duration-fast);
+  overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+  padding:0 4px;
+}
+.ruler-unit:hover{filter:brightness(1.3)}
+.ruler-ticks{position:relative;height:32px}
+.ruler-tick{
+  position:absolute;top:0;height:100%;
+  border-left:1px solid rgba(240,242,245,0.08);
+}
+.ruler-tick-label{
+  position:absolute;top:2px;left:4px;
+  font-size:9px;color:var(--color-text-muted);
+  white-space:nowrap;font-variant-numeric:tabular-nums;
+}
+.ruler-tick.major{border-left-color:rgba(240,242,245,0.15)}
+.ruler-tick.major .ruler-tick-label{color:var(--color-text-secondary);font-weight:var(--weight-medium)}
+
+/* ── Watershed Lines ───────────────────────────── */
+.watershed{
+  position:absolute;top:0;bottom:0;width:0;
+  border-left:1.5px dashed rgba(240,242,245,0.18);
+  z-index:2;pointer-events:none;
+}
+.watershed-label{
+  position:absolute;top:-18px;left:50%;transform:translateX(-50%);
+  font-size:9px;font-weight:var(--weight-bold);
+  color:var(--color-text-secondary);
+  background:var(--color-bg-elevated);
+  padding:1px 4px;border-radius:var(--radius-xs);
+  white-space:nowrap;
+}
+
+/* ── Swimlanes ─────────────────────────────────── */
+.swimlanes-viewport{
+  flex:1;overflow:auto;position:relative;
+}
+.swimlanes-scroll{position:relative;min-height:100%}
+.swimlane{
+  position:relative;
+  border-bottom:1px solid var(--color-border);
+  min-height:60px;
+}
+.swimlane-label{
+  position:sticky;left:0;z-index:3;
+  display:inline-flex;align-items:center;gap:var(--space-xs);
+  background:var(--glass-bg);backdrop-filter:var(--glass-blur);
+  padding:var(--space-xs) var(--space-sm);
+  font-size:var(--text-2xs);font-weight:var(--weight-bold);
+  text-transform:uppercase;letter-spacing:var(--tracking-wider);
+  color:var(--color-text-muted);
+  border-radius:0 var(--radius-sm) var(--radius-sm) 0;
+  margin-top:var(--space-xs);pointer-events:none;
+}
+.swimlane-content{position:relative;width:100%;height:100%;min-height:60px}
+
+/* ── Process Bars ──────────────────────────────── */
+.process-bar{
+  position:absolute;height:18px;
+  border-radius:var(--radius-sm);
+  display:flex;align-items:center;
+  padding:0 6px;overflow:hidden;
+  font-size:9px;font-weight:var(--weight-semibold);
+  white-space:nowrap;cursor:pointer;
+  transition:filter var(--duration-fast),opacity var(--duration-fast);
+  z-index:1;
+}
+.process-bar:hover{filter:brightness(1.3);z-index:5}
+.process-bar .bar-label{overflow:hidden;text-overflow:ellipsis}
+
+/* ── Event Pins ────────────────────────────────── */
+.event-pin{
+  position:absolute;border-radius:50%;
+  cursor:pointer;z-index:2;
+  transition:transform var(--duration-fast),box-shadow var(--duration-fast);
+  display:flex;align-items:center;justify-content:center;
+}
+.event-pin:hover{transform:scale(1.6);z-index:10;box-shadow:0 0 8px rgba(240,242,245,0.3)}
+.event-pin.tier1{width:12px;height:12px}
+.event-pin.tier2{width:8px;height:8px}
+.event-pin.tier3{width:5px;height:5px}
+.event-pin.turning-point{border-radius:1px;transform:rotate(45deg)}
+.event-pin.turning-point:hover{transform:rotate(45deg) scale(1.6)}
+
+.event-label{
+  position:absolute;left:calc(100% + 4px);top:50%;transform:translateY(-50%);
+  font-size:9px;white-space:nowrap;color:var(--color-text-secondary);
+  pointer-events:none;font-weight:var(--weight-medium);
+}
+
+/* ── Tooltip ───────────────────────────────────── */
+.tooltip{
+  position:fixed;z-index:var(--z-modal);
+  background:var(--color-bg-card);
+  border:1px solid var(--color-border-hover);
+  border-radius:var(--radius-lg);
+  padding:var(--space-sm) var(--space-md);
+  max-width:320px;pointer-events:none;
+  box-shadow:var(--shadow-xl);
+  opacity:0;transition:opacity var(--duration-fast);
+}
+.tooltip.visible{opacity:1}
+.tooltip-title{font-weight:var(--weight-bold);font-size:var(--text-sm);margin-bottom:2px}
+.tooltip-date{font-size:var(--text-xs);color:var(--color-accent)}
+.tooltip-desc{font-size:var(--text-xs);color:var(--color-text-secondary);margin-top:4px}
+.tooltip-tier{
+  display:inline-block;padding:1px 6px;border-radius:var(--radius-full);
+  font-size:9px;font-weight:var(--weight-bold);margin-left:var(--space-xs);
+}
+
+/* ── Detail Panel ──────────────────────────────── */
+.detail-panel{
+  position:fixed;right:0;top:0;bottom:0;width:420px;
+  background:var(--color-bg-secondary);
+  border-left:1px solid var(--color-border);
+  z-index:var(--z-overlay);
+  transform:translateX(100%);transition:transform var(--duration-slow) var(--ease-out);
+  display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:-4px 0 24px rgba(0,0,0,0.4);
+}
+.detail-panel.open{transform:translateX(0)}
+.detail-header{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  padding:var(--space-md) var(--space-lg);
+  border-bottom:1px solid var(--color-border);
+  flex-shrink:0;
+}
+.detail-header h2{font-family:var(--font-heading);font-size:var(--text-xl);line-height:var(--leading-tight)}
+.detail-close{
+  width:32px;height:32px;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--radius-md);font-size:var(--text-lg);
+  background:rgba(240,242,245,0.05);flex-shrink:0;
+}
+.detail-close:hover{background:rgba(240,242,245,0.1)}
+.detail-body{flex:1;overflow-y:auto;padding:var(--space-md) var(--space-lg)}
+.detail-section{margin-bottom:var(--space-md)}
+.detail-section h4{
+  font-size:var(--text-2xs);font-weight:var(--weight-bold);
+  text-transform:uppercase;letter-spacing:var(--tracking-wider);
+  color:var(--color-text-muted);margin-bottom:var(--space-xs);
+}
+.detail-section p,.detail-section li{font-size:var(--text-sm);color:var(--color-text-secondary);line-height:var(--leading-relaxed)}
+.detail-section ul{list-style:none;padding:0}
+.detail-section li{padding-left:var(--space-md);position:relative}
+.detail-section li::before{
+  content:"";position:absolute;left:0;top:9px;
+  width:6px;height:6px;border-radius:50%;background:var(--color-accent);
+}
+.detail-tags{display:flex;flex-wrap:wrap;gap:4px}
+.detail-tag{
+  padding:2px 8px;border-radius:var(--radius-full);
+  font-size:var(--text-2xs);font-weight:var(--weight-semibold);
+  background:rgba(240,242,245,0.05);border:1px solid var(--color-border);
+}
+.detail-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:2px 10px;border-radius:var(--radius-full);
+  font-size:var(--text-2xs);font-weight:var(--weight-bold);
+}
+.exam-use-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.exam-chip{
+  padding:4px 8px;border-radius:var(--radius-sm);
+  font-size:var(--text-2xs);font-weight:var(--weight-semibold);
+  text-align:center;
+}
+.exam-chip.on{background:var(--color-accent-muted);color:var(--color-accent);border:1px solid var(--color-accent-border)}
+.exam-chip.off{background:rgba(240,242,245,0.03);color:var(--color-text-muted);border:1px solid var(--color-border)}
+
+/* ── Dense Table View ──────────────────────────── */
+.table-view{
+  display:none;flex:1;overflow:auto;
+  padding:var(--space-md);
+}
+.table-view.active{display:block}
+.data-table{
+  width:100%;border-collapse:collapse;font-size:var(--text-xs);
+}
+.data-table th{
+  position:sticky;top:0;z-index:3;
+  background:var(--color-bg-elevated);
+  padding:var(--space-xs) var(--space-sm);
+  text-align:left;font-weight:var(--weight-bold);
+  font-size:var(--text-2xs);text-transform:uppercase;
+  letter-spacing:var(--tracking-wide);
+  color:var(--color-text-muted);
+  border-bottom:2px solid var(--color-border);
+  cursor:pointer;white-space:nowrap;
+  user-select:none;
+}
+.data-table th:hover{color:var(--color-text-secondary)}
+.data-table th .sort-arrow{margin-left:4px;opacity:0.4}
+.data-table th.sorted .sort-arrow{opacity:1;color:var(--color-accent)}
+.data-table td{
+  padding:var(--space-xs) var(--space-sm);
+  border-bottom:1px solid var(--color-border);
+  vertical-align:top;
+}
+.data-table tr:hover td{background:rgba(240,242,245,0.03)}
+.data-table .unit-cell{
+  font-weight:var(--weight-bold);font-size:var(--text-2xs);
+  white-space:nowrap;
+}
+.tier-dot{
+  display:inline-block;width:8px;height:8px;border-radius:50%;
+  vertical-align:middle;margin-right:4px;
+}
+.tier-dot.t1{background:var(--color-accent)}
+.tier-dot.t2{background:var(--color-warning)}
+.tier-dot.t3{background:var(--color-text-muted)}
+
+/* ── Legend ─────────────────────────────────────── */
+.legend-overlay{
+  position:fixed;inset:0;z-index:var(--z-modal);
+  background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);
+  display:none;align-items:center;justify-content:center;
+}
+.legend-overlay.open{display:flex}
+.legend-box{
+  background:var(--color-bg-card);border:1px solid var(--color-border);
+  border-radius:var(--radius-xl);padding:var(--space-xl);
+  max-width:600px;width:90%;max-height:80vh;overflow-y:auto;
+}
+.legend-box h2{font-family:var(--font-heading);font-size:var(--text-2xl);margin-bottom:var(--space-md)}
+.legend-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-md)}
+.legend-section h4{
+  font-size:var(--text-2xs);font-weight:var(--weight-bold);
+  text-transform:uppercase;letter-spacing:var(--tracking-wider);
+  color:var(--color-text-muted);margin-bottom:var(--space-xs);
+}
+.legend-item{display:flex;align-items:center;gap:var(--space-xs);font-size:var(--text-xs);margin-bottom:4px}
+.legend-swatch{width:24px;height:12px;border-radius:var(--radius-xs);flex-shrink:0}
+.legend-pin{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.legend-diamond{width:10px;height:10px;border-radius:1px;transform:rotate(45deg);flex-shrink:0}
+.legend-bar{width:40px;height:10px;border-radius:var(--radius-xs);flex-shrink:0;opacity:0.6}
+.legend-watershed{width:24px;height:0;border-top:1.5px dashed var(--color-text-secondary);flex-shrink:0}
+
+/* ── Zoom Control ──────────────────────────────── */
+.zoom-controls{
+  display:flex;align-items:center;gap:var(--space-xs);
+}
+.zoom-slider{
+  width:100px;height:4px;-webkit-appearance:none;appearance:none;
+  background:var(--color-border);border-radius:2px;outline:none;
+}
+.zoom-slider::-webkit-slider-thumb{
+  -webkit-appearance:none;width:14px;height:14px;
+  border-radius:50%;background:var(--color-accent);cursor:pointer;
+}
+
+/* ── Status Bar ────────────────────────────────── */
+.status-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:var(--space-xs) var(--space-lg);
+  background:var(--color-bg-secondary);
+  border-top:1px solid var(--color-border);
+  font-size:var(--text-2xs);color:var(--color-text-muted);
+  flex-shrink:0;
+}
+
+/* ── Overlay for backdrop clicks ───────────────── */
+.detail-backdrop{
+  position:fixed;inset:0;z-index:calc(var(--z-overlay) - 1);
+  display:none;
+}
+.detail-backdrop.open{display:block}
+
+/* ── Responsive ────────────────────────────────── */
+@media(max-width:768px){
+  .filter-sidebar{width:200px}
+  .filter-sidebar.collapsed{margin-left:-200px}
+  .detail-panel{width:100%}
+  .toolbar{padding:var(--space-xs) var(--space-sm)}
+  .search-box input{width:100px}
+}
+
+/* ── Print Poster ──────────────────────────────── */
+@media print{
+  body{background:#fff !important;color:#111 !important;font-size:7pt !important}
+  .app{height:auto;overflow:visible}
+  .app-header,.toolbar,.filter-sidebar,.status-bar,.detail-panel,.detail-backdrop,.legend-overlay,.tooltip,.zoom-controls{display:none !important}
+  .main-area{display:block;overflow:visible}
+  .timeline-container{overflow:visible}
+  .ruler{height:auto;background:#fff !important;border-bottom:2px solid #333;position:relative;overflow:visible}
+  .ruler-unit{border-color:#ccc;color:#333;font-size:6pt}
+  .swimlanes-viewport{overflow:visible}
+  .swimlane{border-bottom:1px solid #ccc;page-break-inside:avoid}
+  .swimlane-label{background:#f5f5f5 !important;color:#333 !important;backdrop-filter:none}
+  .process-bar{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  .event-pin{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  .watershed{border-left-color:#999}
+  .table-view{display:block !important;overflow:visible}
+  .data-table th{background:#f5f5f5 !important;color:#333 !important}
+  .data-table td{border-color:#ddd}
+  @page{size:landscape;margin:0.5cm}
+}
+
+/* ── Loading State ─────────────────────────────── */
+.loading-screen{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  flex:1;gap:var(--space-md);
+}
+.loading-spinner{
+  width:32px;height:32px;border:3px solid var(--color-border);
+  border-top-color:var(--color-accent);border-radius:50%;
+  animation:spin 0.8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- Header -->
+  <header class="app-header">
+    <h1>
+      <a href="/" style="color:inherit;text-decoration:none">Noteworthy News</a>
+      <span class="subtitle">AP European History Master Timeline</span>
+    </h1>
+    <div class="header-right">
+      <button class="btn" id="btnLegend" title="Legend">Legend</button>
+      <a href="/" class="btn" style="text-decoration:none">Home</a>
+    </div>
+  </header>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="toolbar-group" role="tablist" aria-label="View modes">
+      <button class="btn active" data-view="overview" role="tab" aria-selected="true">Overview</button>
+      <button class="btn" data-view="unit" role="tab">Unit View</button>
+      <button class="btn" data-view="table" role="tab">Dense Table</button>
+    </div>
+    <div class="toolbar-sep"></div>
+    <div class="toolbar-group">
+      <button class="btn btn-icon" id="btnToggleFilters" title="Toggle filters">&#9776;</button>
+      <div class="search-box">
+        <span style="font-size:var(--text-xs);color:var(--color-text-muted)">&#128269;</span>
+        <input type="text" id="searchInput" placeholder="Search events..." aria-label="Search timeline events">
+      </div>
+    </div>
+    <div class="toolbar-sep"></div>
+    <div class="toolbar-group zoom-controls">
+      <button class="btn btn-icon" id="btnZoomOut" title="Zoom out">&#8722;</button>
+      <input type="range" class="zoom-slider" id="zoomSlider" min="1" max="20" value="4" step="0.5" aria-label="Timeline zoom level">
+      <button class="btn btn-icon" id="btnZoomIn" title="Zoom in">&#43;</button>
+    </div>
+    <div class="toolbar-sep"></div>
+    <div class="toolbar-group" id="unitNav" style="display:none">
+      <button class="btn" id="btnPrevUnit" title="Previous unit">&larr; Prev</button>
+      <span id="unitNavLabel" style="font-size:var(--text-xs);font-weight:var(--weight-semibold);min-width:80px;text-align:center"></span>
+      <button class="btn" id="btnNextUnit" title="Next unit">Next &rarr;</button>
+    </div>
+    <div style="flex:1"></div>
+    <button class="btn" id="btnPrint" title="Print poster layout">Print Poster</button>
+  </div>
+
+  <!-- Main Area -->
+  <div class="main-area">
+
+    <!-- Filter Sidebar -->
+    <aside class="filter-sidebar" id="filterSidebar">
+      <div class="filter-section">
+        <h3>AP Unit</h3>
+        <div class="filter-group" id="filterUnits"></div>
+      </div>
+      <div class="filter-section">
+        <h3>Importance</h3>
+        <div class="filter-group" id="filterTiers"></div>
+      </div>
+      <div class="filter-section">
+        <h3>Category</h3>
+        <div class="filter-group" id="filterCategories"></div>
+      </div>
+      <div class="filter-section">
+        <h3>Region</h3>
+        <div class="filter-group" id="filterRegions"></div>
+      </div>
+      <div class="filter-section">
+        <h3>AP Theme</h3>
+        <div class="filter-group" id="filterThemes"></div>
+      </div>
+    </aside>
+
+    <!-- Timeline (overview / unit views) -->
+    <div class="timeline-container" id="timelineContainer">
+      <div class="ruler" id="ruler">
+        <div class="ruler-track" id="rulerTrack">
+          <div class="ruler-units" id="rulerUnits"></div>
+          <div class="ruler-ticks" id="rulerTicks"></div>
+        </div>
+      </div>
+      <div class="swimlanes-viewport" id="swimlanesViewport">
+        <div class="swimlanes-scroll" id="swimlanesScroll"></div>
+      </div>
+      <div class="loading-screen" id="loadingScreen">
+        <div class="loading-spinner"></div>
+        <div style="font-size:var(--text-sm);color:var(--color-text-secondary)">Loading timeline data...</div>
+      </div>
+    </div>
+
+    <!-- Dense Table View -->
+    <div class="table-view" id="tableView">
+      <table class="data-table" id="dataTable">
+        <thead>
+          <tr>
+            <th data-sort="date">Date <span class="sort-arrow">&#9650;</span></th>
+            <th data-sort="title">Title <span class="sort-arrow">&#9650;</span></th>
+            <th data-sort="apUnit">Unit <span class="sort-arrow">&#9650;</span></th>
+            <th data-sort="tier">Tier <span class="sort-arrow">&#9650;</span></th>
+            <th data-sort="category">Category <span class="sort-arrow">&#9650;</span></th>
+            <th data-sort="region">Region <span class="sort-arrow">&#9650;</span></th>
+            <th>Description</th>
+            <th>Why It Matters</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Status Bar -->
+  <footer class="status-bar">
+    <span id="statusCount">0 entries loaded</span>
+    <span id="statusFilter">No filters active</span>
+    <span>c. 1450 – Present | 9 AP Units</span>
+  </footer>
+</div>
+
+<!-- Detail Panel -->
+<div class="detail-backdrop" id="detailBackdrop"></div>
+<div class="detail-panel" id="detailPanel">
+  <div class="detail-header">
+    <div>
+      <h2 id="detailTitle">—</h2>
+      <div style="margin-top:4px" id="detailMeta"></div>
+    </div>
+    <button class="detail-close" id="detailClose">&times;</button>
+  </div>
+  <div class="detail-body" id="detailBody"></div>
+</div>
+
+<!-- Tooltip -->
+<div class="tooltip" id="tooltip"></div>
+
+<!-- Legend Overlay -->
+<div class="legend-overlay" id="legendOverlay">
+  <div class="legend-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-md)">
+      <h2>Legend</h2>
+      <button class="btn" id="legendClose">&times; Close</button>
+    </div>
+    <div class="legend-grid">
+      <div class="legend-section">
+        <h4>AP Units</h4>
+        <div class="legend-item"><div class="legend-swatch" style="background:var(--unit1)"></div>Unit 1: Renaissance & Exploration</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:var(--unit2)"></div>Unit 2: Age of Reformation</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:var(--unit3)"></div>Unit 3: Absolutism & Constitutionalism</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:var(--unit4)"></div>Unit 4: Scientific & Philosophical</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:var(--unit5)"></div>Unit 5: Late 18th C. Conflict</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:var(--unit6)"></div>Unit 6: Industrialization</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:var(--unit7)"></div>Unit 7: 19th C. Perspectives</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:var(--unit8)"></div>Unit 8: 20th C. Global Conflicts</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:var(--unit9)"></div>Unit 9: Cold War & Contemporary</div>
+      </div>
+      <div>
+        <div class="legend-section">
+          <h4>Importance Tiers</h4>
+          <div class="legend-item"><div class="legend-pin tier-dot t1"></div>Tier 1 — Must know cold</div>
+          <div class="legend-item"><div class="legend-pin tier-dot t2" style="width:8px;height:8px"></div>Tier 2 — Important context</div>
+          <div class="legend-item"><div class="legend-pin tier-dot t3" style="width:5px;height:5px"></div>Tier 3 — Enrichment / complexity</div>
+        </div>
+        <div class="legend-section" style="margin-top:var(--space-md)">
+          <h4>Visual Elements</h4>
+          <div class="legend-item"><div class="legend-pin" style="background:var(--color-accent);width:10px;height:10px"></div>Event pin</div>
+          <div class="legend-item"><div class="legend-diamond" style="background:var(--color-accent)"></div>Turning-point marker</div>
+          <div class="legend-item"><div class="legend-bar" style="background:var(--color-accent)"></div>Process / period bar</div>
+          <div class="legend-item"><div class="legend-watershed"></div>Watershed year line</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════
+   AP Euro Master Timeline — Interactive Engine
+   ══════════════════════════════════════════════════ */
+
+const UNIT_COLORS = ['','#D4A84B','#E07B42','#C45A5A','#4DA8A8','#B84040','#6B8DB5','#8FA85A','#7A8B9A','#9B7DB8'];
+const UNIT_NAMES = ['',
+  'Renaissance & Exploration','Age of Reformation',
+  'Absolutism & Constitutionalism','Scientific & Philosophical',
+  'Late 18th C. Conflict','Industrialization',
+  '19th C. Perspectives','20th C. Global Conflicts',
+  'Cold War & Contemporary'
+];
+const UNIT_RANGES = [null,
+  [1350,1648],[1500,1648],[1589,1725],[1543,1800],
+  [1648,1815],[1750,1900],[1815,1914],[1914,1945],[1945,2026]
+];
+const SWIMLANE_KEYS = [
+  'political','war-diplomacy','religion','economic','social',
+  'intellectual','scientific','artistic','imperial','nationalism'
+];
+const SWIMLANE_LABELS = [
+  'State Power / Politics','Wars / Diplomacy','Religion',
+  'Economy / Commerce / Industry','Social / Class / Gender',
+  'Intellectual / Philosophical','Science / Technology',
+  'Art / Literature / Culture','Imperialism / Global','Nationalism / Identity'
+];
+const WATERSHED_YEARS = [1453,1492,1517,1648,1688,1789,1815,1848,1871,1914,1917,1919,1933,1939,1945,1989,1991];
+const THEME_LABELS = {
+  'INT':'Interaction of Europe & World','ECON':'Economic & Commercial',
+  'CID':'Cultural & Intellectual','SOP':'States & Power',
+  'SOD':'Social Organization','NEI':'National & European Identity',
+  'TSI':'Technological & Scientific'
+};
+const CATEGORY_LABELS = {
+  'political':'Political / State-building','war-diplomacy':'War / Diplomacy',
+  'religion':'Religion','economic':'Economic / Commercial',
+  'social':'Social / Gender / Class','intellectual':'Intellectual / Philosophical',
+  'artistic':'Artistic / Cultural','scientific':'Scientific / Technological',
+  'imperial':'Imperial / Global','nationalism':'Nationalism / Identity'
+};
+
+const PROCESS_DEFS = [
+  {id:'proc-renaissance',title:'Renaissance',lane:'artistic',start:1350,end:1600,unit:1},
+  {id:'proc-reformation',title:'Reformation',lane:'religion',start:1517,end:1648,unit:2},
+  {id:'proc-catholic-reform',title:'Catholic Reformation',lane:'religion',start:1545,end:1648,unit:2},
+  {id:'proc-commercial-rev',title:'Commercial Revolution',lane:'economic',start:1450,end:1700,unit:1},
+  {id:'proc-scientific-rev',title:'Scientific Revolution',lane:'scientific',start:1543,end:1700,unit:4},
+  {id:'proc-enlightenment',title:'Enlightenment',lane:'intellectual',start:1685,end:1800,unit:4},
+  {id:'proc-absolutism',title:'Absolutism',lane:'political',start:1589,end:1789,unit:3},
+  {id:'proc-constitutionalism',title:'Constitutionalism',lane:'political',start:1628,end:1800,unit:3},
+  {id:'proc-atlantic-revs',title:'Atlantic Revolutions',lane:'political',start:1775,end:1848,unit:5},
+  {id:'proc-industrial-rev',title:'Industrial Revolution',lane:'economic',start:1760,end:1900,unit:6},
+  {id:'proc-romanticism',title:'Romanticism',lane:'artistic',start:1780,end:1850,unit:7},
+  {id:'proc-liberalism',title:'Liberalism',lane:'intellectual',start:1776,end:1914,unit:7},
+  {id:'proc-conservatism',title:'Conservatism',lane:'intellectual',start:1789,end:1914,unit:7},
+  {id:'proc-socialism',title:'Socialism',lane:'intellectual',start:1830,end:1991,unit:7},
+  {id:'proc-nationalism',title:'Nationalism',lane:'nationalism',start:1789,end:1945,unit:7},
+  {id:'proc-imperialism',title:'New Imperialism',lane:'imperial',start:1870,end:1945,unit:7},
+  {id:'proc-mass-politics',title:'Mass Politics',lane:'political',start:1870,end:1939,unit:7},
+  {id:'proc-modernism',title:'Modernism',lane:'artistic',start:1870,end:1945,unit:7},
+  {id:'proc-totalitarianism',title:'Totalitarianism',lane:'political',start:1922,end:1953,unit:8},
+  {id:'proc-cold-war',title:'Cold War',lane:'war-diplomacy',start:1947,end:1991,unit:9},
+  {id:'proc-decolonization',title:'Decolonization',lane:'imperial',start:1945,end:1975,unit:9},
+  {id:'proc-european-integration',title:'European Integration',lane:'political',start:1951,end:2026,unit:9},
+  {id:'proc-globalization',title:'Post-1991 Globalization',lane:'economic',start:1991,end:2026,unit:9},
+];
+
+let DATA = [];
+let filteredData = [];
+let currentView = 'overview';
+let currentUnit = 1;
+let zoomLevel = 4;
+let sortCol = 'startYear';
+let sortAsc = true;
+let filtersActive = {units:new Set(),tiers:new Set(),categories:new Set(),regions:new Set(),themes:new Set()};
+
+const START_YEAR = 1340;
+const END_YEAR = 2030;
+const yearSpan = END_YEAR - START_YEAR;
+
+function yearToX(year){
+  return ((year - START_YEAR) / yearSpan) * getTimelineWidth();
+}
+function getTimelineWidth(){return yearSpan * zoomLevel * 2;}
+
+/* ── DOM refs ────────────────────────────────── */
+const $=s=>document.querySelector(s);
+const $$=s=>document.querySelectorAll(s);
+const rulerTrack=$('#rulerTrack');
+const rulerUnits=$('#rulerUnits');
+const rulerTicks=$('#rulerTicks');
+const swimlanesScroll=$('#swimlanesScroll');
+const swimlanesViewport=$('#swimlanesViewport');
+const tooltip=$('#tooltip');
+const detailPanel=$('#detailPanel');
+const detailBackdrop=$('#detailBackdrop');
+const tableBody=$('#tableBody');
+const loadingScreen=$('#loadingScreen');
+const timelineContainer=$('#timelineContainer');
+const tableView=$('#tableView');
+
+/* ── Init ────────────────────────────────────── */
+async function init(){
+  try{
+    const resp=await fetch('timeline_data.json');
+    DATA=await resp.json();
+  }catch(e){
+    loadingScreen.innerHTML='<div style="color:var(--color-error)">Failed to load timeline data.</div>';
+    return;
+  }
+  loadingScreen.style.display='none';
+  buildFilters();
+  applyFilters();
+  renderCurrentView();
+  bindEvents();
+  updateStatus();
+}
+
+/* ── Filters ─────────────────────────────────── */
+function buildFilters(){
+  const fUnits=$('#filterUnits');
+  for(let i=1;i<=9;i++){
+    const count=DATA.filter(d=>d.apUnit===i).length;
+    fUnits.innerHTML+=`<label class="filter-item"><input type="checkbox" data-filter="units" value="${i}" checked><span class="color-dot" style="background:${UNIT_COLORS[i]}"></span>Unit ${i}<span class="filter-count">${count}</span></label>`;
+    filtersActive.units.add(i);
+  }
+  const fTiers=$('#filterTiers');
+  [1,2,3].forEach(t=>{
+    const count=DATA.filter(d=>d.tier===t).length;
+    const labels=['','Must know','Important','Enrichment'];
+    fTiers.innerHTML+=`<label class="filter-item"><input type="checkbox" data-filter="tiers" value="${t}" checked>Tier ${t}: ${labels[t]}<span class="filter-count">${count}</span></label>`;
+    filtersActive.tiers.add(t);
+  });
+  const allCats=new Set();DATA.forEach(d=>(d.category||[]).forEach(c=>allCats.add(c)));
+  const fCats=$('#filterCategories');
+  [...allCats].sort().forEach(c=>{
+    const count=DATA.filter(d=>(d.category||[]).includes(c)).length;
+    fCats.innerHTML+=`<label class="filter-item"><input type="checkbox" data-filter="categories" value="${c}" checked>${CATEGORY_LABELS[c]||c}<span class="filter-count">${count}</span></label>`;
+    filtersActive.categories.add(c);
+  });
+  const allRegions=new Set();DATA.forEach(d=>(d.region||[]).forEach(r=>allRegions.add(r)));
+  const fRegions=$('#filterRegions');
+  [...allRegions].sort().forEach(r=>{
+    const count=DATA.filter(d=>(d.region||[]).includes(r)).length;
+    fRegions.innerHTML+=`<label class="filter-item"><input type="checkbox" data-filter="regions" value="${r}" checked>${r}<span class="filter-count">${count}</span></label>`;
+    filtersActive.regions.add(r);
+  });
+  const allThemes=new Set();DATA.forEach(d=>(d.apTheme||[]).forEach(t=>allThemes.add(t)));
+  const fThemes=$('#filterThemes');
+  [...allThemes].sort().forEach(t=>{
+    const count=DATA.filter(d=>(d.apTheme||[]).includes(t)).length;
+    fThemes.innerHTML+=`<label class="filter-item"><input type="checkbox" data-filter="themes" value="${t}" checked>${THEME_LABELS[t]||t}<span class="filter-count">${count}</span></label>`;
+    filtersActive.themes.add(t);
+  });
+}
+
+function applyFilters(){
+  const search=($('#searchInput').value||'').toLowerCase();
+  filteredData=DATA.filter(d=>{
+    if(!filtersActive.units.has(d.apUnit))return false;
+    if(!filtersActive.tiers.has(d.tier))return false;
+    if(filtersActive.categories.size>0&&(d.category||[]).length>0){
+      if(!(d.category||[]).some(c=>filtersActive.categories.has(c)))return false;
+    }
+    if(filtersActive.regions.size>0&&(d.region||[]).length>0){
+      if(!(d.region||[]).some(r=>filtersActive.regions.has(r)))return false;
+    }
+    if(filtersActive.themes.size>0&&(d.apTheme||[]).length>0){
+      if(!(d.apTheme||[]).some(t=>filtersActive.themes.has(t)))return false;
+    }
+    if(search){
+      const hay=(d.title+' '+d.description+' '+(d.memoryHook||'')).toLowerCase();
+      if(!hay.includes(search))return false;
+    }
+    return true;
+  });
+  if(currentView==='unit'){
+    filteredData=filteredData.filter(d=>d.apUnit===currentUnit);
+  }
+}
+
+/* ── Render ───────────────────────────────────── */
+function renderCurrentView(){
+  timelineContainer.style.display=(currentView==='table')?'none':'flex';
+  tableView.classList.toggle('active',currentView==='table');
+  $('#unitNav').style.display=(currentView==='unit')?'flex':'none';
+  if(currentView==='table'){renderTable();}
+  else{renderTimeline();}
+  updateStatus();
+}
+
+function renderTimeline(){
+  const w=getTimelineWidth();
+  rulerTrack.style.width=w+'px';
+  swimlanesScroll.style.width=w+'px';
+  renderRuler(w);
+  renderSwimlanes(w);
+}
+
+function renderRuler(w){
+  rulerUnits.innerHTML='';
+  rulerTicks.innerHTML='';
+  for(let i=1;i<=9;i++){
+    const r=UNIT_RANGES[i];
+    const left=yearToX(r[0]);
+    const right=yearToX(r[1]);
+    const el=document.createElement('div');
+    el.className='ruler-unit';
+    el.style.cssText=`position:absolute;left:${left}px;width:${right-left}px;background:${UNIT_COLORS[i]};color:#fff`;
+    el.textContent=`${i}. ${UNIT_NAMES[i]}`;
+    el.dataset.unit=i;
+    rulerUnits.appendChild(el);
+  }
+  const step=zoomLevel<3?50:zoomLevel<8?25:zoomLevel<14?10:5;
+  const startTick=Math.ceil(START_YEAR/step)*step;
+  for(let y=startTick;y<=END_YEAR;y+=step){
+    const x=yearToX(y);
+    const major=y%100===0;
+    const tick=document.createElement('div');
+    tick.className='ruler-tick'+(major?' major':'');
+    tick.style.left=x+'px';
+    tick.innerHTML=`<span class="ruler-tick-label">${y}</span>`;
+    rulerTicks.appendChild(tick);
+  }
+  WATERSHED_YEARS.forEach(y=>{
+    const x=yearToX(y);
+    const ws=document.createElement('div');
+    ws.className='watershed';
+    ws.style.left=x+'px';
+    ws.innerHTML=`<span class="watershed-label">${y}</span>`;
+    rulerTicks.appendChild(ws);
+  });
+}
+
+function renderSwimlanes(w){
+  swimlanesScroll.innerHTML='';
+  swimlanesScroll.style.position='relative';
+  WATERSHED_YEARS.forEach(y=>{
+    const x=yearToX(y);
+    const ws=document.createElement('div');
+    ws.className='watershed';
+    ws.style.left=x+'px';
+    swimlanesScroll.appendChild(ws);
+  });
+
+  SWIMLANE_KEYS.forEach((key,idx)=>{
+    const lane=document.createElement('div');
+    lane.className='swimlane';
+    lane.dataset.lane=key;
+
+    const label=document.createElement('div');
+    label.className='swimlane-label';
+    label.textContent=SWIMLANE_LABELS[idx];
+    lane.appendChild(label);
+
+    const content=document.createElement('div');
+    content.className='swimlane-content';
+
+    const procs=PROCESS_DEFS.filter(p=>p.lane===key);
+    let stackOffset=0;
+    procs.forEach((p,pi)=>{
+      const left=yearToX(p.start);
+      const right=yearToX(p.end);
+      const bar=document.createElement('div');
+      bar.className='process-bar';
+      bar.style.cssText=`left:${left}px;width:${right-left}px;top:${22+pi*22}px;background:${UNIT_COLORS[p.unit]}44;border:1px solid ${UNIT_COLORS[p.unit]}88;color:${UNIT_COLORS[p.unit]}`;
+      bar.innerHTML=`<span class="bar-label">${p.title}</span>`;
+      bar.dataset.procId=p.id;
+      content.appendChild(bar);
+      stackOffset=Math.max(stackOffset,22+pi*22+22);
+    });
+
+    const laneEvents=filteredData.filter(d=>{
+      if(d.type==='process'||d.type==='period')return false;
+      return(d.category||[]).includes(key);
+    });
+
+    laneEvents.forEach(d=>{
+      const x=yearToX(d.startYear);
+      const pin=document.createElement('div');
+      const tierCls=d.tier===1?'tier1':d.tier===2?'tier2':'tier3';
+      const isTp=(d.examUse&&d.examUse.causation&&d.tier===1);
+      pin.className=`event-pin ${tierCls}${isTp?' turning-point':''}`;
+      pin.style.cssText=`left:${x}px;top:${stackOffset+8}px;background:${UNIT_COLORS[d.apUnit]}`;
+      pin.dataset.id=d.id;
+      if(d.tier<=2&&zoomLevel>=4){
+        const lbl=document.createElement('span');
+        lbl.className='event-label';
+        lbl.textContent=d.title;
+        pin.appendChild(lbl);
+      }
+      content.appendChild(pin);
+    });
+
+    const minH=Math.max(60,stackOffset+32);
+    lane.style.minHeight=minH+'px';
+    content.style.minHeight=minH+'px';
+    lane.appendChild(content);
+    swimlanesScroll.appendChild(lane);
+  });
+}
+
+/* ── Dense Table ─────────────────────────────── */
+function renderTable(){
+  let sorted=[...filteredData].sort((a,b)=>{
+    let va,vb;
+    if(sortCol==='date'||sortCol==='startYear'){va=a.startYear;vb=b.startYear;}
+    else if(sortCol==='title'){va=a.title.toLowerCase();vb=b.title.toLowerCase();}
+    else if(sortCol==='apUnit'){va=a.apUnit;vb=b.apUnit;}
+    else if(sortCol==='tier'){va=a.tier;vb=b.tier;}
+    else if(sortCol==='category'){va=(a.category||[]).join(',');vb=(b.category||[]).join(',');}
+    else if(sortCol==='region'){va=(a.region||[]).join(',');vb=(b.region||[]).join(',');}
+    else{va=a.startYear;vb=b.startYear;}
+    if(va<vb)return sortAsc?-1:1;if(va>vb)return sortAsc?1:-1;return 0;
+  });
+  tableBody.innerHTML=sorted.map(d=>`<tr data-id="${d.id}" style="cursor:pointer">
+    <td style="white-space:nowrap;font-variant-numeric:tabular-nums">${d.date}</td>
+    <td style="font-weight:600">${d.title}</td>
+    <td class="unit-cell" style="color:${UNIT_COLORS[d.apUnit]}">${d.apUnit}</td>
+    <td><span class="tier-dot t${d.tier}"></span>${d.tier}</td>
+    <td style="font-size:var(--text-2xs)">${(d.category||[]).join(', ')}</td>
+    <td style="font-size:var(--text-2xs)">${(d.region||[]).join(', ')}</td>
+    <td style="color:var(--color-text-secondary)">${d.description||''}</td>
+    <td style="color:var(--color-text-secondary);font-style:italic">${d.whyItMatters||''}</td>
+  </tr>`).join('');
+}
+
+/* ── Detail Panel ────────────────────────────── */
+function openDetail(id){
+  const d=DATA.find(e=>e.id===id);
+  if(!d)return;
+  $('#detailTitle').textContent=d.title;
+  const unitColor=UNIT_COLORS[d.apUnit];
+  $('#detailMeta').innerHTML=`
+    <span class="detail-badge" style="background:${unitColor}22;color:${unitColor};border:1px solid ${unitColor}44">Unit ${d.apUnit}</span>
+    <span class="detail-badge" style="background:var(--color-accent-muted);color:var(--color-accent);border:1px solid var(--color-accent-border)">Tier ${d.tier}</span>
+    <span style="font-size:var(--text-xs);color:var(--color-text-secondary);margin-left:8px">${d.date}</span>
+  `;
+  let html=`
+    <div class="detail-section"><h4>Description</h4><p>${d.description||'—'}</p></div>
+    <div class="detail-section"><h4>Why It Matters</h4><p>${d.whyItMatters||'—'}</p></div>
+  `;
+  if((d.causes||[]).length){
+    html+=`<div class="detail-section"><h4>Causes</h4><ul>${d.causes.map(c=>`<li>${c}</li>`).join('')}</ul></div>`;
+  }
+  if((d.effects||[]).length){
+    html+=`<div class="detail-section"><h4>Effects</h4><ul>${d.effects.map(c=>`<li>${c}</li>`).join('')}</ul></div>`;
+  }
+  if(d.examUse){
+    html+=`<div class="detail-section"><h4>Exam Use</h4><div class="exam-use-grid">`;
+    ['contextualization','evidence','complexity','comparison','causation','continuityChange'].forEach(k=>{
+      const on=d.examUse[k];
+      const label=k==='continuityChange'?'Continuity/Change':k.charAt(0).toUpperCase()+k.slice(1);
+      html+=`<div class="exam-chip ${on?'on':'off'}">${label}</div>`;
+    });
+    html+=`</div></div>`;
+  }
+  if((d.comparisonOpportunities||[]).length){
+    html+=`<div class="detail-section"><h4>Comparison Opportunities</h4><ul>${d.comparisonOpportunities.map(c=>`<li>${c}</li>`).join('')}</ul></div>`;
+  }
+  if((d.continuityChangeOpportunities||[]).length){
+    html+=`<div class="detail-section"><h4>Continuity & Change</h4><ul>${d.continuityChangeOpportunities.map(c=>`<li>${c}</li>`).join('')}</ul></div>`;
+  }
+  if(d.memoryHook){
+    html+=`<div class="detail-section"><h4>Memory Hook</h4><p style="font-style:italic;color:var(--color-warning)">${d.memoryHook}</p></div>`;
+  }
+  html+=`<div class="detail-section"><h4>Metadata</h4><div class="detail-tags">`;
+  (d.category||[]).forEach(c=>{html+=`<span class="detail-tag">${CATEGORY_LABELS[c]||c}</span>`;});
+  (d.region||[]).forEach(r=>{html+=`<span class="detail-tag">${r}</span>`;});
+  (d.apTheme||[]).forEach(t=>{html+=`<span class="detail-tag">${THEME_LABELS[t]||t}</span>`;});
+  html+=`</div></div>`;
+  if(d.sourceNote){
+    html+=`<div class="detail-section"><h4>Source</h4><p style="font-size:var(--text-xs);color:var(--color-text-muted)">${d.sourceNote} (confidence: ${d.confidence||'high'})</p></div>`;
+  }
+  $('#detailBody').innerHTML=html;
+  detailPanel.classList.add('open');
+  detailBackdrop.classList.add('open');
+}
+function closeDetail(){
+  detailPanel.classList.remove('open');
+  detailBackdrop.classList.remove('open');
+}
+
+/* ── Tooltip ─────────────────────────────────── */
+function showTooltip(e,d){
+  const tierColors=['','var(--color-accent)','var(--color-warning)','var(--color-text-muted)'];
+  tooltip.innerHTML=`
+    <div class="tooltip-title">${d.title}<span class="tooltip-tier" style="background:${tierColors[d.tier]}33;color:${tierColors[d.tier]}">T${d.tier}</span></div>
+    <div class="tooltip-date">${d.date}</div>
+    <div class="tooltip-desc">${d.description||''}</div>
+  `;
+  tooltip.classList.add('visible');
+  const r=tooltip.getBoundingClientRect();
+  let tx=e.clientX+12,ty=e.clientY-r.height-8;
+  if(tx+r.width>window.innerWidth)tx=e.clientX-r.width-12;
+  if(ty<0)ty=e.clientY+16;
+  tooltip.style.left=tx+'px';tooltip.style.top=ty+'px';
+}
+function hideTooltip(){tooltip.classList.remove('visible');}
+
+/* ── Events ──────────────────────────────────── */
+function bindEvents(){
+  document.addEventListener('change',e=>{
+    if(e.target.matches('[data-filter]')){
+      const f=e.target.dataset.filter;
+      let v=e.target.value;
+      if(f==='units'||f==='tiers')v=parseInt(v);
+      if(e.target.checked)filtersActive[f].add(v);else filtersActive[f].delete(v);
+      applyFilters();renderCurrentView();
+    }
+  });
+
+  $$('[data-view]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      $$('[data-view]').forEach(b=>{b.classList.remove('active');b.setAttribute('aria-selected','false')});
+      btn.classList.add('active');btn.setAttribute('aria-selected','true');
+      currentView=btn.dataset.view;
+      applyFilters();renderCurrentView();
+    });
+  });
+
+  $('#btnToggleFilters').addEventListener('click',()=>{
+    $('#filterSidebar').classList.toggle('collapsed');
+  });
+
+  $('#searchInput').addEventListener('input',()=>{applyFilters();renderCurrentView();});
+
+  const zoomSlider=$('#zoomSlider');
+  zoomSlider.addEventListener('input',()=>{zoomLevel=parseFloat(zoomSlider.value);applyFilters();renderCurrentView();});
+  $('#btnZoomIn').addEventListener('click',()=>{zoomLevel=Math.min(20,zoomLevel+1);zoomSlider.value=zoomLevel;applyFilters();renderCurrentView();});
+  $('#btnZoomOut').addEventListener('click',()=>{zoomLevel=Math.max(1,zoomLevel-1);zoomSlider.value=zoomLevel;applyFilters();renderCurrentView();});
+
+  $('#btnPrevUnit').addEventListener('click',()=>{if(currentUnit>1){currentUnit--;updateUnitNav();applyFilters();renderCurrentView();}});
+  $('#btnNextUnit').addEventListener('click',()=>{if(currentUnit<9){currentUnit++;updateUnitNav();applyFilters();renderCurrentView();}});
+
+  swimlanesScroll.addEventListener('mouseover',e=>{
+    const pin=e.target.closest('.event-pin');
+    if(pin){
+      const d=DATA.find(x=>x.id===pin.dataset.id);
+      if(d)showTooltip(e,d);
+    }
+  });
+  swimlanesScroll.addEventListener('mouseout',e=>{
+    if(e.target.closest('.event-pin'))hideTooltip();
+  });
+  swimlanesScroll.addEventListener('click',e=>{
+    const pin=e.target.closest('.event-pin');
+    if(pin)openDetail(pin.dataset.id);
+  });
+
+  tableBody.addEventListener('click',e=>{
+    const row=e.target.closest('tr[data-id]');
+    if(row)openDetail(row.dataset.id);
+  });
+
+  rulerUnits.addEventListener('click',e=>{
+    const el=e.target.closest('.ruler-unit');
+    if(el){
+      currentUnit=parseInt(el.dataset.unit);
+      currentView='unit';
+      $$('[data-view]').forEach(b=>{b.classList.remove('active');b.setAttribute('aria-selected','false')});
+      $('[data-view="unit"]').classList.add('active');
+      $('[data-view="unit"]').setAttribute('aria-selected','true');
+      updateUnitNav();applyFilters();renderCurrentView();
+    }
+  });
+
+  $$('.data-table th[data-sort]').forEach(th=>{
+    th.addEventListener('click',()=>{
+      const col=th.dataset.sort;
+      if(sortCol===col)sortAsc=!sortAsc;else{sortCol=col;sortAsc=true;}
+      $$('.data-table th').forEach(t=>t.classList.remove('sorted'));
+      th.classList.add('sorted');
+      th.querySelector('.sort-arrow').textContent=sortAsc?'\u25B2':'\u25BC';
+      renderTable();
+    });
+  });
+
+  $('#detailClose').addEventListener('click',closeDetail);
+  detailBackdrop.addEventListener('click',closeDetail);
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDetail();});
+
+  $('#btnLegend').addEventListener('click',()=>$('#legendOverlay').classList.add('open'));
+  $('#legendClose').addEventListener('click',()=>$('#legendOverlay').classList.remove('open'));
+  $('#legendOverlay').addEventListener('click',e=>{if(e.target===$('#legendOverlay'))$('#legendOverlay').classList.remove('open');});
+
+  $('#btnPrint').addEventListener('click',()=>window.print());
+
+  swimlanesViewport.addEventListener('scroll',()=>{
+    $('#ruler').scrollLeft=swimlanesViewport.scrollLeft;
+  },{ passive: true });
+  $('#ruler').style.overflowX='hidden';
+}
+
+function updateUnitNav(){
+  $('#unitNavLabel').textContent=`Unit ${currentUnit}`;
+  $('#unitNavLabel').style.color=UNIT_COLORS[currentUnit];
+}
+
+function updateStatus(){
+  $('#statusCount').textContent=`${filteredData.length} of ${DATA.length} entries`;
+  const totalFilters=9-filtersActive.units.size+3-filtersActive.tiers.size;
+  $('#statusFilter').textContent=totalFilters>0?`${totalFilters} filters active`:'No filters active';
+}
+
+updateUnitNav();
+init();
+</script>
+</body>
+</html>

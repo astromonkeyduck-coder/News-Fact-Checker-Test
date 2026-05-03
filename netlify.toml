@@ -92,10 +92,24 @@
   force = false
   headers = { X-From = "/api/noteworthy" }
 
+# AP Euro AI Tutor
+[[redirects]]
+  from = "/api/euro-tutor"
+  to = "/.netlify/functions/euro-ai-tutor"
+  status = 200
+  force = false
+
 # AP Euro Master Timeline
 [[redirects]]
   from = "/euro"
   to = "/euro/"
+  status = 301
+  force = false
+
+# AP Euro Geo-SPRITE System
+[[redirects]]
+  from = "/sprite"
+  to = "/sprite/"
   status = 301
   force = false
 
