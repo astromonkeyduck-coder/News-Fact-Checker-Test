@@ -97,7 +97,7 @@
   from = "/api/euro-tutor"
   to = "/.netlify/functions/euro-ai-tutor"
   status = 200
-  force = false
+  force = true
 
 # AP Euro Master Timeline
 [[redirects]]

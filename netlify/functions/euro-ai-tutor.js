@@ -319,51 +319,26 @@ exports.handler = async (event) => {
         messages: [...systemMessages, ...messages.slice(-20)],
         temperature: 0.7,
         max_tokens: 4096,
-        stream: true,
       }),
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
+      console.error('[euro-ai-tutor] OpenAI error:', JSON.stringify(data));
       return {
         statusCode: response.status,
         headers,
-        body: JSON.stringify({ error: err.error?.message || 'OpenAI request failed' }),
+        body: JSON.stringify({ error: data.error?.message || 'OpenAI request failed' }),
       };
     }
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let fullText = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      const text = decoder.decode(value, { stream: true });
-      const lines = text.split('\n');
-
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const data = line.slice(6);
-        if (data === '[DONE]') continue;
-
-        try {
-          const parsed = JSON.parse(data);
-          const content = parsed.choices?.[0]?.delta?.content;
-          if (content) {
-            fullText += content;
-          }
-        } catch (e) {
-          // skip malformed chunks
-        }
-      }
-    }
+    const content = data.choices?.[0]?.message?.content || '';
 
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ content: fullText }),
+      body: JSON.stringify({ content }),
     };
   } catch (error) {
     console.error('[euro-ai-tutor] Error:', error);
