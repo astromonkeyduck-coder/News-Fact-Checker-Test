@@ -136,6 +136,83 @@
     });
   }
 
+  let currentAudio = null;
+  let currentTtsBtn = null;
+
+  function stripForTts(text) {
+    return text
+      .replace(/\[\[NAV:[\w]+:[\w\-\/:.]+\]\]/g, '')
+      .replace(/\*\*(.+?)\*\*/g, '$1')
+      .replace(/\*(.+?)\*/g, '$1')
+      .replace(/`(.+?)`/g, '$1')
+      .replace(/^#{1,4}\s+/gm, '')
+      .replace(/^[-•]\s+/gm, '')
+      .replace(/^\d+\.\s+/gm, '')
+      .trim()
+      .substring(0, 4000);
+  }
+
+  async function playTts(text, btn) {
+    if (currentAudio && currentTtsBtn === btn) {
+      currentAudio.pause();
+      currentAudio = null;
+      btn.classList.remove('playing');
+      btn.innerHTML = '<svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg> Listen';
+      currentTtsBtn = null;
+      return;
+    }
+
+    if (currentAudio) {
+      currentAudio.pause();
+      if (currentTtsBtn) {
+        currentTtsBtn.classList.remove('playing');
+        currentTtsBtn.innerHTML = '<svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg> Listen';
+      }
+      currentAudio = null;
+    }
+
+    btn.classList.add('loading');
+    btn.innerHTML = '<svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg> Loading...';
+
+    try {
+      const clean = stripForTts(text);
+      const res = await fetch('/.netlify/functions/elevenlabs-tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: clean,
+          voice_id: 'nPczCjzI2devNBz1zQrb',
+          model_id: 'eleven_multilingual_v2',
+          stability: 0.5,
+          similarity_boost: 0.75,
+        }),
+      });
+
+      if (!res.ok) throw new Error('TTS request failed');
+
+      const data = await res.json();
+      const audio = new Audio('data:audio/mpeg;base64,' + data.audio);
+      currentAudio = audio;
+      currentTtsBtn = btn;
+
+      btn.classList.remove('loading');
+      btn.classList.add('playing');
+      btn.innerHTML = '<svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Stop';
+
+      audio.addEventListener('ended', () => {
+        btn.classList.remove('playing');
+        btn.innerHTML = '<svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg> Listen';
+        currentAudio = null;
+        currentTtsBtn = null;
+      });
+
+      audio.play();
+    } catch (e) {
+      btn.classList.remove('loading');
+      btn.innerHTML = '<svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg> Listen';
+    }
+  }
+
   function executeNav(action, target) {
     const path = window.location.pathname;
 
@@ -246,6 +323,16 @@
 .eac-msg-user strong{color:#fff}
 .eac-msg-ai{align-self:flex-start;background:var(--bgE,#F8F6F1);color:var(--tx,#1C1C1C);border-bottom-left-radius:4px;border:1px solid var(--bdr,#DDD9CE)}
 
+.eac-ai-row{display:flex;align-items:flex-start;gap:8px;align-self:flex-start;max-width:92%}
+.eac-avatar{width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;margin-top:2px;border:1.5px solid var(--bdr,#DDD9CE)}
+.eac-ai-row .eac-msg-ai{max-width:100%}
+.eac-ai-row .eac-msg-footer{display:flex;align-items:center;gap:4px;margin-top:6px;padding-top:6px;border-top:1px solid var(--bdr,#DDD9CE)}
+.eac-tts-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:12px;font-size:10px;font-weight:600;background:none;border:1px solid var(--bdr,#DDD9CE);color:var(--txM,#7A7A7A);cursor:pointer;transition:all .15s;font-family:inherit}
+.eac-tts-btn:hover{border-color:var(--acc,#1D5BA0);color:var(--acc,#1D5BA0)}
+.eac-tts-btn.playing{border-color:var(--acc,#1D5BA0);color:var(--acc,#1D5BA0);background:var(--accL,#EBF0F8)}
+.eac-tts-btn.loading{opacity:0.6;cursor:wait}
+.eac-tts-btn svg{width:12px;height:12px;fill:currentColor}
+
 .eac-nav-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;margin:2px 2px;border-radius:14px;font-size:11px;font-weight:600;background:var(--accL,#EBF0F8);border:1px solid var(--acc,#1D5BA0);color:var(--acc,#1D5BA0);cursor:pointer;transition:all .15s;font-family:inherit;vertical-align:middle}
 .eac-nav-btn:hover{background:var(--acc,#1D5BA0);color:#fff;transform:scale(1.03)}
 
@@ -266,6 +353,15 @@
 
 .eac-clear{font-size:11px;color:var(--txM,#7A7A7A);background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:6px;transition:all .15s}
 .eac-clear:hover{color:var(--acc,#1D5BA0);background:var(--accM,rgba(29,91,160,0.07))}
+
+.eac-persona{display:flex;align-items:center;gap:6px;padding:8px 16px;border-bottom:1px solid var(--bdr,#DDD9CE);background:var(--bg,#F8F6F1);flex-shrink:0;font-size:11px}
+.eac-persona label{color:var(--tx2,#3D3D3D);font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;user-select:none}
+.eac-persona-switch{position:relative;width:34px;height:18px;flex-shrink:0}
+.eac-persona-switch input{opacity:0;width:0;height:0}
+.eac-persona-slider{position:absolute;inset:0;background:var(--bdr,#DDD9CE);border-radius:9px;cursor:pointer;transition:all .2s}
+.eac-persona-slider::before{content:'';position:absolute;width:14px;height:14px;left:2px;top:2px;background:#fff;border-radius:50%;transition:all .2s}
+.eac-persona-switch input:checked+.eac-persona-slider{background:var(--acc,#1D5BA0)}
+.eac-persona-switch input:checked+.eac-persona-slider::before{transform:translateX(16px)}
 
 @media(max-width:500px){
   .eac-panel{width:100vw;height:100vh;max-height:100vh;bottom:0;right:0;border-radius:0}
@@ -293,6 +389,12 @@
           <button class="eac-close" aria-label="Close">&times;</button>
         </div>
       </div>
+      <div class="eac-persona">
+        <label>
+          <span class="eac-persona-switch"><input type="checkbox" id="eacClemensToggle"><span class="eac-persona-slider"></span></span>
+          <span id="eacPersonaLabel">Mr. Clemens Mode</span>
+        </label>
+      </div>
       <div class="eac-messages"></div>
       <div class="eac-input-row">
         <textarea class="eac-input" placeholder="Ask anything about AP Euro..." rows="1"></textarea>
@@ -316,6 +418,17 @@
 
     let messages = loadHistory();
     let isStreaming = false;
+    let clemensMode = sessionStorage.getItem('euro-clemens-mode') === 'true';
+    const clemensToggle = panel.querySelector('#eacClemensToggle');
+    const personaLabel = panel.querySelector('#eacPersonaLabel');
+    clemensToggle.checked = clemensMode;
+    personaLabel.textContent = clemensMode ? 'Mr. Clemens Mode ON' : 'Mr. Clemens Mode';
+    clemensToggle.addEventListener('change', () => {
+      clemensMode = clemensToggle.checked;
+      sessionStorage.setItem('euro-clemens-mode', clemensMode);
+      personaLabel.textContent = clemensMode ? 'Mr. Clemens Mode ON' : 'Mr. Clemens Mode';
+      if (messages.length === 0) renderMessages();
+    });
 
     function bindNavButtons(container) {
       container.querySelectorAll('.eac-nav-btn').forEach(btn => {
@@ -331,9 +444,13 @@
     function renderWelcome() {
       const div = document.createElement('div');
       div.className = 'eac-welcome';
+      const title = clemensMode ? 'Alright my dear interlocutor, let\'s get to it!' : 'Ready to ace AP Euro?';
+      const desc = clemensMode
+        ? 'If you\'re ready to get them brain cows milked, pick a study mode and let\'s crush this exam. I know every topic, every date, and I\'ll make it stick.'
+        : 'I know every topic from the Renaissance to the EU. I\'ll give you real evidence, specific dates, and push you toward a 5. Pick a study mode:';
       div.innerHTML = `
-        <h4>Ready to ace AP Euro?</h4>
-        <p>I know every topic from the Renaissance to the EU. I'll give you real evidence, specific dates, and push you toward a 5. Pick a study mode:</p>
+        <h4>${title}</h4>
+        <p>${desc}</p>
         <div class="eac-chips">
           ${QUICK_ACTIONS.map((a, i) => `<button class="eac-chip" data-idx="${i}">${a.label}</button>`).join('')}
         </div>
@@ -348,6 +465,27 @@
       });
     }
 
+    function buildAiRow(content) {
+      const row = document.createElement('div');
+      row.className = 'eac-ai-row';
+      row.innerHTML = '<img class="eac-avatar" src="/clemenspfp.jpg" alt="Mr. Clemens">';
+      const div = document.createElement('div');
+      div.className = 'eac-msg eac-msg-ai';
+      const rendered = renderMarkdown(content);
+      div.innerHTML = parseNavCommands(rendered);
+      const footer = document.createElement('div');
+      footer.className = 'eac-msg-footer';
+      const ttsBtn = document.createElement('button');
+      ttsBtn.className = 'eac-tts-btn';
+      ttsBtn.innerHTML = '<svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg> Listen';
+      ttsBtn.addEventListener('click', () => playTts(content, ttsBtn));
+      footer.appendChild(ttsBtn);
+      div.appendChild(footer);
+      bindNavButtons(div);
+      row.appendChild(div);
+      return row;
+    }
+
     function renderMessages() {
       messagesEl.innerHTML = '';
       if (messages.length === 0) {
@@ -355,16 +493,14 @@
         return;
       }
       messages.forEach(msg => {
-        const div = document.createElement('div');
-        div.className = `eac-msg eac-msg-${msg.role === 'user' ? 'user' : 'ai'}`;
         if (msg.role === 'user') {
+          const div = document.createElement('div');
+          div.className = 'eac-msg eac-msg-user';
           div.innerHTML = escapeHtml(msg.content);
+          messagesEl.appendChild(div);
         } else {
-          const rendered = renderMarkdown(msg.content);
-          div.innerHTML = parseNavCommands(rendered);
-          bindNavButtons(div);
+          messagesEl.appendChild(buildAiRow(msg.content));
         }
-        messagesEl.appendChild(div);
       });
       scrollToBottom();
     }
@@ -411,6 +547,7 @@
             messages: messages.map(m => ({ role: m.role, content: m.content })),
             pageContext,
             evidence,
+            persona: clemensMode ? 'clemens' : 'standard',
           }),
         });
 
@@ -430,12 +567,7 @@
         messages.push({ role: 'assistant', content });
         saveHistory(messages);
 
-        const aiDiv = document.createElement('div');
-        aiDiv.className = 'eac-msg eac-msg-ai';
-        const rendered = renderMarkdown(content);
-        aiDiv.innerHTML = parseNavCommands(rendered);
-        bindNavButtons(aiDiv);
-        messagesEl.appendChild(aiDiv);
+        messagesEl.appendChild(buildAiRow(content));
         scrollToBottom();
       } catch (err) {
         typing.remove();
@@ -447,11 +579,15 @@
     }
 
     function showError(msg) {
+      const row = document.createElement('div');
+      row.className = 'eac-ai-row';
+      row.innerHTML = '<img class="eac-avatar" src="/clemenspfp.jpg" alt="Mr. Clemens">';
       const div = document.createElement('div');
       div.className = 'eac-msg eac-msg-ai';
       div.style.borderColor = '#c05020';
       div.innerHTML = `<strong>Error:</strong> ${escapeHtml(msg)}`;
-      messagesEl.appendChild(div);
+      row.appendChild(div);
+      messagesEl.appendChild(row);
       scrollToBottom();
     }
 
