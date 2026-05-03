@@ -92,6 +92,13 @@
   force = false
   headers = { X-From = "/api/noteworthy" }
 
+# AP Euro Master Timeline
+[[redirects]]
+  from = "/euro"
+  to = "/euro/"
+  status = 301
+  force = false
+
 # Admin UI — all admin paths redirect to new authenticated admin surface
 [[redirects]]
   from = "/admin"
