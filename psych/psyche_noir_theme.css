@@ -1,0 +1,1087 @@
+/* ═══════════════════════════════════════════════════════════════
+   PSYCHE NOIR EDITORIAL — Creative Identity Layer
+   Layered on top of psych_styles.css
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Extended Tokens ──────────────────────────────────────── */
+:root {
+  --font-editorial: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --grain-opacity: 0.03;
+  --motion-level: 1; /* 0=calm, 1=standard, 2=cinematic */
+  --parallax-intensity: 1;
+  --anim-speed: 1;
+}
+
+[data-motion="calm"] {
+  --motion-level: 0;
+  --parallax-intensity: 0;
+  --anim-speed: 0;
+  --grain-opacity: 0.02;
+}
+[data-motion="standard"] {
+  --motion-level: 1;
+  --parallax-intensity: 0.6;
+  --anim-speed: 1;
+}
+[data-motion="cinematic"] {
+  --motion-level: 2;
+  --parallax-intensity: 1;
+  --anim-speed: 1;
+}
+
+/* ── Film Grain Overlay ───────────────────────────────────── */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: var(--grain-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-size: 150px 150px;
+  mix-blend-mode: overlay;
+}
+
+/* ── Editorial Typography ─────────────────────────────────── */
+.hero h1,
+.editorial-heading {
+  font-family: var(--font-editorial);
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+/* Hero headline entrance animation */
+@keyframes heroTextReveal {
+  from {
+    opacity: 0;
+    clip-path: inset(0 100% 0 0);
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 0% 0 0);
+    transform: translateX(0);
+  }
+}
+@keyframes heroFadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.hero h1 {
+  animation: heroTextReveal 0.9s var(--ease-out) 0.2s both;
+}
+.hero-badge {
+  animation: heroFadeUp 0.5s var(--ease-out) 0.05s both;
+}
+.hero-subtitle {
+  animation: heroFadeUp 0.6s var(--ease-out) 0.4s both;
+}
+.hero-ctas {
+  animation: heroFadeUp 0.6s var(--ease-out) 0.55s both;
+}
+.hero-meta {
+  animation: heroFadeUp 0.5s var(--ease-out) 0.7s both;
+}
+[data-motion="calm"] .hero h1,
+[data-motion="calm"] .hero-badge,
+[data-motion="calm"] .hero-subtitle,
+[data-motion="calm"] .hero-ctas,
+[data-motion="calm"] .hero-meta {
+  animation: none;
+  opacity: 1;
+  clip-path: none;
+  transform: none;
+}
+
+.section-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--coral-primary);
+  opacity: 0.7;
+  display: block;
+  margin-bottom: 8px;
+}
+
+/* Section header editorial enhancement */
+.section-header h2::before {
+  content: attr(data-section-num);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--coral-primary);
+  opacity: 0.6;
+  display: block;
+  margin-bottom: 10px;
+}
+.section-header h2 {
+  font-family: var(--font-editorial);
+}
+
+/* Improved text-shadow depth for hero */
+.hero h1 {
+  text-shadow: 0 2px 30px rgba(0, 0, 0, 0.5);
+}
+.hero h1 .accent {
+  text-shadow:
+    0 0 40px rgba(239, 111, 97, 0.25),
+    0 2px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* Tighter uppercase labels */
+.practice-exam-pill,
+.ced-chip,
+.vocab-drawer-label,
+.exhibit-number,
+.variable-card-label,
+.stats-warning strong,
+.frq-task-label {
+  letter-spacing: 0.08em;
+}
+
+.pull-quote {
+  font-family: var(--font-editorial);
+  font-size: clamp(18px, 2.5vw, 26px);
+  font-style: italic;
+  color: var(--text-soft);
+  line-height: 1.5;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: var(--sp-6) 0;
+  position: relative;
+  text-align: center;
+}
+.pull-quote::before,
+.pull-quote::after {
+  content: '';
+  display: block;
+  width: 60px;
+  height: 1px;
+  background: var(--coral-primary);
+  margin: 0 auto var(--sp-4);
+  opacity: 0.4;
+}
+.pull-quote::after {
+  margin: var(--sp-4) auto 0;
+}
+
+/* ── Editorial Rules (dividers) ───────────────────────────── */
+.editorial-rule {
+  position: relative;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-neuron) 30%, var(--coral-primary) 50%, var(--border-neuron) 70%, transparent);
+  margin: var(--sp-12) 0;
+}
+.editorial-rule::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(45deg);
+  width: 7px;
+  height: 7px;
+  background: var(--coral-primary);
+  opacity: 0.6;
+}
+
+/* ── Rorschach Decorative Shapes ──────────────────────────── */
+.rorschach {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0.04;
+  z-index: 0;
+}
+.rorschach-1 {
+  width: 300px;
+  height: 200px;
+  right: -40px;
+  top: 20%;
+}
+.rorschach-2 {
+  width: 250px;
+  height: 180px;
+  left: -30px;
+  bottom: 15%;
+}
+
+/* ── Iceberg Divider ──────────────────────────────────────── */
+.iceberg-divider {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  margin: var(--sp-8) auto;
+  text-align: center;
+  padding: var(--sp-4) 0;
+}
+.iceberg-divider svg {
+  width: 100%;
+  max-width: 320px;
+}
+.iceberg-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+/* ── Hero Depth Container ─────────────────────────────────── */
+.hero-brain-visual {
+  perspective: 1200px;
+  transform-style: preserve-3d;
+}
+.hero-depth-layer {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+  transition: transform 0.1s linear;
+}
+.hero-depth-layer svg {
+  width: 100%;
+  height: 100%;
+}
+/* Depth-of-field: deepest layer slightly blurred */
+.hero-depth-layer.layer-botanical {
+  filter: blur(0.8px);
+}
+
+/* ── Region Zone Pulse ───────────────────────────────────── */
+.region-zone {
+  transition: opacity 0.3s ease-out;
+}
+.region-zone.region-pulsing {
+  animation: regionPulse 0.6s ease-out;
+}
+@keyframes regionPulse {
+  0% { opacity: 1; filter: brightness(1); }
+  30% { opacity: 1; filter: brightness(2.5); }
+  100% { opacity: 1; filter: brightness(1); }
+}
+
+/* ── Neuron Soma Firing Flash ────────────────────────────── */
+.neuron-soma {
+  transition: opacity 0.15s ease-out, stroke-width 0.15s ease-out;
+}
+.neuron-soma.firing {
+  opacity: 0.95 !important;
+  stroke-width: 3 !important;
+  animation: neuronFireFlash 0.45s ease-out;
+}
+@keyframes neuronFireFlash {
+  0% { opacity: 0.55; stroke-width: 1.5; }
+  25% { opacity: 0.95; stroke-width: 3; }
+  100% { opacity: 0.55; stroke-width: 1.5; }
+}
+
+/* ── Neuron Halo Glow ────────────────────────────────────── */
+.neuron-halo {
+  animation: haloBreath 6s ease-in-out infinite;
+}
+@keyframes haloBreath {
+  0%, 100% { opacity: 0.03; }
+  50% { opacity: 0.07; }
+}
+
+/* ── Synapse Ring Pulse (animated via inline SVG <animate>, not CSS) ── */
+.synapse-ring {
+  pointer-events: none;
+}
+
+/* ── Concept Label Connector Flow ────────────────────────── */
+@keyframes labelFlow {
+  0% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -18; }
+}
+.concept-connector {
+  animation: labelFlow 3s linear infinite;
+}
+
+/* ── Concept Ring Pulse (animated via inline SVG <animate>) ── */
+.concept-ring-pulse {
+  pointer-events: none;
+}
+
+/* Concept node interactivity */
+.concept-node {
+  cursor: pointer;
+  transition: opacity var(--duration-fast), transform var(--duration-fast);
+}
+.concept-node:hover {
+  opacity: 1 !important;
+}
+.concept-node:hover text {
+  fill: var(--coral-primary);
+  filter: drop-shadow(0 0 6px rgba(239, 111, 97, 0.4));
+}
+.concept-node:hover rect {
+  opacity: 0.85;
+  stroke-opacity: 0.4;
+}
+.concept-node:hover .concept-connector {
+  opacity: 0.5 !important;
+  stroke: var(--coral-primary);
+}
+.concept-node:hover circle {
+  fill: var(--coral-primary);
+}
+
+/* ── Cascade Signal Pool ─────────────────────────────────── */
+.cascade-signal {
+  will-change: cx, cy, opacity;
+}
+.cascade-trail {
+  will-change: cx, cy, opacity;
+}
+.neuron-flash-ring {
+  will-change: r, opacity;
+}
+.signal-pool {
+  pointer-events: none;
+}
+
+/* ── Particles ────────────────────────────────────────────── */
+.particle-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 3;
+}
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--coral-primary);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+/* ── Signal Pulse on Axon ─────────────────────────────────── */
+.axon-signal {
+  fill: var(--synapse-yellow);
+  filter: url(#heroGlow);
+  opacity: 0;
+}
+
+/* ── Motion Controls Panel ────────────────────────────────── */
+.motion-controls {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+.motion-controls-toggle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-medium);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--duration-fast);
+  box-shadow: var(--shadow-md);
+}
+.motion-controls-toggle:hover {
+  border-color: var(--coral-primary);
+  color: var(--coral-primary);
+}
+.motion-controls-toggle svg { width: 18px; height: 18px; }
+
+.motion-controls-panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  box-shadow: var(--shadow-lg);
+  display: none;
+  min-width: 200px;
+}
+.motion-controls.open .motion-controls-panel { display: block; }
+.motion-controls-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.motion-btn-group {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+}
+.motion-btn {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: var(--radius-xs);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--duration-fast);
+  border: none;
+  background: none;
+}
+.motion-btn:hover { color: var(--text-main); }
+.motion-btn.active {
+  background: var(--coral-dim);
+  color: var(--coral-primary);
+  border: 1px solid var(--border-neuron);
+}
+
+/* ── Module Card Halftone + Elevated Hover ────────────────── */
+.module-card-preview::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(148,163,184,0.06) 1px, transparent 1px);
+  background-size: 8px 8px;
+  pointer-events: none;
+}
+.module-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-lg), 0 0 40px rgba(56,189,248,0.06);
+}
+.module-card:hover .module-card-preview svg {
+  transform: scale(1.05);
+  transition: transform var(--duration-normal) var(--ease-out);
+}
+
+/* ── Scroll-Triggered Entrance ────────────────────────────── */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeSlideLeft {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes fadeSlideRight {
+  from { opacity: 0; transform: translateX(-30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes fadeScaleUp {
+  from { opacity: 0; transform: scale(0.92); filter: blur(4px); }
+  to { opacity: 1; transform: scale(1); filter: blur(0); }
+}
+@keyframes fadeBlurIn {
+  from { opacity: 0; filter: blur(6px); transform: translateY(12px); }
+  to { opacity: 1; filter: blur(0); transform: translateY(0); }
+}
+
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(30px);
+}
+.reveal-on-scroll.revealed {
+  animation: fadeSlideUp 0.6s var(--ease-out) forwards;
+}
+
+/* Directional variants */
+.reveal-on-scroll[data-reveal="left"].revealed {
+  animation-name: fadeSlideLeft;
+}
+.reveal-on-scroll[data-reveal="right"].revealed {
+  animation-name: fadeSlideRight;
+}
+.reveal-on-scroll[data-reveal="scale"].revealed {
+  animation-name: fadeScaleUp;
+  animation-duration: 0.7s;
+}
+.reveal-on-scroll[data-reveal="blur"].revealed {
+  animation-name: fadeBlurIn;
+  animation-duration: 0.65s;
+}
+
+/* Spring easing for cinematic */
+[data-motion="cinematic"] .reveal-on-scroll.revealed {
+  animation-timing-function: var(--ease-spring);
+  animation-duration: 0.75s;
+}
+
+/* Standard mode: slightly faster, no blur */
+[data-motion="standard"] .reveal-on-scroll[data-reveal="blur"].revealed {
+  animation-name: fadeSlideUp;
+}
+
+[data-motion="calm"] .reveal-on-scroll {
+  opacity: 1;
+  transform: none;
+  filter: none;
+  animation: none;
+}
+
+/* ── Pathway Node Glow ────────────────────────────────────── */
+@keyframes nodeGlow {
+  0%, 100% { filter: drop-shadow(0 0 3px currentColor); }
+  50% { filter: drop-shadow(0 0 12px currentColor); }
+}
+.unit-node-glow {
+  animation: nodeGlow 4s ease-in-out infinite;
+}
+
+/* ── Background Psyche Garden ─────────────────────────────── */
+.psyche-garden {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 50% 40% at 20% 30%, rgba(184, 50, 70, 0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 75% 60%, rgba(19, 41, 68, 0.4) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 80% at 50% 50%, var(--bg-navy) 0%, var(--bg-deep) 100%);
+}
+
+/* Animated gradient mesh for cinematic mode */
+@keyframes meshDrift {
+  0% { background-position: 0% 50%, 100% 50%, 50% 50%; }
+  50% { background-position: 100% 30%, 0% 70%, 50% 50%; }
+  100% { background-position: 0% 50%, 100% 50%, 50% 50%; }
+}
+[data-motion="cinematic"] .psyche-garden {
+  background:
+    radial-gradient(ellipse 45% 40% at 25% 35%, rgba(184, 50, 70, 0.06) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 35% at 70% 55%, rgba(34, 211, 238, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse 80% 80% at 50% 50%, var(--bg-navy) 0%, var(--bg-deep) 100%);
+  background-size: 200% 200%, 200% 200%, 100% 100%;
+  animation: meshDrift 30s ease-in-out infinite;
+}
+
+.psyche-garden-botanical {
+  position: absolute;
+  inset: 0;
+  opacity: 0.08;
+}
+.psyche-garden-grid {
+  position: absolute;
+  pointer-events: none;
+  transition: transform 0.3s linear;
+}
+
+/* Scroll parallax for decorative elements */
+.rorschach {
+  transition: transform 0.15s linear;
+  will-change: transform;
+}
+
+/* ── Portrait Carousel (underlapping brain SVG) ───────────── */
+.hero-right {
+  position: relative;
+}
+.hero-portrait {
+  position: absolute;
+  mix-blend-mode: luminosity;
+  opacity: 0;
+  filter: contrast(1.1) brightness(0.95);
+  z-index: 0;
+  pointer-events: none;
+  transition: opacity 1s ease-in-out;
+  height: auto;
+  object-fit: cover;
+}
+.hero-portrait.active {
+  opacity: 0.50;
+}
+.hero-brain-visual {
+  position: relative;
+  z-index: 1;
+  contain: content;
+}
+
+/* ── Concept Node Focus ──────────────────────────────────── */
+.concept-node:focus {
+  outline: none;
+}
+.concept-node:focus > rect {
+  stroke: #ef6f61;
+  stroke-opacity: 0.6;
+  stroke-width: 1;
+}
+.concept-node:focus-visible > rect {
+  stroke: #ef6f61;
+  stroke-opacity: 0.8;
+  stroke-width: 1.2;
+}
+
+/* Per-portrait positioning — each face placed where it looks best */
+/* Freud: classic right-bleed, face centered */
+.hero-portrait[data-idx="0"] {
+  right: -20%;
+  bottom: -5%;
+  width: 100%;
+  max-width: 550px;
+  object-position: center 15%;
+  -webkit-mask-image: radial-gradient(ellipse 70% 75% at 50% 38%, rgba(0,0,0,0.9) 15%, transparent 62%);
+  mask-image: radial-gradient(ellipse 70% 75% at 50% 38%, rgba(0,0,0,0.9) 15%, transparent 62%);
+}
+/* Darwin: hat is tall, push far right */
+.hero-portrait[data-idx="1"] {
+  right: -45%;
+  bottom: -15%;
+  width: 95%;
+  max-width: 500px;
+  object-position: center 25%;
+  -webkit-mask-image: radial-gradient(ellipse 65% 70% at 50% 40%, rgba(0,0,0,0.9) 15%, transparent 60%);
+  mask-image: radial-gradient(ellipse 65% 70% at 50% 40%, rgba(0,0,0,0.9) 15%, transparent 60%);
+}
+/* Maslow: warm smile, push far right */
+.hero-portrait[data-idx="2"] {
+  right: -40%;
+  bottom: -8%;
+  width: 90%;
+  max-width: 500px;
+  object-position: center 15%;
+  -webkit-mask-image: radial-gradient(ellipse 65% 68% at 52% 38%, rgba(0,0,0,0.9) 12%, transparent 58%);
+  mask-image: radial-gradient(ellipse 65% 68% at 52% 38%, rgba(0,0,0,0.9) 12%, transparent 58%);
+}
+/* Skinner: glasses, push far right */
+.hero-portrait[data-idx="3"] {
+  right: -40%;
+  bottom: -8%;
+  width: 105%;
+  max-width: 520px;
+  object-position: center 18%;
+  -webkit-mask-image: radial-gradient(ellipse 65% 70% at 52% 38%, rgba(0,0,0,0.9) 15%, transparent 60%);
+  mask-image: radial-gradient(ellipse 65% 70% at 52% 38%, rgba(0,0,0,0.9) 15%, transparent 60%);
+}
+/* Watson: new larger photo, right-bleed */
+.hero-portrait[data-idx="4"] {
+  right: -45%;
+  bottom: -8%;
+  width: 95%;
+  max-width: 500px;
+  object-position: center 20%;
+  -webkit-mask-image: radial-gradient(ellipse 65% 70% at 50% 38%, rgba(0,0,0,0.9) 15%, transparent 60%);
+  mask-image: radial-gradient(ellipse 65% 70% at 50% 38%, rgba(0,0,0,0.9) 15%, transparent 60%);
+}
+/* Pavlov: beard, push right */
+.hero-portrait[data-idx="5"] {
+  right: -35%;
+  bottom: -10%;
+  width: 100%;
+  max-width: 520px;
+  object-position: center 18%;
+  -webkit-mask-image: radial-gradient(ellipse 65% 70% at 50% 38%, rgba(0,0,0,0.9) 15%, transparent 60%);
+  mask-image: radial-gradient(ellipse 65% 70% at 50% 38%, rgba(0,0,0,0.9) 15%, transparent 60%);
+}
+
+/* Portrait Info Strip (below hero) */
+.hero-portrait-strip {
+  background: var(--bg-navy);
+  border-bottom: 1px solid var(--border-soft);
+  padding: var(--sp-3) var(--sp-6);
+  transition: opacity 0.3s ease;
+}
+.hero-portrait-strip.transitioning {
+  opacity: 0;
+}
+.hero-portrait-strip-inner {
+  max-width: var(--max-content);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+}
+.hero-portrait-name {
+  font-family: var(--font-editorial, Georgia, serif);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--coral-primary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.hero-portrait-blurb {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.4;
+  flex: 1;
+  min-width: 0;
+}
+.hero-portrait-units {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* Audio-reactive portrait breathing */
+/* Portraits excluded from audio reactivity — carousel looks best untouched */
+
+@media (max-width: 1024px) {
+  .hero-portrait { width: 85% !important; max-width: 420px !important; right: -10% !important; bottom: -5% !important; }
+  .hero-portrait.active { opacity: 0.35; }
+  .hero-portrait-strip-inner { flex-wrap: wrap; gap: var(--sp-2); }
+}
+@media (max-width: 640px) {
+  .hero-portrait.active { opacity: 0.25; }
+  .hero-portrait { width: 100% !important; right: -5% !important; }
+  .hero-portrait-strip-inner { flex-direction: column; align-items: flex-start; gap: 4px; }
+  .hero-portrait-blurb { font-size: 11px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   NAV MUSIC PLAYER DROPDOWN
+   ═══════════════════════════════════════════════════════════════ */
+.nav-player-wrap { position: relative; }
+.nav-player-toggle.playing { color: var(--coral-primary); }
+.nav-player-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 280px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 16px;
+  z-index: 1002;
+  display: none;
+}
+.nav-player-wrap.open .nav-player-dropdown { display: block; }
+.nav-player-track { margin-bottom: 12px; }
+.player-track-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+  display: block;
+}
+.player-track-artist {
+  font-size: 10px;
+  color: var(--text-muted);
+  display: block;
+  margin-top: 2px;
+}
+.nav-player-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.player-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color var(--duration-fast), transform var(--duration-fast);
+  padding: 0;
+}
+.player-btn:hover { color: var(--text-main); }
+.player-btn svg { width: 18px; height: 18px; }
+.player-btn-sm svg { width: 16px; height: 16px; }
+.player-btn-play {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--coral-primary);
+  color: #fff;
+  box-shadow: 0 0 15px rgba(239, 111, 97, 0.3);
+}
+.player-btn-play:hover {
+  background: var(--coral-soft);
+  transform: scale(1.08);
+  box-shadow: 0 0 25px rgba(239, 111, 97, 0.4);
+}
+.player-btn-play svg { width: 20px; height: 20px; }
+.nav-player-progress {
+  width: 100%;
+  height: 4px;
+  background: var(--bg-elevated);
+  border-radius: 2px;
+  cursor: pointer;
+  position: relative;
+  margin-bottom: 10px;
+}
+.player-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--coral-primary), var(--coral-soft));
+  border-radius: 2px;
+  width: 0%;
+  transition: width 0.3s linear;
+}
+.nav-player-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.player-time {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.nav-player-vol {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.player-volume {
+  width: 50px;
+  height: 3px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--bg-elevated);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+.player-volume::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--blue-primary);
+  border: none;
+  cursor: pointer;
+}
+.player-volume::-moz-range-thumb {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--blue-primary); border: none; cursor: pointer;
+}
+.player-btn.muted svg { opacity: 0.3; }
+.player-reactive-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 9px;
+  font-weight: 600;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--duration-fast);
+}
+.player-reactive-btn svg { width: 12px; height: 12px; }
+.player-reactive-btn.active {
+  border-color: var(--border-neuron);
+  background: var(--coral-dim);
+  color: var(--coral-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   AUDIO-REACTIVE CSS (gated by data-audio-active="1")
+   Heavy reactivity — the entire site breathes with the music
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  --audio-bass: 0;
+  --audio-mid: 0;
+  --audio-treble: 0;
+}
+
+/* Hero heading: coral glow pulses with bass */
+[data-audio-active="1"] .hero h1 .accent {
+  text-shadow:
+    0 0 calc(20px + var(--audio-bass) * 80px) rgba(239, 111, 97, calc(0.25 + var(--audio-bass) * 0.6)),
+    0 0 calc(5px + var(--audio-bass) * 30px) rgba(239, 111, 97, calc(0.1 + var(--audio-bass) * 0.3));
+}
+
+/* Synapse nodes: hard pulse on bass */
+[data-audio-active="1"] .synapse-pulse {
+  opacity: calc(0.15 + var(--audio-bass) * 0.85);
+  r: calc(4px + var(--audio-bass) * 4px);
+}
+
+/* Neuron somas: glow with bass */
+[data-audio-active="1"] .neuron-node {
+  opacity: calc(0.06 + var(--audio-bass) * 0.12);
+}
+
+/* Editorial diamond: pulses with mid */
+[data-audio-active="1"] .editorial-rule::after {
+  transform: translate(-50%, -50%) rotate(45deg) scale(calc(1 + var(--audio-mid) * 1.2));
+  box-shadow: 0 0 calc(var(--audio-mid) * 12px) rgba(239, 111, 97, calc(var(--audio-mid) * 0.5));
+}
+
+/* Nav brand icon: bass glow */
+[data-audio-active="1"] .nav-brand-icon {
+  box-shadow: 0 0 calc(var(--audio-bass) * 30px) rgba(239, 111, 97, calc(var(--audio-bass) * 0.5));
+}
+
+/* Hero badge: mid shimmer */
+[data-audio-active="1"] .hero-badge {
+  box-shadow: 0 0 calc(var(--audio-mid) * 20px) rgba(239, 111, 97, calc(var(--audio-mid) * 0.35));
+}
+
+/* All buttons: subtle bass glow */
+[data-audio-active="1"] .synapse-button {
+  box-shadow: 0 0 calc(20px + var(--audio-bass) * 40px) rgba(56, 189, 248, calc(0.25 + var(--audio-bass) * 0.35));
+}
+[data-audio-active="1"] .btn-coral {
+  box-shadow: 0 0 calc(10px + var(--audio-bass) * 35px) rgba(239, 111, 97, calc(0.2 + var(--audio-bass) * 0.4));
+}
+
+/* Play button: massive bass glow */
+[data-audio-active="1"] .player-btn-play {
+  box-shadow: 0 0 calc(15px + var(--audio-bass) * 45px) rgba(239, 111, 97, calc(0.3 + var(--audio-bass) * 0.5));
+}
+
+/* Module cards: coral glow from mid */
+[data-audio-active="1"] .module-card {
+  box-shadow: var(--shadow-sm), 0 0 calc(var(--audio-mid) * 35px) rgba(239, 111, 97, calc(var(--audio-mid) * 0.18));
+  border-color: rgba(239, 111, 97, calc(0.12 + var(--audio-mid) * 0.2));
+}
+
+/* Neuro/vocab/comparison cards: blue glow from mid */
+[data-audio-active="1"] .neuro-card,
+[data-audio-active="1"] .vocab-card,
+[data-audio-active="1"] .comparison-card,
+[data-audio-active="1"] .stats-panel,
+[data-audio-active="1"] .research-panel {
+  box-shadow: var(--shadow-sm), 0 0 calc(var(--audio-mid) * 25px) rgba(56, 189, 248, calc(var(--audio-mid) * 0.1));
+}
+
+/* Practice strip icons: treble shimmer */
+[data-audio-active="1"] .practice-strip-icon {
+  box-shadow: 0 0 calc(var(--audio-treble) * 25px) rgba(34, 211, 238, calc(var(--audio-treble) * 0.35));
+}
+
+/* Unit pathway nodes: bass glow */
+[data-audio-active="1"] .unit-pathway-card {
+  box-shadow: 0 0 calc(var(--audio-bass) * 20px) rgba(239, 111, 97, calc(var(--audio-bass) * 0.15));
+}
+
+/* CED chips: treble flash */
+[data-audio-active="1"] .ced-chip {
+  box-shadow: 0 0 calc(var(--audio-treble) * 10px) rgba(56, 189, 248, calc(var(--audio-treble) * 0.2));
+}
+
+/* Header: bass pulse on brand + border */
+[data-audio-active="1"] .header-brand-ap {
+  text-shadow: 0 0 calc(var(--audio-bass) * 20px) rgba(239, 111, 97, calc(var(--audio-bass) * 0.5));
+}
+[data-audio-active="1"] .site-header {
+  border-bottom-color: rgba(239, 111, 97, calc(0.1 + var(--audio-bass) * 0.3));
+  box-shadow: 0 1px calc(8px + var(--audio-bass) * 16px) rgba(239, 111, 97, calc(var(--audio-bass) * 0.12));
+}
+
+/* Section headers: mid glow on text */
+[data-audio-active="1"] .editorial-heading {
+  text-shadow: 0 0 calc(var(--audio-mid) * 30px) rgba(239, 111, 97, calc(var(--audio-mid) * 0.15));
+}
+
+/* Iceberg: bass breathe */
+[data-audio-active="1"] .iceberg-divider svg {
+  filter: drop-shadow(0 0 calc(var(--audio-bass) * 10px) rgba(56, 189, 248, calc(var(--audio-bass) * 0.3)));
+}
+
+/* Psyche Garden background: coral warmth from bass */
+[data-audio-active="1"] .psyche-garden {
+  background:
+    radial-gradient(ellipse 50% 40% at 20% 30%, rgba(184, 50, 70, calc(0.05 + var(--audio-bass) * 0.12)) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 35% at 70% 40%, rgba(239, 111, 97, calc(var(--audio-bass) * 0.06)) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 50% at 75% 60%, rgba(19, 41, 68, 0.4) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 80% at 50% 50%, var(--bg-navy) 0%, var(--bg-deep) 100%);
+}
+
+/* Portrait: bass breathing (handled by .hero-portrait.active rule above) */
+
+/* Grain: treble flicker */
+[data-audio-active="1"]::after {
+  opacity: calc(0.03 + var(--audio-treble) * 0.03);
+}
+
+/* Brain visual: audio-reactive region glow and neuron halos */
+[data-audio-active="1"] .region-zone {
+  opacity: calc(1 + var(--audio-bass) * 0.5);
+}
+[data-audio-active="1"] .neuron-halo {
+  opacity: calc(0.04 + var(--audio-bass) * 0.08);
+}
+[data-audio-active="1"] .hero-brain-visual {
+  filter: contrast(calc(1.05 + var(--audio-mid) * 0.08)) saturate(calc(1.05 + var(--audio-mid) * 0.15));
+}
+
+/* ── Cinematic Mode Enhancements ──────────────────────────── */
+[data-motion="cinematic"] .synapse-pulse {
+  animation-duration: 2.5s;
+}
+[data-motion="cinematic"] .neuron-node {
+  animation-duration: 3s;
+}
+[data-motion="cinematic"] .hero h1 .accent {
+  text-shadow: 0 0 50px rgba(239, 111, 97, 0.3), 0 0 15px rgba(239, 111, 97, 0.15);
+}
+[data-motion="cinematic"] .synapse-button {
+  box-shadow: 0 0 30px rgba(56, 189, 248, 0.3);
+}
+[data-motion="cinematic"] .nav-brand-icon {
+  box-shadow: 0 0 15px rgba(239, 111, 97, 0.25);
+}
+[data-motion="cinematic"] .editorial-rule::after {
+  box-shadow: 0 0 8px rgba(239, 111, 97, 0.4);
+}
+[data-motion="cinematic"] .module-card:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-lg), 0 0 50px rgba(56, 189, 248, 0.1);
+}
+[data-motion="cinematic"] .hero-portrait.active {
+  opacity: 0.55;
+}
+[data-motion="cinematic"] body::after {
+  opacity: 0.04;
+}
+[data-motion="cinematic"] .neuron-halo {
+  animation-duration: 3s;
+}
+[data-motion="cinematic"] .hero-brain-visual {
+  filter: contrast(1.12) saturate(1.15);
+}
+
+/* ── Reduced Motion Override ──────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-level: 0 !important;
+    --parallax-intensity: 0 !important;
+    --anim-speed: 0 !important;
+  }
+  .reveal-on-scroll { opacity: 1; transform: none; filter: none; animation: none !important; }
+  .unit-node-glow { animation: none !important; }
+  .axon-signal { display: none; }
+  .particle { display: none; }
+  body::after { opacity: 0.015; }
+  .concept-connector,
+  .neuron-halo,
+  .cascade-signal,
+  .cascade-trail,
+  .neuron-flash-ring { animation: none !important; opacity: 0 !important; }
+  .neuron-soma.firing { animation: none !important; }
+  .region-zone.region-pulsing { animation: none !important; }
+  .hero-depth-layer.layer-botanical { filter: none; }
+  .hero h1, .hero-badge, .hero-subtitle, .hero-ctas, .hero-meta {
+    animation: none !important;
+    opacity: 1 !important;
+    clip-path: none !important;
+    transform: none !important;
+  }
+  .view.active { animation: none !important; opacity: 1 !important; transform: none !important; }
+  .view.active .stagger-item { animation: none !important; opacity: 1 !important; transform: none !important; }
+  .nav-tab.active::after { animation: none !important; }
+  .mobile-nav-overlay .nav-tab { animation: none !important; opacity: 1 !important; transform: none !important; }
+  .mcq-option.correct, .mcq-option.incorrect { animation: none !important; }
+  .flashcard-inner { transition: none !important; }
+  .module-card:hover::before, .unit-pathway-card:hover::before { animation: none !important; background: transparent !important; }
+}
+
+/* ── Print override ───────────────────────────────────────── */
+@media print {
+  body::after, .psyche-garden, .motion-controls, .particle-layer, .rorschach { display: none; }
+}

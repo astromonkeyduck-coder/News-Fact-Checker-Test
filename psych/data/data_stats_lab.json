@@ -1,0 +1,96 @@
+{
+  "measuresOfCentralTendency": {
+    "title": "Measures of Central Tendency",
+    "description": "Describe the center of a data set.",
+    "measures": [
+      { "name": "Mean", "description": "The average: add all values and divide by number of values.", "formula": "Σx / n", "sensitivity": "Affected by outliers/extreme scores." },
+      { "name": "Median", "description": "The middle value after data is arranged from lowest to highest.", "sensitivity": "NOT affected by outliers — better for skewed data." },
+      { "name": "Mode", "description": "The most frequently occurring value.", "sensitivity": "A dataset can have no mode, one mode, or multiple modes (bimodal)." }
+    ]
+  },
+  "variation": {
+    "title": "Measures of Variation",
+    "description": "Show how spread out data is from the center.",
+    "measures": [
+      { "name": "Range", "description": "Difference between highest and lowest values.", "formula": "Max - Min" },
+      { "name": "Standard Deviation", "description": "Measures how spread out data is from the mean.", "small": "Data points clustered close to the mean.", "large": "Data points more spread out from the mean." }
+    ]
+  },
+  "distributions": {
+    "title": "Data Distributions",
+    "types": [
+      {
+        "name": "Normal Distribution (Bell Curve)",
+        "description": "Mean, median, and mode are all at the center.",
+        "empiricalRule": "68% within ±1 SD | 95% within ±2 SD | 99.7% within ±3 SD",
+        "visual": "normalCurve"
+      },
+      {
+        "name": "Positively Skewed",
+        "description": "Tail extends to the RIGHT. A few extremely HIGH scores pull the mean UP.",
+        "relationship": "Mode < Median < Mean (mean is pulled toward the tail).",
+        "example": "Income distribution: most people earn moderate amounts, but a few billionaires pull the mean up.",
+        "visual": "positiveSkew"
+      },
+      {
+        "name": "Negatively Skewed",
+        "description": "Tail extends to the LEFT. A few extremely LOW scores pull the mean DOWN.",
+        "relationship": "Mean < Median < Mode (mean is pulled toward the tail).",
+        "example": "Easy test scores: most score high, but a few very low scores pull the mean down.",
+        "visual": "negativeSkew"
+      },
+      {
+        "name": "Bimodal Distribution",
+        "description": "Has TWO peaks instead of one, suggesting two common values in the dataset.",
+        "visual": "bimodal"
+      }
+    ]
+  },
+  "percentileRank": {
+    "title": "Percentile Rank",
+    "description": "The percentage of scores that fall at or below a particular score.",
+    "example": "If you score in the 90th percentile, you scored as well as or better than 90% of test-takers.",
+    "warning": "Percentile rank is NOT the same as percentage correct."
+  },
+  "regressionToTheMean": {
+    "title": "Regression Toward the Mean",
+    "description": "As more data is collected, outliers (very high or very low results) are followed by results closer to the average.",
+    "example": "A basketball player who scores 50 points one game is likely to score closer to their average in the next game.",
+    "implication": "Extreme performances tend to be followed by more typical ones."
+  },
+  "effectSizeVsSignificance": {
+    "title": "Effect Size vs Statistical Significance",
+    "warning": "Two concepts students frequently mix up on the AP exam. They measure DIFFERENT things.",
+    "effectSize": {
+      "definition": "Indicates the strength of the relationship between variables (non-experimental) or the size of the difference between groups (experimental).",
+      "scale": {
+        "small": "≈ 0.2 or below",
+        "medium": "≈ 0.3 to 0.7",
+        "large": "≈ 0.8 or greater"
+      },
+      "question": "HOW BIG is the effect?"
+    },
+    "statisticalSignificance": {
+      "definition": "Indicates that the results are not likely due to chance and instead are likely due to the variables being studied.",
+      "threshold": "Typically p < 0.05",
+      "question": "Is the effect REAL (not due to chance)?"
+    },
+    "keyDistinction": "A study can be statistically significant (p < 0.05) but have a SMALL effect size. This means the result is real but the practical impact is minimal.",
+    "example": "A therapy study finds p = 0.01 (significant) but d = 0.15 (small effect). The therapy works, but the improvement is very modest."
+  },
+  "correlationConcepts": {
+    "title": "Correlation",
+    "coefficientRange": "-1.0 to +1.0",
+    "interpretations": [
+      { "range": "+0.70 to +1.00", "label": "Strong positive", "meaning": "As X increases, Y strongly tends to increase." },
+      { "range": "+0.30 to +0.69", "label": "Moderate positive", "meaning": "As X increases, Y tends to increase." },
+      { "range": "0.00 to +0.29", "label": "Weak positive", "meaning": "Slight tendency for both to increase together." },
+      { "range": "Near 0.00", "label": "No correlation", "meaning": "No predictable relationship." },
+      { "range": "-0.01 to -0.29", "label": "Weak negative", "meaning": "Slight tendency for one to decrease as other increases." },
+      { "range": "-0.30 to -0.69", "label": "Moderate negative", "meaning": "As X increases, Y tends to decrease." },
+      { "range": "-0.70 to -1.00", "label": "Strong negative", "meaning": "As X increases, Y strongly tends to decrease." }
+    ],
+    "criticalRule": "Correlation does NOT equal causation. Third variable problem: a third unmeasured variable may influence both.",
+    "scatterplotInterpretation": "Points clustered tightly along a line = strong correlation. Points scattered widely = weak correlation."
+  }
+}

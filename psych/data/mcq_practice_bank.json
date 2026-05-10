@@ -1,0 +1,590 @@
+[
+  {
+    "id": 1, "unit": 0, "topic": "Research Methods", "difficulty": "Medium",
+    "stimulus": null,
+    "question": "A researcher wants to determine whether exercise improves mood. She randomly assigns 50 participants to either an exercise group or a no-exercise control group and measures their mood using a standardized scale. Which of the following is the dependent variable?",
+    "options": [
+      { "letter": "A", "text": "The type of exercise performed" },
+      { "letter": "B", "text": "The number of participants in each group" },
+      { "letter": "C", "text": "The mood scores on the standardized scale" },
+      { "letter": "D", "text": "Whether participants were in the exercise or control group" }
+    ],
+    "correct": "C",
+    "explanation": "The dependent variable is what the researcher measures — in this case, mood scores. The independent variable (D) is what the researcher manipulates (exercise vs no exercise).",
+    "relatedConcepts": ["Independent Variable", "Dependent Variable", "Random Assignment"]
+  },
+  {
+    "id": 2, "unit": 0, "topic": "Statistics", "difficulty": "Hard",
+    "stimulus": null,
+    "question": "A study finds a statistically significant difference between two groups (p < 0.05) but reports a small effect size (d = 0.18). Which interpretation is most accurate?",
+    "options": [
+      { "letter": "A", "text": "The results are not meaningful because the effect size is small" },
+      { "letter": "B", "text": "The difference between groups is unlikely due to chance, but the practical impact is minimal" },
+      { "letter": "C", "text": "The study should be discarded because effect size and significance contradict each other" },
+      { "letter": "D", "text": "The results prove that the independent variable had a large impact on the dependent variable" }
+    ],
+    "correct": "B",
+    "explanation": "Statistical significance (p < 0.05) means the results are unlikely due to chance. Effect size (d = 0.18) measures the magnitude of the difference — small here. These are separate concepts: the result is real but small.",
+    "relatedConcepts": ["Statistical Significance", "Effect Size"]
+  },
+  {
+    "id": 3, "unit": 1, "topic": "Neural Transmission", "difficulty": "Medium",
+    "stimulus": null,
+    "question": "The all-or-none principle of neural firing means that:",
+    "options": [
+      { "letter": "A", "text": "A neuron fires at different intensities depending on stimulus strength" },
+      { "letter": "B", "text": "A neuron either fires at full strength or does not fire at all" },
+      { "letter": "C", "text": "All neurons in a pathway must fire simultaneously" },
+      { "letter": "D", "text": "A neuron fires only when all neurotransmitters are present" }
+    ],
+    "correct": "B",
+    "explanation": "The all-or-none principle states that a neuron fires completely or not at all — there is no partial firing. The strength of the stimulus determines WHETHER the neuron fires (threshold), not HOW STRONGLY it fires.",
+    "relatedConcepts": ["Action Potential", "Threshold", "All-or-None Principle"]
+  },
+  {
+    "id": 4, "unit": 1, "topic": "Psychoactive Drugs", "difficulty": "Medium",
+    "stimulus": null,
+    "question": "An SSRI (selective serotonin reuptake inhibitor) works by:",
+    "options": [
+      { "letter": "A", "text": "Blocking serotonin receptor sites on the postsynaptic neuron" },
+      { "letter": "B", "text": "Mimicking serotonin and binding to its receptor sites" },
+      { "letter": "C", "text": "Preventing serotonin from being reabsorbed by the presynaptic neuron" },
+      { "letter": "D", "text": "Increasing the production of serotonin in the presynaptic neuron" }
+    ],
+    "correct": "C",
+    "explanation": "Reuptake inhibitors prevent neurotransmitters from being reabsorbed into the presynaptic neuron, leaving more of the neurotransmitter available in the synapse. An SSRI specifically targets serotonin reuptake.",
+    "relatedConcepts": ["Reuptake", "Agonist", "Antagonist", "Reuptake Inhibitor"]
+  },
+  {
+    "id": 5, "unit": 3, "topic": "Classical Conditioning", "difficulty": "Medium",
+    "stimulus": "A child is bitten by a dog and subsequently becomes afraid of all dogs.",
+    "question": "In this scenario, the dog bite is the:",
+    "options": [
+      { "letter": "A", "text": "Conditioned stimulus" },
+      { "letter": "B", "text": "Unconditioned stimulus" },
+      { "letter": "C", "text": "Conditioned response" },
+      { "letter": "D", "text": "Neutral stimulus" }
+    ],
+    "correct": "B",
+    "explanation": "The dog bite is the unconditioned stimulus (UCS) because it naturally and automatically produces fear (UCR) without prior learning. The dog itself becomes the conditioned stimulus (CS), and fear of dogs becomes the conditioned response (CR).",
+    "relatedConcepts": ["Classical Conditioning", "UCS", "UCR", "CS", "CR", "Stimulus Generalization"]
+  },
+  {
+    "id": 6, "unit": 3, "topic": "Operant Conditioning", "difficulty": "Hard",
+    "stimulus": "A teenager's parents take away their phone for a week after the teenager breaks curfew.",
+    "question": "This is an example of:",
+    "options": [
+      { "letter": "A", "text": "Positive reinforcement" },
+      { "letter": "B", "text": "Negative reinforcement" },
+      { "letter": "C", "text": "Positive punishment" },
+      { "letter": "D", "text": "Negative punishment" }
+    ],
+    "correct": "D",
+    "explanation": "Negative punishment involves REMOVING a desirable stimulus (phone) to DECREASE a behavior (breaking curfew). Negative = removing. Punishment = decreasing behavior.",
+    "relatedConcepts": ["Positive Punishment", "Negative Punishment", "Reinforcement"]
+  },
+  {
+    "id": 7, "unit": 2, "topic": "Memory", "difficulty": "Medium",
+    "stimulus": null,
+    "question": "A student learns Spanish in high school and then struggles to learn French in college because Spanish vocabulary keeps interfering. This is an example of:",
+    "options": [
+      { "letter": "A", "text": "Retroactive interference" },
+      { "letter": "B", "text": "Proactive interference" },
+      { "letter": "C", "text": "Encoding failure" },
+      { "letter": "D", "text": "Source amnesia" }
+    ],
+    "correct": "B",
+    "explanation": "Proactive interference occurs when OLD memories (Spanish) interfere with the ability to learn or recall NEW information (French). PRO = forward — the old memory is reaching forward to disrupt the new one.",
+    "relatedConcepts": ["Proactive Interference", "Retroactive Interference"]
+  },
+  {
+    "id": 8, "unit": 4, "topic": "Social Psychology", "difficulty": "Medium",
+    "stimulus": "After a classmate fails a test, you think, 'They must not have studied.' Later, when you fail a test, you think, 'The test was unfair.'",
+    "question": "This pattern best illustrates:",
+    "options": [
+      { "letter": "A", "text": "Cognitive dissonance" },
+      { "letter": "B", "text": "The fundamental attribution error combined with self-serving bias" },
+      { "letter": "C", "text": "The just-world phenomenon" },
+      { "letter": "D", "text": "Belief perseverance" }
+    ],
+    "correct": "B",
+    "explanation": "Attributing your classmate's failure to their personality/effort (dispositional) is the fundamental attribution error. Attributing your own failure to external factors (unfair test) while taking credit for successes is the self-serving bias.",
+    "relatedConcepts": ["Fundamental Attribution Error", "Self-Serving Bias", "Dispositional Attribution", "Situational Attribution"]
+  },
+  {
+    "id": 9, "unit": 1, "topic": "The Brain", "difficulty": "Medium",
+    "stimulus": null,
+    "question": "A patient suffers damage to Broca's area. Which of the following is the most likely outcome?",
+    "options": [
+      { "letter": "A", "text": "The patient can speak fluently but the speech is nonsensical" },
+      { "letter": "B", "text": "The patient knows what they want to say but struggles to produce speech" },
+      { "letter": "C", "text": "The patient loses the ability to form new long-term memories" },
+      { "letter": "D", "text": "The patient can no longer perceive visual stimuli" }
+    ],
+    "correct": "B",
+    "explanation": "Broca's area controls speech PRODUCTION. Damage means the patient knows what they want to say but can't get the words out. Fluent but nonsensical speech (A) is Wernicke's aphasia. Memory loss (C) involves the hippocampus. Visual perception (D) involves the occipital lobe.",
+    "relatedConcepts": ["Broca's Area", "Wernicke's Area", "Aphasia", "Speech Production"]
+  },
+  {
+    "id": 10, "unit": 1, "topic": "Sleep", "difficulty": "Medium",
+    "stimulus": null,
+    "question": "A person who is deprived of REM sleep for several nights is most likely to experience which of the following?",
+    "options": [
+      { "letter": "A", "text": "A permanent loss of the ability to dream" },
+      { "letter": "B", "text": "REM rebound, spending more time in REM during subsequent sleep" },
+      { "letter": "C", "text": "Increased time in Stage 1 non-REM sleep" },
+      { "letter": "D", "text": "A reset of the circadian rhythm to a shorter cycle" }
+    ],
+    "correct": "B",
+    "explanation": "REM rebound occurs when the body compensates for REM deprivation by spending more time in REM sleep during subsequent sleep periods. The ability to dream is not permanently lost (A).",
+    "relatedConcepts": ["REM Sleep", "REM Rebound", "Sleep Deprivation", "Circadian Rhythm"]
+  },
+  {
+    "id": 11, "unit": 1, "topic": "Sensation", "difficulty": "Medium",
+    "stimulus": "A person enters a room with a strong smell of perfume but stops noticing the scent after a few minutes.",
+    "question": "This scenario best illustrates:",
+    "options": [
+      { "letter": "A", "text": "Habituation" },
+      { "letter": "B", "text": "Sensory adaptation" },
+      { "letter": "C", "text": "Selective attention" },
+      { "letter": "D", "text": "The absolute threshold" }
+    ],
+    "correct": "B",
+    "explanation": "Sensory adaptation occurs when you become accustomed to an unchanging stimulus and your sensory receptors stop responding. Habituation (A) is a learned behavioral decrease in response. This is a sensory/neural process, not a behavioral one.",
+    "relatedConcepts": ["Sensory Adaptation", "Habituation", "Absolute Threshold"]
+  },
+  {
+    "id": 12, "unit": 1, "topic": "Nervous System", "difficulty": "Easy",
+    "stimulus": null,
+    "question": "After narrowly avoiding a car accident, your heart rate returns to normal. Which division of the nervous system is primarily responsible?",
+    "options": [
+      { "letter": "A", "text": "The somatic nervous system" },
+      { "letter": "B", "text": "The sympathetic nervous system" },
+      { "letter": "C", "text": "The parasympathetic nervous system" },
+      { "letter": "D", "text": "The central nervous system" }
+    ],
+    "correct": "C",
+    "explanation": "The parasympathetic nervous system is the body's 'brake pedal' — it calms you down after the threat has passed, slowing heart rate and returning the body to homeostasis. The sympathetic NS (B) activated the fight-or-flight response during the scare.",
+    "relatedConcepts": ["Parasympathetic Nervous System", "Sympathetic Nervous System", "Fight-or-Flight", "Homeostasis"]
+  },
+  {
+    "id": 13, "unit": 2, "topic": "Perception", "difficulty": "Medium",
+    "stimulus": null,
+    "question": "Reading a text message full of typos but still understanding the meaning demonstrates which type of processing?",
+    "options": [
+      { "letter": "A", "text": "Bottom-up processing" },
+      { "letter": "B", "text": "Top-down processing" },
+      { "letter": "C", "text": "Parallel processing" },
+      { "letter": "D", "text": "Sensory adaptation" }
+    ],
+    "correct": "B",
+    "explanation": "Top-down processing uses prior knowledge and expectations to fill in gaps in sensory information. Your brain uses its knowledge of language to interpret the typo-filled message. Bottom-up processing (A) would require analyzing each letter individually from raw sensory data.",
+    "relatedConcepts": ["Top-Down Processing", "Bottom-Up Processing", "Schemas", "Perceptual Set"]
+  },
+  {
+    "id": 14, "unit": 2, "topic": "Memory", "difficulty": "Hard",
+    "stimulus": null,
+    "question": "According to the levels of processing model, which of the following study strategies would produce the BEST long-term retention?",
+    "options": [
+      { "letter": "A", "text": "Copying the definition of each term repeatedly" },
+      { "letter": "B", "text": "Noticing whether each term is printed in uppercase or lowercase" },
+      { "letter": "C", "text": "Saying each term out loud to hear the sound" },
+      { "letter": "D", "text": "Connecting each term to a personal experience or real-world example" }
+    ],
+    "correct": "D",
+    "explanation": "The levels of processing model proposes three encoding levels: structural (shallow), phonemic (intermediate), and semantic (deepest). Connecting terms to personal experiences (D) is semantic processing — the deepest level — which produces the strongest memories.",
+    "relatedConcepts": ["Levels of Processing", "Semantic Encoding", "Elaborative Rehearsal"]
+  },
+  {
+    "id": 15, "unit": 2, "topic": "Intelligence", "difficulty": "Medium",
+    "stimulus": null,
+    "question": "A psychologist administers the same IQ test to a group of participants on two occasions, one month apart, and finds very similar scores both times. This demonstrates that the test has good:",
+    "options": [
+      { "letter": "A", "text": "Construct validity" },
+      { "letter": "B", "text": "Predictive validity" },
+      { "letter": "C", "text": "Test-retest reliability" },
+      { "letter": "D", "text": "Standardization" }
+    ],
+    "correct": "C",
+    "explanation": "Test-retest reliability means a test yields similar results when administered at different times. Validity (A, B) refers to whether a test measures what it claims to measure. Standardization (D) refers to consistent administration procedures.",
+    "relatedConcepts": ["Reliability", "Validity", "Test-Retest", "Standardization"]
+  },
+  {
+    "id": 16, "unit": 2, "topic": "Cognition", "difficulty": "Medium",
+    "stimulus": "A person refuses to use a screwdriver to pry open a paint can lid, insisting on finding a proper tool.",
+    "question": "This person's thinking best illustrates:",
+    "options": [
+      { "letter": "A", "text": "The availability heuristic" },
+      { "letter": "B", "text": "Functional fixedness" },
+      { "letter": "C", "text": "The gambler's fallacy" },
+      { "letter": "D", "text": "Convergent thinking" }
+    ],
+    "correct": "B",
+    "explanation": "Functional fixedness is the inability to see an object as useful for anything other than its traditional purpose. The person can only see the screwdriver as a tool for screws, not as a prying tool.",
+    "relatedConcepts": ["Functional Fixedness", "Mental Set", "Problem-Solving"]
+  },
+  {
+    "id": 17, "unit": 3, "topic": "Cognitive Development", "difficulty": "Medium",
+    "stimulus": "A 4-year-old watches as water is poured from a short, wide glass into a tall, thin glass and insists the tall glass has more water.",
+    "question": "According to Piaget, this child has not yet developed:",
+    "options": [
+      { "letter": "A", "text": "Object permanence" },
+      { "letter": "B", "text": "Conservation" },
+      { "letter": "C", "text": "Abstract reasoning" },
+      { "letter": "D", "text": "Theory of mind" }
+    ],
+    "correct": "B",
+    "explanation": "Conservation is the understanding that quantity remains the same despite changes in shape or appearance. This develops during the concrete operational stage (around age 7). The child in the preoperational stage (ages 2-7) has not yet acquired this ability.",
+    "relatedConcepts": ["Piaget", "Preoperational Stage", "Conservation", "Concrete Operational Stage"]
+  },
+  {
+    "id": 18, "unit": 3, "topic": "Social-Emotional Development", "difficulty": "Medium",
+    "stimulus": null,
+    "question": "In Harlow's monkey experiments, infant monkeys preferred the cloth-covered surrogate mother over the wire one that provided food. This finding challenged the idea that:",
+    "options": [
+      { "letter": "A", "text": "Attachment requires physical contact" },
+      { "letter": "B", "text": "Attachment is solely based on nourishment" },
+      { "letter": "C", "text": "Infant monkeys can form multiple attachments" },
+      { "letter": "D", "text": "Separation anxiety occurs only in humans" }
+    ],
+    "correct": "B",
+    "explanation": "Harlow's studies demonstrated that comfort (contact comfort from the cloth mother) was more important than food in attachment formation. This challenged the earlier belief that attachment was purely about nourishment.",
+    "relatedConcepts": ["Attachment", "Harlow's Monkey Studies", "Contact Comfort"]
+  },
+  {
+    "id": 19, "unit": 3, "topic": "Operant Conditioning", "difficulty": "Hard",
+    "stimulus": "A slot machine pays out after an unpredictable number of pulls.",
+    "question": "This is an example of which reinforcement schedule?",
+    "options": [
+      { "letter": "A", "text": "Fixed-ratio" },
+      { "letter": "B", "text": "Variable-ratio" },
+      { "letter": "C", "text": "Fixed-interval" },
+      { "letter": "D", "text": "Variable-interval" }
+    ],
+    "correct": "B",
+    "explanation": "Variable-ratio schedules provide reinforcement after an unpredictable number of responses. Slot machines are the classic example — you don't know which pull will pay off. This schedule produces the highest, most consistent rate of responding and is most resistant to extinction.",
+    "relatedConcepts": ["Variable-Ratio Schedule", "Reinforcement Schedules", "Partial Reinforcement"]
+  },
+  {
+    "id": 20, "unit": 3, "topic": "Learning", "difficulty": "Medium",
+    "stimulus": null,
+    "question": "A rat learns the layout of a maze without any reinforcement. When food is later placed at the end, the rat runs through the maze quickly. This is an example of:",
+    "options": [
+      { "letter": "A", "text": "Insight learning" },
+      { "letter": "B", "text": "Classical conditioning" },
+      { "letter": "C", "text": "Latent learning" },
+      { "letter": "D", "text": "Observational learning" }
+    ],
+    "correct": "C",
+    "explanation": "Latent learning is learning that occurs without reinforcement and is not demonstrated until there is a reason to do so. The rat formed a cognitive map of the maze without rewards but only showed this learning when motivated by food.",
+    "relatedConcepts": ["Latent Learning", "Cognitive Maps", "Observational Learning"]
+  },
+  {
+    "id": 21, "unit": 4, "topic": "Social Influence", "difficulty": "Medium",
+    "stimulus": null,
+    "question": "A student changes their answer on a test after noticing that most classmates chose a different option. This is best explained by:",
+    "options": [
+      { "letter": "A", "text": "Obedience" },
+      { "letter": "B", "text": "Conformity" },
+      { "letter": "C", "text": "Cognitive dissonance" },
+      { "letter": "D", "text": "The bystander effect" }
+    ],
+    "correct": "B",
+    "explanation": "Conformity is changing behavior to match the group without being directly told to do so. The student was not given an order (obedience) but adjusted their behavior to match peers. This could be informational influence (believing the group knows better).",
+    "relatedConcepts": ["Conformity", "Obedience", "Informational Influence", "Normative Influence"]
+  },
+  {
+    "id": 22, "unit": 4, "topic": "Motivation", "difficulty": "Medium",
+    "stimulus": null,
+    "question": "According to the Yerkes-Dodson law, which student is most likely to perform best on an exam?",
+    "options": [
+      { "letter": "A", "text": "A student who feels no anxiety at all" },
+      { "letter": "B", "text": "A student experiencing moderate anxiety" },
+      { "letter": "C", "text": "A student experiencing extreme anxiety" },
+      { "letter": "D", "text": "A student who is highly aroused and extremely confident" }
+    ],
+    "correct": "B",
+    "explanation": "The Yerkes-Dodson law states that performance is best at moderate levels of arousal. Too little arousal (A) leads to low motivation; too much (C) leads to overwhelming anxiety. Moderate arousal provides optimal focus and energy.",
+    "relatedConcepts": ["Yerkes-Dodson Law", "Arousal Theory", "Optimal Arousal"]
+  },
+  {
+    "id": 23, "unit": 4, "topic": "Personality", "difficulty": "Medium",
+    "stimulus": null,
+    "question": "A therapist asks a client to describe what they see in an ambiguous inkblot image. This is an example of a:",
+    "options": [
+      { "letter": "A", "text": "Personality inventory using a Likert scale" },
+      { "letter": "B", "text": "Projective test" },
+      { "letter": "C", "text": "Achievement test" },
+      { "letter": "D", "text": "Standardized aptitude test" }
+    ],
+    "correct": "B",
+    "explanation": "Projective tests use ambiguous stimuli (like inkblots) with open-ended responses to reveal unconscious thoughts and feelings. This comes from the psychodynamic perspective. Personality inventories (A) use structured questions with limited answer choices (objective tests).",
+    "relatedConcepts": ["Projective Test", "Objective Test", "Psychodynamic Theory", "Rorschach"]
+  },
+  {
+    "id": 24, "unit": 5, "topic": "Psychological Disorders", "difficulty": "Hard",
+    "stimulus": "A person experiences delusions of persecution and auditory hallucinations. They believe the government is monitoring their thoughts.",
+    "question": "These symptoms are classified as:",
+    "options": [
+      { "letter": "A", "text": "Negative symptoms of schizophrenia" },
+      { "letter": "B", "text": "Positive symptoms of schizophrenia" },
+      { "letter": "C", "text": "Symptoms of generalized anxiety disorder" },
+      { "letter": "D", "text": "Symptoms of dissociative identity disorder" }
+    ],
+    "correct": "B",
+    "explanation": "Delusions and hallucinations are POSITIVE symptoms — things ADDED to a person's experience that shouldn't be there. Negative symptoms (A) are things ABSENT from typical behavior (flat affect, social withdrawal). 'Positive' and 'negative' do not mean good and bad.",
+    "relatedConcepts": ["Schizophrenia", "Positive Symptoms", "Negative Symptoms", "Delusions", "Hallucinations"]
+  },
+  {
+    "id": 25, "unit": 5, "topic": "Treatment", "difficulty": "Medium",
+    "stimulus": null,
+    "question": "A therapist helps a client identify and challenge negative thought patterns about themselves, the world, and the future. This approach is most consistent with:",
+    "options": [
+      { "letter": "A", "text": "Psychodynamic therapy" },
+      { "letter": "B", "text": "Humanistic therapy" },
+      { "letter": "C", "text": "Cognitive therapy" },
+      { "letter": "D", "text": "Applied behavior analysis" }
+    ],
+    "correct": "C",
+    "explanation": "Cognitive therapy focuses on the cognitive triad — negative thoughts about oneself, the world, and the future — and uses cognitive restructuring to challenge maladaptive thinking. Psychodynamic (A) uses free association. Humanistic (B) uses unconditional positive regard. ABA (D) applies conditioning principles.",
+    "relatedConcepts": ["Cognitive Therapy", "Cognitive Triad", "Cognitive Restructuring", "CBT"]
+  },
+  {
+    "id": 26, "unit": 0, "topic": "Scientific Foundations", "difficulty": "Easy",
+    "stimulus": "After a football team loses a big game, a fan says, 'I knew they were going to lose — they haven't been playing well all season.'",
+    "question": "This fan's statement best illustrates:",
+    "options": [
+      { "letter": "A", "text": "Overconfidence" },
+      { "letter": "B", "text": "Hindsight bias" },
+      { "letter": "C", "text": "Confirmation bias" },
+      { "letter": "D", "text": "The illusory correlation" }
+    ],
+    "correct": "B",
+    "explanation": "Hindsight bias is the 'I-knew-it-all-along' phenomenon — after learning an outcome, we believe we would have predicted it. The fan didn't actually predict the loss beforehand but now feels they did. Overconfidence (A) is being too certain about future predictions. Confirmation bias (C) is seeking confirming evidence. Illusory correlation (D) is perceiving a pattern that doesn't exist.",
+    "relatedConcepts": ["Hindsight Bias", "Overconfidence", "Scientific Attitude"]
+  },
+  {
+    "id": 27, "unit": 0, "topic": "Research Methods", "difficulty": "Medium",
+    "stimulus": null,
+    "question": "A researcher conducts a study in a factory and notices that workers' productivity increases during the observation period, regardless of any changes made to working conditions. This is an example of:",
+    "options": [
+      { "letter": "A", "text": "The placebo effect" },
+      { "letter": "B", "text": "Social desirability bias" },
+      { "letter": "C", "text": "The Hawthorne effect" },
+      { "letter": "D", "text": "Experimenter bias" }
+    ],
+    "correct": "C",
+    "explanation": "The Hawthorne effect occurs when people change their behavior because they know they are being observed, not because of any experimental change. The placebo effect (A) involves belief in a treatment. Social desirability (B) is answering questions in socially acceptable ways. Experimenter bias (D) is when the researcher's expectations influence results.",
+    "relatedConcepts": ["Hawthorne Effect", "Naturalistic Observation", "Confounding Variable"]
+  },
+  {
+    "id": 28, "unit": 0, "topic": "Research Methods", "difficulty": "Medium",
+    "stimulus": "A person believes that every time they wear their lucky socks, their sports team wins. They vividly remember the times their team won while wearing the socks but forget the times the team lost.",
+    "question": "This person's belief best illustrates:",
+    "options": [
+      { "letter": "A", "text": "A positive correlation" },
+      { "letter": "B", "text": "Hindsight bias" },
+      { "letter": "C", "text": "An illusory correlation" },
+      { "letter": "D", "text": "The third variable problem" }
+    ],
+    "correct": "C",
+    "explanation": "An illusory correlation is perceiving a relationship between two variables (lucky socks and winning) when none exists. The person remembers confirming cases (wins with socks) and ignores disconfirming ones (losses with socks), driven by confirmation bias.",
+    "relatedConcepts": ["Illusory Correlation", "Confirmation Bias", "Correlation"]
+  },
+  {
+    "id": 29, "unit": 4, "topic": "Social Influence", "difficulty": "Hard",
+    "stimulus": "During a group project, five students are assigned to write a report. When individual contributions are not tracked, two students do most of the work while the others contribute very little.",
+    "question": "The behavior of the students who contributed less is best explained by:",
+    "options": [
+      { "letter": "A", "text": "Social facilitation" },
+      { "letter": "B", "text": "Deindividuation" },
+      { "letter": "C", "text": "Social loafing" },
+      { "letter": "D", "text": "Group polarization" }
+    ],
+    "correct": "C",
+    "explanation": "Social loafing occurs when individuals put in less effort because their individual contributions are not identifiable within the group. Social facilitation (A) is about performance on easy vs hard tasks with an audience. Deindividuation (B) is losing identity in a group. Group polarization (D) is views becoming more extreme through discussion.",
+    "relatedConcepts": ["Social Loafing", "Social Facilitation", "Deindividuation", "Group Influence"]
+  },
+  {
+    "id": 30, "unit": 4, "topic": "Social Influence", "difficulty": "Medium",
+    "stimulus": null,
+    "question": "After attending a political rally with like-minded supporters, a person's views on the issue become more extreme than before. This best illustrates:",
+    "options": [
+      { "letter": "A", "text": "Groupthink" },
+      { "letter": "B", "text": "Group polarization" },
+      { "letter": "C", "text": "Conformity" },
+      { "letter": "D", "text": "Cognitive dissonance" }
+    ],
+    "correct": "B",
+    "explanation": "Group polarization is the tendency for group discussion to make the dominant viewpoint more extreme. Unlike groupthink (A), which is about suppressing disagreement for harmony, group polarization intensifies existing attitudes. Conformity (C) is changing behavior to match a group. Cognitive dissonance (D) is discomfort from conflicting attitudes and actions.",
+    "relatedConcepts": ["Group Polarization", "Groupthink", "Social Influence"]
+  },
+  {
+    "id": 31, "unit": 4, "topic": "Social Psychology", "difficulty": "Medium",
+    "stimulus": "A woman collapses in a crowded shopping mall. Despite dozens of people nearby, no one calls for help for several minutes.",
+    "question": "This scenario best illustrates:",
+    "options": [
+      { "letter": "A", "text": "Social loafing" },
+      { "letter": "B", "text": "Deindividuation" },
+      { "letter": "C", "text": "The bystander effect" },
+      { "letter": "D", "text": "The fundamental attribution error" }
+    ],
+    "correct": "C",
+    "explanation": "The bystander effect shows that the more people present in an emergency, the less likely any individual is to help due to diffusion of responsibility — each person assumes someone else will step in. Social loafing (A) is reduced effort in group tasks. Deindividuation (B) is loss of identity. FAE (D) is overattributing behavior to disposition.",
+    "relatedConcepts": ["Bystander Effect", "Diffusion of Responsibility", "Altruism"]
+  },
+  {
+    "id": 32, "unit": 4, "topic": "Attribution", "difficulty": "Medium",
+    "stimulus": "When your friend trips in the hallway, you think 'they're so clumsy.' When YOU trip in the hallway, you think 'that floor was slippery.'",
+    "question": "This pattern of attribution best illustrates:",
+    "options": [
+      { "letter": "A", "text": "The self-serving bias" },
+      { "letter": "B", "text": "The actor-observer bias" },
+      { "letter": "C", "text": "Cognitive dissonance" },
+      { "letter": "D", "text": "The just-world phenomenon" }
+    ],
+    "correct": "B",
+    "explanation": "The actor-observer bias is when we attribute others' negative behavior to their disposition (clumsy personality) but our own negative behavior to the situation (slippery floor). The self-serving bias (A) specifically involves taking credit for success and blaming failure on external factors. Cognitive dissonance (C) is attitude-behavior conflict. Just-world (D) is believing people get what they deserve.",
+    "relatedConcepts": ["Actor-Observer Bias", "Fundamental Attribution Error", "Self-Serving Bias", "Dispositional Attribution"]
+  },
+  {
+    "id": 33, "unit": 1, "topic": "Sensation", "difficulty": "Medium",
+    "stimulus": "A person watching an exciting basketball game doesn't notice that their friend has changed seats right next to them.",
+    "question": "This failure to notice an obvious change best illustrates:",
+    "options": [
+      { "letter": "A", "text": "Inattentional blindness" },
+      { "letter": "B", "text": "Change blindness" },
+      { "letter": "C", "text": "Sensory adaptation" },
+      { "letter": "D", "text": "The cocktail party effect" }
+    ],
+    "correct": "B",
+    "explanation": "Change blindness is the failure to notice an obvious change in the environment. Inattentional blindness (A) is failing to notice an unexpected stimulus (not a change). Sensory adaptation (C) is diminished sensitivity to an unchanging stimulus. The cocktail party effect (D) is selectively attending to one voice among many.",
+    "relatedConcepts": ["Change Blindness", "Inattentional Blindness", "Selective Attention"]
+  },
+  {
+    "id": 34, "unit": 2, "topic": "Perception", "difficulty": "Medium",
+    "stimulus": null,
+    "question": "In a painting, a row of trees appears smaller as it extends toward the horizon. The artist is using which monocular depth cue?",
+    "options": [
+      { "letter": "A", "text": "Interposition" },
+      { "letter": "B", "text": "Retinal disparity" },
+      { "letter": "C", "text": "Linear perspective" },
+      { "letter": "D", "text": "Convergence" }
+    ],
+    "correct": "C",
+    "explanation": "Linear perspective is the monocular cue where parallel lines appear to converge as they extend into the distance. Interposition (A) is when one object blocks another. Retinal disparity (B) and convergence (D) are BINOCULAR cues requiring both eyes.",
+    "relatedConcepts": ["Linear Perspective", "Monocular Cues", "Binocular Cues", "Depth Perception"]
+  },
+  {
+    "id": 35, "unit": 1, "topic": "Sensation", "difficulty": "Hard",
+    "stimulus": "A person with a cold notices that food tastes bland and flavorless.",
+    "question": "This experience best demonstrates:",
+    "options": [
+      { "letter": "A", "text": "Sensory adaptation" },
+      { "letter": "B", "text": "Sensory interaction" },
+      { "letter": "C", "text": "The gate control theory" },
+      { "letter": "D", "text": "Weber's law" }
+    ],
+    "correct": "B",
+    "explanation": "Sensory interaction is the principle that one sense can influence another. When smell is impaired (from a cold), taste perception is significantly diminished because the two senses work together to create the full experience of flavor. This is different from sensory adaptation (A), which is decreased sensitivity to an unchanging stimulus.",
+    "relatedConcepts": ["Sensory Interaction", "Gustation", "Olfaction", "McGurk Effect"]
+  },
+  {
+    "id": 36, "unit": 1, "topic": "Sleep", "difficulty": "Medium",
+    "stimulus": null,
+    "question": "During which stage of sleep would sleepwalking (somnambulism) most likely occur?",
+    "options": [
+      { "letter": "A", "text": "NREM-1" },
+      { "letter": "B", "text": "NREM-2" },
+      { "letter": "C", "text": "NREM-3" },
+      { "letter": "D", "text": "REM sleep" }
+    ],
+    "correct": "C",
+    "explanation": "Sleepwalking (somnambulism) occurs during NREM-3, the deepest stage of sleep with slow delta waves. It does NOT occur during REM sleep, when the body is in a state of muscle paralysis (atonia). REM sleep behavior disorder — physically acting out dreams — is a different condition.",
+    "relatedConcepts": ["NREM-3", "Delta Waves", "Somnambulism", "REM Sleep"]
+  },
+  {
+    "id": 37, "unit": 1, "topic": "Sleep", "difficulty": "Medium",
+    "stimulus": null,
+    "question": "The suprachiasmatic nucleus (SCN) regulates the circadian rhythm primarily by controlling the release of:",
+    "options": [
+      { "letter": "A", "text": "Dopamine" },
+      { "letter": "B", "text": "Serotonin" },
+      { "letter": "C", "text": "Melatonin" },
+      { "letter": "D", "text": "Cortisol" }
+    ],
+    "correct": "C",
+    "explanation": "The suprachiasmatic nucleus (SCN) in the hypothalamus controls circadian rhythms by regulating melatonin production. When the SCN receives light signals, it reduces melatonin, promoting wakefulness. In darkness, melatonin production increases, promoting sleepiness.",
+    "relatedConcepts": ["Suprachiasmatic Nucleus", "Melatonin", "Circadian Rhythm", "Hypothalamus"]
+  },
+  {
+    "id": 38, "unit": 1, "topic": "Psychoactive Drugs", "difficulty": "Hard",
+    "stimulus": "A person who has been drinking coffee daily for years finds that they need three cups to feel the same alertness that one cup used to provide. When they skip coffee, they get a headache.",
+    "question": "The headache illustrates _____, and needing more coffee illustrates _____.",
+    "options": [
+      { "letter": "A", "text": "Tolerance; withdrawal" },
+      { "letter": "B", "text": "Withdrawal; tolerance" },
+      { "letter": "C", "text": "Dependence; the placebo effect" },
+      { "letter": "D", "text": "Addiction; dependence" }
+    ],
+    "correct": "B",
+    "explanation": "The headache from skipping coffee is a withdrawal symptom (physical dependence). Needing more coffee for the same effect is tolerance — the drug's impact lessens with repeated exposure. Note: the headache is a specific example of physical dependence/withdrawal, while needing more is specifically tolerance.",
+    "relatedConcepts": ["Tolerance", "Withdrawal", "Physical Dependence", "Stimulants"]
+  },
+  {
+    "id": 39, "unit": 3, "topic": "Operant Conditioning", "difficulty": "Medium",
+    "stimulus": "A child who loved drawing begins drawing only when promised a reward. When the rewards stop, the child stops drawing altogether.",
+    "question": "This scenario best illustrates:",
+    "options": [
+      { "letter": "A", "text": "Learned helplessness" },
+      { "letter": "B", "text": "The overjustification effect" },
+      { "letter": "C", "text": "Extinction" },
+      { "letter": "D", "text": "Negative punishment" }
+    ],
+    "correct": "B",
+    "explanation": "The overjustification effect occurs when external rewards undermine intrinsic motivation. The child originally drew for enjoyment (intrinsic) but the reward shifted their motivation to extrinsic. When the reward stopped, the intrinsic motivation was gone too. Extinction (C) involves a conditioned response fading, not loss of intrinsic interest.",
+    "relatedConcepts": ["Overjustification Effect", "Intrinsic Motivation", "Extrinsic Motivation"]
+  },
+  {
+    "id": 40, "unit": 3, "topic": "Learning", "difficulty": "Medium",
+    "stimulus": null,
+    "question": "In Bandura's Bobo doll experiment, children who watched an adult act aggressively toward the doll were most likely to:",
+    "options": [
+      { "letter": "A", "text": "Show increased fear of the doll" },
+      { "letter": "B", "text": "Imitate the aggressive behavior toward the doll" },
+      { "letter": "C", "text": "Develop a conditioned fear response to adults" },
+      { "letter": "D", "text": "Show no change in behavior because they were not directly reinforced" }
+    ],
+    "correct": "B",
+    "explanation": "Bandura's Bobo doll experiment demonstrated observational learning — children imitated the aggressive behavior they observed in the adult model, even without being directly reinforced. This showed that learning can occur through observation alone, challenging the idea that direct reinforcement is necessary (D).",
+    "relatedConcepts": ["Observational Learning", "Bandura", "Modeling", "Prosocial and Antisocial Effects"]
+  },
+  {
+    "id": 41, "unit": 2, "topic": "Memory", "difficulty": "Medium",
+    "stimulus": null,
+    "question": "A student studies vocabulary while drinking coffee in their kitchen. On the test at school, they struggle to recall the words. According to context-dependent memory research, the student would perform best if they:",
+    "options": [
+      { "letter": "A", "text": "Studied the words more times the night before" },
+      { "letter": "B", "text": "Took the test in their kitchen while drinking coffee" },
+      { "letter": "C", "text": "Used massed practice instead of distributed practice" },
+      { "letter": "D", "text": "Focused on shallow processing of the words" }
+    ],
+    "correct": "B",
+    "explanation": "Context-dependent memory shows that recall improves when the learning and testing environments match. Studying in the kitchen and testing in the kitchen would provide contextual cues to aid retrieval. This combines context-dependent (same place) and state-dependent (same physical state — caffeine) memory effects.",
+    "relatedConcepts": ["Context-Dependent Memory", "State-Dependent Memory", "Retrieval Cues"]
+  },
+  {
+    "id": 42, "unit": 2, "topic": "Memory", "difficulty": "Hard",
+    "stimulus": "A researcher briefly flashes 12 letters on a screen. Participants can recall about 4-5 letters. But when a tone signals which row to report immediately after the flash, participants can recall almost all letters from that row.",
+    "question": "This experiment, conducted by Sperling, provides evidence for:",
+    "options": [
+      { "letter": "A", "text": "The limited capacity of long-term memory" },
+      { "letter": "B", "text": "The brief but large capacity of sensory (iconic) memory" },
+      { "letter": "C", "text": "The superiority of echoic over iconic memory" },
+      { "letter": "D", "text": "The serial position effect" }
+    ],
+    "correct": "B",
+    "explanation": "Sperling's partial-report experiment demonstrated that sensory (iconic) memory briefly stores more information than we can report. The full set of letters was available in iconic memory for a very brief moment, but faded before all could be reported — unless participants were immediately cued to report a specific row.",
+    "relatedConcepts": ["Iconic Memory", "Sensory Memory", "Sperling Experiment", "Echoic Memory"]
+  }
+]

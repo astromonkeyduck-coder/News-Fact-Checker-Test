@@ -1,0 +1,192 @@
+[
+  {
+    "id": "neuron-firing",
+    "title": "Neuron Firing (Action Potential)",
+    "unit": 1, "topic": "1.3",
+    "cedCode": "PSY-1.D",
+    "diagramType": "neuronFiring",
+    "description": "Trace the complete action potential from resting state through depolarization to refractory period.",
+    "steps": [
+      "Resting potential: neuron at -70mV baseline",
+      "Stimulus received at dendrites",
+      "Threshold reached at -55mV",
+      "Sodium channels open — rapid depolarization",
+      "Action potential travels down axon (saltatory conduction at nodes of Ranvier)",
+      "Signal reaches axon terminals",
+      "Refractory period: neuron resets"
+    ],
+    "keyPrinciple": "All-or-none principle: neuron fires completely or not at all.",
+    "frqRelevance": "High — explain neural transmission in biological bases of behavior.",
+    "tags": ["Biology", "FRQ"]
+  },
+  {
+    "id": "synapse",
+    "title": "Synapse & Neurotransmission",
+    "unit": 1, "topic": "1.4",
+    "cedCode": "PSY-1.E",
+    "diagramType": "synapse",
+    "description": "Visualize the synaptic cleft with neurotransmitter release, receptor binding, and reuptake.",
+    "steps": [
+      "Action potential arrives at presynaptic terminal",
+      "Synaptic vesicles release neurotransmitters into cleft",
+      "Neurotransmitters cross the synaptic gap",
+      "Bind to receptor sites on postsynaptic neuron",
+      "Signal continues (excitatory) or is blocked (inhibitory)",
+      "Reuptake: excess neurotransmitters reabsorbed by presynaptic neuron"
+    ],
+    "keyPrinciple": "Agonists mimic neurotransmitters; antagonists block receptors; reuptake inhibitors prevent reabsorption.",
+    "frqRelevance": "High — drug mechanisms and neural communication.",
+    "tags": ["Biology", "FRQ"]
+  },
+  {
+    "id": "brain-regions",
+    "title": "Brain Region Map",
+    "unit": 1, "topic": "1.5",
+    "cedCode": "PSY-1.F",
+    "diagramType": "brainRegions",
+    "description": "Interactive brain profile showing the four lobes, cerebellum, brain stem, and limbic system with their functions.",
+    "steps": [
+      "Frontal lobe: planning, decision-making, personality, speech production (Broca's area)",
+      "Parietal lobe: somatosensory processing, spatial awareness",
+      "Temporal lobe: auditory processing, speech comprehension (Wernicke's area), memory",
+      "Occipital lobe: visual processing",
+      "Cerebellum: balance, coordination, procedural learning",
+      "Brain stem (medulla & pons): breathing, heart rate, basic life functions",
+      "Limbic system: thalamus, hypothalamus, hippocampus, amygdala — emotion, memory, motivation"
+    ],
+    "keyPrinciple": "Damage to specific brain regions produces specific deficits. Broca's = speech production; Wernicke's = speech comprehension.",
+    "frqRelevance": "High — brain structure-function relationships appear frequently.",
+    "tags": ["Biology", "FRQ"]
+  },
+  {
+    "id": "sleep-cycle",
+    "title": "Sleep Cycle & Stages",
+    "unit": 1, "topic": "1.6",
+    "cedCode": "PSY-1.G",
+    "diagramType": "sleepCycle",
+    "description": "NREM stages 1-3 and REM sleep across a typical night, showing how REM frequency increases.",
+    "steps": [
+      "Stage 1 (NREM): light sleep, hypnagogic sensations, theta waves",
+      "Stage 2 (NREM): sleep spindles and K-complexes, body temperature drops",
+      "Stage 3 (NREM): deep/slow-wave sleep, delta waves, hard to wake",
+      "REM sleep: paradoxical sleep — brain active like wakefulness, body paralyzed, dreaming occurs",
+      "Cycles repeat ~90 minutes each; REM periods get longer through the night",
+      "REM rebound: body compensates for REM deprivation with more REM next sleep"
+    ],
+    "keyPrinciple": "REM frequency increases as the sleep cycle progresses. Sleep disruptions affect physical and cognitive performance.",
+    "frqRelevance": "Medium — EEG patterns and sleep stage identification.",
+    "tags": ["Biology"]
+  },
+  {
+    "id": "operant-quadrant",
+    "title": "Operant Conditioning Quadrant",
+    "unit": 3, "topic": "3.6",
+    "cedCode": "PSY-3.F",
+    "diagramType": "operantQuadrant",
+    "description": "The 2x2 matrix of positive/negative reinforcement and punishment with examples.",
+    "steps": [
+      "Positive reinforcement: ADD desirable — behavior INCREASES",
+      "Negative reinforcement: REMOVE undesirable — behavior INCREASES",
+      "Positive punishment: ADD undesirable — behavior DECREASES",
+      "Negative punishment: REMOVE desirable — behavior DECREASES"
+    ],
+    "keyPrinciple": "Positive/negative = add/remove. Reinforcement/punishment = increase/decrease behavior.",
+    "frqRelevance": "Very high — commonly tested with scenario-based questions.",
+    "tags": ["Learning", "FRQ"]
+  },
+  {
+    "id": "classical-conditioning",
+    "title": "Classical Conditioning Process",
+    "unit": 3, "topic": "3.5",
+    "cedCode": "PSY-3.E",
+    "diagramType": "classicalConditioning",
+    "description": "Trace the process from NS + UCS through acquisition to extinction and spontaneous recovery.",
+    "steps": [
+      "Before conditioning: UCS → UCR (natural response). NS → no response.",
+      "During conditioning (acquisition): NS + UCS → UCR",
+      "After conditioning: CS → CR",
+      "Extinction: CS alone → CR fades",
+      "Spontaneous recovery: After rest, CS → CR reappears (weaker)"
+    ],
+    "keyPrinciple": "CS must come BEFORE UCS for successful acquisition. Spontaneous recovery applies to both classical and operant conditioning.",
+    "frqRelevance": "Very high — scenario identification is a common exam question type.",
+    "tags": ["Learning", "FRQ"]
+  },
+  {
+    "id": "erikson-stages",
+    "title": "Erikson's 8 Psychosocial Stages",
+    "unit": 3, "topic": "3.4",
+    "cedCode": "PSY-3.D",
+    "diagramType": "eriksonStages",
+    "description": "Eight stages of psychosocial development across the lifespan, each with a core conflict.",
+    "steps": [
+      "Trust vs Mistrust (infancy): Can I trust the world?",
+      "Autonomy vs Shame/Doubt (toddler): Can I do things myself?",
+      "Initiative vs Guilt (preschool): Is it okay for me to act?",
+      "Industry vs Inferiority (school age): Am I competent?",
+      "Identity vs Role Confusion (adolescence): Who am I?",
+      "Intimacy vs Isolation (young adult): Can I love and be loved?",
+      "Generativity vs Stagnation (middle adult): Am I contributing?",
+      "Integrity vs Despair (late adult): Was my life meaningful?"
+    ],
+    "keyPrinciple": "Each stage involves a psychosocial conflict that must be resolved. AP exam loves scenario-based Erikson questions.",
+    "frqRelevance": "High — identify stage from behavior descriptions.",
+    "tags": ["Social", "FRQ"]
+  },
+  {
+    "id": "normal-curve",
+    "title": "Normal Distribution & Standard Deviation",
+    "unit": 0, "topic": "SP",
+    "cedCode": "SP3",
+    "diagramType": "normalCurve",
+    "description": "The bell curve showing mean, standard deviations, and the empirical rule percentages.",
+    "steps": [
+      "Mean = Median = Mode (all at center)",
+      "68% of data within ±1 standard deviation",
+      "95% of data within ±2 standard deviations",
+      "99.7% of data within ±3 standard deviations"
+    ],
+    "keyPrinciple": "In a normal distribution, specific percentages of scores fall within each standard deviation from the mean.",
+    "frqRelevance": "High — data interpretation on AAQ and MCQ.",
+    "tags": ["Stats", "FRQ"]
+  },
+  {
+    "id": "research-design",
+    "title": "Research Design Decision Tree",
+    "unit": 0, "topic": "SP",
+    "cedCode": "SP2",
+    "diagramType": "researchDesign",
+    "description": "Flowchart for choosing the correct research method based on whether variables can be manipulated.",
+    "steps": [
+      "Start: Can you manipulate a variable?",
+      "YES → Experiment (IV, DV, random assignment, control group)",
+      "NO → Which non-experimental method?",
+      "Case Study: in-depth single individual/group",
+      "Correlational: relationship between two variables (no causation)",
+      "Naturalistic Observation: observe in natural setting",
+      "Meta-Analysis: combine results from multiple studies"
+    ],
+    "keyPrinciple": "Only experiments establish cause and effect. Non-experimental methods cannot establish causation.",
+    "frqRelevance": "Very high — research method identification appears on every exam.",
+    "tags": ["Research", "FRQ"]
+  },
+  {
+    "id": "memory-models",
+    "title": "Multi-Store Memory Model",
+    "unit": 2, "topic": "2.3",
+    "cedCode": "PSY-2.C",
+    "diagramType": "memoryModel",
+    "description": "The flow from sensory memory through short-term/working memory to long-term memory.",
+    "steps": [
+      "Sensory memory: iconic (visual) and echoic (auditory) — very brief",
+      "Attention filters information to short-term memory",
+      "Short-term/working memory: limited capacity, temporary",
+      "Encoding (rehearsal, elaboration) transfers to long-term memory",
+      "Long-term memory: unlimited capacity, potentially permanent",
+      "Retrieval brings information back from long-term to working memory"
+    ],
+    "keyPrinciple": "Information must pass through each stage to be encoded correctly. Automatic processing happens without effort; effortful processing requires conscious attention.",
+    "frqRelevance": "High — encoding strategies and memory failures.",
+    "tags": ["Cognition", "FRQ"]
+  }
+]

@@ -99,6 +99,13 @@
   status = 200
   force = true
 
+# AP Psychology Master Review
+[[redirects]]
+  from = "/psych"
+  to = "/psych/"
+  status = 301
+  force = false
+
 # AP Euro Master Timeline
 [[redirects]]
   from = "/euro"

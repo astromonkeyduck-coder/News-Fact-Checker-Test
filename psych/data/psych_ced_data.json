@@ -1,0 +1,934 @@
+{
+  "courseInfo": {
+    "title": "AP Psychology",
+    "effectiveDate": "Fall 2026",
+    "units": 5,
+    "sciencePractices": [
+      { "id": "SP1", "name": "Concept Application", "description": "Apply psychological concepts, theories, and perspectives to real-world scenarios" },
+      { "id": "SP2", "name": "Research Methods and Design", "description": "Analyze and evaluate research studies, including experimental and non-experimental designs" },
+      { "id": "SP3", "name": "Data Interpretation", "description": "Interpret quantitative data, including graphs, tables, and statistical findings" },
+      { "id": "SP4", "name": "Argumentation", "description": "Develop defensible claims supported by scientifically derived evidence and reasoning" }
+    ],
+    "scientificFoundations": [
+      "Scientific attitude: curiosity (asking questions), skepticism (questioning claims), humility (willingness to be wrong), and empirical approach (relying on evidence).",
+      "Scientific method: observation → theory → hypothesis (testable prediction) → operational definition → testing → replication.",
+      "A good hypothesis must be falsifiable — it must be possible to disprove through observation or experiment.",
+      "Peer review: scientific experts evaluate a research article's theory, originality, methods, and accuracy before publication.",
+      "Hindsight bias: the tendency to believe, after learning an outcome, that we 'knew it all along.' Makes past events seem predictable.",
+      "Overconfidence: the tendency to overestimate the accuracy of our knowledge and judgments.",
+      "Together, hindsight bias and overconfidence can lead us to overestimate our intuition.",
+      "Survey: a research method that collects data by asking many people the same questions. Vulnerable to wording effects, low response rates, and social desirability bias.",
+      "Wording effects (anchoring): how a question is phrased can drastically alter responses.",
+      "Hawthorne effect: people change their behavior when they know they are being observed.",
+      "Illusory correlation: perceiving a relationship between two variables when none exists, often due to confirmation bias.",
+      "Nocebo effect: belief that a treatment will cause harm produces negative effects, even from an inactive treatment."
+    ],
+    "perspectives": [
+      { "name": "Biological", "focus": "Genetics, brain structures, neurotransmitters, and the nervous system" },
+      { "name": "Behavioral", "focus": "Observable behavior shaped by conditioning and reinforcement" },
+      { "name": "Cognitive", "focus": "Mental processes like thinking, memory, perception, and problem-solving" },
+      { "name": "Humanistic", "focus": "Free will, self-actualization, and personal growth" },
+      { "name": "Psychodynamic", "focus": "Unconscious processes, early experiences, and inner conflicts" },
+      { "name": "Sociocultural", "focus": "Social and cultural influences on behavior and mental processes" },
+      { "name": "Evolutionary", "focus": "How natural selection affects behavior and mental processes to increase survival" }
+    ]
+  },
+  "units": [
+    {
+      "id": 1,
+      "title": "Biological Bases of Behavior",
+      "weight": "15–17%",
+      "color": "#ef6f61",
+      "icon": "neuron",
+      "description": "The neural, genetic, and biological foundations of behavior and mental processes.",
+      "topics": [
+        {
+          "id": "1.1",
+          "title": "Interaction of Heredity and Environment",
+          "learningObjectives": [
+            {
+              "code": "PSY-1.A",
+              "text": "Describe the interaction of nature and nurture in shaping behavior and mental processes.",
+              "essentialKnowledge": [
+                "Heredity (nature) refers to the genetic or predisposed characteristics that influence physical traits, behaviors, and mental processes.",
+                "Environmental factors (nurture) refer to the external experiences that shape who we are.",
+                "It is not nature OR nurture—it is nature AND nurture. These two forces interact to shape behavior and mental processes.",
+                "A person might be genetically predisposed toward athleticism, but whether that potential develops depends on their environment.",
+                "Twin studies, family studies, and adoption studies help researchers understand how individuals are shaped by heredity and environment.",
+                "Chromosomes: 23 pairs (46 total). The 23rd pair determines biological sex. Genome: the complete set of chromosomes.",
+                "Identical twins share 100% of genes (one egg); fraternal twins share ~50% (two eggs). Identical twins raised apart still show similar intelligence and personality, demonstrating genetic influence.",
+                "Heritability: the proportion of variation among individuals in a group that can be attributed to genetics, even within the same environment."
+              ],
+              "skills": ["Concept Application"],
+              "examNotes": "Understand interaction, not just definitions."
+            },
+            {
+              "code": "PSY-1.B",
+              "text": "Describe the evolutionary perspective and its application to behavior.",
+              "essentialKnowledge": [
+                "The evolutionary perspective explores how natural selection affects behavior and mental processes to increase survival.",
+                "Natural selection: traits that aid survival and reproduction are passed on. Involves mutation, adaptation, and fitness.",
+                "Behaviors that contribute to survival tend to be found across cultures.",
+                "Outdated evolutionary tendencies: some genes that helped ancestors (e.g., craving high-calorie food during scarcity) may be maladaptive in modern environments.",
+                "Some individuals have misapplied evolutionary principles to discriminate against others (e.g., eugenics).",
+                "Eugenics is the belief in improving the genetic quality of the human population by selectively breeding for desirable traits."
+              ],
+              "skills": ["Concept Application"],
+              "examNotes": "CED specifically mentions evolutionary perspective."
+            }
+          ]
+        },
+        {
+          "id": "1.2",
+          "title": "The Nervous System",
+          "learningObjectives": [
+            {
+              "code": "PSY-1.C",
+              "text": "Describe the structure and function of the nervous system.",
+              "essentialKnowledge": [
+                "The nervous system is the body's communication network, broken into the central nervous system (CNS) and peripheral nervous system (PNS).",
+                "The CNS includes the brain and spinal cord; it processes information and interacts with all body processes.",
+                "The PNS connects the CNS to all organs and muscles.",
+                "The somatic nervous system handles voluntary processes (conscious control).",
+                "The autonomic nervous system governs involuntary processes (heart beating, digestion).",
+                "The sympathetic nervous system is the 'gas pedal'—activates fight-or-flight response, increases heart rate, dilates pupils.",
+                "The parasympathetic nervous system is the 'brake pedal'—calms the body (rest and digest): slows heartbeat, stimulates digestion, contracts pupils, returns to homeostasis.",
+                "Reflex arc: sensory receptors detect stimulus → sensory neurons carry signal to spinal cord → interneurons process → motor neurons trigger response. This happens in the spinal cord before the signal reaches the brain."
+              ],
+              "skills": ["Concept Application"],
+              "examNotes": "Know the full hierarchy: CNS/PNS → somatic/autonomic → sympathetic/parasympathetic."
+            }
+          ]
+        },
+        {
+          "id": "1.3",
+          "title": "The Neuron and Neural Transmission",
+          "learningObjectives": [
+            {
+              "code": "PSY-1.D",
+              "text": "Describe the structure and function of the neuron and the process of neural transmission.",
+              "essentialKnowledge": [
+                "Neuron types (SIM): Sensory neurons (afferent) detect stimuli and bring information IN to CNS. Interneurons process information within the CNS and relay signals. Motor neurons (efferent) carry commands OUT from CNS to muscles.",
+                "Neuron structure: dendrites (receive messages), cell body/soma (life support center), axon (sends impulse), myelin sheath (insulation for faster transmission), terminal branches (send messages to other cells).",
+                "Myelin sheath: insulates axon for faster signal transmission. Breakdown causes multiple sclerosis and myasthenia gravis.",
+                "The reflex arc: sensory neuron detects stimulus → signal goes to spinal cord → interneuron processes → motor neuron triggers response. Involves only spinal cord — information hasn't reached the brain yet.",
+                "Neural transmission involves the all-or-none principle: a neuron fires completely or not at all. No partial firing.",
+                "Resting potential: neuron's baseline electrical state (~-70mV). The cell membrane is selectively permeable to ions.",
+                "Threshold: minimum stimulation needed to trigger firing. If stimulus reaches threshold → depolarization → action potential.",
+                "Depolarization: sodium channels open, positively charged sodium atoms rush in, causing the electrical charge to reverse. This triggers the next section of axon to depolarize (chain reaction down the axon).",
+                "Refractory period: brief resting/pause after firing. The neuron recharges before it can fire again.",
+                "Neurotransmitters can be excitatory (increase likelihood of firing) or inhibitory (decrease likelihood of firing).",
+                "Synaptic transmission: action potential reaches axon terminal → neurotransmitter molecules released into synaptic gap → bind to receptor sites on postsynaptic (receiving) neuron → excite or inhibit a new action potential.",
+                "Reuptake: excess neurotransmitters are reabsorbed back into the presynaptic (sending) neuron for recycling. SSRIs block serotonin reuptake.",
+                "Neurons transmit signals at 2-200 mph — extremely fast, measured in milliseconds."
+              ],
+              "skills": ["Concept Application", "Research Methods and Design"],
+              "examNotes": "All-or-none principle (NOT 'all-or-nothing'). Presynaptic = sending neuron; postsynaptic = receiving neuron."
+            }
+          ]
+        },
+        {
+          "id": "1.4",
+          "title": "Neurotransmitters, Hormones, and Psychoactive Drugs",
+          "learningObjectives": [
+            {
+              "code": "PSY-1.E",
+              "text": "Describe the effects of neurotransmitters, hormones, and psychoactive drugs on behavior and mental processes.",
+              "essentialKnowledge": [
+                "Neurotransmitters can be excitatory (increase likelihood of action potential) or inhibitory (decrease likelihood).",
+                "Key neurotransmitters and their functions/deficits:",
+                "Dopamine: motor movement, alertness, reward, motivation. Excess linked to schizophrenia; deficit linked to Parkinson's disease.",
+                "Serotonin: mood regulation and sleep. Deficit linked to clinical depression. SSRIs block serotonin reuptake to treat depression.",
+                "Norepinephrine: alertness and arousal. Deficit linked to depression.",
+                "Glutamate: major excitatory neurotransmitter, involved in memory. Excess can trigger migraines and seizures.",
+                "GABA: major inhibitory neurotransmitter. Dysfunction linked to seizures and sleep problems.",
+                "Endorphins: natural pain control. Involved in addiction. Morphine mimics endorphins (agonist).",
+                "Acetylcholine (ACh): motor movement and memory. Deficit linked to Alzheimer's disease. Involved in myasthenia gravis.",
+                "Substance P: pain perception. Deficit results in inability to perceive pain.",
+                "Agonists increase a neurotransmitter's effect; antagonists block a neurotransmitter's effect.",
+                "Reuptake inhibitors prevent neurotransmitters from being reabsorbed, leaving more in the synapse.",
+                "Stimulants (caffeine, cocaine) increase neural activity.",
+                "Depressants (alcohol) decrease neural activity, slowing reaction time and impairing judgment.",
+                "Hallucinogens (marijuana) cause distortions in perception and cognition.",
+                "Opioids (heroin) act as pain relievers.",
+                "Drug use can lead to tolerance (needing more for same effect), addiction, and withdrawal symptoms.",
+                "The pituitary gland is the key gland of the endocrine system to know."
+              ],
+              "skills": ["Concept Application"],
+              "examNotes": "Focus on connecting neurotransmitters to behavior. Know drug categories and their effects."
+            }
+          ]
+        },
+        {
+          "id": "1.5",
+          "title": "The Brain",
+          "learningObjectives": [
+            {
+              "code": "PSY-1.F",
+              "text": "Describe the structure and function of brain regions and methods used to study the brain.",
+              "essentialKnowledge": [
+                "Brain stem (medulla and pons): basic life-sustaining functions — breathing, heart rate, blood pressure.",
+                "Reticular activating system: filters sensory information, directs attention, controls sleep-wake cycle, consciousness, and arousal.",
+                "Brain's reward center: involved in motivation, pleasure, reinforcement, and learning (no specific structure names needed). Hypothalamus influences reward; reward deficiency syndrome occurs when reward circuits are underactive.",
+                "Cerebellum ('little brain'): balance, coordination, posture, fine-tuning motor movements, and procedural learning. Damage results in clumsy, uncoordinated movement.",
+                "Thalamus: sensory relay station — routes ALL senses EXCEPT smell to the appropriate brain area.",
+                "Limbic system: emotion, memory, learning, motivation.",
+                "Hippocampus: processes and temporarily holds explicit memories before distributing to cortex for long-term storage.",
+                "Amygdala: processes aggression, fear, and anger. Helps activate fight-or-flight response.",
+                "Hypothalamus: influences pituitary gland (master gland), regulates the 'four Fs' (fighting, fleeing, feeding, mating), hunger hormones, and reward centers.",
+                "Cerebral cortex: outer covering of the brain, makes up ~85% of brain weight. Where higher-level processing happens. Divided into two hemispheres connected by the corpus callosum.",
+                "Glial cells (glue cells): white matter between neurons that nourish and support neural function. Do NOT transmit information.",
+                "Four lobes of the cerebral cortex, each with distinct functions:",
+                "Frontal lobe: decision-making, judgment, planning, reasoning, personality. Last to fully develop. Contains motor cortex (controls voluntary movement — left brain controls right body). Phineas Gage case showed frontal damage alters personality.",
+                "Parietal lobe: processes touch, pain, pressure, temperature. Contains sensory cortex (receives input from body — unequal distribution of receptors).",
+                "Occipital lobe: processes vision (back of head). Damage can cause prosopagnosia (face blindness) or blindsight.",
+                "Temporal lobe: above ears, processes auditory information, smell, and certain types of memory.",
+                "Association areas: regions where different brain functions interweave for complex understanding, problem-solving, and higher thinking.",
+                "Motor cortex: output — sends movement commands. Left hemisphere controls right side of body and vice versa. Neural prosthetics can interface with motor cortex.",
+                "Sensory cortex: input — receives sensation. Left hemisphere receives input from right side of body.",
+                "Split brain research: severing corpus callosum (the nerve fiber highway connecting hemispheres) reveals hemispheric specialization.",
+                "Left hemisphere: language, logic, sequential processing. Right visual field information goes to left hemisphere.",
+                "Right hemisphere: emotion, facial recognition, spatial awareness. Left visual field information goes to right hemisphere.",
+                "Broca's area (left hemisphere): speech PRODUCTION. Damage means person knows what they want to say but can't get words out. Can still repeat familiar songs.",
+                "Wernicke's area (left hemisphere): speech COMPREHENSION. Damage means person produces fluent speech but it doesn't make sense.",
+                "Aphasia: language disorder caused by damage to Broca's or Wernicke's area.",
+                "Brain plasticity: the brain's ability to change and build new connections, especially when young. Neurogenesis: the brain can build new neurons.",
+                "Methods to study the brain: EEG (brain waves, sleep studies), PET scan (glucose consumption shows active areas), fMRI (combines PET and MRI for detailed imaging), case studies, lesioning (destroying brain tissue)."
+              ],
+              "skills": ["Concept Application", "Research Methods and Design"],
+              "examNotes": "Reticular activating system described as controlling alertness (not just arousal)."
+            }
+          ]
+        },
+        {
+          "id": "1.6",
+          "title": "Sleep",
+          "learningObjectives": [
+            {
+              "code": "PSY-1.G",
+              "text": "Describe the stages, features, and functions of sleep and dreaming.",
+              "essentialKnowledge": [
+                "Consciousness consists of sleep and wakefulness.",
+                "Circadian rhythm: approximately 24-hour biological clock regulating the sleep-wake cycle. Both biology and environment influence sleep patterns.",
+                "Suprachiasmatic nucleus (SCN): cell clusters in hypothalamus that control circadian rhythms. When SCN receives light, it reduces melatonin production.",
+                "Melatonin: hormone produced in the evening that induces sleepiness. Modern artificial lighting can suppress melatonin production.",
+                "Body temperature correlates with wakefulness — as body warms, alertness increases.",
+                "Age affects sleep patterns: younger people tend to be night owls, shift toward morning person around age 20. Genetics influence how much sleep we need.",
+                "Jet lag: occurs when light cues from a new environment don't match the body's internal clock synced to the home time zone.",
+                "Sleep stages — a full cycle takes approximately 90 minutes:",
+                "NREM-1: transitioning into sleep, may experience hallucinations. Hypnagogic (hypnic) sensations: jerking or feeling of falling (possibly evolutionary — primates in trees).",
+                "NREM-2: officially asleep but not deep, easy to wake. Sleep spindles: random bursts of neural activity. Lasts about 20 minutes.",
+                "NREM-3: deep sleep, very hard to wake. Slow delta waves. Lasts about 30 minutes. Babies spend more time here. Somnambulism (sleepwalking/sleep-eating) occurs during this stage.",
+                "REM sleep: paradoxical sleep — brain activity looks like wakefulness but body is at most relaxed (muscle atonia). Most vivid dreaming occurs. REM frequency increases as the night progresses — more REM in later cycles.",
+                "REM rebound: when deprived of REM, body compensates by entering REM faster and spending more time in it during subsequent sleep.",
+                "REM sleep behavior disorder: physically acting out dreams during REM (loss of normal muscle paralysis).",
+                "Sleep debt is cumulative — can't make up lost sleep in one night. Need cumulative hours to restore REM deficit.",
+                "Why we sleep: restoration/recuperation of body and brain tissue, memory consolidation and storage, creative thinking (dreams may inspire), growth (pituitary gland releases growth hormones during sleep), protection (stationary at night = safer).",
+                "Dream theories: activation-synthesis theory (brain creates coherent stories from random neural firing during sleep), memory consolidation theory (dreams sort and process day's experiences).",
+                "Sleep disorders: insomnia (difficulty falling/staying asleep, ~10% of population), narcolepsy (overpowering urge to fall asleep, enters REM directly, ~0.001%), sleep apnea (failure to breathe during sleep, can be fatal, more common in obese males).",
+                "Sleep disruptions affect physical and cognitive performance, mood, memory, and focus during wakefulness.",
+                "Hypnosis: a state of focused awareness. Can help with pain, stress, anxiety, and phobias. Hypnotized people can endure pain longer (e.g., arm in ice bucket).",
+                "Posthypnotic suggestion: a suggestion carried out after the person is no longer hypnotized.",
+                "Hypnosis CANNOT force people to act against their will. Research does NOT support using hypnosis to accurately recall forgotten events.",
+                "Psychoactive drugs alter perception, mood, and behavior. Common examples include caffeine, alcohol, nicotine.",
+                "Depressants: reduce neural activity, slow body functions. Alcohol impairs judgment, increases risk-taking, disrupts memory (affects hippocampus), causes brain shrinkage. Expectancy effects: people may act drunk from a placebo.",
+                "Stimulants: excite neural activity, speed up body functions. Caffeine, nicotine, cocaine, ecstasy. Can result in energy/mood changes; ecstasy can cause permanent mood deflation.",
+                "Hallucinogens: distort perception and evoke sensory images. LSD, marijuana.",
+                "Tolerance: drug impact lessens with repeated exposure, requiring larger doses for the same effect.",
+                "Withdrawal: physical/psychological symptoms when drug use stops.",
+                "Dependence — physical (e.g., caffeine headache) and psychological (e.g., addiction to smoking). Only ~10% of people who use drugs become addicted; many recover on their own.",
+                "Not all pleasure-seeking behaviors qualify as addiction — overeating, overexercising, and overshopping are dysfunctional behaviors, not clinical addictions."
+              ],
+              "skills": ["Concept Application", "Data Interpretation"],
+              "examNotes": "Hypnagogic (correct spelling). Know EEG patterns for each stage."
+            }
+          ]
+        },
+        {
+          "id": "1.7",
+          "title": "Sensation",
+          "learningObjectives": [
+            {
+              "code": "PSY-1.H",
+              "text": "Describe the principles of sensation and the sensory systems.",
+              "essentialKnowledge": [
+                "Sensation: detection of a stimulus — converting physical energy into neural signals. Perception: interpretation of that stimulus — how the brain makes sense of it.",
+                "Absolute threshold: minimum amount of stimulus needed to detect it at least 50% of the time (e.g., dimmest light you can see).",
+                "Priming: programming the subconscious — exposure to one stimulus influences response to a later one. Subliminal stimuli (below absolute threshold) can prime responses.",
+                "Just noticeable difference (JND/difference threshold): smallest change between two stimuli that is detectable.",
+                "Weber's law: detecting a difference depends on proportional change, not absolute amount. Roughly 10% change needed to notice.",
+                "Sensory adaptation: diminished sensitivity to an unchanging stimulus (e.g., you stop feeling your clothes after wearing them).",
+                "Habituation: learned decrease in responsiveness to a repeated stimulus (behavioral, not sensory).",
+                "Sensory interaction: senses work together. Smell impacts taste. McGurk effect: seeing someone's mouth move affects what we hear them say.",
+                "Synesthesia: one sensory system experienced through another (e.g., 'seeing' sounds as colors).",
+                "Vision — Eye anatomy: cornea (protective layer, bends light) → aqueous humor (gives shape/pressure) → iris (colored muscle, controls pupil size) → pupil (hole that admits light) → lens (focuses light, inverts image) → vitreous humor (clear gel light passes through) → retina (back wall, contains photoreceptors).",
+                "Rods: peripheral retina, detect black/white and motion, more numerous than cones, activated in low light.",
+                "Cones: concentrated in fovea (focal point), detect color and fine detail, need more light.",
+                "Blind spot: hole in retina where optic nerve exits — no photoreceptors there. Brain fills in the gap.",
+                "Optic nerve: carries neural impulses from retina to brain for processing.",
+                "Accommodation: lens changes shape to focus at different distances. Becomes less flexible with age.",
+                "Nearsightedness (myopia): can see near but not far. Farsightedness (hyperopia): can see far but not near.",
+                "Trichromatic theory: three types of color receptors (red, green, blue) combine to produce all colors.",
+                "Opponent-process theory: three opposing color pairs (red-green, blue-yellow, black-white). Explains after-images — stare at one color, ganglion cells fatigue, opposing color appears.",
+                "Color blindness: monochromatic (see only 1 color), dichromatic (deficient in 1 of the 3 color receptors).",
+                "Blindsight: person can respond to visual stimuli without consciously seeing them (occipital damage).",
+                "Prosopagnosia: face blindness — inability to recognize faces despite intact vision.",
+                "Hearing — Sound localization: brain determines direction by comparing when sound reaches each ear and at what intensity.",
+                "Hearing loss: conduction deafness (damage to eardrum, bones, or prolonged loud noise exposure) vs sensorineural deafness (aging, genetics — more permanent).",
+                "Auditory theories: place theory, frequency theory, volley theory — all explain pitch perception.",
+                "Taste (gustation): six tastes — sweet, sour, salty, bitter, umami, oleogustus. Supertasters have denser taste buds. Taste decreases with age.",
+                "Smell (olfaction): ~20 million olfactory receptors → olfactory bulb → processed near memory areas (limbic system). Bypasses thalamus. Declines with age.",
+                "Touch: pressure, warmth, cold, pain. Mechanoreceptors, thermoreceptors, nociceptors (pain receptors in dermis).",
+                "Pain — Gate control theory: spinal cord gate opens (pain signals pass to brain) or closes (competing stimuli block pain). Holding a stubbed toe adds competing stimulus to dilute pain. Psychological factors (attention, expectations, neuroplasticity) and social factors (mirror neurons, presence of others) also influence pain.",
+                "Phantom limb sensation: feeling pain or sensation in a limb that has been amputated. Demonstrates brain plasticity.",
+                "Endorphins: natural painkillers. Production varies by genetics.",
+                "Vestibular sense: balance and spatial orientation via semicircular canals (fluid-filled structures in the ear).",
+                "Kinesthesis: body's awareness of position and movement in space. Receptors in limbs and joints (proprioceptors)."
+              ],
+              "skills": ["Concept Application", "Research Methods and Design"],
+              "examNotes": "Massive topic. Know every sensory system and its key structures/theories."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Cognition",
+      "weight": "22–25%",
+      "color": "#38bdf8",
+      "icon": "brain-network",
+      "description": "Perception, memory, thinking, problem-solving, language, and intelligence.",
+      "topics": [
+        {
+          "id": "2.1",
+          "title": "Perception",
+          "learningObjectives": [
+            {
+              "code": "PSY-2.A",
+              "text": "Describe the principles of perception and how they influence interpretation of sensory information.",
+              "essentialKnowledge": [
+                "Perception is how the brain organizes and interprets raw sensory information.",
+                "Bottom-up processing: driven by external sensory data, no prior knowledge or context. Building understanding from scratch ('started from the bottom').",
+                "Top-down processing: driven by prior knowledge, expectations, and context. Brain fills in gaps based on what it already knows (e.g., reading words with typos).",
+                "Schemas: organized patterns of thought that categorize information and guide understanding. Built from past experience.",
+                "Perceptual sets: predisposition to perceive one thing and not another — a form of top-down processing. Affected by context, motivation, and emotions.",
+                "Context effects: surrounding information determines how we perceive a stimulus (e.g., same image seen as saxophone player vs. woman depending on prior exposure).",
+                "Optical illusions (e.g., Müller-Lyer illusion) demonstrate how perceptual processing can be fooled.",
+                "Selective attention: focusing on a particular stimulus while filtering out others. Hearing your name across a room can break your focus (cocktail party effect).",
+                "Inattentional blindness: failure to notice an unexpected stimulus when focused on something else.",
+                "Change blindness: failure to notice an obvious change in the environment. Change deafness: auditory equivalent.",
+                "Choice blindness: being unaware of the actual reasons for your own choices.",
+                "Pop-out: a distinct stimulus that automatically captures attention without effortful search.",
+                "Gestalt principles — the brain organizes perception into meaningful wholes:",
+                "Figure-ground: distinguishing the main object (figure) from its background (ground).",
+                "Proximity: objects near each other are grouped together.",
+                "Similarity: similar objects are grouped together.",
+                "Continuity: we perceive smooth, continuous patterns rather than disconnected ones.",
+                "Closure: we fill in gaps to perceive complete shapes even when information is missing.",
+                "Depth perception — Binocular cues (require both eyes): retinal disparity (each eye sees slightly different image → depth) and convergence (eyes turn inward for close objects).",
+                "Monocular cues (one eye): relative size (smaller = farther), texture gradient (less detail = farther), interposition (blocking = in front), linear perspective (converging lines = distance), relative clarity.",
+                "Visual cliff experiment: demonstrates that infants and young animals have innate depth perception.",
+                "Motion perception: stroboscopic movement (rapid image sequence creates illusion of motion, e.g., movies at 24fps), phi phenomenon (flashing lights create illusion of movement), autokinetic effect (stationary point of light appears to move in darkness).",
+                "Perceptual constancy: brain perceives objects as unchanging despite changes in sensory input.",
+                "Size constancy: distant objects perceived as same size (not tiny). Ames room illusion exploits this.",
+                "Shape constancy: objects perceived as same shape from different angles (e.g., door opening).",
+                "Lightness/brightness constancy: objects perceived as same brightness despite changing illumination (relative luminance)."
+              ],
+              "skills": ["Concept Application"],
+              "examNotes": "Know specific Gestalt principles and monocular cues listed in CED."
+            }
+          ]
+        },
+        {
+          "id": "2.2",
+          "title": "Thinking, Problem-Solving, and Decision-Making",
+          "learningObjectives": [
+            {
+              "code": "PSY-2.B",
+              "text": "Describe how cognitive processes influence thinking, problem-solving, and decision-making.",
+              "essentialKnowledge": [
+                "Executive functions: cognitive processes for planning, organizing, critical thinking, goal-directed behavior.",
+                "Concepts form the basis of thought; prototypes are the ideal example of a concept.",
+                "Schemas help organize information; modified through assimilation and accommodation (connects to Piaget in Unit 3).",
+                "Algorithms: attempt all possible solutions—slow but guaranteed correct.",
+                "Heuristics: mental shortcuts—faster but can lead to errors.",
+                "Representativeness heuristic: judgments based on how closely something matches a stereotype.",
+                "Availability heuristic: judging likelihood based on how easily examples come to mind.",
+                "Mental set: relying on past strategies to solve new problems.",
+                "Priming: exposure to one stimulus influences response to a later stimulus.",
+                "Framing: how information is presented shapes interpretation.",
+                "Divergent thinking: exploring many possible solutions.",
+                "Convergent thinking: narrowing to single best solution.",
+                "Functional fixedness: only seeing traditional uses for objects.",
+                "Gambler's fallacy: mistaken belief that past random events affect future ones.",
+                "Sunk cost fallacy: continuing investment because of prior cost rather than future value."
+              ],
+              "skills": ["Concept Application", "Argumentation"],
+              "examNotes": "Gambler's fallacy and sunk cost fallacy are often overlooked but appear on exams."
+            }
+          ]
+        },
+        {
+          "id": "2.3",
+          "title": "Memory",
+          "learningObjectives": [
+            {
+              "code": "PSY-2.C",
+              "text": "Describe the processes and models of memory.",
+              "essentialKnowledge": [
+                "Atkinson-Shiffrin 3-Stage Model: encoding (get info in) → storage (retain it) → retrieval (get it out).",
+                "Flow: external events → sensory input → sensory memory → (if attended to) short-term/working memory → (if encoded) long-term memory → (retrieved back to) working memory.",
+                "Sensory memory: very brief (couple seconds). Iconic memory = fleeting visual. Echoic memory = fleeting auditory. Sperling's experiment showed we briefly store more than we can report.",
+                "Short-term/working memory: lasts 10-20 seconds. Can hold 7 ± 2 chunks of information at a time.",
+                "Long-term memory: limitless capacity, potentially permanent if occasionally revisited.",
+                "Explicit (declarative) memory: conscious, processed by hippocampus. Includes episodic (personal events) and semantic (facts/knowledge).",
+                "Implicit (nondeclarative) memory: unconscious, processed by cerebellum. Includes procedural memory (skills like riding a bike).",
+                "Prospective memory: remembering future actions.",
+                "Flashbulb memory: exceptionally clear and vivid memory of an emotionally significant or traumatic event.",
+                "Parallel processing: brain handles multiple information streams simultaneously.",
+                "Automatic processing: encoding without effort — space (where on a page), time (retracing steps), frequency (how often you've seen something), well-learned info (reading billboards automatically).",
+                "Long-term potentiation: synaptic connections strengthen with frequent activation — the biological basis of learning.",
+                "Working memory model: executive function (directs attention), phonological loop (verbal/auditory), visuospatial sketchpad (visual/spatial).",
+                "Multi-store model: sensory → short-term → long-term. Involves automatic and effortful processing.",
+                "Levels of processing model: shallow processing (structure/appearance of words) → phonemic (sound) → semantic/deep processing (meaning — best retention). Self-reference effect: connecting info to your own life enhances deep processing."
+              ],
+              "skills": ["Concept Application", "Research Methods and Design"],
+              "examNotes": "Know all three memory models and their components."
+            },
+            {
+              "code": "PSY-2.D",
+              "text": "Describe encoding, storage, and retrieval processes.",
+              "essentialKnowledge": [
+                "Effortful processing — Rehearsal: conscious repetition to encode information.",
+                "Ebbinghaus forgetting curve: forgetting happens very rapidly in the first few days, then levels off. More practice/repetition → decreased relearning time. First couple days are most critical to review.",
+                "Spacing effect: distributed practice (studying over time) is far better for long-term retention than massed practice (cramming). Cramming works only if tested immediately.",
+                "Testing effect: the best way to prepare is to take practice tests in the same format as the real test.",
+                "Metacognition: thinking about how we learn and what strategies work best.",
+                "Serial position effect: we remember the beginning (primacy effect — best for long-term) and end (recency effect — best for short-term) but not the middle.",
+                "Encoding strategies: mnemonic devices (memory aids), method of loci (memory palace — associating items with locations), chunking (grouping into meaningful units), acronyms, hierarchies (title → heading → subheading).",
+                "Visual encoding: imagery aids memory. Rosy retrospection: tendency to remember only positive aspects and forget negatives.",
+                "Storage differs by duration, capacity, and content across sensory/short-term/working/long-term memory.",
+                "Maintenance rehearsal (simple repetition) vs elaborative rehearsal (deeper connections and meaning).",
+                "Frontal lobes and hippocampus process new explicit memories; hippocampus temporarily holds before distributing to cortex.",
+                "Superior autobiographical memory: rare ability to remember nearly every day and aspect of one's life in vivid detail.",
+                "Amnesia — Anterograde: can't form NEW memories after an event (can only remember before). Retrograde: can't remember BEFORE the event (can only make memories after).",
+                "Source amnesia: forgetting where information came from, leading to false beliefs about its truth.",
+                "Alzheimer's disease and infantile amnesia.",
+                "Retrieval — Recognition (multiple choice) is easier than recall (fill-in-the-blank) because cues are provided.",
+                "Priming: activating a concept makes related information more accessible (seeing a rabbit → spelling 'hair' as 'hare').",
+                "Déjà vu: feeling of 'already seen' — typically lasts 10-30 seconds, often triggered by contextual similarity.",
+                "Context-dependent memory: matching learning and testing environments improves recall.",
+                "State-dependent memory: matching physical/emotional state during learning and testing improves recall (study in same state you'll be tested in).",
+                "Mood-congruent memory: current mood activates memories consistent with that mood (angry → recall all anger-related memories from years ago).",
+                "Encoding failure: information never properly encoded from short-term to long-term in the first place.",
+                "Storage decay: memories that aren't retrieved fade over time (Ebbinghaus curve).",
+                "Retrieval failure: information is in long-term memory but can't be accessed. Tip-of-the-tongue phenomenon.",
+                "Proactive interference: OLD information blocks learning NEW (PRO = forward — old reaches forward to block new).",
+                "Retroactive interference: NEW information blocks remembering OLD (RETRO = backward — new reaches back to block old).",
+                "Self-serving personal histories: we remember events consistent with our identity and forget what's inconsistent.",
+                "Repression: pushing unwanted memories out of awareness — eventually may forget them.",
+                "Misinformation effect (Loftus): post-event information alters memory — people overestimate severity when given leading questions.",
+                "Constructive memory: memories are reconstructed each time recalled, not played back like recordings.",
+                "Eyewitness testimony is notoriously unreliable due to misinformation, constructive memory, and source amnesia."
+              ],
+              "skills": ["Concept Application", "Research Methods and Design", "Argumentation"],
+              "examNotes": "Memory is one of the most heavily tested areas on the AP exam."
+            }
+          ]
+        },
+        {
+          "id": "2.4",
+          "title": "Intelligence and Achievement",
+          "learningObjectives": [
+            {
+              "code": "PSY-2.E",
+              "text": "Describe theories and measurement of intelligence.",
+              "essentialKnowledge": [
+                "Intelligence: ability to learn from experience, adapt, solve problems, apply knowledge.",
+                "Debate: general ability (g) vs multiple abilities.",
+                "Fluid intelligence: quick reasoning, abstract problems—declines with age.",
+                "Crystallized intelligence: accumulated knowledge and verbal skills—increases with age.",
+                "IQ originally: mental age / chronological age. Now: standardized comparison to age group.",
+                "Standardization: consistent procedures and environments.",
+                "Validity: measures what it's designed to measure (construct validity, predictive validity).",
+                "Reliability: yields similar results each time (test-retest, split-half).",
+                "Stereotype threat: fear of confirming negative stereotype impacts performance.",
+                "Stereotype lift: opposite—boosted performance.",
+                "Flynn effect: IQ scores increasing over time due to socioeconomic, healthcare, nutrition, education factors.",
+                "IQ varies more within groups than between groups.",
+                "Biases can impact interpretation; historical misuse to limit access to jobs, education, immigration.",
+                "Achievement tests: measure current knowledge. Aptitude tests: predict future performance.",
+                "Fixed mindset vs growth mindset."
+              ],
+              "skills": ["Concept Application", "Data Interpretation", "Argumentation"],
+              "examNotes": "Know psychometric concepts and sociocultural impacts on testing."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Development and Learning",
+      "weight": "22–25%",
+      "color": "#a78bfa",
+      "icon": "timeline",
+      "description": "Physical, cognitive, social, and emotional development across the lifespan, plus classical, operant, and observational learning.",
+      "topics": [
+        {
+          "id": "3.1",
+          "title": "Developmental Psychology Methods and Themes",
+          "learningObjectives": [
+            {
+              "code": "PSY-3.A",
+              "text": "Describe themes and methods in developmental psychology.",
+              "essentialKnowledge": [
+                "Three key themes: nature vs nurture, continuity vs discontinuity, stability vs change.",
+                "Cross-sectional research: different ages at same time—quicker but risk of cohort effects.",
+                "Longitudinal research: same group over time—clearer picture but costly and time-consuming."
+              ],
+              "skills": ["Research Methods and Design"],
+              "examNotes": "Know strengths and limitations of each research design."
+            }
+          ]
+        },
+        {
+          "id": "3.2",
+          "title": "Physical Development",
+          "learningObjectives": [
+            {
+              "code": "PSY-3.B",
+              "text": "Describe physical development across the lifespan.",
+              "essentialKnowledge": [
+                "Teratogens: harmful substances affecting prenatal development (alcohol, drugs).",
+                "Maternal illness, genetic mutations, hormonal and environmental factors also influence prenatal development.",
+                "Specific prenatal stages are outside AP scope—focus on influencing factors.",
+                "Fine motor skills (grasping) and gross motor skills (crawling, walking) are major infant milestones.",
+                "Reflexes like rooting reflex indicate healthy development.",
+                "Visual cliff experiment: infants have early depth perception ability.",
+                "Critical periods: specific window when skill must be acquired. Sensitive periods: brain primed for development.",
+                "Imprinting: some animals attach to first object encountered.",
+                "Adolescence: puberty, growth spurt, primary and secondary sex characteristics (menarche, spermarche).",
+                "Adulthood: gradual decline in physical and cognitive abilities."
+              ],
+              "skills": ["Concept Application", "Research Methods and Design"],
+              "examNotes": "Focus on factors influencing development, not specific prenatal stages."
+            }
+          ]
+        },
+        {
+          "id": "3.3",
+          "title": "Cognitive Development",
+          "learningObjectives": [
+            {
+              "code": "PSY-3.C",
+              "text": "Describe cognitive development across the lifespan.",
+              "essentialKnowledge": [
+                "Sex: biological differences. Gender: social, physical, behavioral traits considered normal for men/women.",
+                "Piaget: children develop schemas through assimilation, accommodation, and discontinuous stages.",
+                "Sensorimotor stage, preoperational stage, concrete operational stage, formal operational stage.",
+                "Vygotsky: children are social learners. Scaffolding and zone of proximal development (ZPD).",
+                "Crystallized intelligence stable in adulthood; fluid intelligence declines with age.",
+                "Dementia: broad term for cognitive disorders impairing memory, reasoning, and mental abilities.",
+                "Language components: phonemes, morphemes, semantics, grammar/syntax.",
+                "Language stages: cooing → babbling → one-word stage → telegraphic speech.",
+                "Overgeneralization (e.g., 'goed' instead of 'went') shows children learning language rules."
+              ],
+              "skills": ["Concept Application"],
+              "examNotes": "AP loves scenario questions about Piaget stages. Know each stage's capabilities and limitations."
+            }
+          ]
+        },
+        {
+          "id": "3.4",
+          "title": "Social and Emotional Development",
+          "learningObjectives": [
+            {
+              "code": "PSY-3.D",
+              "text": "Describe social and emotional development across the lifespan.",
+              "essentialKnowledge": [
+                "Ecological systems theory: layers of environment influence development.",
+                "Parenting styles: authoritarian (high demand/low warmth), authoritative (high/high), permissive (low demand/high warmth).",
+                "Cultural differences in parenting outcomes—no universally best style.",
+                "Attachment styles: secure and insecure (avoidant, anxious, disorganized).",
+                "Temperament: innate behavioral style affecting attachment.",
+                "Separation anxiety: heightened fear when away from caregiver.",
+                "Harlow's monkey studies: comfort > food in attachment.",
+                "Adolescent egocentrism: imaginary audience (belief others are watching) and personal fable (belief in uniqueness/invincibility).",
+                "Social clock: cultural expectations for timing of life events.",
+                "Emerging adulthood: transitional period in some cultures.",
+                "Childhood attachment styles affect adult relationships.",
+                "Adverse childhood experiences (ACEs): traumatic events with lasting impact.",
+                "Erikson's 8 stages of psychosocial development: each involves a psychological conflict.",
+                "Identity statuses: achievement, diffusion, foreclosure, moratorium (no fixed order)."
+              ],
+              "skills": ["Concept Application"],
+              "examNotes": "Be ready for scenario-based Erikson questions."
+            }
+          ]
+        },
+        {
+          "id": "3.5",
+          "title": "Classical Conditioning",
+          "learningObjectives": [
+            {
+              "code": "PSY-3.E",
+              "text": "Describe the principles of classical conditioning.",
+              "essentialKnowledge": [
+                "Classical conditioning: involuntary associative learning — pairing one stimulus with another to produce a response. Pavlov's dogs: bell + food → salivation.",
+                "Watson and behaviorism: Baby Albert experiment demonstrated that fears are learned through classical conditioning.",
+                "UCS (unconditioned stimulus) naturally produces UCR (unconditioned response). The response usually stays the same while the stimulus changes.",
+                "Through acquisition (initial pairing of CS with UCS), the neutral stimulus becomes a CS that produces a CR.",
+                "CS must come before UCS for successful acquisition. With time and repetition, the association strengthens.",
+                "Higher-order (second-order) conditioning: a CS can be used as a UCS to condition a new stimulus (e.g., bell + light paired in quick succession → both predict food).",
+                "Extinction: presenting CS alone causes CR to weaken and fade. Anything you can train, you can untrain.",
+                "Spontaneous recovery: after a rest period (minutes, hours, days), presenting CS alone can trigger CR again. The organism may relearn the association or it may extinguish again. Applies to BOTH classical and operant conditioning.",
+                "Stimulus generalization: similar stimuli trigger the CR (any bell ringing → salivation).",
+                "Stimulus discrimination: organism learns to respond only to the specific CS, not similar ones (only the exact bell → salivation).",
+                "Emotional responses can be classically conditioned → basis for counter-conditioning therapies (Unit 5).",
+                "Conditioned taste aversion: we blame novel foods for illness — demonstrates one-trial conditioning (single pairing is enough).",
+                "Biological preparedness: animals are predisposed to learn associations that threaten survival more quickly (e.g., fear of snakes learned faster than fear of flowers).",
+                "Learned helplessness (also relevant to operant): after repeated failure with no escape, organism stops trying even when escape becomes possible."
+              ],
+              "skills": ["Concept Application"],
+              "examNotes": "Spontaneous recovery applies to both classical and operant conditioning."
+            }
+          ]
+        },
+        {
+          "id": "3.6",
+          "title": "Operant Conditioning",
+          "learningObjectives": [
+            {
+              "code": "PSY-3.F",
+              "text": "Describe the principles of operant conditioning.",
+              "essentialKnowledge": [
+                "Operant conditioning: voluntary associative learning — associating consequences with behaviors. Different from classical (which associates two stimuli).",
+                "Thorndike's Law of Effect: behaviors followed by satisfying consequences are more likely to be repeated; behaviors followed by unpleasant consequences are less likely.",
+                "B.F. Skinner: developed the operant chamber (Skinner box) — rat learns to press lever for food or avoid shock.",
+                "Positive = adding something. Negative = removing something. Reinforcement = increase behavior. Punishment = decrease behavior.",
+                "Positive reinforcement: adding a desirable stimulus to increase behavior (getting a hug, sticker for good work). Best and quickest way to encourage behavior.",
+                "Negative reinforcement: removing an aversive stimulus to increase behavior (fastening seatbelt to stop beeping, taking aspirin to remove headache).",
+                "Positive punishment: adding an aversive stimulus to decrease behavior (spanking, parking ticket).",
+                "Negative punishment: removing a desirable stimulus to decrease behavior (time out, losing phone/license privileges).",
+                "Cons of punishment: suppresses but doesn't eliminate behavior; teaches discrimination (learn not to do it in certain places); can teach fear; physical punishment may increase aggression.",
+                "Primary reinforcers: satisfy biological needs (food, water). Secondary (conditioned) reinforcers: value is learned (money, grades).",
+                "Immediate vs delayed reinforcers: immediate rewards are more powerful (marshmallow test — 1 now or 2 in 15 minutes).",
+                "Discriminative stimulus: a cue in the environment that signals a specific behavior will lead to a particular consequence.",
+                "Shaping: rewarding successive approximations toward a target behavior (approach ball → reward; touch it → reward; hold it → reward; carry it → reward).",
+                "Instinctive drift: animals revert to biologically predisposed behaviors, limiting shaping (pigeons peck instead of flap wings for food).",
+                "Superstitious behavior: reinforcement of unrelated behaviors creates false cause-effect beliefs (pigeon gets food every 10 seconds but thinks its pecking caused it).",
+                "Learned helplessness: after repeated failure with no escape, organism stops trying even when circumstances change.",
+                "Overjustification effect: rewarding someone for doing something they already enjoy can reduce their intrinsic motivation. Paying for a fun activity is the quickest way to make it feel like work.",
+                "Reinforcement schedules — Continuous: every correct response is reinforced. Fastest learning but also fastest extinction.",
+                "Partial (intermittent) reinforcement: not every response reinforced. Slower to learn but much more resistant to extinction.",
+                "Fixed-ratio: reinforcement after a set number of responses. Variable-ratio: reinforcement after an unpredictable number (slot machines — highest response rate).",
+                "Fixed-interval: reinforcement after a set time period (scalloped pattern — increase near reinforcement time). Variable-interval: reinforcement after unpredictable time intervals (checking email).",
+                "Ratio schedules generally produce higher response rates than interval schedules."
+              ],
+              "skills": ["Concept Application", "Data Interpretation"],
+              "examNotes": "Schedules of reinforcement: use hyphens (e.g., 'fixed-ratio'). Easily mixed up with classical conditioning on AP exam."
+            }
+          ]
+        },
+        {
+          "id": "3.7",
+          "title": "Social, Cognitive, and Neurological Factors in Learning",
+          "learningObjectives": [
+            {
+              "code": "PSY-3.G",
+              "text": "Describe how social, cognitive, and neurological factors influence learning.",
+              "essentialKnowledge": [
+                "Social learning theory (Bandura): learning through observation without personal experience — observational learning/modeling.",
+                "Bandura's Bobo doll experiment: children who watched an adult act aggressively toward a Bobo doll imitated the aggressive behavior.",
+                "Mirror neurons: brain cells that fire both when performing an action and when watching someone else perform it. Helps us feel what others feel and facilitates observational learning.",
+                "Models: we are more likely to imitate people we identify with or look up to. Rewarded model → more imitation (vicarious reinforcement).",
+                "Prosocial effects: positive behaviors being modeled and copied. Antisocial effects: negative behaviors being modeled and copied.",
+                "Insight learning: sudden 'eureka' moment — solution appears all at once, not gradually. No trial-and-error, association, or modeling involved.",
+                "Latent learning: hidden learning that occurs without reinforcement and isn't demonstrated until there is an incentive to show it.",
+                "Cognitive maps: mental representations of locations and routes — evidence of latent learning (you know the layout even without being rewarded for learning it).",
+                "Intrinsic motivation: doing something because you love it, driven from within. Extrinsic motivation: doing something for external rewards.",
+                "Overjustification effect (also in operant): external rewards can undermine intrinsic motivation."
+              ],
+              "skills": ["Concept Application", "Research Methods and Design"],
+              "examNotes": "Distinguish between observational, insight, and latent learning."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Social Psychology and Personality",
+      "weight": "21–23%",
+      "color": "#f08a7d",
+      "icon": "social-network",
+      "description": "Attribution, attitudes, social influence, group behavior, personality theories, motivation, and emotion.",
+      "topics": [
+        {
+          "id": "4.1",
+          "title": "Attribution and Person Perception",
+          "learningObjectives": [
+            {
+              "code": "PSY-4.A",
+              "text": "Describe attribution theory and person perception.",
+              "essentialKnowledge": [
+                "Attributions: explanations for behavior. Dispositional (internal — personality, character) vs situational (external — environment, circumstances).",
+                "Attribution theory: how people rationalize behavior of self and others.",
+                "Explanatory style: optimistic or pessimistic → predicts responses to challenges.",
+                "Fundamental attribution error: overattributing others' behavior to their disposition while underestimating situational factors.",
+                "Actor-observer bias: we attribute others' bad behavior to their disposition, but our own bad behavior to our situation.",
+                "Self-serving bias: we attribute our successes to our disposition (internal) and our failures to the situation (external).",
+                "Locus of control: internal (own actions determine outcomes) vs external (outside forces).",
+                "Mere exposure effect: preference develops through familiarity — the more you see something, the more you like it.",
+                "Self-fulfilling prophecy: when a belief leads to behavior that makes the belief come true. Believing someone likes you → you respond warmly → they actually like you more.",
+                "Social comparison: evaluating self by comparing to others.",
+                "Upward social comparison (compare to perceived better) vs downward (perceived worse).",
+                "Relative deprivation: feeling worse off compared to comparison group.",
+                "Halo effect: overall positive impression of a person (often physical attractiveness) influences how we judge their specific traits.",
+                "Proximity, similarity, and physical attractiveness influence interpersonal attraction."
+              ],
+              "skills": ["Concept Application"],
+              "examNotes": "Know all biases and be able to identify them in scenarios."
+            }
+          ]
+        },
+        {
+          "id": "4.2",
+          "title": "Attitudes and Attitude Change",
+          "learningObjectives": [
+            {
+              "code": "PSY-4.B",
+              "text": "Describe how attitudes are formed and changed.",
+              "essentialKnowledge": [
+                "Stereotypes: generalized concepts about a group; reduce cognitive load but cause bias.",
+                "In-group: group you identify with. Out-group: group you don't identify with.",
+                "Prejudice: biased thinking about a group. Discrimination: actions against a group.",
+                "Implicit attitudes: unconscious beliefs/feelings.",
+                "Just-world phenomenon: belief that people get what they deserve — can lead to victim blaming.",
+                "Out-group homogeneity bias: seeing out-group members as more similar to each other than they actually are.",
+                "In-group bias: favoring your own group and ascribing positive qualities to the in-group.",
+                "Ethnocentrism: judging other cultures by the standards of your own.",
+                "Other-race effect: tendency to more accurately recognize faces of one's own race.",
+                "Scapegoat theory: directing prejudice toward a target group to blame for problems.",
+                "Belief perseverance: belief persists despite contradicting evidence.",
+                "Confirmation bias: seeking info that confirms existing beliefs.",
+                "Cognitive dissonance: discomfort when actions and attitudes conflict; motivated to reduce."
+              ],
+              "skills": ["Concept Application", "Argumentation"],
+              "examNotes": "Distinguish between prejudice (attitude) and discrimination (behavior)."
+            }
+          ]
+        },
+        {
+          "id": "4.3",
+          "title": "Social Influence",
+          "learningObjectives": [
+            {
+              "code": "PSY-4.C",
+              "text": "Describe how social situations influence behavior.",
+              "essentialKnowledge": [
+                "Social norms: accepted and expected behaviors within a society. Norms define expectations and roles.",
+                "Social influence theory: normative influence (go along to fit in, avoid judgment) vs informational influence (believe group has better information than you).",
+                "Elaboration likelihood model: central route (careful analysis of facts/arguments — lasting change) vs peripheral route (superficial cues like attractiveness — short-term change).",
+                "Foot-in-the-door: start with small request, then build to larger request.",
+                "Door-in-the-face: start with unreasonably large request, then follow with actual smaller request.",
+                "Conformity: changing behavior to match the group without being directly told to. Asch's study demonstrated conformity with line-length judgments.",
+                "Factors increasing conformity: feeling incompetent/insecure, group of 3+, unanimous group, admiring the group, no prior commitment, being observed, culture emphasizing social standards.",
+                "Obedience: complying with direct orders from an authority figure. Milgram's study showed 67% of participants obeyed to the end.",
+                "Chameleon effect (mirror effect): unconsciously mimicking others' expressions, postures, and behaviors. People tend to like those who mirror them.",
+                "Role-playing affects attitudes: we gradually become what we act like (Stanford Prison Experiment).",
+                "Social facilitation: presence of others improves performance on easy/well-practiced tasks but worsens performance on difficult/unfamiliar tasks.",
+                "Social loafing: individuals contribute less effort when their contributions are not individually identifiable within a group.",
+                "Deindividuation: loss of individual identity in a group, leading to behavior one would not normally engage in (mob mentality). Anonymity increases this effect.",
+                "Group polarization: group discussion strengthens the dominant viewpoint, making like-minded people more extreme in their positions.",
+                "Groupthink: desire for group harmony overrides realistic evaluation of alternatives. People sacrifice their own views for group consensus.",
+                "Individualistic cultures: emphasize personal achievement and independence. Collectivist cultures: emphasize group goals and community.",
+                "Industrial-organizational psychologists: study workplace behavior, management, co-worker relationships, and burnout.",
+                "Altruism: selfless behavior — putting others' needs before your own.",
+                "Social reciprocity norms: help those who have helped us.",
+                "Social responsibility norms: help those who need it, because it is the right thing to do.",
+                "Bystander effect: the more bystanders present, the less likely any individual is to help — diffusion of responsibility.",
+                "To help, one must: notice the incident, interpret it as an emergency, and assume personal responsibility.",
+                "Scapegoat theory: when things go wrong, people direct prejudice and blame toward an outgroup target.",
+                "Mirror-image perception: each side in a conflict views itself as righteous and the other as evil.",
+                "Superordinate goals: shared goals that require cooperation between conflicting groups, promoting peace.",
+                "Tragedy of the commons: when individuals pursuing self-interest collectively harm the group."
+              ],
+              "skills": ["Concept Application", "Research Methods and Design"],
+              "examNotes": "Don't mix up conformity and obedience."
+            }
+          ]
+        },
+        {
+          "id": "4.4",
+          "title": "Personality Theories",
+          "learningObjectives": [
+            {
+              "code": "PSY-4.D",
+              "text": "Describe the major personality theories and their assessment methods.",
+              "essentialKnowledge": [
+                "Psychodynamic theory: unconscious processes drive personality. Ego, id, superego.",
+                "Defense mechanisms: projection, displacement, sublimation, rationalization, reaction formation, regression, denial, repression.",
+                "Projective tests: open responses (e.g., Rorschach). Objective tests: limited answers, specific responses.",
+                "Humanistic theory: unconditional regard and self-actualizing tendency.",
+                "Self-actualization vs self-transcendence. Unconditional vs conditional positive regard. Self-concept formation.",
+                "Social cognitive theory: reciprocal determinism (behavior × environment × personal factors).",
+                "Self-concept, self-efficacy (belief in ability to succeed), self-esteem (overall self-worth).",
+                "Trait theories: enduring characteristics → typical responses.",
+                "Big Five (OCEAN): agreeableness, openness, extraversion, conscientiousness, neuroticism.",
+                "Measured by personality inventories using Likert scales; analyzed via factor analysis."
+              ],
+              "skills": ["Concept Application"],
+              "examNotes": "Know defense mechanisms and Big Five traits with examples."
+            }
+          ]
+        },
+        {
+          "id": "4.5",
+          "title": "Motivation",
+          "learningObjectives": [
+            {
+              "code": "PSY-4.E",
+              "text": "Describe theories of motivation.",
+              "essentialKnowledge": [
+                "Drive reduction theory: behaviors maintain homeostasis by reducing biological drives.",
+                "Arousal theory: seek optimal arousal level. Yerkes-Dodson law: moderate arousal → best performance.",
+                "Self-determination theory: intrinsic motivation (from within) vs extrinsic motivation (external rewards).",
+                "Incentive theory: rewards as extrinsic motivation.",
+                "Instincts: innate fixed behavior patterns in response to stimuli (mainly non-human animals).",
+                "Lewin's motivational conflicts: approach-approach, approach-avoidance, avoidance-avoidance.",
+                "Sensation seeking: need for varied/novel experiences (experience, thrill, disinhibition, boredom susceptibility).",
+                "Hunger: ghrelin and leptin regulated by hypothalamus via pituitary gland.",
+                "External eating factors: presence of food, time of day, social gatherings."
+              ],
+              "skills": ["Concept Application"],
+              "examNotes": "Yerkes-Dodson law commonly tested. Know conflict types."
+            }
+          ]
+        },
+        {
+          "id": "4.6",
+          "title": "Emotion",
+          "learningObjectives": [
+            {
+              "code": "PSY-4.F",
+              "text": "Describe theories and expressions of emotion.",
+              "essentialKnowledge": [
+                "Emotion (affect): complex psychological process distinguished from reasoning/knowledge.",
+                "Theories debate: physiological and cognitive experiences sequential vs simultaneous; cognitive label required?",
+                "Specific theory NAMES (James-Lange, Cannon-Bard) are outside AP scope—focus on perspectives.",
+                "Facial feedback hypothesis: facial expressions can influence emotional experience.",
+                "Broaden-and-build theory: positive emotions broaden awareness; negative emotions narrow thinking.",
+                "Universality: anger, disgust, sadness, happiness, surprise, fear may be common across cultures (mixed results).",
+                "Display rules and elicitors differ by culture, gender, age, socioeconomic class."
+              ],
+              "skills": ["Concept Application", "Research Methods and Design"],
+              "examNotes": "Don't memorize theory names—understand perspectives on emotion."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Mental and Physical Health",
+      "weight": "15–17%",
+      "color": "#22d3ee",
+      "icon": "health-shield",
+      "description": "Stress, psychological disorders, treatment approaches, and positive psychology.",
+      "topics": [
+        {
+          "id": "5.1",
+          "title": "Stress and Health Psychology",
+          "learningObjectives": [
+            {
+              "code": "PSY-5.A",
+              "text": "Describe the effects of stress and strategies for coping.",
+              "essentialKnowledge": [
+                "Health psychology: how psychological factors influence physical health and wellness.",
+                "Stress linked to hypertension, headaches, immune suppression.",
+                "Eustress (positive/motivating) vs distress (negative/overwhelming).",
+                "Stressors: traumatic events, daily hassles, ACEs (from Unit 3).",
+                "General Adaptation Syndrome (GAS): alarm → resistance → exhaustion.",
+                "Alarm: triggers fight-flight-freeze (sympathetic nervous system).",
+                "Resistance: body adapts to stressor. Exhaustion: resources depleted, susceptibility to illness.",
+                "Tend-and-befriend theory: some react to stress by tending to needs/seeking connections.",
+                "Problem-focused coping: treating stress as problem to solve.",
+                "Emotion-focused coping: managing emotional reactions (breathing, meditation, medication).",
+                "Positive psychology: factors leading to well-being, resilience, positive emotions.",
+                "Six categories of virtues. Expressing gratitude. Signature strengths.",
+                "Post-traumatic growth: positive changes from struggling with challenging events."
+              ],
+              "skills": ["Concept Application"],
+              "examNotes": "Know GAS stages and coping strategy types."
+            }
+          ]
+        },
+        {
+          "id": "5.2",
+          "title": "Psychological Disorders",
+          "learningObjectives": [
+            {
+              "code": "PSY-5.B",
+              "text": "Describe the classification and causes of psychological disorders.",
+              "essentialKnowledge": [
+                "Three factors: dysfunction, distress, deviation from social norms.",
+                "Diagnosis: benefits (treatment access) but also risks (labeling, stigma).",
+                "DSM (American Psychiatric Association) and ICD (World Health Organization).",
+                "Eclectic approach: drawing from multiple perspectives.",
+                "Biopsychosocial model: biological + psychological + sociocultural factors.",
+                "Diathesis-stress model: genetic vulnerability (diathesis) + stressful experiences (stress).",
+                "Neurodevelopmental: ADHD and ASD (onset in childhood).",
+                "Schizophrenia spectrum: five areas of impairment. Positive symptoms (added: delusions, hallucinations) vs negative symptoms (absent: flat affect, catatonic stupor).",
+                "Delusions of persecution and grandeur. Word salad. Catatonia (excitement or stupor).",
+                "Acute vs chronic. Dopamine hypothesis.",
+                "Depressive disorders: major depressive (2+ weeks) and persistent depressive (2+ years).",
+                "Bipolar disorders: mania and depression cycles. Bipolar I and Bipolar II.",
+                "Anxiety disorders: specific phobias, agoraphobia, panic disorder, social anxiety, GAD.",
+                "Culture-bound: ataque de nervios, taijin kyofusho.",
+                "OCD and related: OCD and hoarding disorder. OCD ≠ OCPD.",
+                "Dissociative disorders: dissociative amnesia (with/without fugue), dissociative identity disorder.",
+                "Trauma/stressor-related: PTSD (hypervigilance, flashbacks, insomnia, detachment).",
+                "Feeding/eating: anorexia nervosa and bulimia nervosa.",
+                "Personality disorders: Cluster A (odd), Cluster B (dramatic), Cluster C (anxious)."
+              ],
+              "skills": ["Concept Application", "Research Methods and Design"],
+              "examNotes": "Know positive vs negative symptoms, disorder categories, and culture-bound syndromes."
+            }
+          ]
+        },
+        {
+          "id": "5.3",
+          "title": "Treatment of Psychological Disorders",
+          "learningObjectives": [
+            {
+              "code": "PSY-5.C",
+              "text": "Describe treatment approaches for psychological disorders.",
+              "essentialKnowledge": [
+                "Cultural humility and therapeutic alliance are essential for effective therapy.",
+                "Deinstitutionalization: shift from asylums to decentralized care combining medication and psychosocial therapies.",
+                "APA ethical principles protect patients in treatment.",
+                "Psychodynamic therapies: free association, dream interpretation to uncover unconscious.",
+                "Cognitive therapies: cognitive restructuring, fear hierarchies. Cognitive triad: negative thoughts about self, world, future.",
+                "Applied behavior analysis: conditioning principles for disorders/developmental disabilities.",
+                "Exposure therapies: systematic desensitization. Aversion therapy. Token economies. Biofeedback.",
+                "Cognitive behavioral therapies: combine cognitive and behavioral techniques.",
+                "Dialectical behavior therapy (DBT): borderline personality, emotional regulation, self-harm.",
+                "Rational emotive behavior therapy (REBT): anxiety, depression, anger.",
+                "Humanistic/person-centered therapy: active listening, unconditional positive regard.",
+                "Hypnosis: effective for pain/anxiety; NOT for accurate memory retrieval or age regression.",
+                "Psychoactive medications: antidepressants, anti-anxiety, lithium, antipsychotics.",
+                "Side effects include tardive dyskinesia (movement disorder, dopamine regulation).",
+                "Interventions: psychosurgery, lesioning, TMS, electroconvulsive therapy, lobotomy."
+              ],
+              "skills": ["Concept Application", "Argumentation"],
+              "examNotes": "Know which therapy matches which disorder. Counter-conditioning connects to classical conditioning in Unit 3."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

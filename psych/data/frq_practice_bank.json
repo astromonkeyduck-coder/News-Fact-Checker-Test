@@ -1,0 +1,101 @@
+{
+  "aaq": {
+    "title": "Argument-Based Question (AAQ)",
+    "description": "Analyze a research article or study and respond to six parts examining research methods, variables, statistics, ethics, and argumentation.",
+    "scoringChecklist": [
+      { "part": "A", "task": "Identify the research method used in the study.", "points": 1, "tip": "State whether it is experimental, correlational, case study, naturalistic observation, etc." },
+      { "part": "B", "task": "Identify variables (IV, DV, or measured variables).", "points": 1, "tip": "For experiments: IV = manipulated, DV = measured. For correlational: identify the two measured variables." },
+      { "part": "C", "task": "Interpret a statistical finding from the study.", "points": 1, "tip": "Explain what the statistic means in context. Reference effect size, correlation coefficient, or significance." },
+      { "part": "D", "task": "Describe a potential ethical concern related to the study.", "points": 1, "tip": "Per CED clarification: this asks about ETHICAL concerns specifically (informed consent, deception, harm, confidentiality)." },
+      { "part": "E", "task": "Evaluate the generalizability of the findings.", "points": 1, "tip": "Consider sample size, sampling method, population represented, and potential biases." },
+      { "part": "F", "task": "Construct an argument using evidence from the study.", "points": 1, "tip": "Make a defensible claim, support with study evidence, and explain reasoning." }
+    ],
+    "commonWarnings": [
+      "Do NOT use personal opinions as evidence.",
+      "Do NOT confuse correlation with causation.",
+      "Do NOT give vague ethical concerns — be specific (e.g., lack of informed consent).",
+      "Do NOT skip reasoning — evidence alone is not enough."
+    ],
+    "practicePrompts": [
+      {
+        "id": 1,
+        "title": "Caffeine and Cognitive Performance",
+        "stimulus": "Researchers randomly assigned 120 college students to one of three groups: Group 1 received 200mg caffeine, Group 2 received 100mg caffeine, and Group 3 received a placebo. All participants then completed a standardized memory test. The results showed that Group 1 scored significantly higher (M = 82, SD = 8) than Group 3 (M = 74, SD = 10), with a medium effect size (d = 0.53) and p < 0.01. Group 2 (M = 78, SD = 9) was not significantly different from either group.",
+        "tasks": {
+          "A": "Identify the research method and explain why.",
+          "B": "Identify the independent variable and the dependent variable.",
+          "C": "Interpret the effect size (d = 0.53) in context.",
+          "D": "Describe a potential ethical concern in this study.",
+          "E": "Evaluate the generalizability of these findings.",
+          "F": "Using the data, construct an argument about caffeine's effect on memory."
+        }
+      },
+      {
+        "id": 2,
+        "title": "Sleep Deprivation and Reaction Time",
+        "stimulus": "Researchers recruited 80 adults (ages 18–30) and randomly assigned them to one of two groups using a random number generator. The experimental group was limited to 4 hours of sleep per night for 5 consecutive nights. The control group was instructed to maintain their normal sleep schedule (approximately 7–8 hours). All participants completed a computerized reaction time task each morning. Results showed that the sleep-deprived group had significantly slower reaction times (M = 412ms, SD = 45) compared to the control group (M = 310ms, SD = 32), with p < 0.001 and a large effect size (d = 1.12). Participants were not told which group they were in, though the researchers knew. All participants signed informed consent forms prior to the study.",
+        "tasks": {
+          "A": "Identify the research method used and explain your reasoning.",
+          "B": "Identify the independent variable and the dependent variable in this study.",
+          "C": "Interpret the effect size (d = 1.12) in context of the study findings.",
+          "D": "Identify a potential ethical concern related to this study and explain why it is a concern.",
+          "E": "The study used a single-blind procedure. Explain how using a double-blind procedure could strengthen the study.",
+          "F": "Using the data, construct an argument about the relationship between sleep deprivation and cognitive performance."
+        }
+      },
+      {
+        "id": 3,
+        "title": "Social Media Use and Conformity",
+        "stimulus": "A researcher surveyed 500 high school students across three schools about their daily social media usage and administered a standardized conformity scale. The results showed a positive correlation between social media use and conformity scores (r = +0.42, p < 0.05). Students who used social media more than 4 hours per day had an average conformity score of 78 (SD = 12), compared to 65 (SD = 14) for students using less than 1 hour per day. The researcher used convenience sampling, selecting students who were in school during the week of data collection.",
+        "tasks": {
+          "A": "Identify the research method used and explain your reasoning.",
+          "B": "Identify the two measured variables in this study.",
+          "C": "Interpret the correlation coefficient (r = +0.42) in context.",
+          "D": "Explain why the researcher cannot conclude that social media use causes conformity.",
+          "E": "Evaluate the generalizability of the findings given the sampling method.",
+          "F": "Using the data, construct an argument about the relationship between social media and social influence."
+        }
+      }
+    ]
+  },
+  "ebq": {
+    "title": "Evidence-Based Question (EBQ)",
+    "description": "Read three sources related to a psychological topic, then construct an evidence-based argument using claims supported by evidence and reasoning.",
+    "scoringChecklist": [
+      { "part": "Claim", "task": "State a defensible claim about the topic.", "points": 1, "tip": "A claim is a specific statement that can be supported with evidence. Not a fact, not an opinion." },
+      { "part": "Evidence 1", "task": "Select and use evidence from Source 1.", "points": 1, "tip": "Per CED clarification: 'Select and use evidence' — must be specific, not vague." },
+      { "part": "Evidence 2", "task": "Select and use evidence from Source 2.", "points": 1, "tip": "Evidence must directly support your claim." },
+      { "part": "Reasoning", "task": "Explain how the evidence supports your claim.", "points": 1, "tip": "Connect evidence to claim using psychological concepts, theories, or principles." },
+      { "part": "Application", "task": "Apply a psychological concept or perspective.", "points": 1, "tip": "Use a specific concept from the course to strengthen your argument." }
+    ],
+    "commonWarnings": [
+      "Do NOT restate the source without connecting to your claim.",
+      "Do NOT use personal opinion as evidence.",
+      "Do NOT make a claim that is actually just a fact from a source.",
+      "Do NOT skip the reasoning step — evidence without reasoning does not score.",
+      "Do NOT confuse correlation with causation when drawing conclusions."
+    ],
+    "practicePrompts": [
+      {
+        "id": 1,
+        "title": "The Role of Sleep in Memory Consolidation",
+        "sources": [
+          { "id": "Source A", "type": "Research Summary", "content": "A study by Walker & Stickgold (2004) found that participants who slept for 8 hours after learning a list of words recalled 40% more words than participants who stayed awake for the same period. REM sleep stages showed particular correlation with improved recall." },
+          { "id": "Source B", "type": "Graph", "content": "A bar graph showing memory test scores across three conditions: full sleep (M=85), partial sleep deprivation (M=72), and total sleep deprivation (M=58). Error bars indicate standard deviation." },
+          { "id": "Source C", "type": "Expert Perspective", "content": "Dr. Matthew Walker argues that sleep is not merely a passive state but an active process during which the brain consolidates and reorganizes information learned during wakefulness. He notes that the hippocampus replays experiences during sleep, transferring them to long-term storage in the cortex." }
+        ],
+        "task": "Using all three sources, construct an evidence-based argument about the relationship between sleep and memory consolidation."
+      },
+      {
+        "id": 2,
+        "title": "Stress, Coping, and Physical Health",
+        "sources": [
+          { "id": "Source A", "type": "Research Summary", "content": "A longitudinal study followed 400 college students over four years, measuring cortisol levels and self-reported stress during final exam periods. Students who reported using problem-focused coping strategies (planning, seeking help, time management) had significantly lower cortisol levels (M = 12.3 μg/dL) than students using primarily emotion-focused strategies such as avoidance or denial (M = 18.7 μg/dL), p < 0.01. However, students who used emotion-focused strategies like meditation and deep breathing showed cortisol levels similar to the problem-focused group (M = 13.1 μg/dL)." },
+          { "id": "Source B", "type": "Theoretical Model", "content": "Selye's General Adaptation Syndrome (GAS) describes three stages of the stress response. During the alarm stage, the sympathetic nervous system activates the fight-or-flight response. In the resistance stage, the body adapts and copes with the stressor. If stress persists, the body enters the exhaustion stage, where resources are depleted, the immune system weakens, and the individual becomes more susceptible to illness." },
+          { "id": "Source C", "type": "Clinical Data", "content": "A meta-analysis of 34 studies found that individuals experiencing chronic stress had a 40–60% increased risk of developing cardiovascular disease, weakened immune function, and higher rates of hypertension. The analysis also found that individuals who practiced positive psychology interventions — such as expressing gratitude, exercising signature strengths, and building social connections — showed measurable improvements in both psychological well-being and physical health markers." }
+        ],
+        "task": "Using all three sources, construct an evidence-based argument about how stress affects physical health and how coping strategies can mitigate those effects."
+      }
+    ]
+  }
+}

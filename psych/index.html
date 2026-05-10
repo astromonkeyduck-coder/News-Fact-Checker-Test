@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AP Psychology Master Review | Neuro Scholar</title>
+<meta name="description" content="CED-aligned AP Psychology master review system. Five units, interactive diagrams, vocab atlas, research methods lab, FRQ trainers, and exam prep.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%23071426'/><path d='M16 4C12 4 9 7 8.5 10c-.5 3 .5 5 1.2 6.2s.3 2.5-1.2 3.8c0 0 2.5 1.2 5 1.2V24c0 1.2.8 2.5 2.5 2.5s2.5-1.3 2.5-2.5v-2.8c2.5 0 5-1.2 5-1.2-1.5-1.3-1.8-2.6-1.2-3.8S24 13 23.5 10C23 7 20 4 16 4z' fill='%23ef6f61' opacity='.15' stroke='%23ef6f61' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/><path d='M12 10c0 0 2 2.5 2 6' stroke='%23ef6f61' stroke-width='1' opacity='.5' fill='none'/><path d='M20 10c0 0-2 2.5-2 6' stroke='%23ef6f61' stroke-width='1' opacity='.5' fill='none'/><path d='M16 6v4' stroke='%23ef6f61' stroke-width='.8' opacity='.4' fill='none'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="psych_styles.css">
+<link rel="stylesheet" href="psyche_noir_theme.css">
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- Psyche Garden Background -->
+  <div class="psyche-garden" aria-hidden="true">
+    <div class="psyche-garden-botanical" id="psycheGardenBotanical"></div>
+    <svg class="psyche-garden-grid" style="position:absolute;top:15%;right:8%;opacity:0.03" width="80" height="60" viewBox="0 0 80 60" fill="none" stroke="#22d3ee" stroke-width="0.5"><rect x="1" y="1" width="78" height="58" rx="2"/><line x1="20" y1="1" x2="20" y2="59"/><line x1="40" y1="1" x2="40" y2="59"/><line x1="60" y1="1" x2="60" y2="59"/><line x1="1" y1="15" x2="79" y2="15"/><line x1="1" y1="30" x2="79" y2="30"/><line x1="1" y1="45" x2="79" y2="45"/></svg>
+    <svg class="psyche-garden-grid" style="position:absolute;bottom:25%;left:5%;opacity:0.025;transform:rotate(12deg)" width="60" height="45" viewBox="0 0 60 45" fill="none" stroke="#22d3ee" stroke-width="0.5"><rect x="1" y="1" width="58" height="43" rx="2"/><line x1="15" y1="1" x2="15" y2="44"/><line x1="30" y1="1" x2="30" y2="44"/><line x1="45" y1="1" x2="45" y2="44"/><line x1="1" y1="11" x2="59" y2="11"/><line x1="1" y1="22" x2="59" y2="22"/><line x1="1" y1="33" x2="59" y2="33"/></svg>
+  </div>
+
+  <!-- Rorschach Decorative Shapes -->
+  <svg class="rorschach rorschach-1" viewBox="0 0 200 140" fill="none" aria-hidden="true"><path d="M100 10 Q80 30 70 50 Q55 70 60 90 Q65 110 80 120 Q90 130 100 130 Q110 130 120 120 Q135 110 140 90 Q145 70 130 50 Q120 30 100 10Z" fill="#ef6f61" opacity="0.6"/><path d="M100 10 Q120 30 130 50 Q145 70 140 90 Q135 110 120 120 Q110 130 100 130 Q90 130 80 120 Q65 110 60 90 Q55 70 70 50 Q80 30 100 10Z" fill="#ef6f61" opacity="0.4" transform="scale(-1,1) translate(-200,0)"/><circle cx="100" cy="60" r="8" fill="#ef6f61" opacity="0.3"/></svg>
+  <svg class="rorschach rorschach-2" viewBox="0 0 180 130" fill="none" aria-hidden="true"><path d="M90 5 Q70 20 60 40 Q50 60 55 80 Q60 100 75 115 Q85 125 90 125 Q95 125 105 115 Q120 100 125 80 Q130 60 120 40 Q110 20 90 5Z" fill="#38bdf8" opacity="0.5"/><ellipse cx="90" cy="65" rx="15" ry="25" fill="#38bdf8" opacity="0.2"/></svg>
+
+  <!-- ══ HEADER ════════════════════════════════════════════ -->
+  <header class="site-header" role="banner">
+    <div class="header-brand">
+      <span class="header-brand-ap">AP</span><span class="header-brand-psych">Psychology</span>
+    </div>
+    <nav class="header-nav" role="navigation" aria-label="Study modes">
+      <button class="nav-tab active" data-view="home" role="tab" aria-selected="true">Home</button>
+      <button class="nav-tab" data-view="ced-map" role="tab">CED</button>
+      <button class="nav-tab" data-view="vocab" role="tab">Vocab</button>
+      <button class="nav-tab" data-view="visuals" role="tab">Visuals</button>
+      <button class="nav-tab" data-view="research" role="tab">Research</button>
+      <button class="nav-tab" data-view="stats" role="tab">Stats</button>
+      <button class="nav-tab" data-view="aaq" role="tab">AAQ</button>
+      <button class="nav-tab" data-view="ebq" role="tab">EBQ</button>
+      <button class="nav-tab" data-view="mcq" role="tab">MCQ</button>
+      <button class="nav-tab" data-view="comparison" role="tab">Compare</button>
+      <button class="nav-tab" data-view="misconceptions" role="tab">Myths</button>
+      <button class="nav-tab" data-view="flashcards" role="tab">Cards</button>
+    </nav>
+    <div class="header-actions">
+      <div class="nav-player-wrap" id="navPlayerWrap">
+        <button class="header-icon-btn nav-player-toggle" id="navPlayerToggle" aria-label="Music">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        </button>
+        <div class="nav-player-dropdown" id="navPlayerDropdown">
+          <div class="nav-player-track"><span class="player-track-title" id="playerTrackTitle">Velvet</span><span class="player-track-artist" id="playerTrackArtist">Dylan Sitts</span></div>
+          <div class="nav-player-controls">
+            <button class="player-btn player-btn-sm" id="playerPrevBtn" aria-label="Previous"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg></button>
+            <button class="player-btn player-btn-play" id="playerPlayBtn" aria-label="Play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+            <button class="player-btn player-btn-sm" id="playerNextBtn" aria-label="Next"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 18h2V6h-2zM6 18l8.5-6L6 6z"/></svg></button>
+          </div>
+          <div class="nav-player-progress" id="playerProgressBar"><div class="player-progress-fill" id="playerProgressFill"></div></div>
+          <div class="nav-player-row">
+            <span class="player-time" id="playerTime">0:00 / 0:00</span>
+            <div class="nav-player-vol">
+              <button class="player-btn player-btn-sm" id="playerMuteBtn" aria-label="Mute"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/></svg></button>
+              <input type="range" class="player-volume" id="playerVolume" min="0" max="100" value="35" aria-label="Volume">
+            </div>
+            <button class="player-reactive-btn active" id="playerReactiveBtn" aria-label="Toggle reactivity"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M22 12h-4l-3 9L11 3l-3 9H4"/></svg><span>Reactive</span></button>
+          </div>
+        </div>
+      </div>
+      <button class="night-before-btn" data-view="night-before" aria-label="Night Before">Night Before</button>
+      <button class="header-icon-btn mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Mobile Nav Overlay -->
+  <div class="mobile-nav-overlay" id="mobileNav" role="dialog" aria-label="Navigation menu">
+    <button class="nav-tab" data-view="home">Home</button>
+    <button class="nav-tab" data-view="ced-map">CED Map</button>
+    <button class="nav-tab" data-view="vocab">Vocab Atlas</button>
+    <button class="nav-tab" data-view="visuals">Visual Atlas</button>
+    <button class="nav-tab" data-view="research">Research Lab</button>
+    <button class="nav-tab" data-view="stats">Stats Lab</button>
+    <button class="nav-tab" data-view="aaq">AAQ Trainer</button>
+    <button class="nav-tab" data-view="ebq">EBQ Trainer</button>
+    <button class="nav-tab" data-view="mcq">MCQ Practice</button>
+    <button class="nav-tab" data-view="comparison">Comparisons</button>
+    <button class="nav-tab" data-view="misconceptions">Misconceptions</button>
+    <button class="nav-tab" data-view="flashcards">Flashcards</button>
+    <button class="nav-tab" data-view="night-before" style="color:var(--synapse-yellow)">Night Before</button>
+  </div>
+
+  <!-- ══ MAIN CONTENT ════════════════════════════════════ -->
+  <main class="main-content" id="mainContent">
+
+    <!-- ── HOME VIEW ─────────────────────────────────── -->
+    <section class="view active" id="view-home" aria-label="Home">
+
+      <!-- ── SPLIT HERO ────────────────────────────── -->
+      <div class="hero">
+        <div class="hero-split">
+          <div class="hero-left">
+            <div class="hero-badge">Richard's 2026</div>
+            <h1>AP <span class="accent">Psychology</span><br>Master Review</h1>
+            <div class="hero-quote-carousel" id="heroQuoteCarousel">
+              <p class="hero-quote active" data-q="0">"The mind is like an iceberg — it floats with one-seventh of its bulk above water."</p>
+              <p class="hero-quote" data-q="1">"Give me a dozen healthy infants... and I'll guarantee to take any one at random and train him to become any type of specialist."</p>
+              <p class="hero-quote" data-q="2">"What a man can be, he must be. This need we call self-actualization."</p>
+              <p class="hero-quote" data-q="3">"Don't become a mere recorder of facts, but try to penetrate the mystery of their origin."</p>
+              <p class="hero-quote" data-q="4">"The way positive reinforcement is carried out is more important than the amount."</p>
+              <p class="hero-quote" data-q="5">"Education is what survives when what has been learned has been forgotten."</p>
+              <div class="hero-quote-footer">
+                <span class="hero-quote-attr" id="heroQuoteAttr">— Sigmund Freud</span>
+                <button class="hero-quote-speak-btn" id="quoteSpeak" aria-label="Read quote aloud" title="Hear this quote">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 010 14.14"/><path d="M15.54 8.46a5 5 0 010 7.07"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="hero-ctas">
+              <button class="synapse-button" data-view="ced-map">Start CED Map</button>
+              <button class="btn btn-coral" data-view="vocab">Vocab Atlas</button>
+              <button class="btn" data-view="aaq">AAQ</button>
+              <button class="btn" data-view="ebq">EBQ</button>
+              <button class="btn btn-ghost" data-view="night-before" style="color:var(--synapse-yellow);border-color:rgba(247,201,72,0.25)">Night Before</button>
+            </div>
+            <div class="hero-portrait-blurb-strip" id="heroBlurbStrip">
+              <div class="hero-blurb-inner">
+                <span class="hero-blurb-name" id="heroBlurbName">Sigmund Freud</span>
+                <span class="hero-blurb-text" id="heroBlurbText">Father of psychoanalysis. Unconscious mind, defense mechanisms.</span>
+                <span class="hero-blurb-units" id="heroBlurbUnits"><span class="ced-chip">Unit 4</span> <span class="ced-chip">Unit 5</span></span>
+              </div>
+            </div>
+          </div>
+          <div class="hero-right">
+            <img src="assets/freud-1935.webp" alt="" class="hero-portrait active" data-idx="0" loading="lazy" aria-hidden="true">
+            <img src="assets/darwin.jpg" alt="" class="hero-portrait" data-idx="1" loading="lazy" aria-hidden="true">
+            <img src="assets/maslow.jpg" alt="" class="hero-portrait" data-idx="2" loading="lazy" aria-hidden="true">
+            <img src="assets/skinner.jpg" alt="" class="hero-portrait" data-idx="3" loading="lazy" aria-hidden="true">
+            <img src="assets/watson.jpg" alt="" class="hero-portrait" data-idx="4" loading="lazy" aria-hidden="true">
+            <img src="assets/pavlov.jpg" alt="" class="hero-portrait" data-idx="5" loading="lazy" aria-hidden="true">
+            <div class="hero-brain-visual" id="heroBrainVisual"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Portrait info strip removed — blurb now lives inside hero-left -->
+
+      <!-- ── ICEBERG DIVIDER ────────────────────────── -->
+      <div class="iceberg-divider" aria-hidden="true">
+        <svg viewBox="0 0 320 120" fill="none">
+          <line x1="0" y1="60" x2="320" y2="60" stroke="#38bdf8" stroke-width="0.5" opacity="0.3"/>
+          <path d="M140 55 L160 20 L180 55Z" fill="#38bdf8" opacity="0.08" stroke="#38bdf8" stroke-width="0.8" opacity="0.3"/>
+          <path d="M120 65 L160 115 L200 65Z" fill="#ef6f61" opacity="0.05" stroke="#ef6f61" stroke-width="0.8" opacity="0.2"/>
+          <text x="230" y="40" class="iceberg-label" fill="#38bdf8" opacity="0.4" font-size="8" font-family="'SFMono-Regular',Consolas,monospace" letter-spacing="0.15em">CONSCIOUS</text>
+          <text x="225" y="90" class="iceberg-label" fill="#ef6f61" opacity="0.35" font-size="8" font-family="'SFMono-Regular',Consolas,monospace" letter-spacing="0.15em">UNCONSCIOUS</text>
+        </svg>
+      </div>
+
+      <!-- ── UNIT NEURAL PATHWAY ───────────────────── -->
+      <div class="unit-pathway-section">
+        <span class="section-num">01 / Neural Pathway</span>
+        <h2 class="editorial-heading">Five-Unit Neural Pathway</h2>
+        <p class="pull-quote">"Behavior and mental processes, mapped across five connected domains."</p>
+        <div class="unit-pathway-container" id="unitPathwayContainer"></div>
+        <div class="unit-pathway-divider" aria-hidden="true">
+          <svg viewBox="0 0 400 20" fill="none" preserveAspectRatio="xMidYMid meet">
+            <line x1="40" y1="10" x2="180" y2="10" stroke="#a8b5c7" stroke-width="0.5" opacity="0.12"/>
+            <circle cx="200" cy="10" r="3" fill="#ef6f61" opacity="0.3"/>
+            <line x1="220" y1="10" x2="360" y2="10" stroke="#a8b5c7" stroke-width="0.5" opacity="0.12"/>
+          </svg>
+        </div>
+        <div class="unit-pathway-cards" id="unitPathwayCards"></div>
+      </div>
+
+      <div class="editorial-rule"></div>
+
+      <!-- ── SCIENCE PRACTICE COMMAND STRIP ─────────── -->
+      <div class="practice-strip">
+        <div class="practice-strip-inner">
+          <div class="practice-strip-header">
+            <span class="section-num">02 / Science Practices</span>
+            <h2 class="editorial-heading">Science Practices</h2>
+            <p>Four skills tested across every section of the AP exam.</p>
+          </div>
+          <div class="practice-strip-grid" id="practiceStripGrid"></div>
+        </div>
+      </div>
+
+      <div class="editorial-rule"></div>
+
+      <!-- ── MODULE GRID ───────────────────────────── -->
+      <div class="module-section">
+        <div class="module-section-header">
+          <span class="section-num">03 / Study Modules</span>
+          <h2 class="editorial-heading">Study Modules</h2>
+          <p>Specialized tools for every dimension of AP Psychology preparation.</p>
+        </div>
+        <div class="module-grid" id="moduleGrid"></div>
+      </div>
+
+    </section>
+
+    <!-- ── CED MAP VIEW ──────────────────────────────── -->
+    <section class="view" id="view-ced-map" aria-label="CED Map">
+      <div class="section-header"><h2 data-section-num="04 / Course Framework">CED Map</h2><p>Complete unit, topic, and learning objective hierarchy aligned to the AP Psychology Course and Exam Description.</p></div>
+      <div class="ced-map" id="cedMapContainer"></div>
+    </section>
+
+    <!-- ── VOCAB ATLAS VIEW ──────────────────────────── -->
+    <section class="view" id="view-vocab" aria-label="Vocab Atlas">
+      <div class="section-header"><h2 data-section-num="05 / Terminology">Vocab Atlas</h2><p>Master every key term with definitions, memory hooks, scenarios, FRQ sentences, and confused-with comparisons.</p></div>
+      <div class="vocab-atlas">
+        <div class="vocab-filters" id="vocabFilters"></div>
+        <div class="vocab-grid" id="vocabGrid"></div>
+      </div>
+    </section>
+
+    <!-- Vocab Drawer -->
+    <div class="vocab-drawer-backdrop" id="vocabBackdrop"></div>
+    <div class="vocab-drawer" id="vocabDrawer" role="dialog" aria-label="Term details">
+      <button class="vocab-drawer-close" id="vocabDrawerClose" aria-label="Close">&times;</button>
+      <div id="vocabDrawerContent"></div>
+    </div>
+
+    <!-- ── VISUAL CONCEPT ATLAS VIEW ─────────────────── -->
+    <section class="view" id="view-visuals" aria-label="Visual Concept Atlas">
+      <div class="section-header">
+        <span class="section-num">Visual Concept Atlas</span>
+        <h2 class="editorial-heading">Interactive Diagrams</h2>
+        <p>Full-size neuroscience, learning, and statistics diagrams with step-by-step walkthroughs.</p>
+      </div>
+      <div class="visual-atlas">
+        <div class="exhibit-filter" id="exhibitFilter"></div>
+        <div id="exhibitPanels"></div>
+      </div>
+    </section>
+
+    <!-- ── LESSON VIEW ─────────────────────────────────── -->
+    <section class="view" id="view-lesson" aria-label="Lesson">
+      <div class="lesson-page" id="lessonPage"></div>
+    </section>
+
+    <!-- ── RESEARCH METHODS LAB VIEW ─────────────────── -->
+    <section class="view" id="view-research" aria-label="Research Methods Lab">
+      <div class="section-header"><h2 data-section-num="07 / Experimental Design">Research Methods Lab</h2><p>Experimental and non-experimental design, variables, sampling, ethics, and common biases.</p></div>
+      <div class="research-lab" id="researchLabContainer"></div>
+    </section>
+
+    <!-- ── DATA & STATS LAB VIEW ─────────────────────── -->
+    <section class="view" id="view-stats" aria-label="Data & Stats Lab">
+      <div class="section-header"><h2 data-section-num="08 / Quantitative Analysis">Data &amp; Stats Lab</h2><p>Central tendency, variation, distributions, correlation, effect size, and statistical significance.</p></div>
+      <div class="stats-lab" id="statsLabContainer"></div>
+    </section>
+
+    <!-- ── AAQ TRAINER VIEW ──────────────────────────── -->
+    <section class="view" id="view-aaq" aria-label="AAQ Trainer">
+      <div class="section-header"><h2 data-section-num="09 / Argumentation">Argument-Based Question (AAQ) Trainer</h2><p>Practice the six-part analysis format with research scenarios, statistical interpretation, and ethical evaluation.</p></div>
+      <div class="frq-trainer" id="aaqContainer"></div>
+    </section>
+
+    <!-- ── EBQ TRAINER VIEW ──────────────────────────── -->
+    <section class="view" id="view-ebq" aria-label="EBQ Trainer">
+      <div class="section-header"><h2 data-section-num="10 / Evidence-Based Writing">Evidence-Based Question (EBQ) Trainer</h2><p>Build evidence-based arguments from multiple sources with claims, evidence, and reasoning.</p></div>
+      <div class="frq-trainer" id="ebqContainer"></div>
+    </section>
+
+    <!-- ── MCQ PRACTICE VIEW ─────────────────────────── -->
+    <section class="view" id="view-mcq" aria-label="MCQ Practice">
+      <div class="section-header"><h2 data-section-num="11 / Multiple Choice">Multiple-Choice Practice</h2><p>AP-style questions with explanations and related concept links.</p></div>
+      <div class="mcq-practice" id="mcqContainer"></div>
+    </section>
+
+    <!-- ── COMPARISON LAB VIEW ───────────────────────── -->
+    <section class="view" id="view-comparison" aria-label="Comparison Lab">
+      <div class="section-header"><h2 data-section-num="12 / Confused Pairs">Comparison Lab</h2><p>Side-by-side breakdowns of the most commonly confused pairs on the AP exam.</p></div>
+      <div class="comparison-lab" id="comparisonContainer"></div>
+    </section>
+
+    <!-- ── MISCONCEPTION LAB VIEW ────────────────────── -->
+    <section class="view" id="view-misconceptions" aria-label="Misconception Lab">
+      <div class="section-header"><h2 data-section-num="13 / Myth Busting">Misconception Lab</h2><p>Common wrong ideas corrected with CED-accurate explanations and clarifications.</p></div>
+      <div class="misconception-lab" id="misconceptionContainer"></div>
+    </section>
+
+    <!-- ── FLASHCARDS VIEW ───────────────────────────── -->
+    <section class="view" id="view-flashcards" aria-label="Flashcards">
+      <div class="section-header"><h2 data-section-num="14 / Active Recall">Flashcards</h2><p>Click to flip. Use arrow keys or buttons to navigate.</p></div>
+      <div class="flashcard-container" id="flashcardContainer"></div>
+    </section>
+
+    <!-- ── NIGHT BEFORE VIEW ─────────────────────────── -->
+    <section class="view" id="view-night-before" aria-label="Night Before">
+      <div class="section-header">
+        <h2 data-section-num="15 / Final Review">Night Before Review</h2>
+        <p>High-yield, zero-fluff review. The most important concepts, checklists, and trap warnings.</p>
+        <button class="btn btn-coral btn-sm mt-4" id="panicModeBtn">Toggle Panic Mode</button>
+      </div>
+      <div class="night-before" id="nightBeforeContainer"></div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Audio Element (no autoplay) -->
+<audio id="psycheAudio" preload="metadata" crossorigin="anonymous"></audio>
+
+<!-- Motion Controls -->
+<div class="motion-controls" aria-label="Animation controls">
+  <div class="motion-controls-panel">
+    <div class="motion-controls-label">Motion Intensity</div>
+    <div class="motion-btn-group">
+      <button class="motion-btn" data-level="0">Calm</button>
+      <button class="motion-btn active" data-level="1">Standard</button>
+      <button class="motion-btn" data-level="2">Cinematic</button>
+    </div>
+  </div>
+  <button class="motion-controls-toggle" aria-label="Toggle motion controls">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+  </button>
+</div>
+
+<script src="neuro_visuals.js"></script>
+<script src="psych_app.js"></script>
+<script src="audio_reactive.js"></script>
+<script src="psyche_animations.js"></script>
+</body>
+</html>

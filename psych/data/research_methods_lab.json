@@ -1,0 +1,205 @@
+{
+  "scientificFoundations": {
+    "title": "Scientific Foundations",
+    "description": "Before conducting research, psychologists rely on a scientific approach grounded in curiosity, skepticism, and humility.",
+    "scientificAttitude": {
+      "name": "Scientific Attitude",
+      "description": "The mindset required for good science: curiosity (asking questions), skepticism (questioning claims), humility (being open to being wrong), and an empirical approach (relying on evidence)."
+    },
+    "scientificMethod": {
+      "name": "Scientific Method",
+      "description": "The process of developing and testing ideas: observation → theory (explanation based on observations) → hypothesis (testable prediction) → operational definition (how variables are measured) → testing → replication.",
+      "key": "A good hypothesis must be falsifiable — it must be possible to disprove it through observation or experiment."
+    },
+    "peerReview": {
+      "name": "Peer Review",
+      "description": "Scientific experts evaluate a research article's theory, originality, methods, and accuracy before publication. This helps ensure findings are credible and valid."
+    },
+    "thinkingTraps": [
+      { "name": "Hindsight Bias", "description": "The tendency to believe, after an outcome is known, that we 'knew it all along.' No matter the outcome, we convince ourselves it was predictable.", "example": "After a breakup: 'I knew long distance wouldn't work — out of sight, out of mind.' But if they stayed together: 'I knew they'd make it — absence makes the heart grow fonder.'" },
+      { "name": "Overconfidence", "description": "The tendency to overestimate the accuracy of our knowledge and judgments. Combined with hindsight bias, leads us to overestimate our intuition.", "example": "82% of US drivers believe they are in the top 30% in driving safety." }
+    ],
+    "validityAndReliability": {
+      "validity": { "name": "Validity", "description": "The extent to which a test or experiment measures or predicts what it is supposed to. A valid study actually tests what it claims to test.", "types": ["Construct validity: does it measure the concept it claims to?", "Predictive validity: does it predict future outcomes?"] },
+      "reliability": { "name": "Reliability", "description": "The consistency of results — a reliable test yields similar results each time it is administered. Achieved through replication and clear operational definitions.", "note": "Larger sample size = more reliable results." }
+    }
+  },
+  "experimentalDesign": {
+    "title": "Experimental Research",
+    "description": "The ONLY type of research that can establish cause and effect. The researcher manipulates an independent variable and measures the effect on a dependent variable.",
+    "keyComponents": [
+      { "name": "Independent Variable (IV)", "description": "What the researcher intentionally changes/manipulates.", "color": "cyan" },
+      { "name": "Dependent Variable (DV)", "description": "What the researcher measures to see if it was affected.", "color": "blue" },
+      { "name": "Confounding Variable", "description": "Factors other than the IV that could impact the DV.", "color": "coral" },
+      { "name": "Experimental Group", "description": "Receives the treatment (manipulation of IV).", "color": "cyan" },
+      { "name": "Control Group", "description": "Does NOT receive the treatment; serves as baseline comparison.", "color": "blue" },
+      { "name": "Random Assignment", "description": "Participants randomly placed into groups to ensure equivalence.", "color": "cyan" },
+      { "name": "Operational Definition", "description": "Specific description of how a variable will be measured.", "color": "blue" },
+      { "name": "Hypothesis", "description": "Researcher's prediction about the relationship between variables. Must be falsifiable.", "color": "cyan" }
+    ],
+    "procedures": [
+      { "name": "Single-Blind Study", "description": "Participants don't know which group they're in, but the researcher does." },
+      { "name": "Double-Blind Study", "description": "Neither participants NOR researchers interacting with them know group assignment. Controls for experimenter bias." },
+      { "name": "Placebo", "description": "Fake treatment given to control group that looks like the real one." },
+      { "name": "Nocebo", "description": "The opposite of placebo — when belief that a treatment will cause harm actually produces negative side effects, even though the treatment is inactive." }
+    ],
+    "measures": [
+      { "name": "Quantitative", "description": "Numerical data, such as Likert scales (rate on numerical scale)." },
+      { "name": "Qualitative", "description": "Non-numerical data, such as structured interviews with open-ended responses." }
+    ]
+  },
+  "nonExperimentalMethods": {
+    "title": "Non-Experimental Research",
+    "description": "Used when it's not possible or ethical to manipulate variables. CANNOT establish cause and effect.",
+    "methods": [
+      {
+        "name": "Case Study",
+        "description": "In-depth investigation of a single individual or group.",
+        "strength": "Provides rich, detailed information.",
+        "limitation": "Findings may not be generalizable to the broader population.",
+        "icon": "person"
+      },
+      {
+        "name": "Correlational Research",
+        "description": "Examines the relationship between two variables without manipulating either one.",
+        "strength": "Identifies relationships between variables; useful when experiments aren't possible.",
+        "limitation": "Correlation does NOT equal causation. Cannot determine which variable causes the change. Third variable problem.",
+        "icon": "scatter"
+      },
+      {
+        "name": "Meta-Analysis",
+        "description": "Statistical technique combining results of multiple studies on the same topic.",
+        "strength": "Provides stronger conclusions by aggregating data across many studies.",
+        "limitation": "Quality depends on the studies included; can be biased by publication bias.",
+        "icon": "layers"
+      },
+      {
+        "name": "Naturalistic Observation",
+        "description": "Observing behaviors in their natural setting without interfering.",
+        "strength": "Captures genuine behavior in real-world contexts.",
+        "limitation": "Observer may influence behavior (Hawthorne effect); hard to replicate; no control over variables.",
+        "icon": "eye"
+      },
+      {
+        "name": "Survey",
+        "description": "A research method that collects data by asking many people the same set of questions, either through questionnaires or interviews.",
+        "strength": "Can gather large amounts of data quickly and cheaply from many participants.",
+        "limitation": "Responses may not be truthful (social desirability bias), low response rates, and wording effects can drastically change results.",
+        "icon": "clipboard"
+      }
+    ],
+    "additionalConcepts": [
+      {
+        "name": "Wording Effects (Anchoring)",
+        "description": "How a question is worded can drastically change the response. Leading questions, loaded language, or anchoring with a number can skew survey results.",
+        "example": "Asking 'Is the population greater than 10 million?' anchors the estimate higher than asking 'Is the population greater than 1 million?'"
+      },
+      {
+        "name": "Hawthorne Effect",
+        "description": "When people change their behavior because they know they are being observed, regardless of what is being studied.",
+        "example": "Workers at a factory improved productivity simply because they knew researchers were watching them, not because of any change in working conditions."
+      },
+      {
+        "name": "Illusory Correlation",
+        "description": "Perceiving a relationship between two variables when no actual relationship exists. A random coincidence is mistaken for a meaningful connection.",
+        "example": "Believing that starting an adoption process causes pregnancy. To test this, you'd also need to look at cases where people started adoption and did NOT become pregnant.",
+        "relatedTo": "Confirmation bias — we notice confirming cases and ignore disconfirming ones."
+      }
+    ],
+    "correlationDetails": {
+      "coefficientRange": "-1.0 to +1.0",
+      "positive": "Both variables move in the same direction (e.g., +0.85).",
+      "negative": "Variables move in opposite directions (e.g., -0.72).",
+      "nearZero": "Little to no relationship (e.g., +0.05).",
+      "strength": "Closer to -1 or +1 = stronger relationship.",
+      "thirdVariableProblem": "An observed correlation between two variables might actually be caused by a third unmeasured variable influencing both."
+    }
+  },
+  "sampling": {
+    "title": "Sampling Methods",
+    "description": "How researchers select participants for their study.",
+    "terms": {
+      "sample": "The group of people who actually participate in the study.",
+      "population": "The larger group from which the sample is drawn."
+    },
+    "methods": [
+      {
+        "name": "Random Sampling",
+        "description": "Every member of the population has an equal chance of being selected.",
+        "strength": "Produces the most representative sample.",
+        "icon": "shuffle"
+      },
+      {
+        "name": "Convenience Sampling",
+        "description": "Participants chosen because they are easy to access.",
+        "example": "Picking students from your own school.",
+        "weakness": "May not represent the population; introduces sampling bias.",
+        "icon": "nearby"
+      }
+    ],
+    "criticalDistinction": {
+      "randomSampling": "How you SELECT participants from a population.",
+      "randomAssignment": "How you PLACE participants into groups once they're in the study.",
+      "warning": "AP exam frequently tests the difference between these two concepts."
+    },
+    "samplingBias": "Occurs when the process of selecting the sample is flawed, making certain members more likely to be selected than others.",
+    "generalizability": "If your sample does not represent the population, you cannot generalize findings to the broader population."
+  },
+  "ethics": {
+    "title": "Research Ethics",
+    "guidelines": [
+      { "name": "Institutional Review", "description": "Ethics board reviews study before it's conducted to ensure it meets ethical standards. Required for research involving humans and non-human animals." },
+      { "name": "Informed Consent", "description": "Participants must be told about the study and agree to participate." },
+      { "name": "Informed Assent", "description": "Required when working with minors. Different from informed consent — do not mix them up." },
+      { "name": "Protection from Harm", "description": "Researchers must take steps to protect participants from physical and psychological harm." },
+      { "name": "Confidentiality", "description": "Participant information must be kept confidential and in some cases anonymous." },
+      { "name": "Debriefing", "description": "If deception is used, researchers must explain the true purpose and address concerns afterward." }
+    ],
+    "deception": "Sometimes used in studies; may involve confederates (people pretending to be participants).",
+    "scientificProcess": "Experiments and research that can be replicated and go through peer review ensure findings are reliable and valid."
+  },
+  "biases": [
+    { "name": "Hindsight Bias", "description": "The 'I-knew-it-all-along' phenomenon — the tendency to believe, after learning an outcome, that we would have predicted it. Makes us overconfident in our ability to predict events." },
+    { "name": "Overconfidence", "description": "The tendency to overestimate the accuracy of our knowledge and judgments. Combined with hindsight bias, leads us to overestimate our intuition." },
+    { "name": "Experimenter Bias", "description": "When researcher expectations influence the results." },
+    { "name": "Confirmation Bias", "description": "Tendency to seek information confirming existing beliefs while ignoring contradicting evidence." },
+    { "name": "Sampling Bias", "description": "When the sample does not accurately represent the population." },
+    { "name": "Social Desirability Bias", "description": "Participants respond in ways they think are socially acceptable rather than truthfully." },
+    { "name": "Observer Bias", "description": "Observer's expectations influence their interpretation of data." },
+    { "name": "Illusory Correlation", "description": "Perceiving a relationship between two variables when none exists, often due to confirmation bias or memorable coincidences." }
+  ],
+  "scenarios": [
+    {
+      "id": 1,
+      "title": "Caffeine and Memory",
+      "description": "A researcher wants to know whether caffeine affects memory performance.",
+      "iv": "Amount of caffeine given (0mg vs 200mg)",
+      "dv": "Score on a memory test",
+      "experimentalGroup": "Participants receiving 200mg caffeine",
+      "controlGroup": "Participants receiving 0mg (placebo pill)",
+      "confound": "If groups study in different environments, noise level is a confound",
+      "designType": "Experiment",
+      "canEstablishCausation": true
+    },
+    {
+      "id": 2,
+      "title": "Screen Time and Sleep",
+      "description": "Researchers survey 500 teenagers about their daily screen time and sleep quality.",
+      "variable1": "Hours of daily screen time",
+      "variable2": "Self-reported sleep quality score",
+      "correlation": "r = -0.62 (negative correlation)",
+      "designType": "Correlational",
+      "canEstablishCausation": false,
+      "warning": "Cannot conclude screen time CAUSES poor sleep. A third variable (stress) could influence both."
+    },
+    {
+      "id": 3,
+      "title": "Phineas Gage",
+      "description": "An in-depth study of a railroad worker who survived an iron rod passing through his frontal lobe, causing dramatic personality changes.",
+      "designType": "Case Study",
+      "canEstablishCausation": false,
+      "strength": "Provided detailed information about frontal lobe function.",
+      "limitation": "Findings from one individual cannot be generalized to the broader population."
+    }
+  ]
+}

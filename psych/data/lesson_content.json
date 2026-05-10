@@ -1,0 +1,478 @@
+{
+  "1.1": {
+    "lessonTitle": "Nature vs Nurture: The Interaction of Heredity and Environment",
+    "sections": [
+      {
+        "heading": "The Nature-Nurture Debate",
+        "body": "One of the oldest debates in psychology centers on the relative contributions of heredity (nature) and environment (nurture) to our behavior and mental processes. Heredity refers to the genetic or predisposed characteristics that influence our physical traits, behaviors, and mental processes. Environmental factors refer to the external experiences that shape who we are — our upbringing, culture, education, and life events.\n\nThe key takeaway is that it is not nature OR nurture — it is nature AND nurture. These two forces interact to shape behavior and mental processes. A person might be genetically predisposed toward athleticism, but whether that potential actually develops into a skill depends on their environment growing up."
+      },
+      {
+        "heading": "Research Methods: Twin, Family, and Adoption Studies",
+        "body": "Researchers use twin studies, family studies, and adoption studies to better understand how individuals are shaped by both heredity and environment. Identical twins share 100% of their genes, while fraternal twins share approximately 50%. When identical twins raised apart still show similar intelligence and personality traits, this demonstrates a strong genetic influence.\n\nHeritability is the proportion of variation among individuals in a group that can be attributed to genetics. However, heritability applies to groups, not individuals — you cannot say a specific person's intelligence is '60% genetic.'"
+      },
+      {
+        "heading": "The Evolutionary Perspective",
+        "body": "The evolutionary perspective explores how natural selection affects behavior and mental processes to increase survival. This perspective is specifically mentioned in the CED and asks you to consider how certain behaviors may have evolved because they helped our ancestors survive and reproduce.\n\nUnfortunately, some individuals have tried to misapply evolutionary principles to discriminate against others. Eugenics is the belief in 'improving' the genetic quality of the human population by selectively breeding for desirable traits — a dangerous and discredited ideology that has been used to justify terrible harm."
+      }
+    ],
+    "relatedDiagram": null,
+    "keyTerms": ["Nature vs Nurture", "Heredity", "Twin Studies", "Heritability", "Evolutionary Perspective", "Eugenics"],
+    "examTip": "The AP exam will ask you to explain how nature and nurture INTERACT, not choose one over the other. Always frame your answer as an interaction."
+  },
+  "1.2": {
+    "lessonTitle": "The Nervous System",
+    "sections": [
+      {
+        "heading": "Central and Peripheral Nervous Systems",
+        "body": "The nervous system is the body's communication network. It is divided into two main parts: the central nervous system (CNS) and the peripheral nervous system (PNS).\n\nThe CNS includes the brain and spinal cord. It processes information and coordinates all body processes. The PNS connects the CNS to all of the body's organs and muscles, serving as the communication highway between the brain and the rest of the body."
+      },
+      {
+        "heading": "The Somatic and Autonomic Nervous Systems",
+        "body": "The peripheral nervous system is further divided into two subsystems. The somatic nervous system handles voluntary processes — things you consciously control, like raising your hand or walking. The autonomic nervous system governs involuntary processes — things your body does automatically, like your heartbeat and digestion."
+      },
+      {
+        "heading": "Sympathetic and Parasympathetic: Gas and Brake",
+        "body": "The autonomic nervous system has two key divisions. The sympathetic nervous system is your body's 'gas pedal.' It activates the fight-or-flight response: increasing heart rate, dilating pupils, and releasing adrenaline. The parasympathetic nervous system is your body's 'brake pedal.' It calms you down after the threat is gone — known as 'rest and digest' — slowing heart rate, breathing, and returning you to homeostasis.\n\nThink of it this way: the sympathetic system prepares you to deal with a threat, and the parasympathetic system restores you to a calm baseline state afterward."
+      }
+    ],
+    "relatedDiagram": null,
+    "keyTerms": ["Central Nervous System", "Peripheral Nervous System", "Somatic Nervous System", "Autonomic Nervous System", "Sympathetic Nervous System", "Parasympathetic Nervous System", "Fight-or-Flight", "Homeostasis"],
+    "examTip": "Know the full hierarchy: CNS/PNS → somatic/autonomic → sympathetic/parasympathetic. The AP exam loves asking you to trace which system is activated in a given scenario."
+  },
+  "1.3": {
+    "lessonTitle": "The Neuron and Neural Transmission",
+    "sections": [
+      {
+        "heading": "Types of Cells and Neurons",
+        "body": "There are two main types of cells in the brain. Glial cells support neurons through protection and nutrients, but they do NOT process information — they are the support staff. Neurons are the neural cells that actually transmit information.\n\nThere are three types of neurons: sensory neurons (afferent) bring information in from the body, motor neurons (efferent) send information out to muscles, and interneurons connect sensory to motor neurons within the CNS."
+      },
+      {
+        "heading": "The Reflex Arc",
+        "body": "All three neuron types work together to help you respond to stimuli. For example, when you touch a hot stove, thermal receptors detect heat and send an impulse through sensory neurons to the spinal cord. Interneurons immediately relay it to motor neurons that trigger your muscles to contract, pulling your hand away. This is a reflex arc — a nerve pathway that allows response without conscious thought."
+      },
+      {
+        "heading": "Neural Transmission: The All-or-None Principle",
+        "body": "Neural transmission involves the all-or-none principle: a neuron either fires completely or not at all. There is no partial firing. The key stages are:\n\n• Resting potential: the neuron's baseline state (~-70mV)\n• Threshold: the minimum stimulation needed to trigger firing (~-55mV)\n• Depolarization: when sodium channels open and the neuron fires\n• Action potential: the electrical signal travels down the axon\n• Refractory period: the neuron rests before it can fire again\n• Reuptake: excess neurotransmitters are reabsorbed into the sending neuron\n\nIf this process is disrupted, it can lead to disorders like multiple sclerosis or myasthenia gravis."
+      }
+    ],
+    "relatedDiagram": "neuronFiring",
+    "keyTerms": ["Action Potential", "All-or-None Principle", "Sensory Neurons", "Motor Neurons", "Interneurons", "Reflex Arc", "Resting Potential", "Threshold", "Reuptake"],
+    "examTip": "The correct term is 'all-or-none principle' (NOT 'all-or-nothing'). The presynaptic neuron sends; the postsynaptic neuron receives."
+  },
+  "1.4": {
+    "lessonTitle": "Neurotransmitters, Hormones, and Psychoactive Drugs",
+    "sections": [
+      {
+        "heading": "Neurotransmitters",
+        "body": "Neurotransmitters are chemical messengers that cross the synaptic gap between neurons. They can be excitatory (increasing the likelihood of an action potential) or inhibitory (decreasing it). Key neurotransmitters include dopamine (reward, motivation, movement), serotonin (mood, sleep), acetylcholine (muscle activation, memory), GABA (inhibition), glutamate (excitation), norepinephrine (alertness), and endorphins (pain relief).\n\nUnderstanding which neurotransmitter connects to which behavior is essential — this knowledge carries through the entire course."
+      },
+      {
+        "heading": "How Drugs Affect the Synapse",
+        "body": "Psychoactive drugs alter neural communication in three main ways: Agonists mimic a neurotransmitter and activate its receptor, increasing the effect. Antagonists block the receptor, reducing the effect. Reuptake inhibitors prevent neurotransmitters from being reabsorbed into the presynaptic neuron, leaving more in the synapse.\n\nRemember: the presynaptic neuron is the sending neuron that releases neurotransmitters into the synaptic gap. The postsynaptic neuron is the receiving neuron where receptor sites bind to those neurotransmitters."
+      },
+      {
+        "heading": "Categories of Psychoactive Drugs",
+        "body": "There are four main categories:\n\n• Stimulants (caffeine, cocaine): increase neural activity\n• Depressants (alcohol): decrease neural activity, slowing reaction time\n• Hallucinogens (marijuana): distort perception and cognition\n• Opioids (heroin): act as pain relievers\n\nDrug use can lead to tolerance (needing more for the same effect), addiction, and withdrawal symptoms when use stops."
+      }
+    ],
+    "relatedDiagram": "synapse",
+    "keyTerms": ["Neurotransmitter", "Agonist", "Antagonist", "Reuptake Inhibitor", "Dopamine", "Serotonin", "Tolerance", "Addiction"],
+    "examTip": "Focus on connecting neurotransmitters to behavior. The pituitary gland is the only endocrine gland you need to know by name."
+  },
+  "1.5": {
+    "lessonTitle": "The Brain",
+    "sections": [
+      {
+        "heading": "Brain Stem and Lower Structures",
+        "body": "Starting at the bottom of the brain, the brain stem (including the medulla and pons) controls basic life-sustaining functions like breathing and heart rate. Damage here can be life-threatening. The reticular activating system helps control alertness and arousal. The brain's reward center is involved in motivation, pleasure, and reinforcement — you don't need to memorize specific structure names, just what it does."
+      },
+      {
+        "heading": "Cerebellum and Limbic System",
+        "body": "The cerebellum at the back of the brain controls muscle movement, balance, and procedural learning — this is why you can ride a bike without thinking after enough practice.\n\nThe limbic system plays a key role in emotion, memory, learning, and motivation. It includes: the thalamus (sensory relay station), hypothalamus (hunger, thirst, body temperature, hormones), hippocampus (forming new explicit memories), and amygdala (emotion, especially fear)."
+      },
+      {
+        "heading": "The Four Lobes of the Cerebral Cortex",
+        "body": "The cerebral cortex is divided into two hemispheres connected by the corpus callosum. The four lobes are:\n\n• Frontal lobe: planning, decision-making, personality, speech production (Broca's area)\n• Parietal lobe: somatosensory processing, spatial awareness\n• Temporal lobe: auditory processing, speech comprehension (Wernicke's area), memory\n• Occipital lobe: visual processing"
+      },
+      {
+        "heading": "Split Brain, Language Areas, and Plasticity",
+        "body": "Split brain research involves severing the corpus callosum (sometimes done for severe epilepsy) and reveals that the hemispheres specialize in different functions.\n\nBroca's area is responsible for speech production (left hemisphere). Wernicke's area is responsible for speech comprehension (left hemisphere). Damage to Broca's area means you know what to say but can't get the words out. Damage to Wernicke's area means you produce fluent speech that doesn't make sense. Both produce aphasia.\n\nBrain plasticity is the brain's ability to create new neural connections throughout development. Methods to study the brain include EEG, fMRI, case studies, and lesioning."
+      }
+    ],
+    "relatedDiagram": "brainRegions",
+    "keyTerms": ["Brain Stem", "Cerebellum", "Limbic System", "Hippocampus", "Amygdala", "Broca's Area", "Wernicke's Area", "Corpus Callosum", "Brain Plasticity"],
+    "examTip": "The reticular activating system is described as controlling 'alertness' (not just arousal). Know what each lobe does AND where it is located."
+  },
+  "1.6": {
+    "lessonTitle": "Sleep",
+    "sections": [
+      {
+        "heading": "Consciousness and the Circadian Rhythm",
+        "body": "Consciousness consists of sleep and wakefulness. Our sleep-wake cycle is governed by the circadian rhythm — a roughly 24-hour biological clock. Disruptions like jet lag, night shifts, or all-nighters throw off this rhythm and make your whole system sluggish."
+      },
+      {
+        "heading": "Sleep Stages",
+        "body": "We go through different sleep stages, identifiable by specific EEG patterns.\n\nNon-REM sleep occurs in stages 1-3:\n• Stage 1: light sleep, theta waves, hypnagogic sensations (imagined experiences that feel real)\n• Stage 2: sleep spindles and K-complexes, body temperature drops\n• Stage 3: deep/slow-wave sleep, delta waves, hard to wake\n\nREM sleep is 'paradoxical sleep' — brain waves resemble wakefulness, but the body is at its most relaxed. This is when dreaming typically occurs."
+      },
+      {
+        "heading": "REM Sleep, Dreams, and Theories",
+        "body": "REM frequency increases as the sleep cycle progresses — you get more REM as the night goes on. REM rebound occurs when the body compensates for REM deprivation by spending more time in REM during the next sleep.\n\nDream theories include the activation-synthesis theory and consolidation theory. Why we sleep: memory consolidation theory (sleep organizes memories) and restoration theory (sleep restores depleted resources)."
+      },
+      {
+        "heading": "Sleep Disorders",
+        "body": "The AP exam tests on specific sleep disorders including narcolepsy, insomnia, and sleep apnea. Focus on what each disorder is, how it occurs, and how it impacts the individual. Sleep disruptions affect physical and cognitive performance during wakefulness."
+      }
+    ],
+    "relatedDiagram": "sleepCycle",
+    "keyTerms": ["Circadian Rhythm", "REM Sleep", "NREM Sleep", "Hypnagogic", "REM Rebound", "Narcolepsy", "Insomnia", "Sleep Apnea"],
+    "examTip": "The correct spelling is 'hypnagogic' (not 'hypnogogic'). Know EEG patterns for each stage."
+  },
+  "1.7": {
+    "lessonTitle": "Sensation",
+    "sections": [
+      {
+        "heading": "Sensation vs Perception and Thresholds",
+        "body": "Sensation is detecting information from the environment and transducing stimuli into neurochemical messages. Perception (Unit 2) is how the brain interprets that information.\n\nThe absolute threshold is the smallest stimulation detected at least 50% of the time. The just noticeable difference (JND) or difference threshold is the minimum change between two stimuli to detect a difference. Weber-Fechner law states stimuli must differ by a constant percent, not a constant amount.\n\nSensory adaptation is getting used to an unchanging stimulus. Habituation is learning from repeated exposure, resulting in decreased responsiveness. Don't mix these up."
+      },
+      {
+        "heading": "Vision",
+        "body": "Light enters through the cornea, passes through the pupil, the lens focuses it onto the retina. The retina contains rods (periphery, shapes/movement, low light) and cones (fovea, color/detail). The blind spot is where the optic nerve exits — no photoreceptors there.\n\nTrichromatic theory: three color receptors (red, green, blue). Opponent-process theory: ganglion cells create after-images. Accommodation is the lens changing shape to focus at different distances. Damage to the occipital lobe can cause prosopagnosia (face blindness) and blindsight."
+      },
+      {
+        "heading": "Hearing, Chemical Senses, and Touch",
+        "body": "Sound travels as waves. Know place theory, frequency theory, and volley theory. Hearing loss includes sensorineural deafness (clarity decline) and conductive deafness (blockage).\n\nSmell (olfaction) is unique because it bypasses the thalamus, going straight to the olfactory bulb and limbic system — explaining why smells trigger strong emotions and memories. Taste (gustation) involves six tastes detected by taste buds in papillae.\n\nTouch involves four skin senses: pressure, warmth, cold, and pain. Nociceptors detect harmful stimuli. The gate control theory suggests the spinal cord has a 'gate' that can block or allow pain signals."
+      },
+      {
+        "heading": "Vestibular and Kinesthetic Senses",
+        "body": "The vestibular sense controls balance via the semicircular canals. Kinesthesis is the sense of body movement. Proprioceptors in muscles and tendons help the brain understand limb position and movement."
+      }
+    ],
+    "relatedDiagram": null,
+    "keyTerms": ["Absolute Threshold", "Difference Threshold", "Sensory Adaptation", "Habituation", "Rods", "Cones", "Trichromatic Theory", "Gate Control Theory", "Proprioceptors"],
+    "examTip": "This is one of the largest topics. Know every sensory system and its key structures/theories. Synesthesia (one sense experienced through another) and sensory interaction (senses working together) are also testable."
+  },
+  "2.1": {
+    "lessonTitle": "Perception",
+    "sections": [
+      {
+        "heading": "Bottom-Up and Top-Down Processing",
+        "body": "Perception is how your brain organizes and interprets raw sensory information. Bottom-up processing is driven by external sensory data when stimuli are complex or unfamiliar. Top-down processing is driven by prior expectations, experiences, and knowledge — your brain fills in the blanks.\n\nSchemas are mental frameworks built from experience. Perceptual sets are mental shortcuts based on expectations. Context, personal experience, and cultural expectations all shape perception. This is why optical illusions like the Müller-Lyer illusion work."
+      },
+      {
+        "heading": "Gestalt Principles and Attention",
+        "body": "Gestalt principles explain how we organize our perceptual world: closure, figure and ground, proximity, and similarity. The AP exam tests these specific principles.\n\nSelective attention means focusing on one stimulus while filtering others. The cocktail party effect lets you focus on one voice in noise. Inattentional blindness and change blindness show the limits of human attention."
+      },
+      {
+        "heading": "Depth Cues and Perceptual Constancies",
+        "body": "Binocular cues use both eyes: convergence (eyes moving inward for close objects) and retinal disparity (slight differences between each eye's image).\n\nMonocular cues use one eye: relative clarity, relative size, texture gradient, linear perspective, and interposition. The AP exam only tests these specific monocular cues.\n\nVisual perceptual constancies help us perceive objects as stable even when the visual field changes. Apparent movement is perceiving movement when objects are actually stationary."
+      }
+    ],
+    "relatedDiagram": null,
+    "keyTerms": ["Bottom-Up Processing", "Top-Down Processing", "Schemas", "Selective Attention", "Cocktail Party Effect", "Gestalt Principles", "Convergence", "Retinal Disparity"],
+    "examTip": "Know the specific Gestalt principles and monocular cues listed in the CED — the exam only tests those ones."
+  },
+  "2.2": {
+    "lessonTitle": "Thinking, Problem-Solving, and Decision-Making",
+    "sections": [
+      {
+        "heading": "Concepts, Prototypes, and Schemas",
+        "body": "Executive functions are cognitive processes for planning, organizing, critical thinking, and goal-directed behavior. Concepts form the basis of thought, and prototypes are the ideal example of a concept. If someone says 'bird,' you probably picture a robin, not a penguin.\n\nDon't confuse concepts with schemas. Schemas are broader mental frameworks modified through assimilation (fitting new info into existing schemas) and accommodation (changing schemas for new info)."
+      },
+      {
+        "heading": "Problem-Solving Strategies",
+        "body": "Algorithms try all possible solutions — slow but guaranteed. Heuristics are mental shortcuts — faster but error-prone. The representativeness heuristic judges by how closely something matches a stereotype. The availability heuristic judges likelihood by how easily examples come to mind.\n\nDivergent thinking explores many solutions. Convergent thinking narrows to the best one. Functional fixedness limits us to seeing traditional uses for objects."
+      },
+      {
+        "heading": "Decision-Making Biases",
+        "body": "A mental set relies on past strategies for new problems. Priming is when exposure to one stimulus influences response to another. Framing is how information presentation shapes interpretation.\n\nThe gambler's fallacy is the mistaken belief that past random events affect future ones. The sunk cost fallacy is continuing to invest because of prior cost rather than future value. Both are tricky and often overlooked by students."
+      }
+    ],
+    "relatedDiagram": null,
+    "keyTerms": ["Algorithm", "Heuristic", "Representativeness Heuristic", "Availability Heuristic", "Functional Fixedness", "Priming", "Framing", "Gambler's Fallacy", "Sunk Cost Fallacy"],
+    "examTip": "Gambler's fallacy and sunk cost fallacy are often overlooked but appear on exams. Know the difference between divergent and convergent thinking."
+  },
+  "2.3": {
+    "lessonTitle": "Memory",
+    "sections": [
+      {
+        "heading": "Types of Memory",
+        "body": "Explicit (declarative) memory involves conscious recall: episodic memory (personal events) and semantic memory (facts/knowledge). Implicit memory is learned without full awareness: procedural memory (skills like riding a bike) and prospective memory (remembering future actions).\n\nLong-term potentiation is the biological basis — synaptic connections strengthen with frequent activation. The more you use a neural pathway, the stronger it gets."
+      },
+      {
+        "heading": "Memory Models",
+        "body": "The working memory model has three components: executive function (directs attention), phonological loop (verbal/auditory), and visuospatial sketchpad (visual/spatial).\n\nThe multi-store model proposes: sensory memory (iconic/echoic) → short-term memory → long-term memory. Information must pass through each stage. Automatic processing happens without effort; effortful processing requires conscious attention.\n\nThe levels of processing model: structural (shallowest) → phonemic → semantic (deepest). Deeper processing = better memory."
+      },
+      {
+        "heading": "Encoding and Storage",
+        "body": "Effective encoding strategies include mnemonic devices, chunking, the spacing effect (distributed > massed practice), and the testing effect. The serial position effect shows we remember beginnings (primacy) and endings (recency) better than middles.\n\nThe hippocampus processes new explicit memories but doesn't store them permanently — it distributes them to other brain regions. Retrograde amnesia = can't recall before an event. Anterograde amnesia = can't form new memories after."
+      },
+      {
+        "heading": "Retrieval and Forgetting",
+        "body": "Recall is remembering without cues. Recognition relies on retrieval cues. Context-dependent, mood-congruent, and state-dependent memory all enhance retrieval.\n\nThe forgetting curve shows rapid forgetting after learning, then leveling off. Proactive interference: old blocks new. Retroactive interference: new blocks old. The misinformation effect alters memories with post-event information. Constructive memory means memories are reconstructed each time we recall them."
+      }
+    ],
+    "relatedDiagram": "memoryModel",
+    "keyTerms": ["Explicit Memory", "Implicit Memory", "Long-Term Potentiation", "Working Memory", "Encoding", "Retrieval", "Proactive Interference", "Retroactive Interference", "Misinformation Effect"],
+    "examTip": "Memory is one of the most heavily tested areas. Know all three models and their components. PRO = forward (old blocks new), RETRO = backward (new blocks old)."
+  },
+  "2.4": {
+    "lessonTitle": "Intelligence and Achievement",
+    "sections": [
+      {
+        "heading": "Defining and Measuring Intelligence",
+        "body": "Intelligence is the ability to learn from experience, adapt, solve problems, and apply knowledge. The debate continues: is it a general ability (g) or multiple abilities? Fluid intelligence (quick reasoning, abstract problems) declines with age. Crystallized intelligence (accumulated knowledge) increases with age."
+      },
+      {
+        "heading": "Psychometric Principles",
+        "body": "Standardization means consistent procedures. Validity means it measures what it's designed to measure (construct validity, predictive validity). Reliability means consistent results (test-retest, split-half). Stereotype threat is when fear of confirming a negative stereotype hurts performance. The Flynn effect shows IQ scores have increased over time globally."
+      },
+      {
+        "heading": "Testing, Bias, and Mindset",
+        "body": "IQ scores vary more within groups than between groups. Biases, poverty, and educational inequality affect scores. Achievement tests measure current knowledge; aptitude tests predict future performance. A fixed mindset believes intelligence is set; a growth mindset believes it can be developed."
+      }
+    ],
+    "relatedDiagram": null,
+    "keyTerms": ["Fluid Intelligence", "Crystallized Intelligence", "Standardization", "Validity", "Reliability", "Stereotype Threat", "Flynn Effect", "Fixed Mindset", "Growth Mindset"],
+    "examTip": "Know psychometric concepts and that IQ varies more within groups than between groups."
+  },
+  "3.1": {
+    "lessonTitle": "Developmental Psychology Methods and Themes",
+    "sections": [
+      {
+        "heading": "Key Themes and Research Methods",
+        "body": "Three key themes in developmental psychology: nature vs nurture, continuity vs discontinuity, and stability vs change.\n\nCross-sectional research studies different ages at the same time — quicker but risks cohort effects (generational differences). Longitudinal research follows the same group over time — clearer picture but costly. Know the strengths and limitations of each."
+      }
+    ],
+    "relatedDiagram": null,
+    "keyTerms": ["Cross-Sectional Research", "Longitudinal Research", "Cohort Effects"],
+    "examTip": "The AP exam has tested the strengths and limitations of these research designs."
+  },
+  "3.2": {
+    "lessonTitle": "Physical Development",
+    "sections": [
+      {
+        "heading": "Prenatal Development and Infancy",
+        "body": "Teratogens are harmful substances (alcohol, drugs) affecting prenatal development. Specific prenatal stages are outside AP scope — focus on influencing factors.\n\nIn infancy, fine motor skills (grasping) and gross motor skills (crawling, walking) are major milestones. Reflexes like the rooting reflex indicate healthy development. The visual cliff experiment shows infants have early depth perception."
+      },
+      {
+        "heading": "Critical Periods Through Adulthood",
+        "body": "Critical periods are specific windows when skills must be acquired. Sensitive periods are when the brain is primed for development. Imprinting is when animals attach to the first object encountered.\n\nAdolescence brings puberty, growth spurts, and primary/secondary sex characteristics. Adulthood sees gradual decline in physical and cognitive abilities."
+      }
+    ],
+    "relatedDiagram": null,
+    "keyTerms": ["Teratogens", "Fine Motor Skills", "Gross Motor Skills", "Critical Period", "Sensitive Period", "Imprinting"],
+    "examTip": "Focus on factors influencing development, not specific prenatal stages."
+  },
+  "3.3": {
+    "lessonTitle": "Cognitive Development",
+    "sections": [
+      {
+        "heading": "Piaget's Stages",
+        "body": "Piaget proposed children develop schemas through assimilation, accommodation, and four discontinuous stages:\n\n• Sensorimotor: birth to ~2 years (object permanence)\n• Preoperational: ~2 to 7 (egocentrism, lack of conservation)\n• Concrete operational: ~7 to 11 (logical thinking about concrete events)\n• Formal operational: ~12+ (abstract and hypothetical thinking)\n\nThe AP exam loves giving scenarios of child behavior and asking you to identify the stage."
+      },
+      {
+        "heading": "Vygotsky, Language, and Adult Cognition",
+        "body": "Vygotsky believed children are social learners. Scaffolding is support from a more knowledgeable person. The zone of proximal development (ZPD) is the gap between what a learner can do alone and with help.\n\nLanguage components: phonemes (sound units), morphemes (meaning units), semantics (word meaning), grammar/syntax (rules). Development stages: cooing → babbling → one-word → telegraphic speech. Overgeneralization (like 'goed') shows children learning language rules.\n\nCrystallized intelligence stays stable in adulthood; fluid intelligence declines. Dementia significantly impairs memory and reasoning."
+      }
+    ],
+    "relatedDiagram": null,
+    "keyTerms": ["Assimilation", "Accommodation", "Sensorimotor", "Preoperational", "Concrete Operational", "Formal Operational", "Scaffolding", "Zone of Proximal Development", "Phonemes", "Morphemes"],
+    "examTip": "AP loves scenario-based Piaget questions. Know what kids CAN and CAN'T do at each stage."
+  },
+  "3.4": {
+    "lessonTitle": "Social and Emotional Development",
+    "sections": [
+      {
+        "heading": "Parenting, Attachment, and Temperament",
+        "body": "Ecological systems theory shows how layers of environment influence development. Three parenting styles: authoritarian (high demand/low warmth), authoritative (high/high), and permissive (low demand/high warmth). Cultural differences exist — no universally best style.\n\nAttachment styles: secure and insecure (avoidant, anxious, disorganized). Temperament is innate behavioral style. Harlow's monkey studies showed comfort matters more than food in attachment."
+      },
+      {
+        "heading": "Erikson's Psychosocial Stages",
+        "body": "Erikson proposed eight stages across the lifespan, each with a conflict to resolve: Trust vs Mistrust, Autonomy vs Shame, Initiative vs Guilt, Industry vs Inferiority, Identity vs Role Confusion, Intimacy vs Isolation, Generativity vs Stagnation, Integrity vs Despair.\n\nIdentity statuses in adolescence: achievement, diffusion, foreclosure, moratorium — no fixed order. Adolescent egocentrism includes the imaginary audience and personal fable."
+      }
+    ],
+    "relatedDiagram": "eriksonStages",
+    "keyTerms": ["Authoritarian", "Authoritative", "Permissive", "Secure Attachment", "Temperament", "Erikson's Stages", "Identity Achievement", "Imaginary Audience", "Personal Fable"],
+    "examTip": "Be ready for scenario-based Erikson questions. Childhood attachment styles affect adult relationships."
+  },
+  "3.5": {
+    "lessonTitle": "Classical Conditioning",
+    "sections": [
+      {
+        "heading": "The Conditioning Process",
+        "body": "Classical conditioning associates one stimulus with another to produce a response. The unconditioned stimulus (UCS) naturally produces an unconditioned response (UCR). Pair a neutral stimulus (NS) with the UCS repeatedly — this is acquisition. The NS becomes a conditioned stimulus (CS) that produces a conditioned response (CR).\n\nCritical: the CS must come BEFORE the UCS for successful acquisition."
+      },
+      {
+        "heading": "Key Principles",
+        "body": "Extinction occurs when the CS is no longer paired with the UCS and the CR fades. Spontaneous recovery is when an extinct CR returns after a rest period — this applies to BOTH classical and operant conditioning.\n\nStimulus discrimination: responding to one specific stimulus but not similar ones. Stimulus generalization: response extends to similar stimuli. Higher-order conditioning: a CS can become a UCS for a new stimulus.\n\nEmotional responses can be classically conditioned — the basis for counter-conditioning in therapy (Unit 5). Taste aversions demonstrate one-trial conditioning. Biological preparedness means some associations are learned faster."
+      }
+    ],
+    "relatedDiagram": "classicalConditioning",
+    "keyTerms": ["Classical Conditioning", "UCS", "UCR", "CS", "CR", "Acquisition", "Extinction", "Spontaneous Recovery", "Stimulus Generalization", "Stimulus Discrimination"],
+    "examTip": "Spontaneous recovery applies to BOTH classical and operant conditioning. If a scenario involves pairing two stimuli, it's classical conditioning."
+  },
+  "3.6": {
+    "lessonTitle": "Operant Conditioning",
+    "sections": [
+      {
+        "heading": "Reinforcement and Punishment",
+        "body": "Operant conditioning associates consequences with behaviors. The law of effect: reinforced behaviors are repeated; punished behaviors decrease.\n\nPositive = adding. Negative = removing.\n• Positive reinforcement: add desirable → behavior increases (sticker for good work)\n• Negative reinforcement: remove undesirable → behavior increases (alarm off when you get up)\n• Positive punishment: add undesirable → behavior decreases (speeding ticket)\n• Negative punishment: remove desirable → behavior decreases (lose phone privileges)\n\nNegative reinforcement is NOT punishment — all reinforcement increases behavior."
+      },
+      {
+        "heading": "Reinforcers, Shaping, and Schedules",
+        "body": "Primary reinforcers satisfy biological needs (food). Secondary reinforcers have learned value (money). Shaping rewards successive approximations. Instinctive drift limits shaping in animals. Superstitious behavior comes from coincidental reinforcement. Learned helplessness is believing you have no control.\n\nReinforcement schedules: continuous (every time) vs partial. Four partial schedules: fixed-ratio, variable-ratio, fixed-interval, variable-interval. Fixed-interval produces a scalloped graph pattern."
+      }
+    ],
+    "relatedDiagram": "operantQuadrant",
+    "keyTerms": ["Operant Conditioning", "Positive Reinforcement", "Negative Reinforcement", "Positive Punishment", "Negative Punishment", "Shaping", "Learned Helplessness", "Fixed-Ratio", "Variable-Ratio"],
+    "examTip": "Use hyphens: fixed-ratio, variable-interval, etc. If a scenario involves consequences following behavior, it's operant. Students often mix up classical and operant on the exam."
+  },
+  "3.7": {
+    "lessonTitle": "Social, Cognitive, and Neurological Factors in Learning",
+    "sections": [
+      {
+        "heading": "Observational, Insight, and Latent Learning",
+        "body": "Social learning theory proposes learning through observation without personal experience. We imitate models more when they're similar to us and when they're rewarded (vicarious reinforcement).\n\nInsight learning is a sudden solution without trial-and-error — the 'light bulb moment.' Latent learning is learning without reinforcement that isn't immediately demonstrated, often shown through cognitive maps (mental representations of space)."
+      }
+    ],
+    "relatedDiagram": null,
+    "keyTerms": ["Observational Learning", "Vicarious Reinforcement", "Insight Learning", "Latent Learning", "Cognitive Maps"],
+    "examTip": "Distinguish between observational, insight, and latent learning — they're different mechanisms."
+  },
+  "4.1": {
+    "lessonTitle": "Attribution and Person Perception",
+    "sections": [
+      {
+        "heading": "Attributions and Biases",
+        "body": "Attributions explain behavior. Dispositional attributions blame internal qualities (personality). Situational attributions blame external circumstances. The fundamental attribution error overestimates dispositional factors for others' behavior. Self-serving bias takes credit for success and blames external factors for failure.\n\nLocus of control: internal (my actions determine outcomes) vs external (outside forces determine outcomes). Explanatory style can be optimistic or pessimistic."
+      },
+      {
+        "heading": "Person Perception",
+        "body": "The mere exposure effect develops preference through familiarity. Self-fulfilling prophecy is behaving in ways that confirm expectations. Social comparison evaluates ourselves against others — upward (compare to better off) and downward (compare to worse off). Relative deprivation is feeling worse off by comparison."
+      }
+    ],
+    "relatedDiagram": null,
+    "keyTerms": ["Dispositional Attribution", "Situational Attribution", "Fundamental Attribution Error", "Self-Serving Bias", "Locus of Control", "Mere Exposure Effect", "Self-Fulfilling Prophecy"],
+    "examTip": "Know all the attribution biases and be able to identify them in scenarios."
+  },
+  "4.2": {
+    "lessonTitle": "Attitudes and Attitude Change",
+    "sections": [
+      {
+        "heading": "Stereotypes, Prejudice, and Discrimination",
+        "body": "Stereotypes are generalized concepts about a group. Prejudice is biased thinking (attitude). Discrimination is biased actions (behavior). In-group is your group; out-group is not. Out-group homogeneity bias sees out-group members as more similar than they are. In-group bias favors your own group. Ethnocentrism judges other cultures by your standards."
+      },
+      {
+        "heading": "Belief Perseverance and Cognitive Dissonance",
+        "body": "Belief perseverance persists despite contradicting evidence, working alongside confirmation bias (seeking confirming info). Cognitive dissonance is the discomfort when actions conflict with attitudes — you're motivated to reduce it by changing either actions or attitudes."
+      }
+    ],
+    "relatedDiagram": null,
+    "keyTerms": ["Stereotype", "Prejudice", "Discrimination", "Cognitive Dissonance", "Belief Perseverance", "Confirmation Bias", "In-Group Bias", "Ethnocentrism"],
+    "examTip": "Prejudice = attitude/thought. Discrimination = action/behavior."
+  },
+  "4.3": {
+    "lessonTitle": "Social Influence",
+    "sections": [
+      {
+        "heading": "Persuasion and Compliance",
+        "body": "Social influence theory: normative influence (fit in) vs informational influence (believe group knows better). The elaboration likelihood model: central route (facts/logic) vs peripheral route (superficial cues). The halo effect biases based on overall impression.\n\nFoot-in-the-door: small request → larger request. Door-in-the-face: large request → smaller request. Conformity is matching the group without direct orders. Obedience is complying with authority."
+      },
+      {
+        "heading": "Group Dynamics and Culture",
+        "body": "Group phenomena include groupthink, social facilitation, social loafing, deindividuation, and group polarization. Individualistic cultures emphasize personal achievement; collectivist cultures emphasize the group.\n\nAltruism is selfless behavior. Social reciprocity norms say help those who helped you. Social responsibility norms say help those in need. The bystander effect shows situational factors affect helping behavior."
+      }
+    ],
+    "relatedDiagram": null,
+    "keyTerms": ["Conformity", "Obedience", "Groupthink", "Social Facilitation", "Bystander Effect", "Halo Effect", "Foot-in-the-Door", "Door-in-the-Face"],
+    "examTip": "Don't mix up conformity (peer influence, no direct order) and obedience (authority gives direct order)."
+  },
+  "4.4": {
+    "lessonTitle": "Personality Theories",
+    "sections": [
+      {
+        "heading": "Psychodynamic and Humanistic Theories",
+        "body": "Psychodynamic theory: unconscious processes drive personality through the id, ego, and superego. Defense mechanisms protect the ego (projection, displacement, sublimation, rationalization, etc.). Assessed via projective tests (open responses).\n\nHumanistic theory focuses on unconditional positive regard and self-actualization. Know self-actualization vs self-transcendence, unconditional vs conditional positive regard, and self-concept formation."
+      },
+      {
+        "heading": "Social Cognitive and Trait Theories",
+        "body": "Social cognitive theory: reciprocal determinism (behavior × environment × personal factors). Self-concept influenced by self-efficacy (belief in ability) and self-esteem (sense of worth).\n\nTrait theories: Big Five (OCEAN) — agreeableness, openness, extraversion, conscientiousness, neuroticism. Measured by personality inventories using Likert scales, analyzed with factor analysis."
+      }
+    ],
+    "relatedDiagram": null,
+    "keyTerms": ["Id", "Ego", "Superego", "Defense Mechanisms", "Self-Actualization", "Reciprocal Determinism", "Big Five", "Self-Efficacy", "Self-Esteem"],
+    "examTip": "Know defense mechanisms with examples. Don't confuse projective tests (open) with objective tests (limited answers)."
+  },
+  "4.5": {
+    "lessonTitle": "Motivation",
+    "sections": [
+      {
+        "heading": "Theories of Motivation",
+        "body": "Drive reduction theory: behaviors maintain homeostasis by reducing biological drives. Arousal theory: people seek optimal arousal. Yerkes-Dodson law: moderate arousal = best performance.\n\nSelf-determination theory: intrinsic (from within) vs extrinsic (external rewards) motivation. Incentive theory focuses on rewards. Lewin's conflicts: approach-approach, approach-avoidance, avoidance-avoidance.\n\nSensation seeking theory: need for varied/novel experiences. Hunger involves ghrelin and leptin regulated by the hypothalamus via the pituitary gland."
+      }
+    ],
+    "relatedDiagram": null,
+    "keyTerms": ["Drive Reduction Theory", "Yerkes-Dodson Law", "Intrinsic Motivation", "Extrinsic Motivation", "Ghrelin", "Leptin"],
+    "examTip": "Yerkes-Dodson law is commonly tested. Know the three types of motivational conflicts."
+  },
+  "4.6": {
+    "lessonTitle": "Emotion",
+    "sections": [
+      {
+        "heading": "Theories and Expression of Emotion",
+        "body": "Emotion (affect) is distinguished from reasoning. Early theories debated whether physiological and cognitive experiences are sequential or simultaneous. The specific theory NAMES (James-Lange, Cannon-Bard) are outside AP scope — focus on the perspectives.\n\nThe facial feedback hypothesis suggests expressions can influence emotional experience. Broaden-and-build theory: positive emotions broaden awareness; negative emotions narrow thinking.\n\nSome emotions may be universal across cultures (anger, disgust, sadness, happiness, surprise, fear). Display rules and elicitors differ by culture, gender, age, and socioeconomic class."
+      }
+    ],
+    "relatedDiagram": null,
+    "keyTerms": ["Facial Feedback Hypothesis", "Broaden-and-Build Theory", "Display Rules", "Universal Emotions"],
+    "examTip": "Don't memorize theory names — understand the perspectives on how physiological and cognitive experiences relate."
+  },
+  "5.1": {
+    "lessonTitle": "Stress and Health Psychology",
+    "sections": [
+      {
+        "heading": "Stress and the Body's Response",
+        "body": "Health psychology studies how psychological factors influence physical health. Stress links to hypertension, headaches, and immune suppression. Eustress is positive/motivating; distress is negative/overwhelming.\n\nGeneral Adaptation Syndrome (GAS): alarm (fight-flight-freeze via sympathetic NS) → resistance (body adapts) → exhaustion (resources depleted, illness vulnerability). The tend-and-befriend theory suggests some react to stress by seeking social connections."
+      },
+      {
+        "heading": "Coping and Positive Psychology",
+        "body": "Problem-focused coping treats stress as a problem to solve. Emotion-focused coping manages emotional reactions (breathing, meditation). Positive psychology identifies factors leading to well-being, resilience, and happiness. Post-traumatic growth refers to positive changes from struggling with challenges."
+      }
+    ],
+    "relatedDiagram": null,
+    "keyTerms": ["Eustress", "Distress", "General Adaptation Syndrome", "Problem-Focused Coping", "Emotion-Focused Coping", "Post-Traumatic Growth"],
+    "examTip": "Know GAS stages and both coping types. ACEs (adverse childhood experiences) connect back to Unit 3."
+  },
+  "5.2": {
+    "lessonTitle": "Psychological Disorders",
+    "sections": [
+      {
+        "heading": "Classification and Models",
+        "body": "Three factors identify disorders: dysfunction, distress, deviation from norms. Diagnosis helps treatment access but risks labeling/stigma. The DSM (APA) and ICD (WHO) are the main classification systems.\n\nBiopsychosocial model: biological + psychological + sociocultural factors. Diathesis-stress model: genetic vulnerability + stressful experiences trigger disorders."
+      },
+      {
+        "heading": "Major Disorder Categories",
+        "body": "Neurodevelopmental: ADHD and ASD. Schizophrenia spectrum: positive symptoms (added — hallucinations, delusions) vs negative symptoms (absent — flat affect). Dopamine hypothesis.\n\nDepressive disorders: major depressive (2+ weeks) and persistent depressive (2+ years). Bipolar: mania + depression cycles (Bipolar I and II).\n\nAnxiety disorders: specific phobias, agoraphobia, panic disorder, social anxiety, GAD. Culture-bound: ataque de nervios, taijin kyofusho.\n\nOCD and hoarding (OCD ≠ OCPD). Dissociative disorders: dissociative amnesia (with/without fugue), DID. PTSD. Eating disorders: anorexia and bulimia nervosa.\n\nPersonality disorders: Cluster A (odd), Cluster B (dramatic), Cluster C (anxious)."
+      }
+    ],
+    "relatedDiagram": null,
+    "keyTerms": ["Biopsychosocial Model", "Diathesis-Stress Model", "Schizophrenia", "Major Depressive Disorder", "Bipolar Disorder", "PTSD", "OCD"],
+    "examTip": "Positive symptoms = added to experience. Negative symptoms = absent from behavior. Not good/bad."
+  },
+  "5.3": {
+    "lessonTitle": "Treatment of Psychological Disorders",
+    "sections": [
+      {
+        "heading": "Therapy Approaches",
+        "body": "Cultural humility and therapeutic alliance are essential. Deinstitutionalization shifted from asylums to decentralized care.\n\nPsychodynamic: free association, dream interpretation. Cognitive: cognitive restructuring, fear hierarchies, cognitive triad (negative thoughts about self, world, future). Applied behavior analysis: systematic desensitization, aversion therapy, token economies, biofeedback.\n\nCBT combines cognitive and behavioral: DBT (borderline, self-harm) and REBT (anxiety, depression). Humanistic/person-centered: active listening, unconditional positive regard."
+      },
+      {
+        "heading": "Biological Interventions",
+        "body": "Hypnosis works for pain/anxiety but NOT for memory retrieval or age regression. Psychoactive medications: antidepressants, anti-anxiety, lithium, antipsychotics. Side effects include tardive dyskinesia.\n\nInterventions: psychosurgery, lesioning, TMS (transcranial magnetic stimulation), electroconvulsive therapy, lobotomy."
+      }
+    ],
+    "relatedDiagram": null,
+    "keyTerms": ["Cognitive Restructuring", "Systematic Desensitization", "DBT", "REBT", "Biofeedback", "Tardive Dyskinesia", "TMS", "Electroconvulsive Therapy"],
+    "examTip": "Know which therapy matches which disorder. Counter-conditioning connects classical conditioning (Unit 3) to treatment."
+  }
+}
