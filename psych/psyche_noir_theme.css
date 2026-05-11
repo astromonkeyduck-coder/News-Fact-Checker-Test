@@ -678,15 +678,16 @@ body::after {
   -webkit-mask-image: radial-gradient(ellipse 65% 70% at 50% 38%, rgba(0,0,0,0.9) 15%, transparent 60%);
   mask-image: radial-gradient(ellipse 65% 70% at 50% 38%, rgba(0,0,0,0.9) 15%, transparent 60%);
 }
-/* Featured: centered */
+/* Featured: centered, shifted down, desaturated to match */
 .hero-portrait[data-idx="6"] {
   right: -25%;
-  bottom: -5%;
+  bottom: -18%;
   width: 90%;
   max-width: 480px;
-  object-position: center 20%;
-  -webkit-mask-image: radial-gradient(ellipse 68% 72% at 50% 40%, rgba(0,0,0,0.9) 15%, transparent 60%);
-  mask-image: radial-gradient(ellipse 68% 72% at 50% 40%, rgba(0,0,0,0.9) 15%, transparent 60%);
+  object-position: center 25%;
+  filter: grayscale(60%) contrast(1.1) brightness(0.9);
+  -webkit-mask-image: radial-gradient(ellipse 68% 72% at 50% 42%, rgba(0,0,0,0.9) 15%, transparent 58%);
+  mask-image: radial-gradient(ellipse 68% 72% at 50% 42%, rgba(0,0,0,0.9) 15%, transparent 58%);
 }
 
 /* Portrait Info Strip (below hero) */
