@@ -678,6 +678,16 @@ body::after {
   -webkit-mask-image: radial-gradient(ellipse 65% 70% at 50% 38%, rgba(0,0,0,0.9) 15%, transparent 60%);
   mask-image: radial-gradient(ellipse 65% 70% at 50% 38%, rgba(0,0,0,0.9) 15%, transparent 60%);
 }
+/* Featured: centered */
+.hero-portrait[data-idx="6"] {
+  right: -25%;
+  bottom: -5%;
+  width: 90%;
+  max-width: 480px;
+  object-position: center 20%;
+  -webkit-mask-image: radial-gradient(ellipse 68% 72% at 50% 40%, rgba(0,0,0,0.9) 15%, transparent 60%);
+  mask-image: radial-gradient(ellipse 68% 72% at 50% 40%, rgba(0,0,0,0.9) 15%, transparent 60%);
+}
 
 /* Portrait Info Strip (below hero) */
 .hero-portrait-strip {

@@ -252,7 +252,8 @@ const AudioReactive = (() => {
     { name: 'Abraham Maslow', blurb: 'Hierarchy of needs. Humanistic psychology, self-actualization.', units: ['Unit 4'] },
     { name: 'B.F. Skinner', blurb: 'Operant conditioning. Reinforcement schedules, shaping.', units: ['Unit 3'] },
     { name: 'John B. Watson', blurb: 'Founder of behaviorism. Little Albert experiment.', units: ['Unit 3'] },
-    { name: 'Ivan Pavlov', blurb: 'Classical conditioning. Conditioned reflexes in dogs.', units: ['Unit 3'] }
+    { name: 'Ivan Pavlov', blurb: 'Classical conditioning. Conditioned reflexes in dogs.', units: ['Unit 3'] },
+    { name: 'Featured', blurb: 'The real psychology is the friends we made along the way.', units: ['All Units'] }
   ];
   const QUOTE_ATTRS = [
     '— Sigmund Freud', '— John B. Watson', '— Abraham Maslow',
