@@ -2846,7 +2846,7 @@ button:focus-visible, a:focus-visible {
   align-items: center;
   gap: var(--sp-5);
   padding: var(--sp-10) var(--sp-6);
-  max-width: 600px;
+  max-width: 700px;
   margin: 0 auto;
 }
 .flashcard {
@@ -2899,6 +2899,108 @@ button:focus-visible, a:focus-visible {
 }
 [data-motion="calm"] .flashcard-inner {
   transition: transform 0.01ms;
+}
+
+/* Flashcard Controls & Glossary */
+.fc-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--sp-4);
+  width: 100%;
+}
+.fc-counter {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.fc-card-wrap {
+  width: 100%;
+}
+.fc-nav {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.fc-controls .btn.active {
+  background: var(--cyan-dim);
+  border-color: rgba(34, 211, 238, 0.3);
+  color: var(--cyan-glow);
+}
+
+/* Scrollable Glossary */
+.fc-glossary-section {
+  width: 100%;
+  margin-top: var(--sp-10);
+  padding-top: var(--sp-8);
+  border-top: 1px solid var(--border-soft);
+}
+.fc-glossary-title {
+  font-family: var(--font-editorial, Georgia, serif);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: var(--sp-4);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.fc-glossary-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+.fc-glossary-search {
+  width: 100%;
+  padding: 10px 16px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  color: var(--text-main);
+  margin-bottom: var(--sp-4);
+  outline: none;
+  transition: border-color var(--duration-fast);
+}
+.fc-glossary-search:focus {
+  border-color: var(--blue-primary);
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1);
+}
+.fc-glossary-search::placeholder { color: var(--text-muted); }
+.fc-glossary-list {
+  max-height: 500px;
+  overflow-y: auto;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  background: var(--bg-panel);
+}
+.fc-glossary-item {
+  display: flex;
+  gap: var(--sp-4);
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-soft);
+  align-items: baseline;
+}
+.fc-glossary-item:last-child { border-bottom: none; }
+.fc-glossary-item:hover { background: var(--bg-panel-2); }
+.fc-glossary-term {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+  min-width: 160px;
+  flex-shrink: 0;
+}
+.fc-glossary-def {
+  font-size: 12px;
+  color: var(--text-soft);
+  line-height: 1.5;
+}
+@media (max-width: 640px) {
+  .fc-glossary-item { flex-direction: column; gap: 4px; }
+  .fc-glossary-term { min-width: 0; }
 }
 
 /* Progress bar */

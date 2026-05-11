@@ -20,7 +20,7 @@
   }
 
   async function loadAllData() {
-    const [ced, vocab, visuals, frq, mcq, research, stats, comparison, misconception] = await Promise.all([
+    const [ced, vocab, visuals, frq, mcq, research, stats, comparison, misconception, flashcards] = await Promise.all([
       loadJSON('data/psych_ced_data.json'),
       loadJSON('data/vocab_bank.json'),
       loadJSON('data/concept_visual_data.json'),
@@ -29,11 +29,13 @@
       loadJSON('data/research_methods_lab.json'),
       loadJSON('data/data_stats_lab.json'),
       loadJSON('data/comparison_bank.json'),
-      loadJSON('data/misconception_bank.json')
+      loadJSON('data/misconception_bank.json'),
+      loadJSON('data/flashcard_bank.json')
     ]);
     DATA.ced = ced; DATA.vocab = vocab; DATA.visuals = visuals;
     DATA.frq = frq; DATA.mcq = mcq; DATA.research = research;
     DATA.stats = stats; DATA.comparison = comparison; DATA.misconception = misconception;
+    DATA.flashcards = flashcards;
   }
 
   /* ── Helpers ──────────────────────────────────────────────── */
@@ -864,40 +866,80 @@
   }
 
   /* ── Flashcards ───────────────────────────────────────────── */
+  let fcShuffled = false;
+  let fcDeck = [];
+
   function renderFlashcards() {
-    if (!DATA.vocab || !DATA.vocab.length) return;
+    if (!DATA.flashcards || !DATA.flashcards.length) return;
+    fcDeck = [...DATA.flashcards];
+    fcShuffled = false;
+    const c = el('flashcardContainer');
+    c.innerHTML = `
+      <div class="fc-controls">
+        <button class="btn btn-sm" id="fcShuffleBtn">Shuffle</button>
+        <span class="fc-counter" id="fcCounter">1 / ${fcDeck.length}</span>
+      </div>
+      <div class="fc-card-wrap" id="fcCardWrap"></div>
+      <div class="fc-nav">
+        <button class="btn" id="fcPrev" disabled>← Previous</button>
+        <button class="btn btn-primary" id="fcNext">Next →</button>
+      </div>
+      <div class="fc-glossary-section">
+        <h3 class="fc-glossary-title">All Terms <span class="fc-glossary-count">${DATA.flashcards.length}</span></h3>
+        <input type="text" class="fc-glossary-search" id="fcGlossarySearch" placeholder="Search terms..." />
+        <div class="fc-glossary-list" id="fcGlossaryList"></div>
+      </div>
+    `;
     showFlashcard(0);
+    renderGlossary();
+    el('fcShuffleBtn').addEventListener('click', () => {
+      fcShuffled = !fcShuffled;
+      el('fcShuffleBtn').classList.toggle('active', fcShuffled);
+      if (fcShuffled) fcDeck = [...DATA.flashcards].sort(() => Math.random() - 0.5);
+      else fcDeck = [...DATA.flashcards];
+      showFlashcard(0);
+    });
+    el('fcGlossarySearch').addEventListener('input', e => renderGlossary(e.target.value));
   }
 
   function showFlashcard(idx) {
-    if (!DATA.vocab) return;
     flashcardIdx = idx;
-    const v = DATA.vocab[idx];
-    const c = el('flashcardContainer');
-    c.innerHTML = `
-      <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">${idx + 1} / ${DATA.vocab.length}</div>
+    const v = fcDeck[idx];
+    const wrap = el('fcCardWrap');
+    wrap.innerHTML = `
       <div class="flashcard" id="flashcard">
         <div class="flashcard-inner">
           <div class="flashcard-front">
-            <div style="display:flex;gap:6px;margin-bottom:12px">${v.tags.map(t => `<span class="tag tag-${t.toLowerCase()}">${h(t)}</span>`).join('')}</div>
             <h3>${h(v.term)}</h3>
-            <p style="font-size:12px;color:var(--text-muted);margin-top:8px">Click to reveal</p>
+            <p style="font-size:12px;color:var(--text-muted);margin-top:12px">Click to flip</p>
           </div>
           <div class="flashcard-back">
             <p>${h(v.definition)}</p>
-            ${v.memoryHook ? `<p style="margin-top:12px;font-size:13px;color:var(--synapse-yellow);font-style:italic">${h(v.memoryHook)}</p>` : ''}
-            ${v.frqSentence ? `<p style="margin-top:12px;font-size:12px;color:var(--blue-primary)">FRQ: ${h(v.frqSentence)}</p>` : ''}
           </div>
         </div>
       </div>
-      <div style="display:flex;gap:12px;align-items:center">
-        <button class="btn" id="fcPrev" ${idx === 0 ? 'disabled style="opacity:0.4"' : ''}>← Previous</button>
-        <button class="btn btn-primary" id="fcNext">${idx < DATA.vocab.length - 1 ? 'Next →' : 'Restart'}</button>
-      </div>
     `;
     el('flashcard').addEventListener('click', () => el('flashcard').classList.toggle('flipped'));
-    el('fcPrev')?.addEventListener('click', () => { if (idx > 0) showFlashcard(idx - 1); });
-    el('fcNext')?.addEventListener('click', () => showFlashcard(idx < DATA.vocab.length - 1 ? idx + 1 : 0));
+    el('fcCounter').textContent = `${idx + 1} / ${fcDeck.length}`;
+    const prevBtn = el('fcPrev');
+    const nextBtn = el('fcNext');
+    prevBtn.disabled = idx === 0;
+    prevBtn.style.opacity = idx === 0 ? '0.4' : '1';
+    nextBtn.textContent = idx < fcDeck.length - 1 ? 'Next →' : 'Restart';
+    prevBtn.onclick = () => { if (idx > 0) showFlashcard(idx - 1); };
+    nextBtn.onclick = () => showFlashcard(idx < fcDeck.length - 1 ? idx + 1 : 0);
+  }
+
+  function renderGlossary(filter) {
+    const list = el('fcGlossaryList');
+    const q = (filter || '').toLowerCase().trim();
+    const items = q ? DATA.flashcards.filter(t => t.term.toLowerCase().includes(q) || t.definition.toLowerCase().includes(q)) : DATA.flashcards;
+    list.innerHTML = items.map(t => `
+      <div class="fc-glossary-item">
+        <span class="fc-glossary-term">${h(t.term)}</span>
+        <span class="fc-glossary-def">${h(t.definition)}</span>
+      </div>
+    `).join('');
   }
 
   /* ── Night Before ─────────────────────────────────────────── */
@@ -1184,7 +1226,7 @@
       if (e.key === '/') { e.preventDefault(); el('globalSearch')?.focus(); }
       else if (e.key === 'Escape') closeVocabDrawer();
       else if (currentView === 'flashcards') {
-        if (e.key === 'ArrowRight' && flashcardIdx < (DATA.vocab?.length || 1) - 1) showFlashcard(flashcardIdx + 1);
+        if (e.key === 'ArrowRight' && flashcardIdx < fcDeck.length - 1) showFlashcard(flashcardIdx + 1);
         else if (e.key === 'ArrowLeft' && flashcardIdx > 0) showFlashcard(flashcardIdx - 1);
         else if (e.key === ' ') { e.preventDefault(); el('flashcard')?.classList.toggle('flipped'); }
       }
