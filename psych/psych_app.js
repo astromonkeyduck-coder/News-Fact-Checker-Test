@@ -91,7 +91,7 @@
     // Apply stagger indices to immediate grid children
     if (target) {
       requestAnimationFrame(() => {
-        target.querySelectorAll('.module-card, .vocab-card, .practice-strip-item, .unit-pathway-card, .comparison-card, .mistake-card, .night-before-card, .exhibit-panel, .research-panel, .stats-panel').forEach((item, i) => {
+        target.querySelectorAll('.module-card, .vocab-card, .practice-strip-item, .unit-pathway-card, .comparison-card, .mistake-card, .nb-card, .exhibit-panel, .research-panel, .stats-panel').forEach((item, i) => {
           item.classList.add('stagger-item');
           item.style.setProperty('--stagger-index', Math.min(i, 12));
         });
@@ -238,45 +238,74 @@
   /* ── CED Map ──────────────────────────────────────────────── */
   function renderCEDMap() {
     if (!DATA.ced) return;
+    const skillColors = {
+      'Concept Application': '#22d3ee',
+      'Research Methods and Design': '#38bdf8',
+      'Data Interpretation': '#a78bfa',
+      'Argumentation': '#ef6f61'
+    };
     const c = el('cedMapContainer');
-    c.innerHTML = DATA.ced.units.map(u => `
-      <div class="ced-unit-section">
-        <div class="ced-unit-header" style="--unit-color:${h(u.color)}" data-toggle="ced-body-${u.id}">
-          <h3><span style="color:${h(u.color)}">Unit ${u.id}</span> ${h(u.title)} <span class="unit-card-weight" style="margin-left:8px">${h(u.weight)}</span></h3>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+    c.innerHTML = DATA.ced.units.map(u => {
+      const loCount = u.topics.reduce((s, t) => s + t.learningObjectives.length, 0);
+      return `
+      <div class="ced-unit-section" style="--unit-color:${h(u.color)}">
+        <div class="ced-unit-accent"></div>
+        <div class="ced-unit-header" data-toggle="ced-body-${u.id}">
+          <div class="ced-unit-header-left">
+            <span class="ced-unit-num">Unit ${u.id}</span>
+            <h3>${h(u.title)}</h3>
+            <div class="ced-unit-meta">
+              <span class="ced-unit-weight">${h(u.weight)}</span>
+              <span class="ced-unit-count">${u.topics.length} topics · ${loCount} LOs</span>
+            </div>
+          </div>
+          <svg class="ced-unit-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
         </div>
         <div class="ced-unit-body" id="ced-body-${u.id}">
           ${u.topics.map(t => `
-            <div class="ced-topic">
-              <div class="ced-topic-title">
-                <span class="ced-chip">${h(t.id)}</span>
-                <span>${h(t.title)}</span>
-              </div>
-              ${t.learningObjectives.map(lo => `
-                <div class="ced-lo">
-                  <div class="ced-lo-code">${h(lo.code)}</div>
-                  <div class="ced-lo-text">${h(lo.text)}</div>
-                  <ul class="ced-ek-list">
-                    ${lo.essentialKnowledge.map(ek => `<li class="ced-ek-item">${h(ek)}</li>`).join('')}
-                  </ul>
-                  <div class="ced-skill-tags">
-                    ${lo.skills.map(s => `<span class="practice-chip">${h(s)}</span>`).join('')}
-                  </div>
-                  ${lo.examNotes ? `<div class="stats-warning mt-4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span>${h(lo.examNotes)}</span></div>` : ''}
+            <div class="ced-topic" style="--unit-color:${h(u.color)}">
+              <div class="ced-topic-header" data-toggle="ced-topic-${h(t.id)}">
+                <div class="ced-topic-header-left">
+                  <span class="ced-chip">${h(t.id)}</span>
+                  <span class="ced-topic-name">${h(t.title)}</span>
                 </div>
-              `).join('')}
+                <span class="ced-topic-lo-count">${t.learningObjectives.length} LO${t.learningObjectives.length !== 1 ? 's' : ''}</span>
+              </div>
+              <div class="ced-topic-body" id="ced-topic-${h(t.id)}">
+                ${t.learningObjectives.map(lo => `
+                  <div class="ced-lo">
+                    <div class="ced-lo-header">
+                      <span class="ced-lo-badge">${h(lo.code)}</span>
+                      ${lo.skills.map(s => `<span class="ced-skill-pill" style="--skill-color:${skillColors[s] || '#a8b5c7'}">${h(s)}</span>`).join('')}
+                    </div>
+                    <div class="ced-lo-text">${h(lo.text)}</div>
+                    <ul class="ced-ek-list">
+                      ${lo.essentialKnowledge.map((ek, ei) => `<li class="ced-ek-item${ei % 2 === 0 ? ' ced-ek-even' : ''}">${h(ek)}</li>`).join('')}
+                    </ul>
+                    ${lo.examNotes ? `<div class="ced-exam-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span>${h(lo.examNotes)}</span></div>` : ''}
+                  </div>
+                `).join('')}
+              </div>
             </div>
           `).join('')}
         </div>
-      </div>
-    `).join('');
+      </div>`;
+    }).join('');
 
-    // Toggle
+    // Unit toggle
     c.querySelectorAll('.ced-unit-header').forEach(hdr => {
       hdr.addEventListener('click', () => {
         const body = el(hdr.dataset.toggle);
         if (body) body.classList.toggle('collapsed');
-        hdr.querySelector('svg').style.transform = body.classList.contains('collapsed') ? 'rotate(-90deg)' : '';
+        hdr.closest('.ced-unit-section').classList.toggle('ced-collapsed');
+      });
+    });
+    // Topic toggle
+    c.querySelectorAll('.ced-topic-header').forEach(hdr => {
+      hdr.addEventListener('click', () => {
+        const body = el(hdr.dataset.toggle);
+        if (body) body.classList.toggle('collapsed');
+        hdr.closest('.ced-topic').classList.toggle('ced-topic-collapsed');
       });
     });
   }
@@ -872,45 +901,249 @@
   }
 
   /* ── Night Before ─────────────────────────────────────────── */
+  const NB_SECTIONS = [
+    { id: 'bio', title: 'Biological Bases', color: '#ef6f61', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="4"/><path d="M12 14v6"/><path d="M8 7Q5 4 3 3"/><path d="M16 7Q19 4 21 3"/></svg>' },
+    { id: 'sense', title: 'Sensation & Consciousness', color: '#38bdf8', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 5v-2"/><path d="M12 21v-2"/><path d="M5 12H3"/><path d="M21 12h-2"/></svg>' },
+    { id: 'learn', title: 'Learning & Memory', color: '#a78bfa', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>' },
+    { id: 'social', title: 'Social & Personality', color: '#f08a7d', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>' },
+    { id: 'research', title: 'Research & FRQ Skills', color: '#22d3ee', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>' }
+  ];
+
+  const NB_CARDS = [
+    // ── BIOLOGICAL BASES ──
+    { section: 'bio', title: 'Neuron Firing', badge: 'high-yield', content: 'Resting potential (−70mV) → stimulus reaches threshold → depolarization (sodium rushes in) → action potential travels down axon → refractory period. All-or-none: fires completely or not at all. Neuron types: Sensory (in), Interneuron (process), Motor (out) = SIM.' },
+    { section: 'bio', title: 'All-or-None Principle', badge: 'trap', content: 'Neuron fires completely or not at all. No partial firing. The correct term is all-or-none (not all-or-nothing). Intensity is coded by RATE of firing, not strength of individual signals.' },
+    { section: 'bio', title: 'Neurotransmitter Triad', badge: 'high-yield', content: 'Agonist = mimics NT. Antagonist = blocks receptor. Reuptake inhibitor = prevents reabsorption (e.g. SSRIs). Presynaptic = sending neuron. Postsynaptic = receiving neuron. Synaptic cleft = gap between them.' },
+    { section: 'bio', title: 'Neurotransmitters', badge: 'high-yield', content: 'Dopamine = reward/movement (excess → schizophrenia, deficit → Parkinson\'s). Serotonin = mood (deficit → depression). ACh = movement/memory (deficit → Alzheimer\'s). GABA = inhibitory. Glutamate = excitatory/memory. Norepinephrine = alertness. Endorphins = pain control.' },
+    { section: 'bio', title: 'Brain Structures', badge: 'high-yield', content: 'Medulla = breathing/heart rate. Thalamus = sensory relay (NOT smell). Cerebellum = balance/coordination. Hippocampus = memory formation. Amygdala = fear/aggression. Hypothalamus = hunger/reward/pituitary. Broca\'s = speech production. Wernicke\'s = speech comprehension.' },
+    { section: 'bio', title: 'Four Lobes', content: 'Frontal = decision/planning/personality (last to develop, contains motor cortex). Parietal = touch/pain (sensory cortex). Occipital = vision (back of head). Temporal = hearing/smell/memory (above ears). Left hemisphere = language/logic. Right = emotion/spatial.' },
+    { section: 'bio', title: 'Drugs & Consciousness', content: 'Depressants (alcohol) = slow neural activity. Stimulants (caffeine, cocaine) = speed up. Hallucinogens (LSD, marijuana) = distort perception. Tolerance = need more for same effect. Dependence: physical + psychological. Only ~10% become addicted.' },
+    { section: 'bio', title: 'Endocrine System', content: 'Pituitary = "master gland" (growth, oxytocin). Adrenal = fight-or-flight (adrenaline, cortisol). Thyroid = metabolism. Hormones are SLOW but long-lasting vs neurotransmitters (fast, brief). HPA axis: hypothalamus → pituitary → adrenals = stress response.' },
+    { section: 'bio', title: 'Split Brain & Lateralization', content: 'Corpus callosum connects hemispheres. Severed = split brain. Left visual field → right hemisphere (can\'t name but can draw). Right field → left hemisphere (can name). Contralateral control: left brain controls right body.' },
+
+    // ── SENSATION & CONSCIOUSNESS ──
+    { section: 'sense', title: 'Sensation Thresholds', badge: 'high-yield', content: 'Absolute threshold = minimum stimulus detected 50% of time. Difference threshold (JND) = smallest detectable change. Weber\'s law = detection depends on proportional change (~10%). Sensory adaptation = stop noticing unchanging stimulus. Habituation = learned decrease in response.' },
+    { section: 'sense', title: 'Vision Anatomy', content: 'Cornea → pupil → lens (accommodation) → retina. Rods = peripheral, B&W, motion. Cones = fovea, color, detail. Blind spot = where optic nerve exits. Trichromatic theory = 3 color receptors (RGB). Opponent-process = 3 opposing pairs → after-images.' },
+    { section: 'sense', title: 'Depth & Perception', content: 'Binocular: retinal disparity + convergence. Monocular: relative size, texture gradient, interposition, linear perspective. Gestalt: figure-ground, proximity, similarity, continuity, closure. Perceptual constancy: size, shape, brightness stay stable despite input changes.' },
+    { section: 'sense', title: 'Sleep Stages', badge: 'high-yield', content: 'NREM-1: transitioning, hypnagogic jerks. NREM-2: sleep spindles, 20 min. NREM-3: deep/delta waves, 30 min, sleepwalking here. REM: paradoxical (brain active, body paralyzed), dreaming, increases across night. Full cycle = 90 min. REM rebound after deprivation.' },
+    { section: 'sense', title: 'Sleep & Circadian', content: 'SCN in hypothalamus controls circadian rhythm via melatonin. Light → less melatonin → more alert. Sleep debt is cumulative. Disorders: insomnia (10%), narcolepsy (straight to REM), sleep apnea (breathing stops). Why sleep: restoration, memory consolidation, growth.' },
+    { section: 'sense', title: 'Signal Detection Theory', badge: 'frq', content: 'Decision-making about detecting stimuli depends on stimulus intensity AND psychological state (motivation, expectations). Four outcomes: hit, miss, false alarm, correct rejection. Explains why radiologists miss tumors or why you "hear" your name in noise.' },
+    { section: 'sense', title: 'Attention & Blindness', content: 'Selective attention = focus on one thing (cocktail party effect). Inattentional blindness = fail to notice unexpected stimulus. Change blindness = fail to notice obvious change. Both show limits of conscious awareness.' },
+
+    // ── LEARNING & MEMORY ──
+    { section: 'learn', title: 'Classical vs Operant', badge: 'high-yield', content: 'Classical: two stimuli paired → involuntary response. Operant: behavior + consequence. Positive = add, Negative = remove, Reinforcement = increase behavior, Punishment = decrease behavior. Know the 2×2 grid cold.' },
+    { section: 'learn', title: 'Conditioning Details', content: 'Classical = involuntary (Pavlov, Watson/Baby Albert). Operant = voluntary (Thorndike law of effect, Skinner box). Overjustification = rewards kill intrinsic motivation. Cons of punishment: suppresses not eliminates, teaches fear/aggression. Bandura Bobo doll = observational learning.' },
+    { section: 'learn', title: 'Spontaneous Recovery', badge: 'trap', content: 'Applies to BOTH classical AND operant conditioning. Extinguished response reappears after rest period. Students often forget operant. Extinction ≠ forgetting — the association is suppressed, not erased.' },
+    { section: 'learn', title: 'Schedules of Reinforcement', badge: 'high-yield', content: 'Fixed-ratio = after set number (piecework). Variable-ratio = unpredictable number (gambling, most resistant to extinction). Fixed-interval = first response after set time (scalloped pattern). Variable-interval = unpredictable time (checking email).' },
+    { section: 'learn', title: 'Memory Models', content: 'Multi-store: sensory → short-term → long-term. Working memory: central executive + phonological loop + visuospatial sketchpad. Levels of processing: structural → phonemic → semantic (deepest = best).' },
+    { section: 'learn', title: 'Memory Encoding', content: 'Ebbinghaus curve: forgetting is rapid then levels off. Spacing > cramming. Testing effect: practice tests = best prep. Serial position: primacy (beginning) + recency (end) remembered, middle forgotten. Self-reference effect boosts encoding. Chunking: 7±2 items.' },
+    { section: 'learn', title: 'Retrieval & Forgetting', badge: 'frq', content: 'Recognition (MCQ) > recall (FRQ). Context-dependent = same place. State-dependent = same state. Mood-congruent = matching emotions. Proactive interference = old blocks new. Retroactive = new blocks old. Misinformation effect: post-event info alters memory.' },
+    { section: 'learn', title: 'Interference', badge: 'trap', content: 'Proactive = old blocks new (PRO = forward). Retroactive = new blocks old (RETRO = backward). Mnemonics: proactive = old PROjects forward. retroactive = new RETRO-fits backward. Both are retrieval failures, not storage failures.' },
+    { section: 'learn', title: 'Piaget\'s Stages', badge: 'high-yield', content: 'Sensorimotor (0–2): object permanence. Preoperational (2–7): egocentrism, no conservation. Concrete operational (7–11): conservation, logical for concrete. Formal operational (12+): abstract thought, hypothetical reasoning. Schema → assimilation vs accommodation.' },
+    { section: 'learn', title: 'Language Development', content: 'Babbling (4–6 mo, all sounds). One-word (12 mo). Two-word telegraphic (24 mo). Overextension = calling all animals "doggy." Critical period hypothesis (Lenneberg). Chomsky: LAD (innate grammar device). Skinner: reinforcement shapes language.' },
+
+    // ── SOCIAL & PERSONALITY ──
+    { section: 'social', title: 'The 7 Perspectives', badge: 'high-yield', content: 'Biological, Behavioral, Cognitive, Humanistic, Psychodynamic, Sociocultural, Evolutionary. Be ready to apply EACH to a scenario, compare them, and draw conclusions. This is the #1 most versatile FRQ skill.' },
+    { section: 'social', title: 'Attribution Biases', badge: 'high-yield', content: 'FAE = blame others\' disposition, ignore situation. Actor-observer = their failures are dispositional, mine are situational. Self-serving = my success is me, my failure is the situation. Culture matters: collectivist cultures show less FAE.' },
+    { section: 'social', title: 'Group Influence', content: 'Social facilitation = others watching helps easy tasks, hurts hard ones. Social loafing = less effort in groups. Deindividuation = losing identity → mob behavior. Group polarization = discussions make views extreme. Groupthink = harmony over honesty.' },
+    { section: 'social', title: 'Conformity vs Obedience', badge: 'frq', content: 'Conformity = matching group without direct orders (Asch line study, 37%). Obedience = following authority (Milgram, 65%). Normative influence = fit in. Informational influence = they must know better. Factors: unanimity, proximity, legitimacy.' },
+    { section: 'social', title: 'Bystander Effect', content: 'More bystanders = LESS help (diffusion of responsibility). Decision tree: notice → interpret as emergency → assume responsibility → know how → act. Altruism = selfless helping. Reciprocity norm. Social responsibility norm.' },
+    { section: 'social', title: 'Positive vs Negative Symptoms', badge: 'trap', content: 'Schizophrenia: Positive = ADDED (hallucinations, delusions, disorganized speech). Negative = ABSENT (flat affect, social withdrawal, avolition). NOT good/bad. Dopamine hypothesis: excess dopamine activity.' },
+    { section: 'social', title: 'Psychological Disorders', badge: 'high-yield', content: 'Anxiety: GAD (chronic worry), phobias (specific), panic disorder, OCD. Mood: MDD (2+ weeks), bipolar. Personality: antisocial (no remorse). Dissociative: DID. Biomedical model vs biopsychosocial model. DSM-5 = classification system.' },
+    { section: 'social', title: 'Therapy Approaches', content: 'Psychoanalysis: free association, dream analysis. CBT: change thoughts → change behavior. Humanistic: unconditional positive regard (Rogers). Biomedical: drugs (SSRIs, antipsychotics), ECT. Systematic desensitization = gradual exposure + relaxation.' },
+    { section: 'social', title: 'Motivation & Emotion', content: 'Maslow hierarchy: physiological → safety → belonging → esteem → self-actualization. Drive reduction theory: homeostasis. Incentive theory: external pulls. James-Lange: body first → emotion. Cannon-Bard: simultaneous. Schachter-Singer: arousal + label.' },
+    { section: 'social', title: 'Erikson\'s Stages', content: 'Trust vs Mistrust (infant). Autonomy vs Shame (toddler). Initiative vs Guilt (preschool). Industry vs Inferiority (school age). Identity vs Role Confusion (adolescent). Intimacy vs Isolation (young adult). Generativity vs Stagnation (middle). Integrity vs Despair (late).' },
+    { section: 'social', title: 'Intelligence & Testing', content: 'Spearman: g factor (general intelligence). Gardner: multiple intelligences (8 types). Sternberg: triarchic (analytical, creative, practical). IQ: mean 100, SD 15. Reliability = consistency. Validity = measures what it claims. Standardization = normed on population.' },
+
+    // ── RESEARCH & FRQ SKILLS ──
+    { section: 'research', title: 'Experimental vs Non-Experimental', badge: 'high-yield', content: 'Only experiments establish cause and effect. Require: IV (manipulated), DV (measured), random assignment, control group. Non-experimental: correlation, case study, naturalistic observation, survey, meta-analysis — CANNOT establish causation.' },
+    { section: 'research', title: 'Random Sampling vs Assignment', badge: 'trap', content: 'Sampling = how you SELECT participants (affects generalizability to population). Assignment = how you PLACE into groups (affects internal validity / causation). These are DIFFERENT concepts. Both use "random" but serve different purposes.' },
+    { section: 'research', title: 'Correlation ≠ Causation', badge: 'high-yield', content: 'Third variable problem = another factor causes both. Coefficient: −1 to +1. Closer to extremes = stronger relationship. Direction: positive (same direction), negative (opposite). r = 0.8 and r = −0.8 are EQUALLY strong.' },
+    { section: 'research', title: 'Effect Size vs Significance', badge: 'trap', content: 'Effect size = HOW BIG the difference (Cohen\'s d: small 0.2, medium 0.5, large 0.8). Significance = IS IT REAL (p < 0.05 = less than 5% chance due to chance). They are SEPARATE. Large sample can give significance with tiny effect.' },
+    { section: 'research', title: 'Thinking Traps', content: 'Hindsight bias = "I knew it all along" (after outcome). Overconfidence = overestimating knowledge (before outcome). Illusory correlation = seeing patterns that don\'t exist. Confirmation bias = seeking info that confirms beliefs. Together they make us overestimate intuition.' },
+    { section: 'research', title: 'Research Biases', badge: 'frq', content: 'Hawthorne effect = behavior changes when observed. Social desirability = answering to look good. Wording/anchoring effects = question phrasing skews results. Experimenter bias = expectations influence results. Fix: double-blind procedure.' },
+    { section: 'research', title: 'AAQ Checklist', badge: 'frq', content: 'A: Identify research method. B: Identify variables (IV/DV). C: Interpret a statistic. D: Ethical concern (be SPECIFIC — not just "ethics"). E: Generalizability issue. F: Make an argument with evidence and reasoning.' },
+    { section: 'research', title: 'EBQ Checklist', badge: 'frq', content: 'Make a defensible CLAIM (not a fact, not opinion). Select and USE evidence from provided sources (specific quotes/data). REASONING that connects evidence to claim. Apply a psychological CONCEPT. May need to address counterargument.' },
+    { section: 'research', title: 'Argumentation', badge: 'frq', content: 'Defensible claim + scientifically derived evidence + reasoning. No personal opinions or anecdotes. "The evidence suggests…" not "I think…" May need to refute, modify, or defend claims. Always tie back to psychological concepts.' },
+    { section: 'research', title: 'Ethics in Research', content: 'Informed consent. Right to withdraw. Debrief after deception. Minimize harm. Confidentiality. IRB approval. APA guidelines. Animal research: justify, minimize suffering. Tuskegee, Milgram, Zimbardo = historical ethical violations.' },
+    { section: 'research', title: 'Measures of Central Tendency', content: 'Mean = average (sensitive to outliers). Median = middle value (resistant to outliers). Mode = most frequent. Skewed distributions: positive skew → mean pulled RIGHT. Negative skew → mean pulled LEFT. Range, variance, standard deviation = spread.' }
+  ];
+
+  let nbState = { reviewed: new Set(), needsReview: new Set(), currentSection: 'all', shuffled: false, timerInterval: null, timerSeconds: 1800 };
+
   function renderNightBefore() {
     const c = el('nightBeforeContainer');
+    nbState = { reviewed: new Set(), needsReview: new Set(), currentSection: 'all', shuffled: false, timerInterval: null, timerSeconds: 1800 };
+
     c.innerHTML = `
-      <div class="night-before-card"><h4>The 7 Perspectives</h4><p>Biological, Behavioral, Cognitive, Humanistic, Psychodynamic, Sociocultural, Evolutionary. Be ready to apply each to a scenario, compare them, and draw conclusions.</p></div>
-      <div class="night-before-card"><h4>Experimental vs Non-Experimental</h4><p>Only experiments establish cause and effect. Experiments have IV (manipulated), DV (measured), random assignment, and control groups. Non-experimental methods (correlation, case study, naturalistic observation, meta-analysis) cannot establish causation.</p></div>
-      <div class="night-before-card"><h4>Random Sampling vs Random Assignment</h4><p>Sampling = how you SELECT participants (affects generalizability). Assignment = how you PLACE into groups (affects causation). Know the difference.</p></div>
-      <div class="night-before-card"><h4>Correlation ≠ Causation</h4><p>Third variable problem. Coefficient ranges from -1 to +1. Closer to extremes = stronger. Direction: positive (same), negative (opposite).</p></div>
-      <div class="night-before-card"><h4>Effect Size vs Statistical Significance</h4><p>Effect size = HOW BIG (small ≈ 0.2, medium ≈ 0.5, large ≈ 0.8). Significance = IS IT REAL (p < 0.05). They are SEPARATE concepts.</p></div>
-      <div class="night-before-card"><h4>All-or-None Principle</h4><p>Neuron fires completely or not at all. No partial firing. The correct term is all-or-none (not all-or-nothing).</p></div>
-      <div class="night-before-card"><h4>Neurotransmitter Triad</h4><p>Agonist = mimics. Antagonist = blocks. Reuptake inhibitor = prevents reabsorption. Presynaptic = sending neuron. Postsynaptic = receiving neuron.</p></div>
-      <div class="night-before-card"><h4>Classical vs Operant Conditioning</h4><p>Classical: two stimuli paired → involuntary response. Operant: behavior + consequence. Positive = add, Negative = remove, Reinforcement = increase, Punishment = decrease.</p></div>
-      <div class="night-before-card"><h4>Spontaneous Recovery</h4><p>Applies to BOTH classical and operant conditioning. Extinguished response reappears after rest period.</p></div>
-      <div class="night-before-card"><h4>Schedules of Reinforcement</h4><p>Fixed-ratio, variable-ratio, fixed-interval, variable-interval (hyphenated). Each has distinctive graph pattern. Fixed-interval = scalloped.</p></div>
-      <div class="night-before-card"><h4>Memory Models</h4><p>Multi-store (sensory → short-term → long-term). Working memory (executive, phonological loop, visuospatial). Levels of processing (structural → phonemic → semantic).</p></div>
-      <div class="night-before-card"><h4>Interference</h4><p>Proactive = old blocks new (PRO = forward). Retroactive = new blocks old (RETRO = backward).</p></div>
-      <div class="night-before-card"><h4>Positive vs Negative Symptoms (Schizophrenia)</h4><p>Positive = ADDED to experience (hallucinations, delusions). Negative = ABSENT from behavior (flat affect, social withdrawal). Not good/bad.</p></div>
-      <div class="night-before-card"><h4>AAQ Checklist</h4><p>A: Research method. B: Variables (IV/DV). C: Interpret statistic. D: Ethical concern (specific). E: Generalizability. F: Argument with evidence.</p></div>
-      <div class="night-before-card"><h4>EBQ Checklist</h4><p>Claim (defensible, not a fact). Evidence from sources (specific quotes/data). Reasoning (connect evidence to claim). Application (psychological concept).</p></div>
-      <div class="night-before-card"><h4>Argumentation</h4><p>Defensible claim + scientifically derived evidence + reasoning. No personal opinions. May need to refute or modify claims.</p></div>
-      <div class="night-before-card"><h4>Thinking Traps</h4><p>Hindsight bias = "I knew it all along" (after outcome). Overconfidence = overestimating what you know (before outcome). Illusory correlation = seeing patterns that don't exist. Together they make us overestimate intuition.</p></div>
-      <div class="night-before-card"><h4>Research Biases to Know</h4><p>Hawthorne effect = behavior changes when observed. Social desirability = answering to look good. Wording/anchoring effects = question phrasing skews results. Experimenter bias = researcher expectations influence results.</p></div>
-      <div class="night-before-card"><h4>Attribution Biases</h4><p>FAE = blame others' disposition, ignore their situation. Actor-observer = others' failures are dispositional, mine are situational. Self-serving = my success is me, my failure is the situation.</p></div>
-      <div class="night-before-card"><h4>Group Influence</h4><p>Social facilitation = others watching helps easy tasks, hurts hard ones. Social loafing = less effort when hidden in group. Deindividuation = losing identity in group → mob behavior. Group polarization = like-minded discussion makes views extreme. Groupthink = harmony over honesty.</p></div>
-      <div class="night-before-card"><h4>Conformity vs Obedience</h4><p>Conformity = matching group without direct orders (Asch). Obedience = following authority commands (Milgram, 67%). Normative influence = fit in. Informational influence = they must know better.</p></div>
-      <div class="night-before-card"><h4>Bystander Effect</h4><p>More bystanders = LESS help (diffusion of responsibility). Must: notice, interpret as emergency, assume responsibility. Altruism = selfless helping. Reciprocity norm = help those who helped you. Social responsibility norm = help those in need.</p></div>
-      <div class="night-before-card"><h4>Neurotransmitters</h4><p>Dopamine = reward/movement (excess → schizophrenia, deficit → Parkinson's). Serotonin = mood (deficit → depression, SSRIs help). ACh = movement/memory (deficit → Alzheimer's). GABA = inhibitory. Glutamate = excitatory/memory. Norepinephrine = alertness. Endorphins = pain control.</p></div>
-      <div class="night-before-card"><h4>Brain Structures</h4><p>Medulla = breathing/heart rate. Thalamus = sensory relay (NOT smell). Cerebellum = balance/coordination. Hippocampus = memory. Amygdala = fear/aggression. Hypothalamus = hunger/reward/pituitary. Broca's = speech production. Wernicke's = speech comprehension.</p></div>
-      <div class="night-before-card"><h4>Four Lobes</h4><p>Frontal = decision/planning/personality (last to develop, contains motor cortex). Parietal = touch/pain (sensory cortex). Occipital = vision (back of head). Temporal = hearing/smell/memory (above ears). Left hemisphere = language/logic. Right hemisphere = emotion/spatial.</p></div>
-      <div class="night-before-card"><h4>Neuron Firing</h4><p>Resting potential (-70mV) → stimulus reaches threshold → depolarization (sodium rushes in) → action potential travels down axon → refractory period. All-or-none: fires completely or not at all. Neuron types: Sensory (in), Interneuron (process), Motor (out) = SIM.</p></div>
-      <div class="night-before-card"><h4>Sensation Thresholds</h4><p>Absolute threshold = minimum stimulus detected 50% of time. Difference threshold (JND) = smallest detectable change. Weber's law = detection depends on proportional change (~10%). Sensory adaptation = stop noticing unchanging stimulus. Habituation = learned decrease in response.</p></div>
-      <div class="night-before-card"><h4>Vision Anatomy</h4><p>Cornea → pupil → lens (accommodation) → retina. Rods = peripheral, B&W, motion. Cones = fovea, color, detail. Blind spot = where optic nerve exits. Trichromatic theory = 3 color receptors (RGB). Opponent-process = 3 opposing pairs → after-images.</p></div>
-      <div class="night-before-card"><h4>Depth & Perception</h4><p>Binocular: retinal disparity + convergence. Monocular: relative size, texture gradient, interposition, linear perspective. Gestalt: figure-ground, proximity, similarity, continuity, closure. Perceptual constancy: size, shape, brightness stay stable despite input changes.</p></div>
-      <div class="night-before-card"><h4>Sleep Stages</h4><p>NREM-1: transitioning, hypnagogic jerks. NREM-2: sleep spindles, 20 min. NREM-3: deep/delta waves, 30 min, sleepwalking here. REM: paradoxical (brain active, body paralyzed), dreaming, increases across night. Full cycle = 90 min. REM rebound = catch-up REM after deprivation.</p></div>
-      <div class="night-before-card"><h4>Sleep & Circadian</h4><p>SCN in hypothalamus controls circadian rhythm via melatonin. Light → less melatonin → more alert. Sleep debt is cumulative. Disorders: insomnia (10%), narcolepsy (straight to REM), sleep apnea (breathing stops). Why sleep: restoration, memory consolidation, growth hormones, protection.</p></div>
-      <div class="night-before-card"><h4>Drugs</h4><p>Depressants (alcohol) = slow neural activity. Stimulants (caffeine, cocaine) = speed up. Hallucinogens (LSD, marijuana) = distort perception. Tolerance = need more for same effect. Dependence: physical (caffeine headache) + psychological. Only ~10% become addicted.</p></div>
-      <div class="night-before-card"><h4>Conditioning Details</h4><p>Classical = involuntary (Pavlov, Watson/Baby Albert). Operant = voluntary (Thorndike law of effect, Skinner box). Overjustification = rewards kill intrinsic motivation. Cons of punishment: suppresses not eliminates, teaches fear/aggression. Bandura Bobo doll = observational learning. Mirror neurons = feel what others feel.</p></div>
-      <div class="night-before-card"><h4>Memory Encoding</h4><p>Ebbinghaus curve: forgetting is rapid early then levels off. Spacing > cramming. Testing effect: practice tests are best prep. Serial position: primacy (beginning) + recency (end) remembered, middle forgotten. Deep/semantic processing > shallow. Self-reference effect boosts encoding. Chunking: 7±2 items.</p></div>
-      <div class="night-before-card"><h4>Memory Retrieval & Forgetting</h4><p>Recognition (MCQ) > recall (FRQ). Context-dependent = same place. State-dependent = same state. Mood-congruent = mood triggers matching memories. Proactive = old blocks new. Retroactive = new blocks old. Misinformation effect = post-event info alters memory. Eyewitness testimony is unreliable.</p></div>
+      <div class="nb-header">
+        <div class="nb-progress-wrap">
+          <div class="nb-progress-bar"><div class="nb-progress-fill" id="nbProgressFill"></div></div>
+          <span class="nb-progress-text" id="nbProgressText">0 / ${NB_CARDS.length} reviewed</span>
+        </div>
+        <div class="nb-controls">
+          <button class="btn btn-sm nb-shuffle-btn" id="nbShuffleBtn">Shuffle</button>
+          <button class="btn btn-sm nb-timer-btn" id="nbTimerBtn">Start 30m Timer</button>
+        </div>
+      </div>
+      <div class="nb-timer-display" id="nbTimerDisplay" style="display:none">
+        <span class="nb-timer-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+        <span class="nb-timer-value" id="nbTimerValue">30:00</span>
+      </div>
+      <div class="nb-section-tabs" id="nbSectionTabs">
+        <button class="nb-section-tab active" data-nb-section="all">All <span class="nb-tab-count">${NB_CARDS.length}</span></button>
+        ${NB_SECTIONS.map(s => {
+          const count = NB_CARDS.filter(c => c.section === s.id).length;
+          return `<button class="nb-section-tab" data-nb-section="${s.id}" style="--tab-color:${s.color}">${s.title} <span class="nb-tab-count">${count}</span></button>`;
+        }).join('')}
+      </div>
+      <div class="nb-cards-container" id="nbCardsContainer"></div>
+      <div class="nb-review-missed" id="nbReviewMissed" style="display:none">
+        <h3>Needs Review</h3>
+        <p class="nb-review-missed-desc">Cards you flagged for another look.</p>
+        <div id="nbMissedCards"></div>
+      </div>
     `;
+
+    renderNBCards();
+    initNBEvents();
+  }
+
+  function renderNBCards() {
+    const container = el('nbCardsContainer');
+    let cards = NB_CARDS.filter(c => nbState.currentSection === 'all' || c.section === nbState.currentSection);
+    if (nbState.shuffled) cards = [...cards].sort(() => Math.random() - 0.5);
+
+    const sectionMeta = {};
+    NB_SECTIONS.forEach(s => { sectionMeta[s.id] = s; });
+
+    container.innerHTML = cards.map((card, i) => {
+      const sec = sectionMeta[card.section];
+      const reviewed = nbState.reviewed.has(card.title);
+      const needsReview = nbState.needsReview.has(card.title);
+      const badgeHTML = card.badge === 'high-yield' ? '<span class="nb-badge nb-badge-high">High Yield</span>'
+        : card.badge === 'trap' ? '<span class="nb-badge nb-badge-trap">Trap Alert</span>'
+        : card.badge === 'frq' ? '<span class="nb-badge nb-badge-frq">FRQ Critical</span>' : '';
+      return `
+        <div class="nb-card ${reviewed ? 'nb-card-reviewed' : ''} ${needsReview ? 'nb-card-flagged' : ''}" data-nb-idx="${i}" data-nb-title="${h(card.title)}" style="--nb-accent:${sec.color}">
+          <div class="nb-card-header">
+            <span class="nb-card-section-dot" style="background:${sec.color}"></span>
+            <h4 class="nb-card-title">${h(card.title)}</h4>
+            ${badgeHTML}
+            ${reviewed ? '<span class="nb-card-check">✓</span>' : ''}
+          </div>
+          <div class="nb-card-body" style="display:none">
+            <p>${h(card.content)}</p>
+            <div class="nb-card-actions">
+              <button class="nb-rate-btn nb-rate-knew" data-nb-title="${h(card.title)}">I knew it</button>
+              <button class="nb-rate-btn nb-rate-missed" data-nb-title="${h(card.title)}">Need to review</button>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function initNBEvents() {
+    const container = el('nbCardsContainer');
+    container.addEventListener('click', e => {
+      const card = e.target.closest('.nb-card');
+      if (!card) return;
+
+      const rateBtn = e.target.closest('.nb-rate-btn');
+      if (rateBtn) {
+        const title = rateBtn.dataset.nbTitle;
+        nbState.reviewed.add(title);
+        if (rateBtn.classList.contains('nb-rate-missed')) {
+          nbState.needsReview.add(title);
+        } else {
+          nbState.needsReview.delete(title);
+        }
+        card.classList.add('nb-card-reviewed');
+        card.classList.toggle('nb-card-flagged', nbState.needsReview.has(title));
+        const body = card.querySelector('.nb-card-body');
+        if (body) body.style.display = 'none';
+        if (!card.querySelector('.nb-card-check')) {
+          card.querySelector('.nb-card-header').insertAdjacentHTML('beforeend', '<span class="nb-card-check">✓</span>');
+        }
+        updateNBProgress();
+        updateNBMissed();
+        return;
+      }
+
+      const body = card.querySelector('.nb-card-body');
+      if (body) {
+        const isOpen = body.style.display !== 'none';
+        body.style.display = isOpen ? 'none' : 'block';
+        card.classList.toggle('nb-card-open', !isOpen);
+      }
+    });
+
+    el('nbSectionTabs').addEventListener('click', e => {
+      const tab = e.target.closest('.nb-section-tab');
+      if (!tab) return;
+      el('nbSectionTabs').querySelectorAll('.nb-section-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      nbState.currentSection = tab.dataset.nbSection;
+      renderNBCards();
+    });
+
+    el('nbShuffleBtn').addEventListener('click', () => {
+      nbState.shuffled = !nbState.shuffled;
+      el('nbShuffleBtn').classList.toggle('active', nbState.shuffled);
+      renderNBCards();
+    });
+
+    el('nbTimerBtn').addEventListener('click', startNBTimer);
+  }
+
+  function updateNBProgress() {
+    const total = NB_CARDS.length;
+    const done = nbState.reviewed.size;
+    const pct = Math.round((done / total) * 100);
+    const fill = el('nbProgressFill');
+    const text = el('nbProgressText');
+    if (fill) fill.style.width = pct + '%';
+    if (text) text.textContent = `${done} / ${total} reviewed (${pct}%)`;
+  }
+
+  function updateNBMissed() {
+    const panel = el('nbReviewMissed');
+    const container = el('nbMissedCards');
+    if (nbState.needsReview.size === 0) { panel.style.display = 'none'; return; }
+    panel.style.display = 'block';
+    const missed = NB_CARDS.filter(c => nbState.needsReview.has(c.title));
+    container.innerHTML = missed.map(card => {
+      const sec = NB_SECTIONS.find(s => s.id === card.section);
+      return `<div class="nb-missed-card" style="--nb-accent:${sec.color}"><h4>${h(card.title)}</h4><p>${h(card.content)}</p></div>`;
+    }).join('');
+  }
+
+  function startNBTimer() {
+    if (nbState.timerInterval) { clearInterval(nbState.timerInterval); nbState.timerInterval = null; }
+    nbState.timerSeconds = 1800;
+    const display = el('nbTimerDisplay');
+    const valueEl = el('nbTimerValue');
+    const btn = el('nbTimerBtn');
+    display.style.display = 'flex';
+    btn.textContent = 'Reset Timer';
+
+    function tick() {
+      nbState.timerSeconds--;
+      if (nbState.timerSeconds <= 0) {
+        clearInterval(nbState.timerInterval);
+        nbState.timerInterval = null;
+        valueEl.textContent = '0:00';
+        display.classList.add('nb-timer-done');
+        btn.textContent = 'Start 30m Timer';
+        return;
+      }
+      const m = Math.floor(nbState.timerSeconds / 60);
+      const s = nbState.timerSeconds % 60;
+      valueEl.textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
+      display.classList.toggle('nb-timer-urgent', nbState.timerSeconds <= 300);
+    }
+    nbState.timerInterval = setInterval(tick, 1000);
+    tick();
   }
 
   /* ── Search ───────────────────────────────────────────────── */
@@ -1049,18 +1282,18 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             text,
-            voice_id: 'nPczCjzI2devNBz1zQrb',
+            voice_id: 'JBFqnCBsd6RMkjVDRZzb',
             model_id: 'eleven_multilingual_v2',
-            stability: 0.65,
-            similarity_boost: 0.80,
-            style: 0.35
+            stability: 0.78,
+            similarity_boost: 0.85,
+            style: 0.15
           })
         });
         if (!res.ok) throw new Error('TTS request failed');
         const data = await res.json();
         const audioSrc = 'data:audio/mpeg;base64,' + data.audio;
         quoteSpeakAudio = new Audio(audioSrc);
-        quoteSpeakAudio.volume = 0.85;
+        quoteSpeakAudio.volume = 1.0;
         quoteSpeakAudio.addEventListener('ended', () => { btn.classList.remove('speaking'); quoteSpeakAudio = null; });
         quoteSpeakAudio.addEventListener('error', () => { btn.classList.remove('speaking'); quoteSpeakAudio = null; });
         quoteSpeakAudio.play();

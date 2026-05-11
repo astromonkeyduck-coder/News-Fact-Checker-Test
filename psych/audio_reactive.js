@@ -175,16 +175,26 @@ const AudioReactive = (() => {
     if (!audioEl) return;
 
     loadTrack(0);
-    audioEl.volume = 0.35;
+    audioEl.volume = 0.18;
 
-    // First click ANYWHERE on the site starts music
-    let firstClickFired = false;
-    document.addEventListener('click', () => {
-      if (!firstClickFired) {
-        firstClickFired = true;
+    // Share gate handles first-play instead of auto-play-on-click
+    const gate = document.getElementById('shareGate');
+    const enterSound = document.getElementById('shareGateEnterSound');
+    const enterQuiet = document.getElementById('shareGateEnterQuiet');
+
+    function dismissGate() {
+      if (gate) gate.classList.add('dismissed');
+    }
+
+    if (enterSound) {
+      enterSound.addEventListener('click', () => {
+        dismissGate();
         playTrack();
-      }
-    }, { once: true });
+      });
+    }
+    if (enterQuiet) {
+      enterQuiet.addEventListener('click', dismissGate);
+    }
 
     // Music icon toggles play/pause + opens dropdown
     const toggleBtn = document.getElementById('navPlayerToggle');
@@ -192,9 +202,7 @@ const AudioReactive = (() => {
     if (toggleBtn && wrap) {
       toggleBtn.addEventListener('click', e => {
         e.stopPropagation();
-        if (firstClickFired) {
-          if (isPlaying) pauseTrack(); else playTrack();
-        }
+        if (isPlaying) pauseTrack(); else playTrack();
         wrap.classList.toggle('open');
       });
       document.addEventListener('click', e => {
@@ -335,5 +343,11 @@ const AudioReactive = (() => {
     }
   }
 
-  return { init, analyse, getBass, getMid, getTreble, isActive, initPortraitCarousel, checkBeatAdvance };
+  function playVelvet() {
+    if (!audioEl) return;
+    loadTrack(0);
+    playTrack();
+  }
+
+  return { init, analyse, getBass, getMid, getTreble, isActive, initPortraitCarousel, checkBeatAdvance, playVelvet };
 })();
