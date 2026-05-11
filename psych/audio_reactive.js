@@ -177,25 +177,6 @@ const AudioReactive = (() => {
     loadTrack(0);
     audioEl.volume = 0.18;
 
-    // Share gate handles first-play instead of auto-play-on-click
-    const gate = document.getElementById('shareGate');
-    const enterSound = document.getElementById('shareGateEnterSound');
-    const enterQuiet = document.getElementById('shareGateEnterQuiet');
-
-    function dismissGate() {
-      if (gate) gate.classList.add('dismissed');
-    }
-
-    if (enterSound) {
-      enterSound.addEventListener('click', () => {
-        dismissGate();
-        playTrack();
-      });
-    }
-    if (enterQuiet) {
-      enterQuiet.addEventListener('click', dismissGate);
-    }
-
     // Music icon toggles play/pause + opens dropdown
     const toggleBtn = document.getElementById('navPlayerToggle');
     const wrap = document.getElementById('navPlayerWrap');
