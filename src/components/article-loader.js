@@ -2034,6 +2034,7 @@
             const videoUrls = articleVideosRaw
                 .filter(u => u && isVideoUrl(u))
                 .map(u => ensureAbsoluteImageUrl(u))
+                .map(u => u.replace('https://video.twimg.com/', '/media/video/'))
                 .filter((url, i, arr) => arr.findIndex(u => normalizeUrl(u) === normalizeUrl(url)) === i);
 
             const xVideoLink = post.x_url || post.link || '';
