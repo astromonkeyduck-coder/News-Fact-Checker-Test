@@ -1952,13 +1952,12 @@
 
 @media (min-width: 768px) {
   .featured-story {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 5fr 4fr;
   }
 
   .featured-story-image {
-    aspect-ratio: auto;
-    min-height: 200px;
-    max-height: 320px;
+    aspect-ratio: 16 / 10;
+    min-height: 240px;
   }
 
   .featured-story-content {
