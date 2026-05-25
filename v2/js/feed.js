@@ -163,6 +163,9 @@ function playVisibleVideos() {
   videos.forEach(video => {
     video.muted = true;
     observer.observe(video);
+
+    video.addEventListener('mouseenter', () => { video.muted = false; });
+    video.addEventListener('mouseleave', () => { video.muted = true; });
   });
 }
 
