@@ -1040,6 +1040,40 @@
   object-fit: cover;
 }
 
+.video-mute-btn {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.65);
+  border: none;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+  backdrop-filter: blur(4px);
+  transition: background 0.2s;
+}
+
+.video-mute-btn:hover {
+  background: rgba(0, 0, 0, 0.85);
+}
+
+.video-mute-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+@media (min-width: 768px) {
+  .video-mute-btn {
+    display: none;
+  }
+}
+
 /* Play icon overlay for video posts */
 .post-card-image,
 .featured-story-image {
@@ -1868,8 +1902,9 @@
   }
 
   .post-card--large .post-card-image {
-    aspect-ratio: 4 / 3;
-    min-height: 180px;
+    aspect-ratio: auto;
+    min-height: 0;
+    max-height: 260px;
     border-bottom: none;
     border-right: 1px solid var(--color-border);
   }

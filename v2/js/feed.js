@@ -8,15 +8,18 @@
 import { UISounds } from './ui-sounds.js';
 
 const FEED_API = '/.netlify/functions/posts-read';
-const FETCH_LIMIT = 80;
+const FETCH_LIMIT = 100;
 const BREAKING_DISPLAY = 8;
-const BREAKING_LOAD_MORE = 8;
+const BREAKING_LOAD_MORE = 12;
 const ALERTS_DISPLAY = 6;
 
 const ENGINE_CATEGORIES = new Set([
   'Earthquake', 'Weather Alert', 'Volcano Alert',
   'Maritime Alert', 'Airspace Alert', 'Travel Advisory',
 ]);
+
+const MUTED_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>';
+const UNMUTED_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>';
 
 function isLowMagEarthquake(post) {
   const cat = (post.category || '').toLowerCase();
@@ -28,8 +31,15 @@ function isLowMagEarthquake(post) {
   return !Number.isFinite(m) || m < 6.0;
 }
 
+function isNonWeatherNWSAlert(post) {
+  const title = (post.title || post.text || '').toLowerCase();
+  const blocked = ['child abduction', 'amber alert', 'silver alert', 'blue alert', 'missing person', 'civil emergency'];
+  return blocked.some(t => title.includes(t));
+}
+
 function isAlertPost(post) {
   if (isLowMagEarthquake(post)) return false;
+  if (isNonWeatherNWSAlert(post)) return false;
   if (ENGINE_CATEGORIES.has(post.category)) return true;
   const src = (post.source || '').toLowerCase();
   return src.includes('usgs') || src.includes('nws') || src.includes('faa') || src.includes('uscg');
@@ -188,7 +198,7 @@ function renderCard(post, large) {
 
   let mediaHtml = '';
   if (videoSrc) {
-    mediaHtml = `<div class="post-card-image post-card-video"><video data-src="${esc(videoSrc)}" muted loop playsinline disablepictureinpicture preload="none" poster="${image ? esc(image) : ''}"></video></div>`;
+    mediaHtml = `<div class="post-card-image post-card-video"><video data-src="${esc(videoSrc)}" muted loop playsinline disablepictureinpicture preload="none" poster="${image ? esc(image) : ''}"></video><button class="video-mute-btn" aria-label="Unmute" onclick="event.preventDefault();event.stopPropagation();const v=this.parentElement.querySelector('video');v.muted=!v.muted;this.innerHTML=v.muted?'${MUTED_SVG}':'${UNMUTED_SVG}';this.setAttribute('aria-label',v.muted?'Unmute':'Mute')"></button></div>`;
   } else if (image) {
     mediaHtml = `<div class="post-card-image"><img src="${esc(image)}" alt="" loading="lazy" decoding="async" onerror="this.parentElement.classList.add('post-card-image--broken')"></div>`;
   }
@@ -342,7 +352,7 @@ export async function initFeed() {
 
   try {
     const posts = await fetchPosts();
-    const visible = posts.filter(p => !isLowMagEarthquake(p));
+    const visible = posts.filter(p => !isLowMagEarthquake(p) && !isNonWeatherNWSAlert(p));
     const breaking = visible.filter(p => !isAlertPost(p));
     const alerts = visible.filter(p => isAlertPost(p));
 
@@ -509,12 +519,19 @@ function initLoadMore(breaking) {
   const btn = document.getElementById('load-more-btn');
   if (!btn) return;
 
-  const remaining = breaking.length - 1 - BREAKING_DISPLAY;
-  btn.hidden = remaining <= 0;
+  function updateBtn() {
+    const total = breaking.length - 1;
+    const remaining = total - _displayCount;
+    btn.hidden = remaining <= 0;
+    if (remaining > 0) btn.textContent = `Load More (${remaining})`;
+  }
+
+  updateBtn();
 
   btn.addEventListener('click', () => {
     UISounds.tap();
     _displayCount += BREAKING_LOAD_MORE;
     renderBreakingGrid(breaking);
+    updateBtn();
   });
 }
