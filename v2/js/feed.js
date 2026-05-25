@@ -154,9 +154,12 @@ function playVisibleVideos() {
   const videos = document.querySelectorAll('.post-card-video video, .featured-story-image video');
   if (!videos.length) return;
 
+  const isMobile = window.matchMedia('(max-width: 767px)').matches;
+
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       const video = entry.target;
+      const btn = video.parentElement.querySelector('.video-mute-btn');
       if (entry.isIntersecting) {
         if (!video.src && video.dataset.src) {
           video.src = video.dataset.src;
@@ -164,11 +167,15 @@ function playVisibleVideos() {
         }
         video.addEventListener('canplay', () => video.play().catch(() => {}), { once: true });
         if (video.readyState >= 2) video.play().catch(() => {});
+        if (isMobile) video.muted = false;
+        if (btn) btn.innerHTML = video.muted ? MUTED_SVG : UNMUTED_SVG;
       } else {
         video.pause();
+        if (isMobile) video.muted = true;
+        if (btn) btn.innerHTML = MUTED_SVG;
       }
     });
-  }, { threshold: 0.1 });
+  }, { threshold: 0.5 });
 
   videos.forEach(video => {
     video.muted = true;
