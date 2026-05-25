@@ -74,7 +74,8 @@ function getArticlePageShell() {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Georgia&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="/styles.css">
-    <link rel="stylesheet" href="/css/article.css">
+    <link rel="stylesheet" href="/v2/styles/tokens.css">
+    <link rel="stylesheet" href="/css/article-v3.css">
     
     <!-- Critical: Ensure white background even if external CSS fails -->
     <style>
@@ -175,9 +176,10 @@ function getArticlePageShell() {
     
     <!-- Article Page Scripts -->
     <script src="/js/article-page.js"></script>
-    <script src="/src/components/article-loader.js"></script>
     <script src="/src/components/news-card.js"></script>
     <script src="/src/components/comment-section.js"></script>
+    <script src="/src/components/article-page-v3.js"></script>
+    <script src="/src/components/article-loader.js"></script>
 </body>
 </html>`;
     return ARTICLE_PAGE_SHELL;
@@ -389,6 +391,31 @@ function generatePrerenderedHTML(post, articleId, userAgent, cardType = 'summary
     playerUrl
   });
   
+  const storyText = (post.story || post.text || '').trim();
+  const storyPreview = storyText.length > 500 ? storyText.slice(0, 497) + '…' : storyText;
+  const sourceUrls = Array.isArray(post.source_urls) ? post.source_urls : [];
+  let sourceChipsHtml = '';
+  if (sourceUrls.length > 0) {
+    const chips = sourceUrls.slice(0, 5).map((s, i) => {
+      const href = escapeHtml(typeof s === 'string' ? s : s.url);
+      const label = escapeHtml(
+        typeof s === 'string' ? `Source ${i + 1}` : (s.display || s.title || `Source ${i + 1}`)
+      );
+      return `<a href="${href}" rel="noopener noreferrer">${label}</a>`;
+    });
+    sourceChipsHtml = `<p><strong>Sources:</strong> ${chips.join(' · ')}</p>`;
+  }
+
+  const heroImg =
+    post.primary_image_url || post.image_url || post.image
+      ? `<figure style="margin:1.5rem 0;"><img src="${escapeHtml(imageUrl.split('?')[0])}" alt="" style="max-width:100%;height:auto;border-radius:8px;" width="1200" height="675"></figure>`
+      : '';
+
+  const dek =
+    post.dek && String(post.dek).trim()
+      ? `<p style="font-size:1.125rem;color:#5b6573;">${escapeHtml(String(post.dek).trim().slice(0, 220))}</p>`
+      : '';
+
   // Generate HTML
   return `<!DOCTYPE html>
 <html lang="en" class="article-page-active">
@@ -438,15 +465,20 @@ function generatePrerenderedHTML(post, articleId, userAgent, cardType = 'summary
     <meta name="twitter:creator" content="@NoteworthyNews">
     
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 2rem; max-width: 800px; margin: 0 auto; }
-        h1 { margin: 0 0 1rem 0; }
-        p { line-height: 1.6; }
+        body { font-family: Georgia, 'Times New Roman', serif; padding: 2rem; max-width: 720px; margin: 0 auto; color: #0b0d10; line-height: 1.75; }
+        h1 { font-family: system-ui, sans-serif; font-size: 1.75rem; margin: 0 0 1rem; line-height: 1.2; }
+        a { color: #1a4d8f; }
+        .meta { font-family: system-ui, sans-serif; font-size: 0.875rem; color: #5b6573; margin-bottom: 1.5rem; }
     </style>
 </head>
 <body>
+    <p class="meta">Noteworthy News · ${escapeHtml(relativeTime)}</p>
     <h1>${escapeHtml(formattedTitle)}</h1>
-    <p>${escapeHtml(description)}</p>
-    <p><a href="${escapeHtml(articleUrl)}">Read full article</a></p>
+    ${dek}
+    ${heroImg}
+    ${storyPreview ? `<div>${escapeHtml(storyPreview).replace(/\n/g, '<br>')}</div>` : `<p>${escapeHtml(description)}</p>`}
+    ${sourceChipsHtml}
+    <p><a href="${escapeHtml(articleUrl)}">Read full article on Noteworthy News</a></p>
 </body>
 </html>`;
 }

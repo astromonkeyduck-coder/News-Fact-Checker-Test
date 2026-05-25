@@ -533,6 +533,32 @@ function initArticlePageClass() {
     }
 }
 
+/** Re-bind controls after article-loader injects action buttons */
+window.reinitArticlePageControls = function () {
+    const copyBtn = document.getElementById('copy-link-btn');
+    if (copyBtn && !copyBtn.dataset.nnBound) {
+        copyBtn.dataset.nnBound = '1';
+        copyBtn.addEventListener('click', function () {
+            const url = window.location.href;
+            navigator.clipboard.writeText(url).then(
+                function () {
+                    const originalHTML = copyBtn.innerHTML;
+                    copyBtn.innerHTML = '<span>✓</span><span>Copied!</span>';
+                    setTimeout(function () {
+                        copyBtn.innerHTML = originalHTML;
+                    }, 2000);
+                },
+                function () {
+                    alert('Failed to copy link. Please copy manually: ' + url);
+                }
+            );
+        });
+    }
+    initShareMenu();
+    initPrint();
+    initImageLightbox();
+};
+
 // Main initialization
 document.addEventListener('DOMContentLoaded', function() {
     // Scope html styles

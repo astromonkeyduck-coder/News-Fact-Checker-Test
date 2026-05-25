@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="app-version" content="December 18, 2025">
+    <meta name="app-version" content="May 25, 2026">
     
     <!-- Dynamic Meta Tags - Updated by article-loader.js -->
     <title id="article-title">Article Title - Noteworthy News</title>
@@ -12,10 +12,8 @@
     <meta name="author" content="Noteworthy News">
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
     
-    <!-- Canonical URL -->
     <link rel="canonical" id="article-canonical" href="https://noteworthynews.co/article.html">
     
-    <!-- Open Graph -->
     <meta property="og:type" content="article">
     <meta property="og:url" id="og-url" content="https://noteworthynews.co/article.html">
     <meta property="og:title" id="og-title" content="Article Title - Noteworthy News">
@@ -28,7 +26,6 @@
     <meta property="article:published_time" id="article-published" content="">
     <meta property="article:author" content="Noteworthy News">
     
-    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:url" id="twitter-url" content="https://noteworthynews.co/article.html">
     <meta name="twitter:title" id="twitter-title" content="Article Title - Noteworthy News">
@@ -37,68 +34,46 @@
     <meta name="twitter:site" content="@NoteworthyNews">
     <meta name="twitter:creator" content="@NoteworthyNews">
     
-    <!-- Favicon and Theme -->
     <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="32x32">
     <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="192x192">
     <link rel="shortcut icon" type="image/png" href="IMG_5794.PNG">
     <link rel="apple-touch-icon" href="IMG_5794.PNG" sizes="180x180">
     <link rel="mask-icon" href="IMG_5794.PNG" color="#0f234a">
-    <meta name="theme-color" content="#080E1A">
+    <meta name="theme-color" content="#ffffff">
     
-    <!-- Fonts - V2 Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap"></noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60;600&display=swap" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60;600&display=swap"></noscript>
     
-    <!-- Pre-render meta tags for crawlers (prevents 502 errors) -->
     <script>
-        // Immediately set meta tags from URL params to help crawlers
         (function() {
             const urlParams = new URLSearchParams(window.location.search);
             const articleId = urlParams.get('id');
             if (articleId) {
-                // Update canonical URL immediately
                 const canonical = document.getElementById('article-canonical');
-                if (canonical) {
-                    canonical.href = `https://noteworthynews.co/article.html?id=${encodeURIComponent(articleId)}`;
-                }
-                // Update OG URL immediately
+                if (canonical) canonical.href = `https://noteworthynews.co/article.html?id=${encodeURIComponent(articleId)}`;
                 const ogUrl = document.getElementById('og-url');
-                if (ogUrl) {
-                    ogUrl.content = `https://noteworthynews.co/article.html?id=${encodeURIComponent(articleId)}`;
-                }
-                // Update Twitter URL immediately
+                if (ogUrl) ogUrl.content = `https://noteworthynews.co/article.html?id=${encodeURIComponent(articleId)}`;
                 const twitterUrl = document.getElementById('twitter-url');
-                if (twitterUrl) {
-                    twitterUrl.content = `https://noteworthynews.co/article.html?id=${encodeURIComponent(articleId)}`;
-                }
+                if (twitterUrl) twitterUrl.content = `https://noteworthynews.co/article.html?id=${encodeURIComponent(articleId)}`;
             }
         })();
     </script>
     
-    <!-- Styles -->
     <link rel="stylesheet" href="styles.css">
-    
-    <!-- V2 Design System (tokens + nav/footer components) -->
     <link rel="stylesheet" href="/v2/styles/tokens.css">
     <link rel="stylesheet" href="/v2/styles/layout.css">
     <link rel="stylesheet" href="/v2/styles/components.css">
     
-    <!-- Christmas Theme -->
     <script src="christmas-config.js"></script>
     <script>
-        if (typeof CHRISTMAS_CONFIG !== 'undefined') {
-            window.CHRISTMAS_CONFIG = CHRISTMAS_CONFIG;
-        }
+        if (typeof CHRISTMAS_CONFIG !== 'undefined') window.CHRISTMAS_CONFIG = CHRISTMAS_CONFIG;
     </script>
     <script src="christmas-theme-loader.js"></script>
     
-    <!-- Google AdSense -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5427142458403577"
-            crossorigin="anonymous"></script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5427142458403577" crossorigin="anonymous"></script>
     
-    <!-- Structured Data for Article -->
     <script type="application/ld+json" id="article-structured-data">
     {
       "@context": "https://schema.org",
@@ -108,44 +83,24 @@
       "image": "https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg",
       "datePublished": "",
       "dateModified": "",
-      "author": {
-        "@type": "Organization",
-        "name": "Noteworthy News"
-      },
+      "author": { "@type": "Organization", "name": "Noteworthy News" },
       "publisher": {
         "@type": "Organization",
         "name": "Noteworthy News",
-        "logo": {
-          "@type": "ImageObject",
-          "url": "https://noteworthynews.co/IMG_5794.PNG"
-        }
+        "logo": { "@type": "ImageObject", "url": "https://noteworthynews.co/IMG_5794.PNG" }
       }
     }
     </script>
     
-    <!-- Article Page Styles (extracted for caching) -->
-    <link rel="stylesheet" href="/css/article.css?v=20260218">
-    
-    <!-- Critical: Ensure white background even if external CSS fails -->
-    <style>
-        html.article-page-active, html.article-page-active body, body.article-page {
-            background: #ffffff !important;
-            background-color: #ffffff !important;
-            background-image: none !important;
-        }
-        .starfield { display: none !important; }
-    </style>
+    <link rel="stylesheet" href="/css/article-v3.css?v=20260525">
 </head>
 <body class="article-page">
-    <!-- Skip to content link for accessibility -->
     <a href="#article-heading" class="skip-to-content">Skip to main content</a>
     
-    <!-- Reading Progress Indicator -->
     <div class="reading-progress" id="reading-progress" role="progressbar" aria-label="Reading progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
         <div class="reading-progress-bar" id="reading-progress-bar"></div>
     </div>
     
-    <!-- V2 Site Navigation -->
     <header class="site-header">
       <nav class="site-nav container" aria-label="Primary">
         <a class="site-logo" href="/">
@@ -166,161 +121,64 @@
       </nav>
     </header>
     
-    <!-- Main Article Content -->
-    <main class="article-container">
-        <!-- Breadcrumb Row -->
-        <div class="article-breadcrumb-row">
-            <div class="breadcrumb-meta">
-                <span class="category-chip" id="category-chip">BREAKING NEWS</span>
-            </div>
-            <div class="article-controls">
-                <button class="control-btn" id="text-size-decrease" aria-label="Decrease text size" title="Decrease text size">A-</button>
+    <main class="nn-article-shell container" data-template="loading" id="nn-article-shell">
+        <div class="nn-toolbar" id="nn-toolbar">
+            <span class="nn-toolbar__category" id="toolbar-category">Loading…</span>
+            <div class="nn-toolbar__controls">
+                <button class="control-btn" id="text-size-decrease" aria-label="Decrease text size" title="Decrease text size">A−</button>
                 <button class="control-btn" id="text-size-reset" aria-label="Reset text size" title="Reset text size">A</button>
                 <button class="control-btn" id="text-size-increase" aria-label="Increase text size" title="Increase text size">A+</button>
-                <button class="control-btn" id="print-btn" aria-label="Print article" title="Print article">🖨️</button>
+                <button class="control-btn" id="print-btn" aria-label="Print article" title="Print article">Print</button>
             </div>
         </div>
         
-        <!-- Main Article Column -->
-        <article class="article-main">
-            <!-- Premium Header Panel -->
-            <header class="article-header-panel">
-                <div class="article-header">
-                    <div class="article-header-top">
-                        <h1 id="article-heading" tabindex="-1">Loading article...</h1>
-                        <div class="article-header-alert">
-                            <span class="alert-pill" id="alert-pill" style="display: none;">VOLCANO ALERT</span>
-                            <span class="article-timestamp" id="article-timestamp-header" style="display: none; color: rgba(255, 255, 255, 0.6); font-size: 0.875rem;">Loading...</span>
-                        </div>
-                    </div>
-                    
-                    <div class="article-header-meta">
-                        <div class="article-header-meta-item">
-                            <span class="article-header-meta-label">By:</span>
-                            <span>Noteworthy News</span>
-                        </div>
-                        <div class="article-header-meta-item">
-                            <span class="article-header-meta-label">Published:</span>
-                            <span id="article-date">Loading...</span>
-                        </div>
-                        <div class="article-header-meta-item">
-                            <span class="article-header-meta-label">Read Time:</span>
-                            <span id="article-read-time">Loading...</span>
-                        </div>
-                    </div>
-                    
-                    <div class="article-header-utility">
-                        <button class="utility-btn" id="copy-link-btn" aria-label="Copy article link">
-                            <span>🔗</span>
-                            <span>Copy Link</span>
-                        </button>
-                        <button class="utility-btn" id="share-menu-btn" aria-label="Share article" aria-haspopup="true" aria-expanded="false">
-                            <span>📤</span>
-                            <span>Share</span>
-                        </button>
-                        <div class="share-menu" id="share-menu" role="menu" aria-hidden="true">
-                            <a href="#" class="share-option" id="share-twitter" target="_blank" rel="noopener" role="menuitem">
-                                <span>𝕏</span>
-                                <span>X (Twitter)</span>
-                            </a>
-                            <a href="#" class="share-option" id="share-facebook" target="_blank" rel="noopener" role="menuitem">
-                                <img src="facebook-logo-facebook-icon-transparent-free-png.webp" alt="Facebook" class="share-icon">
-                                <span>Facebook</span>
-                            </a>
-                            <a href="#" class="share-option" id="share-linkedin" target="_blank" rel="noopener" role="menuitem">
-                                <img src="linkedin-logo-linkedin-icon-transparent-free-png.webp" alt="LinkedIn" class="share-icon">
-                                <span>LinkedIn</span>
-                            </a>
-                            <a href="#" class="share-option" id="share-email" role="menuitem">
-                                <span>Email</span>
-                            </a>
-                            <a href="#" class="share-option" id="share-reddit" target="_blank" rel="noopener" role="menuitem">
-                                <img src="reddit-logo-reddit-icon-transparent-free-png.webp" alt="Reddit" class="share-icon">
-                                <span>Reddit</span>
-                            </a>
-                        </div>
-                        <a href="mailto:richard@noteworthynews.co?subject=Correction%20Request" class="utility-btn" aria-label="Report correction">
-                            <span>✉️</span>
-                            <span>Report Correction</span>
-                        </a>
-                    </div>
-                </div>
-            </header>
-            
-            <!-- Article Body Panel -->
-            <div class="article-body-panel">
-                <div class="article-body" id="article-body">
-                    <div class="skeleton" style="height: 400px; margin-bottom: 20px;"></div>
-                    <div class="skeleton" style="height: 200px;"></div>
-                </div>
-                
-                <!-- Article Tags -->
-                <div class="article-tags" id="article-tags" style="display: none;"></div>
-                
-                <!-- Comments Section -->
-                <div class="comments-section">
-                    <div class="comments-header">
-                        <h3>Comments</h3>
-                    </div>
-                    <div class="comment-section" data-article-id="" id="article-comments"></div>
+        <div class="nn-layout">
+            <div class="nn-article" id="nn-article">
+                <div class="nn-skeleton" style="height:120px;margin-bottom:1.5rem;" aria-hidden="true"></div>
+                <div class="article-body nn-body" id="article-body">
+                    <div class="nn-skeleton" style="height:280px;margin-bottom:1rem;" aria-hidden="true"></div>
+                    <div class="nn-skeleton" style="height:120px;" aria-hidden="true"></div>
                 </div>
             </div>
-        </article>
+            
+            <aside class="nn-sidebar" id="nn-sidebar" hidden aria-label="Related content">
+                <section class="nn-sidebar__card" id="article-toc-wrap" style="display:none;" aria-label="In this article">
+                    <h2 class="nn-sidebar__title">In this article</h2>
+                    <nav id="article-toc" aria-label="Article contents"></nav>
+                </section>
+                <section class="nn-sidebar__card" id="sidebar-related-wrap" style="display:none;">
+                    <h2 class="nn-sidebar__title">Related coverage</h2>
+                    <div id="related-articles"></div>
+                </section>
+                <section class="nn-sidebar__card" id="sidebar-latest-wrap" style="display:none;">
+                    <h2 class="nn-sidebar__title">Latest</h2>
+                    <div id="latest-articles"></div>
+                </section>
+                <section class="nn-sidebar__card nn-sidebar__newsletter" id="sidebar-newsletter-wrap" style="display:none;">
+                    <h2 class="nn-sidebar__title">Newsletter</h2>
+                    <p>Fact-checked updates and media literacy tools in your inbox.</p>
+                    <a href="/index.html#newsletter-section" class="nn-chip">Subscribe</a>
+                </section>
+            </aside>
+        </div>
         
-        <!-- Sticky Sidebar -->
-        <aside class="article-sidebar">
-            <!-- In this article (TOC) - populated by article-loader when 2+ headings -->
-            <section class="sidebar-card sticky" id="article-toc-wrap" style="display: none;" aria-label="In this article">
-                <h2>In this article</h2>
-                <nav id="article-toc" aria-label="Article contents"></nav>
-            </section>
-            <!-- Latest Articles -->
-            <section class="sidebar-card sticky">
-                <h2>Latest</h2>
-                <div id="latest-articles">
-                    <div class="skeleton" style="height: 80px; margin-bottom: 12px;"></div>
-                    <div class="skeleton" style="height: 80px; margin-bottom: 12px;"></div>
-                    <div class="skeleton" style="height: 80px;"></div>
-                </div>
-            </section>
-            
-            <!-- Related Coverage -->
-            <section class="sidebar-card sticky">
-                <h2>Related Coverage</h2>
-                <div id="related-articles">
-                    <div class="skeleton" style="height: 80px; margin-bottom: 12px;"></div>
-                    <div class="skeleton" style="height: 80px; margin-bottom: 12px;"></div>
-                    <div class="skeleton" style="height: 80px;"></div>
-                </div>
-            </section>
-            
-            <!-- Newsletter Card -->
-            <section class="sidebar-card sticky">
-                <h2>Stay Informed</h2>
-                <p style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 15px;">
-                    Get breaking news and fact-checks delivered to your inbox.
-                </p>
-                <a href="index.html#newsletter-section" class="utility-btn" style="justify-content: center; background: #1a1a1a; border: none; color: #ffffff; font-weight: 600; letter-spacing: 0.3px;">
-                    Subscribe to Newsletter
-                </a>
-            </section>
-        </aside>
+        <section class="nn-more-coverage" aria-label="More from Noteworthy News">
+            <h2 class="nn-more-coverage__title">More from Noteworthy News</h2>
+            <p class="nn-more-coverage__subtitle">Explore our latest fact-checked stories and breaking news coverage</p>
+            <div class="nn-more-coverage__grid" id="more-coverage-grid"></div>
+        </section>
         
-        <!-- More Coverage Section -->
-        <section class="more-coverage">
-            <div class="more-coverage-header">
-            <h2>More from Noteworthy News</h2>
-                <p class="more-coverage-subtitle">Explore our latest fact-checked stories and breaking news coverage</p>
-            </div>
-            <div class="more-coverage-grid" id="more-coverage-grid">
-                <div class="skeleton" style="height: 350px;"></div>
-                <div class="skeleton" style="height: 350px;"></div>
-                <div class="skeleton" style="height: 350px;"></div>
-            </div>
+        <section class="nn-comments" id="nn-comments-wrap">
+            <h2 class="nn-comments__title">Comments</h2>
+            <div class="comment-section" data-article-id="" id="article-comments"></div>
         </section>
     </main>
     
-    <!-- V2 Footer -->
+    <span id="article-timestamp" class="nn-sr-only"></span>
+    <span id="alert-pill" class="nn-sr-only"></span>
+    <span id="article-timestamp-header" class="nn-sr-only"></span>
+    <div id="article-tags" class="nn-tags" style="display:none;"></div>
+    
     <footer class="site-footer">
       <div class="container">
         <div class="footer-grid">
@@ -362,7 +220,6 @@
       </div>
     </footer>
     
-    <!-- Image Lightbox -->
     <div class="lightbox" id="image-lightbox" role="dialog" aria-label="Image viewer" aria-hidden="true">
         <div class="lightbox-content">
             <button class="lightbox-close" id="lightbox-close" aria-label="Close lightbox">×</button>
@@ -370,7 +227,6 @@
         </div>
     </div>
     
-    <!-- V2 Nav Behavior -->
     <script>
     (function(){
       var h=document.querySelector('.site-header'),t=document.querySelector('.nav-toggle'),m=document.querySelector('.nav-menu');
@@ -383,71 +239,27 @@
     })();
     </script>
 
-    <!-- Article Page Scripts (extracted for caching) -->
     <script src="/js/article-page.js"></script>
-    
-    <!-- Cookie Consent Banner -->
     <script src="/src/components/cookie-banner.js"></script>
-    <!-- NewsCard Component -->
     <script src="/src/components/news-card.js"></script>
     
-    <!-- Auth0 SDK - Must load before auth0.js -->
     <script>
-        // Load Auth0 credentials from environment variables
-        // For local dev with 'npx netlify dev', this fetches from Netlify function
-        // For production, credentials are injected at build time
         (async function() {
-            // Check if credentials are already set (injected at build time)
-            if (window.AUTH0_DOMAIN && window.AUTH0_CLIENT_ID) {
-                console.log('[Auth0] Credentials already loaded from build injection');
-                return;
-            }
-            
-            // Try to fetch from Netlify function (works with 'npx netlify dev')
+            if (window.AUTH0_DOMAIN && window.AUTH0_CLIENT_ID) return;
             try {
                 const response = await fetch('/.netlify/functions/get-auth0-config');
                 if (response.ok) {
                     const config = await response.json();
                     window.AUTH0_DOMAIN = config.domain;
                     window.AUTH0_CLIENT_ID = config.clientId;
-                    console.log('[Auth0] Credentials loaded from environment variables');
-                } else {
-                    console.warn('[Auth0] Could not load credentials from function. Make sure you\'re running "npx netlify dev" or set credentials manually.');
                 }
-            } catch (error) {
-                console.warn('[Auth0] Could not fetch credentials:', error.message);
-                console.warn('[Auth0] For local dev, either:');
-                console.warn('[Auth0] 1. Run "npx netlify dev" (recommended)');
-                console.warn('[Auth0] 2. Or uncomment and set credentials in this script block');
-            }
+            } catch (e) { console.warn('[Auth0]', e.message); }
         })();
     </script>
     <script src="https://cdn.auth0.com/js/auth0-spa-js/2.4/auth0-spa-js.production.js" async></script>
-    <script>
-        // Verify SDK loaded and provide fallback
-        window.addEventListener('load', function() {
-            if (typeof createAuth0Client === 'undefined') {
-                console.warn('[Auth0] SDK failed to load from primary CDN. Trying fallback...');
-                const script = document.createElement('script');
-                script.src = 'https://unpkg.com/@auth0/auth0-spa-js@2.4/dist/auth0-spa-js.production.js';
-                script.onload = function() {
-                    console.log('[Auth0] SDK loaded from fallback CDN');
-                };
-                script.onerror = function() {
-                    console.error('[Auth0] Failed to load SDK from both CDNs. Comments may not work.');
-                };
-                document.head.appendChild(script);
-            } else {
-                console.log('[Auth0] SDK loaded successfully from primary CDN');
-            }
-        });
-    </script>
-    
-    <!-- Auth0 for comments -->
     <script src="/src/auth/auth0.js"></script>
-    <!-- Comments System -->
     <script src="/src/components/comment-section.js"></script>
-    <!-- Article Loader - Dynamically loads article content (must be last) -->
-    <script src="/src/components/article-loader.js?v=20260218"></script>
+    <script src="/src/components/article-page-v3.js?v=20260525"></script>
+    <script src="/src/components/article-loader.js?v=20260525"></script>
 </body>
 </html>

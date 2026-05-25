@@ -17,6 +17,12 @@ html {
   text-size-adjust: 100%;
   scroll-behavior: smooth;
   scroll-padding-top: calc(var(--header-height) + var(--space-lg));
+  /* `overflow-x: clip` prevents horizontal scroll without creating a scroll
+     container or containing block. This avoids the iOS Safari bug where
+     `body { position: relative; overflow-x: hidden }` causes `position: fixed`
+     children (chat launcher, scroll-to-top button, audio visualizer) to drift
+     up with the page during momentum scrolling. */
+  overflow-x: clip;
 }
 
 body {
@@ -29,8 +35,10 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
-  overflow-x: hidden;
-  position: relative;
+  /* Fallback for browsers that don't support `overflow-x: clip` (e.g. Safari
+     < 16). `clip` here means the body doesn't itself become a fixed-positioning
+     containing block; the html rule above is what actually prevents scroll. */
+  overflow-x: clip;
 }
 
 /* ── Subtle texture overlay ─────────────────────── */

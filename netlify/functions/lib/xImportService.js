@@ -118,6 +118,8 @@ function toCardPost(tweet, mediaItems, slug) {
   const xUrl = `https://x.com/i/status/${tweet.id}`;
   const metrics = tweet.public_metrics || {};
 
+  const sourceUrls = extractSourceUrls(tweet.entities);
+
   return {
     id: tweet.id,
     image: mainImage,
@@ -140,7 +142,24 @@ function toCardPost(tweet, mediaItems, slug) {
     replies: metrics.reply_count || 0,
     author: 'Noteworthy News',
     authorUrl: `https://x.com/${process.env.NOTEWORTHY_X_USERNAME || 'newsnoteworthy'}`,
+    source_urls: sourceUrls.length > 0 ? sourceUrls : undefined,
+    urgency: tweet.urgency || null,
   };
+}
+
+/**
+ * Merge source_urls and other projection fields onto an existing blob card.
+ */
+function enrichCardPost(card, sourceUrls, urgency) {
+  if (!card || typeof card !== 'object') return card;
+  const next = { ...card };
+  if (Array.isArray(sourceUrls) && sourceUrls.length > 0) {
+    next.source_urls = sourceUrls;
+  }
+  if (urgency) {
+    next.urgency = urgency;
+  }
+  return next;
 }
 
 // ── Supabase upserts ─────────────────────────────────────────────
@@ -352,4 +371,7 @@ module.exports = {
   getLatestImportedId,
   cleanTitle,
   toSlug,
+  toCardPost,
+  extractSourceUrls,
+  enrichCardPost,
 };

@@ -322,6 +322,216 @@
         return [];
     }
 
+    function isVideoUrl(url) {
+        return url && typeof url === 'string' && /\.(mp4|webm|mov|m4v)(\?|$)/i.test(url.toLowerCase());
+    }
+
+    function normalizeUrl(url) {
+        if (!url) return '';
+        try {
+            const urlObj = new URL(url.startsWith('http') ? url : ensureAbsoluteImageUrl(url));
+            return urlObj.origin + urlObj.pathname;
+        } catch {
+            return url;
+        }
+    }
+
+    function getV3Helpers() {
+        const v3 = window.ArticlePageV3;
+        if (!v3) return null;
+        return {
+            escapeHtml,
+            formatPostText,
+            stripTcoLinks,
+            formatPublishedFull: v3.formatPublishedFull,
+            formatDate,
+            calculateReadTime,
+            deriveKeyTakeaways,
+            buildSourceChipsHTML: v3.buildSourceChipsHTML,
+            normalizeUrl,
+            ensureAbsoluteImageUrl,
+            isVideoUrl,
+        };
+    }
+
+    /**
+     * Render article using V3 templates into #nn-article
+     */
+    async function renderArticleV3(post, articleId, classification) {
+        const v3 = window.ArticlePageV3;
+        const nnArticle = document.getElementById('nn-article');
+        const shell = document.getElementById('nn-article-shell');
+        if (!v3 || !nnArticle) {
+            console.error('[ArticleLoader] ArticlePageV3 or #nn-article missing');
+            return null;
+        }
+
+        const { isXPost, isEarthquake } = classification;
+        const title = post.title || post.story || post.text || 'Breaking News Story';
+        const story = post.story || post.text || post.title || '';
+        const datePosted = post.datePosted || post.createdAt || post.created_at || new Date().toISOString();
+        const category = post.category || 'Breaking News';
+
+        const helpers = getV3Helpers();
+        const ctx = {
+            title,
+            story,
+            datePosted,
+            articleId,
+            siteUrl: SITE_URL,
+            helpers,
+            isEarthquake,
+        };
+
+        let html =
+            classification.template === 'breaking-brief'
+                ? v3.buildBreakingBriefHTML(post, ctx)
+                : v3.buildLongformHTML(post, ctx);
+
+        nnArticle.innerHTML = html;
+        if (shell) shell.dataset.template = classification.template;
+
+        const toolbarCat = document.getElementById('toolbar-category');
+        if (toolbarCat) {
+            toolbarCat.textContent = isXPost ? 'News update' : category;
+        }
+
+        const bodyElement = document.getElementById('article-body');
+        if (!bodyElement) return null;
+
+        if (isEarthquake) {
+            const earthquakeMagnitude = post.assets?.magnitude || post.magnitude;
+            const enhancementsHTML = await generateEarthquakeEnhancements(post, earthquakeMagnitude);
+            bodyElement.insertAdjacentHTML('afterend', enhancementsHTML);
+
+            const hasCoordinates =
+                (post.lat && post.lon) ||
+                (post.raw?.geometry?.coordinates?.[1] && post.raw?.geometry?.coordinates?.[0]) ||
+                (post.assets?.lat && post.assets?.lon);
+            if (!post.lat && post.raw?.geometry?.coordinates) {
+                post.lat = post.raw.geometry.coordinates[1];
+                post.lon = post.raw.geometry.coordinates[0];
+            }
+            if (!post.lat && post.assets) {
+                post.lat = post.assets.lat;
+                post.lon = post.assets.lon;
+            }
+            if (isEarthquake && hasCoordinates) {
+                setTimeout(() => {
+                    initializeEarthquakeMap(
+                        post.lat,
+                        post.lon,
+                        earthquakeMagnitude,
+                        post.location_display || post.location
+                    );
+                    const depth = post.assets?.depth || post.depth;
+                    initialize3DVisualization(
+                        post.lat,
+                        post.lon,
+                        earthquakeMagnitude,
+                        depth,
+                        post.location_display || post.location
+                    );
+                }, 100);
+            }
+        }
+
+        if (!isXPost && post.lead_paragraph) {
+            const firstP = bodyElement.querySelector('p');
+            if (firstP) firstP.classList.add('lead-paragraph');
+        }
+
+        buildTableOfContents(bodyElement);
+        if (typeof window.initArticleTocScrollSpy === 'function') {
+            window.initArticleTocScrollSpy();
+        }
+
+        nnArticle.querySelectorAll('video.nn-video-el').forEach((videoEl) => {
+            videoEl.addEventListener('error', () => {
+                const parent = videoEl.parentElement;
+                const fallback = parent?.getAttribute('data-video-fallback');
+                if (parent && fallback) parent.innerHTML = fallback;
+            });
+        });
+
+        if (typeof window.reinitArticlePageControls === 'function') {
+            window.reinitArticlePageControls();
+        }
+
+        return { bodyElement, isXPost, isEarthquake, title, story, datePosted, category };
+    }
+
+    /**
+     * Sidebar: only mount sections with real content
+     */
+    async function loadSidebarContentV3(allPosts, currentPost, currentId) {
+        const sidebar = document.getElementById('nn-sidebar');
+        if (!sidebar) return;
+
+        if (!window.NewsCard) {
+            const script = document.createElement('script');
+            script.src = '/src/components/news-card.js';
+            document.head.appendChild(script);
+            await new Promise((resolve) => {
+                script.onload = resolve;
+                setTimeout(resolve, 1000);
+            });
+        }
+
+        const latest = allPosts
+            .filter((p) => {
+                const id = p.id || '';
+                return id !== currentId && id !== `post-${currentId}` && (p.story || p.text || p.title);
+            })
+            .sort((a, b) => {
+                const dateA = new Date(a.datePosted || a.createdAt || a.created_at || 0).getTime();
+                const dateB = new Date(b.datePosted || b.createdAt || b.created_at || 0).getTime();
+                return dateB - dateA;
+            })
+            .slice(0, 8);
+
+        const related = findRelatedArticles(allPosts, currentPost, currentId, 6);
+        const relatedList = related.length > 0 ? related : latest.slice(0, 6);
+
+        let hasContent = false;
+
+        const latestWrap = document.getElementById('sidebar-latest-wrap');
+        const relatedWrap = document.getElementById('sidebar-related-wrap');
+        const newsletterWrap = document.getElementById('sidebar-newsletter-wrap');
+        const tocWrap = document.getElementById('article-toc-wrap');
+
+        if (tocWrap && tocWrap.style.display !== 'none') {
+            hasContent = true;
+        }
+
+        if (relatedWrap && relatedList.length >= 1 && window.NewsCard?.render) {
+            relatedWrap.style.display = '';
+            window.NewsCard.render(relatedList, '#related-articles', { showThumbnail: false });
+            hasContent = true;
+        } else if (relatedWrap) {
+            relatedWrap.style.display = 'none';
+        }
+
+        if (latestWrap && latest.length >= 3 && window.NewsCard?.render) {
+            latestWrap.style.display = '';
+            window.NewsCard.render(latest.slice(0, 6), '#latest-articles', { showThumbnail: false });
+            hasContent = true;
+        } else if (latestWrap) {
+            latestWrap.style.display = 'none';
+        }
+
+        if (newsletterWrap) {
+            newsletterWrap.style.display = '';
+            hasContent = true;
+        }
+
+        if (hasContent) {
+            sidebar.hidden = false;
+        } else {
+            sidebar.hidden = true;
+        }
+    }
+
     /**
      * Build key takeaways HTML block (empty string if no takeaways).
      * For X posts, strips t.co links and renders source chips separately.
@@ -1639,29 +1849,26 @@
         
         console.log('[ArticleLoader] Article ID from URL:', articleId);
         
-        const headingElement = document.getElementById('article-heading');
+        const nnArticle = document.getElementById('nn-article');
         const bodyElement = document.getElementById('article-body');
         const timestampElement = document.getElementById('article-timestamp');
-        const categoryChip = document.getElementById('category-chip');
         
-        if (!headingElement || !bodyElement) {
-            console.error('[ArticleLoader] Required elements not found', { 
-                headingElement: !!headingElement, 
-                bodyElement: !!bodyElement 
+        if (!nnArticle || !bodyElement) {
+            console.error('[ArticleLoader] Required elements not found', {
+                nnArticle: !!nnArticle,
+                bodyElement: !!bodyElement,
             });
             return;
         }
         
         if (!articleId) {
             console.warn('[ArticleLoader] No article ID provided');
-            headingElement.textContent = 'Article Not Found';
-            bodyElement.innerHTML = '<p>No article ID provided. Please select an article from the <a href="/index.html" style="color: #4A90E2;">homepage</a>.</p>';
+            nnArticle.innerHTML = '<h1 class="nn-headline">Article Not Found</h1><p>No article ID provided. Please select an article from the <a href="/">homepage</a>.</p>';
             return;
         }
 
-        // Show loading state
         console.log('[ArticleLoader] Showing loading state');
-        bodyElement.innerHTML = '<div class="skeleton" style="height: 400px; margin-bottom: 20px;"></div><div class="skeleton" style="height: 200px;"></div>';
+        nnArticle.innerHTML = '<div class="nn-skeleton" style="height:120px;margin-bottom:1.5rem;"></div><div class="nn-skeleton" style="height:280px;"></div>';
 
         try {
             // Fetch post by ID directly (bypasses index - fixes "not found" after editing)
@@ -1725,8 +1932,7 @@
                 console.error('[ArticleLoader] Post not found. ArticleId:', articleId);
                 const debugPosts = Array.isArray(posts) ? posts : [];
                 console.log('[ArticleLoader] First 5 post IDs:', debugPosts.slice(0, 5).map(p => ({ id: p.id, postId: p.postId, title: (p.title || p.story || p.text || '').substring(0, 50) })));
-                headingElement.textContent = 'Article Not Found';
-                bodyElement.innerHTML = `<p>Article with ID "${articleId}" not found. Please return to the <a href="/index.html" style="color: #4A90E2;">homepage</a>.</p><p style="margin-top: 1rem; font-size: 0.875rem; color: rgba(255,255,255,0.6);">Debug: Direct lookup returned ${Array.isArray(posts) ? posts.length : 0} post(s).</p>`;
+                nnArticle.innerHTML = `<h1 class="nn-headline">Article Not Found</h1><p>Article with ID "${escapeHtml(articleId)}" not found. Please return to the <a href="/">homepage</a>.</p>`;
                 return;
             }
             
@@ -1811,493 +2017,114 @@
                 structuredDataEl.textContent = JSON.stringify(structuredData, null, 2);
             }
             
-            // Update header
-            headingElement.textContent = title;
-            document.getElementById('article-date').textContent = formatDate(datePosted);
-            document.getElementById('article-read-time').textContent = `${calculateReadTime(story)} min`;
-            if (timestampElement) timestampElement.textContent = formatRelativeTime(datePosted);
-            if (categoryChip) categoryChip.textContent = category.toUpperCase();
-            
-            // Update header alert pill and timestamp
-            const alertPill = document.getElementById('alert-pill');
-            const headerTimestamp = document.getElementById('article-timestamp-header');
-            const relativeTime = formatRelativeTime(datePosted);
-            
-            // Show alert pill for breaking/urgent categories
-            const alertCategories = ['BREAKING NEWS', 'VOLCANO ALERT', 'EARTHQUAKE', 'BREAKING', 'ALERT'];
-            const shouldShowAlert = alertCategories.some(alertCat => 
-                category.toUpperCase().includes(alertCat) || category.toUpperCase() === alertCat
-            );
-            
-            if (alertPill) {
-                if (shouldShowAlert) {
-                    alertPill.textContent = category.toUpperCase();
-                    alertPill.style.display = 'inline-flex';
-                } else {
-                    alertPill.style.display = 'none';
-                }
-            }
-            
-            if (headerTimestamp) {
-                headerTimestamp.textContent = relativeTime;
-                headerTimestamp.style.display = 'inline-block';
-            }
-            
-            // Update share buttons with proper earthquake format
-            const shareUrl = `${SITE_URL}/article.html?id=${encodeURIComponent(articleId)}`;
-            
-            // Check if this is an earthquake post
-            const isEarthquake = post.category === 'Earthquake' || post.event_type === 'earthquake' || post.source === 'USGS';
-            const magnitude = post.magnitude || post.assets?.magnitude || null;
-            const location = post.location_display || post.location || null;
+            const classification = window.ArticlePageV3
+                ? window.ArticlePageV3.classify(post)
+                : {
+                    template: 'longform',
+                    isXPost: false,
+                    isEarthquake:
+                        post.category === 'Earthquake' ||
+                        post.event_type === 'earthquake' ||
+                        post.source === 'USGS',
+                    isVerifiedEvent: false,
+                };
 
-            // Detect imported X posts (not earthquakes) for "News Update" template
-            const postXUrl = post.x_url || post.link || '';
-            const isXPost = !isEarthquake && (postXUrl.includes('x.com') || postXUrl.includes('twitter.com'));
+            const { isXPost, isEarthquake } = classification;
+            if (timestampElement) timestampElement.textContent = formatRelativeTime(datePosted);
+
+            document.body.classList.remove('news-update');
+            document.documentElement.classList.remove('news-update');
             if (isXPost) {
                 document.body.classList.add('news-update');
                 document.documentElement.classList.add('news-update');
             }
 
-            // For X posts, inject attribution line and hide read time
-            if (isXPost) {
-                const readTimeEl = document.getElementById('article-read-time');
-                if (readTimeEl && readTimeEl.parentElement) {
-                    readTimeEl.parentElement.style.display = 'none';
-                }
-                const metaContainer = document.querySelector('.article-header-meta');
-                if (metaContainer) {
-                    const attrDiv = document.createElement('div');
-                    attrDiv.className = 'article-header-meta-item x-attribution';
-                    attrDiv.innerHTML = `<span class="article-header-meta-label">Source:</span><span>Originally posted on <a href="${escapeHtml(postXUrl)}" target="_blank" rel="noopener noreferrer">X</a></span>`;
-                    metaContainer.appendChild(attrDiv);
-                }
-            }
-            
-            // For earthquakes, use the proper format: "BREAKING: M___ Earthquake Near ___. #hashtags"
+            const shareUrl = `${SITE_URL}/article.html?id=${encodeURIComponent(articleId)}`;
+            const magnitude = post.magnitude || post.assets?.magnitude || null;
+            const location = post.location_display || post.location || null;
             let shareText = title;
             if (isEarthquake && magnitude && location) {
-                const magnitudeFormatted = typeof magnitude === 'number' ? magnitude.toFixed(1) : magnitude;
-                const hashtags = getEarthquakeHashtags(location);
-                shareText = `BREAKING: M${magnitudeFormatted} Earthquake Near ${location}. ${hashtags}`;
+                const magnitudeFormatted =
+                    typeof magnitude === 'number' ? magnitude.toFixed(1) : magnitude;
+                shareText = `BREAKING: M${magnitudeFormatted} Earthquake Near ${location}. ${getEarthquakeHashtags(location)}`;
             }
-            
-            // Update share menu via global function
+
+            await renderArticleV3(post, articleId, classification);
+
             if (typeof window.updateShareMenu === 'function') {
-                console.log('[ArticleLoader] Updating share menu', { shareText, shareUrl, isEarthquake, magnitude, location });
                 window.updateShareMenu(shareText, shareUrl, isEarthquake, magnitude, location);
-            } else {
-                console.warn('[ArticleLoader] window.updateShareMenu function not found - share menu may not update correctly');
             }
-            
-            // Also update individual share buttons if they exist (legacy support)
-            const twitterBtn = document.getElementById('share-twitter-btn');
-            if (twitterBtn) {
-                twitterBtn.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
-            }
-            
-            // Update article body - Hero image FIRST (like AP News), then key takeaways, then text
-            let bodyHTML = '';
-            
-            // Normalize URLs for comparison (remove trailing slashes, query params, etc.)
-            const normalizeUrl = (url) => {
-                if (!url) return '';
-                try {
-                    const urlObj = new URL(url.startsWith('http') ? url : ensureAbsoluteImageUrl(url));
-                    return urlObj.origin + urlObj.pathname;
-                } catch {
-                    return url;
-                }
-            };
-            
-            // Filter for video URLs (used below)
-            const isVideoUrl = (url) => url && typeof url === 'string' && /\.(mp4|webm|mov|m4v)(\?|$)/i.test(url.toLowerCase());
-            // STEP 3: Canonical image resolution (SINGLE SOURCE OF TRUTH)
-            // For earthquakes: prefer generated image (get-uploaded-image) over raw usgs_images
-            let primary = post.primary_image_url || post.image_url || post.image || null;
-            if (post.category === 'Earthquake' || post.source === 'USGS') {
-                const fromAssets = post.assets?.standard_image || post.assets?.image_url || post.assets?.generated_image;
-                if (fromAssets) primary = primary || fromAssets;
-                if (!primary && post.images && post.images.length > 0) {
-                    const generated = post.images.find(u => u && typeof u === 'string' && u.includes('get-uploaded-image') && u.includes('earthquake'));
-                    if (generated) primary = generated;
-                }
-                if (!primary) {
-                    const usgsImages = post.assets?.usgs_images || post.usgs_images || [];
-                    const firstUsgs = usgsImages[0];
-                    primary = firstUsgs ? (typeof firstUsgs === 'string' ? firstUsgs : firstUsgs?.url) : null;
-                }
-            }
-            // Don't treat video URLs as primary image (legacy data may have mixed)
-            if (primary && isVideoUrl(primary)) primary = null;
-            
-            // STEP 4: Build deduplicated secondary image list (NEVER includes primary, excludes videos)
-            const secondaryCandidates = [
-                ...(post.secondary_images || []),
-                ...(post.images || []),
-                ...(post.assets?.images || []),
-                ...(post.usgs_images || []),
-                ...(post.assets?.usgs_images || [])
-            ].filter(Boolean).filter(u => !isVideoUrl(u));
-            
-            // Normalize primary URL for comparison
-            const primaryNormalized = primary ? normalizeUrl(ensureAbsoluteImageUrl(primary)) : null;
-            
-            // Filter out primary and deduplicate
-            const secondary = secondaryCandidates
-                .map(url => ensureAbsoluteImageUrl(url))
-                .filter(url => {
-                    const normalized = normalizeUrl(url);
-                    return normalized !== primaryNormalized; // Remove primary
-                })
-                .filter((url, i, arr) => {
-                    // Deduplicate by normalized URL
-                    const normalized = normalizeUrl(url);
-                    return arr.findIndex(u => normalizeUrl(u) === normalized) === i;
-                });
-            
-            console.log('[ArticleLoader] Image resolution:', {
-                primary: primary ? primary.substring(0, 80) : null,
-                primaryNormalized: primaryNormalized,
-                secondaryCount: secondary.length,
-                secondary: secondary.map(s => s.substring(0, 80))
-            });
-            
-            // Pre-compute video URLs (needed to decide if video replaces hero image)
-            const earlyVideosRaw = [
-                ...(post.video_url || post.video || post.assets?.video_url ? [post.video_url || post.video || post.assets?.video_url] : []),
-                ...(post.videos || [])
-            ].filter(Boolean);
-            const hasVideoHero = earlyVideosRaw.some(u => u && isVideoUrl(u));
-
-            // STEP 4: Render images (LOGIC ONLY - NO CSS)
-            // Render primary image ONCE — skip if video will be the hero
-            if (primary && !hasVideoHero) {
-                const absoluteImageUrl = ensureAbsoluteImageUrl(primary);
-                // Add retry logic for get-uploaded-image URLs that might have propagation delays
-                const isUploadedImage = absoluteImageUrl.includes('get-uploaded-image');
-                
-                if (isUploadedImage) {
-                    // For uploaded images, add retry logic with exponential backoff
-                    bodyHTML += `<div class="article-media article-media-hero" data-image-url="${escapeHtml(absoluteImageUrl)}">
-                        <img src="${escapeHtml(absoluteImageUrl)}" alt="${escapeHtml(title)}" loading="eager" 
-                             onerror="(function(img) {
-                                const container = img.parentElement;
-                                if (!container) return;
-                                const retryCount = parseInt(container.dataset.retryCount || '0');
-                                if (retryCount < 5) {
-                                    container.dataset.retryCount = (retryCount + 1).toString();
-                                    const delays = [1000, 2000, 3000, 5000, 8000];
-                                    setTimeout(() => {
-                                        img.src = img.src.split('?')[0] + '?t=' + Date.now();
-                                    }, delays[retryCount]);
-                                } else {
-                                    img.style.display='none';
-                                    if (!container.querySelector('.image-error')) {
-                                        container.innerHTML='<p class=\\'image-error\\' style=\\'color: #666; padding: 0.5rem; text-align: center; font-size: 0.8125rem; margin: 0;\\'>Image unavailable</p>';
-                                    }
-                                }
-                             })(this);">
-                    </div>`;
-                } else {
-                    // For regular images, use simple error handling (dark text for white background visibility)
-                    bodyHTML += `<div class="article-media article-media-hero">
-                        <img src="${escapeHtml(absoluteImageUrl)}" alt="${escapeHtml(title)}" loading="eager" 
-                             onerror="this.style.display='none'; this.parentElement.innerHTML='<p style=\\'color: #666; padding: 2rem; text-align: center;\\'>Image could not be loaded</p>';">
-                    </div>`;
-                }
-            }
-            
-            // Key takeaways after hero image
-            bodyHTML += buildKeyTakeawaysHTML(post, isXPost);
-            
-            // Render secondary images ONLY if they exist and are different from primary
-            if (secondary.length > 0) {
-                secondary.forEach((imgUrl, idx) => {
-                    const absoluteImageUrl = ensureAbsoluteImageUrl(imgUrl);
-                    const isUploadedImage = absoluteImageUrl.includes('get-uploaded-image');
-                    const errorHandler = isUploadedImage
-                        ? `this.onerror=null; this.style.display='none';`
-                        : `this.style.display='none';`;
-                    
-                    bodyHTML += `<div class="article-media" style="margin-top: 1.5rem;">
-                        <img src="${escapeHtml(absoluteImageUrl)}" alt="${escapeHtml(title)} - Image ${idx + 2}" loading="lazy" onerror="${errorHandler}">
-                    </div>`;
-                });
-            }
-
-            // Render videos (MP4, WebM, etc. - from admin upload or post data)
-            const articleVideosRaw = [
-                ...(post.video_url || post.video || post.assets?.video_url ? [post.video_url || post.video || post.assets?.video_url] : []),
-                ...(post.videos || [])
-            ].filter(Boolean);
-            const videoUrls = articleVideosRaw
-                .filter(u => u && isVideoUrl(u))
-                .map(u => ensureAbsoluteImageUrl(u))
-                .map(u => u.replace('https://video.twimg.com/', '/media/video/'))
-                .filter((url, i, arr) => arr.findIndex(u => normalizeUrl(u) === normalizeUrl(url)) === i);
-
-            const xVideoLink = post.x_url || post.link || '';
-            const hasXVideoFallback = xVideoLink && (xVideoLink.includes('x.com') || xVideoLink.includes('twitter.com'));
-
-            videoUrls.forEach((vUrl, idx) => {
-                const posterAttr = primary ? ` poster="${escapeHtml(ensureAbsoluteImageUrl(primary))}"` : '';
-                const isHero = idx === 0;
-                const cls = isHero ? 'article-media article-media-hero' : 'article-media';
-                const marginStyle = isHero ? '' : ' style="margin-top: 1.5rem;"';
-                const fallbackHtml = hasXVideoFallback
-                    ? `'<div style="text-align:center;padding:2rem;"><p style="color:#666;margin-bottom:1rem;">Video could not be loaded</p><a href="${escapeHtml(xVideoLink)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;padding:10px 18px;background:#000;color:#fff;border-radius:8px;font-size:0.875rem;font-weight:600;text-decoration:none;font-family:Inter,sans-serif;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>Watch on X</a></div>'`
-                    : `'<p style="color:#666;padding:2rem;text-align:center;">Video could not be loaded</p>'`;
-
-                bodyHTML += `<div class="${cls}"${marginStyle}>
-                    <video src="${escapeHtml(vUrl)}"${posterAttr} controls style="width:100%;max-height:500px;border-radius:12px;" playsinline preload="metadata"
-                           onerror="this.parentElement.innerHTML=${fallbackHtml}"></video>
-                </div>`;
-            });
-            
-            // Add post text and source links
-            if (isXPost) {
-                // X post "News Update" body: strip t.co links, wrap in original-update section
-                const { cleaned: cleanedStory } = stripTcoLinks(story);
-                bodyHTML += '<section class="original-update">';
-                bodyHTML += '<h3 class="original-update__label">Original update</h3>';
-                bodyHTML += formatPostText(cleanedStory);
-                bodyHTML += '</section>';
-
-                // Source chips (already shown under "What we know" if present there)
-                const sourceUrls = Array.isArray(post.source_urls) ? post.source_urls : [];
-                if (sourceUrls.length > 0) {
-                    bodyHTML += '<div class="article-sources-chips">';
-                    const xLinkUrl = post.x_url || post.link;
-                    const chips = sourceUrls.map((s, i) => {
-                        const href = escapeHtml(typeof s === 'string' ? s : s.url);
-                        const label = typeof s === 'string' ? `Source ${i + 1}` : (s.display || s.title || `Source ${i + 1}`);
-                        return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="source-chip">${escapeHtml(label)}</a>`;
-                    });
-                    if (xLinkUrl) {
-                        chips.push(`<a href="${escapeHtml(xLinkUrl)}" target="_blank" rel="noopener noreferrer" class="source-chip source-chip--x">View on X</a>`);
-                    }
-                    bodyHTML += chips.join('');
-                    bodyHTML += '</div>';
-                }
-
-                // Small "View on X" inline link
-                const xLinkUrl = post.x_url || post.link;
-                if (xLinkUrl) {
-                    bodyHTML += `<a href="${escapeHtml(xLinkUrl)}" target="_blank" rel="noopener noreferrer" class="view-on-x-link">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                        View original post on X
-                    </a>`;
-                }
-            } else {
-                // Standard article body
-                bodyHTML += formatPostText(story);
-
-                // Source URLs extracted from X post entities
-                const sourceUrls = Array.isArray(post.source_urls) ? post.source_urls : [];
-                if (sourceUrls.length > 0) {
-                    bodyHTML += '<div class="article-sources" style="margin-top: 1.5rem; padding: 1rem 1.25rem; background: #f8f9fa; border-left: 3px solid #4A90E2; border-radius: 4px;">';
-                    bodyHTML += '<h4 style="margin: 0 0 0.5rem; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #666; font-family: Inter, sans-serif;">Sources</h4>';
-                    sourceUrls.forEach(function(s) {
-                        const href = escapeHtml(typeof s === 'string' ? s : s.url);
-                        const label = escapeHtml(typeof s === 'string' ? s : (s.display || s.title || s.url));
-                        bodyHTML += '<a href="' + href + '" target="_blank" rel="noopener noreferrer" style="display: block; color: #4A90E2; font-size: 0.9rem; margin-bottom: 4px; word-break: break-all;">' + label + '</a>';
-                    });
-                    bodyHTML += '</div>';
-                }
-
-                // "View on X" link for X-sourced posts (non-update template)
-                const xUrl = post.x_url || post.link;
-                if (xUrl && (xUrl.includes('x.com') || xUrl.includes('twitter.com'))) {
-                    bodyHTML += '<a href="' + escapeHtml(xUrl) + '" target="_blank" rel="noopener noreferrer" '
-                        + 'style="display: inline-flex; align-items: center; gap: 6px; margin-top: 1.5rem; padding: 8px 0; '
-                        + 'color: #6B7280; font-size: 0.8125rem; font-weight: 500; '
-                        + 'text-decoration: none; font-family: Inter, system-ui, sans-serif; transition: color 0.15s; border-top: 1px solid rgba(0,0,0,0.08);" '
-                        + 'onmouseover="this.style.color=\'#3B8BF2\'" onmouseout="this.style.color=\'#6B7280\'">'
-                        + 'Originally posted on X &rarr;</a>';
-                }
-            }
-
-            // Check for coordinates in multiple places (lat/lon at top level, or in raw geometry, or in assets)
-            // Note: isEarthquake is already declared above (line 1577), so reuse it
-            const hasCoordinates = (post.lat && post.lon) || 
-                                   (post.raw?.geometry?.coordinates?.[1] && post.raw?.geometry?.coordinates?.[0]) ||
-                                   (post.assets?.lat && post.assets?.lon);
-            // Get coordinates from any available source
-            if (!post.lat && post.raw?.geometry?.coordinates) {
-                post.lat = post.raw.geometry.coordinates[1];
-                post.lon = post.raw.geometry.coordinates[0];
-            }
-            if (!post.lat && post.assets) {
-                post.lat = post.assets.lat;
-                post.lon = post.assets.lon;
-            }
-            const earthquakeMagnitude = post.assets?.magnitude || post.magnitude;
-            
-            console.log('[ArticleLoader] Earthquake check:', {
-                isEarthquake,
-                hasCoordinates,
-                lat: post.lat,
-                lon: post.lon,
-                magnitude: earthquakeMagnitude,
-                event_type: post.event_type,
-                category: post.category,
-                hasAssets: !!post.assets,
-                hasImpactAssessment: !!post.assets?.impact_assessment,
-                hasTsunamiAssessment: !!post.assets?.tsunami_assessment,
-                hasAftershockForecast: !!post.assets?.aftershock_forecast,
-                hasAnomalyDetection: !!post.assets?.anomaly_detection,
-            });
-            
-            // Show enhancements if it's an earthquake (even without coordinates, we can show assessments)
-            if (isEarthquake) {
-                // Add earthquake-specific enhancements
-                console.log('[ArticleLoader] Adding earthquake enhancements...', {
-                    isEarthquake,
-                    hasCoordinates,
-                    magnitude: earthquakeMagnitude,
-                    lat: post.lat,
-                    lon: post.lon,
-                    source: post.source,
-                    category: post.category,
-                    hasAssets: !!post.assets
-                });
-                const enhancementsHTML = await generateEarthquakeEnhancements(post, earthquakeMagnitude);
-                bodyHTML += enhancementsHTML;
-                console.log('[ArticleLoader] Enhancements HTML length:', enhancementsHTML.length);
-            } else {
-                console.warn('[ArticleLoader] Skipping earthquake enhancements:', {
-                    isEarthquake,
-                    hasCoordinates,
-                    source: post.source,
-                    category: post.category,
-                    event_type: post.event_type,
-                    reason: 'not an earthquake'
-                });
-            }
-            
-            bodyElement.innerHTML = bodyHTML;
-            console.log('[ArticleLoader] Article body updated, total length:', bodyHTML.length);
-
-            // Mark first paragraph for lead/drop-cap styling (skip for X post updates)
-            if (!isXPost) {
-                const firstP = bodyElement.querySelector('p');
-                if (firstP) firstP.classList.add('lead-paragraph');
-            }
-
-            // Heading IDs and table of contents (sidebar)
-            buildTableOfContents(bodyElement);
-            if (typeof window.initArticleTocScrollSpy === 'function') {
-                window.initArticleTocScrollSpy();
-            }
-
-            // Render article tags if they exist
             const tagsContainer = document.getElementById('article-tags');
             if (tagsContainer && post.tags && Array.isArray(post.tags) && post.tags.length > 0) {
                 tagsContainer.style.display = 'flex';
-                tagsContainer.innerHTML = post.tags.map(tag => {
-                    const tagText = escapeHtml(tag);
-                    return `<a href="/index.html?tag=${encodeURIComponent(tag)}" class="article-tag">${tagText}</a>`;
-                }).join('');
-            }
-            
-            // Initialize earthquake map and 3D visualization if it exists (after DOM update)
-            if (isEarthquake && hasCoordinates) {
-                // Use setTimeout to ensure DOM is fully updated
-                setTimeout(() => {
-                    initializeEarthquakeMap(post.lat, post.lon, earthquakeMagnitude, post.location_display || post.location);
-                    const depth = post.assets?.depth || post.depth;
-                    initialize3DVisualization(post.lat, post.lon, earthquakeMagnitude, depth, post.location_display || post.location);
-                }, 100);
-            }
-            
-            // Hide comments for X post updates
-            if (isXPost) {
-                const commentsSection = document.querySelector('.comments-section');
-                if (commentsSection) commentsSection.style.display = 'none';
+                tagsContainer.innerHTML = post.tags
+                    .map((tag) => {
+                        const tagText = escapeHtml(tag);
+                        return `<a href="/index.html?tag=${encodeURIComponent(tag)}" class="article-tag">${tagText}</a>`;
+                    })
+                    .join('');
             }
 
-            // Initialize comments (skip for X posts)
-            const commentsContainer = document.getElementById('article-comments');
-            if (!commentsContainer) {
-                console.error('[ArticleLoader] Comments container not found!');
-            } else if (!isXPost) {
-                // Normalize articleId for comments (handle usgs- prefix, post- prefix, etc.)
-                let commentArticleId = articleId;
-                if (articleId.startsWith('usgs-')) {
-                    // For usgs-{eventId}, try both formats
-                    commentArticleId = `post-${articleId}`;
-                } else if (!articleId.startsWith('post-')) {
-                    // Ensure post- prefix for consistency
-                    commentArticleId = `post-${articleId}`;
-                }
-                
-                commentsContainer.setAttribute('data-article-id', commentArticleId);
-                // Ensure comment section container exists
-                if (!commentsContainer.querySelector('.comment-section')) {
-                    const commentSectionDiv = document.createElement('div');
-                    commentSectionDiv.className = 'comment-section';
-                    commentSectionDiv.setAttribute('data-article-id', commentArticleId);
-                    commentsContainer.appendChild(commentSectionDiv);
-                }
-                
-                // Initialize comment section
-                const initComments = () => {
-                    if (window.CommentSection) {
-                        if (!window.commentSections) {
-                            window.commentSections = {};
-                        }
-                        // Only initialize if not already initialized
-                        if (!window.commentSections[commentArticleId]) {
-                            try {
-                                window.commentSections[commentArticleId] = new window.CommentSection(commentArticleId);
-                                console.log('[ArticleLoader] Comment section initialized for', commentArticleId);
-                            } catch (error) {
-                                console.error('[ArticleLoader] Failed to initialize comment section:', error);
+            const commentsWrap = document.getElementById('nn-comments-wrap');
+            if (isXPost) {
+                if (commentsWrap) commentsWrap.remove();
+            } else {
+                const commentsContainer = document.getElementById('article-comments');
+                if (commentsContainer) {
+                    let commentArticleId = articleId;
+                    if (articleId.startsWith('usgs-')) {
+                        commentArticleId = `post-${articleId}`;
+                    } else if (!articleId.startsWith('post-')) {
+                        commentArticleId = `post-${articleId}`;
+                    }
+                    commentsContainer.setAttribute('data-article-id', commentArticleId);
+                    if (!commentsContainer.querySelector('.comment-section')) {
+                        const commentSectionDiv = document.createElement('div');
+                        commentSectionDiv.className = 'comment-section';
+                        commentSectionDiv.setAttribute('data-article-id', commentArticleId);
+                        commentsContainer.appendChild(commentSectionDiv);
+                    }
+                    const initComments = () => {
+                        if (window.CommentSection) {
+                            if (!window.commentSections) window.commentSections = {};
+                            if (!window.commentSections[commentArticleId]) {
+                                try {
+                                    window.commentSections[commentArticleId] = new window.CommentSection(
+                                        commentArticleId
+                                    );
+                                } catch (error) {
+                                    console.error('[ArticleLoader] Failed to initialize comment section:', error);
+                                }
+                            } else {
+                                try {
+                                    window.commentSections[commentArticleId].render();
+                                } catch (error) {
+                                    console.error('[ArticleLoader] Failed to render comment section:', error);
+                                }
                             }
                         } else {
-                            // Re-render if already initialized
-                            try {
-                                window.commentSections[commentArticleId].render();
-                            } catch (error) {
-                                console.error('[ArticleLoader] Failed to render comment section:', error);
-                            }
+                            let attempts = 0;
+                            const checkInterval = setInterval(() => {
+                                attempts++;
+                                if (window.CommentSection) {
+                                    clearInterval(checkInterval);
+                                    initComments();
+                                } else if (attempts >= 50) {
+                                    clearInterval(checkInterval);
+                                }
+                            }, 200);
                         }
-                    } else {
-                        // Wait for CommentSection to load (try up to 10 seconds)
-                        let attempts = 0;
-                        const maxAttempts = 50; // 50 * 200ms = 10 seconds
-                        const checkInterval = setInterval(() => {
-                            attempts++;
-                            if (window.CommentSection) {
-                                clearInterval(checkInterval);
-                                initComments();
-                            } else if (attempts >= maxAttempts) {
-                                clearInterval(checkInterval);
-                                console.error('[ArticleLoader] CommentSection failed to load after 10 seconds');
-                                // Show error message to user
-                                const errorDiv = document.createElement('div');
-                                errorDiv.style.cssText = 'padding: 1rem; background: rgba(255,0,0,0.1); border: 1px solid rgba(255,0,0,0.3); border-radius: 8px; color: #ff6b6b; margin: 1rem 0;';
-                                errorDiv.textContent = 'Comments failed to load. Please refresh the page.';
-                                commentsContainer.appendChild(errorDiv);
-                            }
-                        }, 200);
-                    }
-                };
-                
-                // Wait a bit for DOM to settle, then initialize
-                setTimeout(() => {
-                    initComments();
-                }, 100);
+                    };
+                    setTimeout(initComments, 100);
+                }
             }
-            
-            // Fetch all posts for sidebar + more coverage
+
             let allPosts = posts;
             if (allPosts.length <= 1) {
                 try {
                     const allRes = await fetch('/.netlify/functions/posts-read?limit=50', {
                         cache: 'default',
-                        headers: { 'Accept': 'application/json' }
+                        headers: { 'Accept': 'application/json' },
                     });
                     if (allRes.ok) {
                         const allData = await allRes.json();
@@ -2308,41 +2135,37 @@
                 }
             }
 
-            // Load sidebar content (hide sidebar entirely for X posts)
+            const sidebar = document.getElementById('nn-sidebar');
             if (isXPost) {
-                const sidebar = document.querySelector('.article-sidebar');
-                if (sidebar) sidebar.style.display = 'none';
-                const tocWrap = document.getElementById('article-toc-wrap');
-                if (tocWrap) tocWrap.style.display = 'none';
+                if (sidebar) sidebar.hidden = true;
             } else {
-                await loadSidebarContent(allPosts, post, articleId);
+                await loadSidebarContentV3(allPosts, post, articleId);
             }
 
-            // Load more coverage
             loadMoreCoverage(allPosts, articleId);
+
             
         } catch (error) {
             console.error('[ArticleLoader] Error loading article:', error);
-            if (headingElement) headingElement.textContent = 'Error Loading Article';
-            if (bodyElement) {
-                const errorMessage = error.message || 'An unknown error occurred';
-                const isNetworkError = errorMessage.includes('Network') || errorMessage.includes('Failed to fetch');
-                
-                bodyElement.innerHTML = `
-                    <div style="text-align: center; padding: 40px; background: rgba(231, 76, 60, 0.1); border: 1px solid rgba(231, 76, 60, 0.3); border-radius: 12px; margin: 20px 0;">
-                        <h3 style="color: #E74C3C; margin-bottom: 15px;">Unable to Load Article</h3>
-                        <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 20px;">
-                            ${isNetworkError 
-                                ? 'We\'re having trouble connecting to our servers. Please check your internet connection and try again.' 
-                                : 'An error occurred while loading this article. Please try again later.'}
-                        </p>
-                        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                            <a href="/index.html" style="display: inline-block; padding: 10px 20px; background: #4A90E2; color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">Return to Homepage</a>
-                            <button onclick="location.reload()" style="padding: 10px 20px; background: rgba(255, 255, 255, 0.1); color: white; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 6px; cursor: pointer; font-weight: 600;">Retry</button>
-                        </div>
+            const nnArt = document.getElementById('nn-article');
+            const errorMessage = error.message || 'An unknown error occurred';
+            const isNetworkError =
+                errorMessage.includes('Network') || errorMessage.includes('Failed to fetch');
+            const errHtml = `
+                <h1 class="nn-headline">Unable to Load Article</h1>
+                <div style="text-align:center;padding:2rem;border:1px solid #e8eaed;border-radius:12px;margin-top:1rem;">
+                    <p style="color:#5b6573;margin-bottom:1.25rem;">
+                        ${isNetworkError
+                            ? 'We\'re having trouble connecting to our servers. Please check your connection and try again.'
+                            : 'An error occurred while loading this article. Please try again later.'}
+                    </p>
+                    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+                        <a href="/" style="padding:10px 20px;background:#0f234a;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Return to Homepage</a>
+                        <button type="button" onclick="location.reload()" style="padding:10px 20px;background:#fff;color:#0b0d10;border:1px solid #d0d4da;border-radius:8px;cursor:pointer;font-weight:600;">Retry</button>
                     </div>
-                `;
-            }
+                </div>`;
+            if (nnArt) nnArt.innerHTML = errHtml;
+            else if (bodyElement) bodyElement.innerHTML = errHtml;
         }
     }
 
