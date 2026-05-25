@@ -3,7 +3,7 @@
  * Provides offline support, caching, and faster page loads
  */
 
-const CACHE_VERSION = 'v2.2.4-profile-auth0';
+const CACHE_VERSION = 'v2.3.0-video-fix';
 const CACHE_NAME = `noteworthy-news-${CACHE_VERSION}`;
 
 // Helper function to check if a URL is cacheable
@@ -157,14 +157,32 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Strategy: Network First for JS/CSS (so deploys take effect immediately)
+  if (
+    request.destination === 'script' ||
+    request.destination === 'style' ||
+    url.pathname.endsWith('.js') ||
+    url.pathname.endsWith('.css')
+  ) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response && response.status === 200 && response.type === 'basic' && isCacheableUrl(request.url)) {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, responseToCache)).catch(() => {});
+          }
+          return response;
+        })
+        .catch(() => caches.match(request))
+    );
+    return;
+  }
+
   // Strategy: Cache First, then Network
-  // Good for: Static assets, images, fonts
+  // Good for: Images, fonts, other static assets
   if (
     request.destination === 'image' ||
     request.destination === 'font' ||
-    request.destination === 'style' ||
-    url.pathname.endsWith('.js') ||
-    url.pathname.endsWith('.css') ||
     url.pathname.endsWith('.svg') ||
     url.pathname.endsWith('.png') ||
     url.pathname.endsWith('.jpg') ||
@@ -181,7 +199,6 @@ self.addEventListener('fetch', (event) => {
               if (!response || response.status !== 200 || response.type !== 'basic') {
                 return response;
               }
-              // Only cache if URL is cacheable (http/https)
               if (isCacheableUrl(request.url)) {
                 const responseToCache = response.clone();
                 caches.open(CACHE_NAME)
@@ -189,7 +206,6 @@ self.addEventListener('fetch', (event) => {
                     cache.put(request, responseToCache);
                   })
                   .catch((error) => {
-                    // Silently fail if caching fails (e.g., chrome-extension URLs)
                     console.warn('[Service Worker] Failed to cache:', request.url, error);
                   });
               }
