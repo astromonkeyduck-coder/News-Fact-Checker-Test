@@ -125,6 +125,18 @@ async function processAlert(feature, logger) {
     return null;
   }
   
+  // Skip non-weather alerts that NWS distributes (AMBER, civil, law enforcement)
+  const nonWeatherTypes = [
+    'child abduction', 'amber alert', 'civil emergency',
+    'law enforcement', 'missing person', 'blue alert',
+    'silver alert', 'local area emergency',
+  ];
+  const evtLower = eventType.toLowerCase();
+  const headLower = headline.toLowerCase();
+  if (nonWeatherTypes.some(t => evtLower.includes(t) || headLower.includes(t))) {
+    return null;
+  }
+  
   // CRITICAL FILTER: Only process EXTREMELY SEVERE alerts
   // User requirement: Only Tornado, Flash Flood in major cities, or other truly severe events
   // NO random blizzards, minor warnings, or alerts in small cities
