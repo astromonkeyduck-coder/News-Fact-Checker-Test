@@ -331,6 +331,9 @@
   included_files = ["netlify/functions/engines/**", "netlify/functions/lib/**", "netlify/functions/**/*.png", "netlify/functions/fonts-base64.js"]
   schedule = "* * * * *"  # Runs every minute to retry USGS images for high-magnitude earthquakes
 
+[functions."import-x-posts"]
+  schedule = "*/3 * * * *"
+
 [dev]
   # Load .env file for local development
   command = "netlify dev"

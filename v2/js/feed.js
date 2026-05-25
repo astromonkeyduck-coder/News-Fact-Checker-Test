@@ -103,6 +103,11 @@ function badgeClass(post) {
 
 let _allBreaking = [];
 
+function getXUrl(post) {
+  const u = post.x_url || post.link || '';
+  return (u.includes('x.com') || u.includes('twitter.com')) ? u : '';
+}
+
 function renderCard(post, large) {
   const title = getPostTitle(post);
   const image = getPostImage(post);
@@ -114,6 +119,7 @@ function renderCard(post, large) {
   const short = excerpt.length > 160 ? excerpt.slice(0, 157) + '…' : excerpt;
   const views = shortNum(post.views || post.impressions);
   const likes = shortNum(post.likes);
+  const xLink = getXUrl(post);
 
   const largeClass = large ? ' post-card--large' : '';
   return `
@@ -126,6 +132,7 @@ function renderCard(post, large) {
         <div class="post-card-meta">
           ${source ? `<span class="post-card-source">${esc(source)}</span>` : ''}
           ${date ? `<time class="post-card-date">${esc(date)}</time>` : ''}
+          ${xLink ? `<span class="post-card-x-link" data-href="${esc(xLink)}" onclick="event.preventDefault();event.stopPropagation();window.open(this.dataset.href,'_blank');" role="link" tabindex="0" title="View on X" aria-label="View on X"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></span>` : ''}
         </div>
         ${(views || likes) ? `<div class="post-stats">${views ? `<span class="post-stat"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>${views}</span>` : ''}${likes ? `<span class="post-stat"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>${likes}</span>` : ''}</div>` : ''}
       </div>

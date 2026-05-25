@@ -1109,6 +1109,20 @@
   opacity: 0.5;
 }
 
+.post-card-x-link {
+  margin-left: auto;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  opacity: 0.6;
+  transition: opacity 0.15s;
+  display: inline-flex;
+  align-items: center;
+}
+
+.post-card-x-link:hover {
+  opacity: 1;
+}
+
 /* Feed states */
 .feed-state {
   grid-column: 1 / -1;

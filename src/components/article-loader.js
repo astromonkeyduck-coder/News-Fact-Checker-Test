@@ -1973,7 +1973,32 @@
             
             // Add post text - preserve line breaks as paragraphs
             bodyHTML += formatPostText(story);
-            
+
+            // Source URLs extracted from X post entities
+            const sourceUrls = Array.isArray(post.source_urls) ? post.source_urls : [];
+            if (sourceUrls.length > 0) {
+                bodyHTML += '<div class="article-sources" style="margin-top: 1.5rem; padding: 1rem 1.25rem; background: #f8f9fa; border-left: 3px solid #4A90E2; border-radius: 4px;">';
+                bodyHTML += '<h4 style="margin: 0 0 0.5rem; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #666; font-family: Inter, sans-serif;">Sources</h4>';
+                sourceUrls.forEach(function(s) {
+                    const href = escapeHtml(typeof s === 'string' ? s : s.url);
+                    const label = escapeHtml(typeof s === 'string' ? s : (s.display || s.title || s.url));
+                    bodyHTML += '<a href="' + href + '" target="_blank" rel="noopener noreferrer" style="display: block; color: #4A90E2; font-size: 0.9rem; margin-bottom: 4px; word-break: break-all;">' + label + '</a>';
+                });
+                bodyHTML += '</div>';
+            }
+
+            // "View on X" link for X-sourced posts
+            const xUrl = post.x_url || post.link;
+            if (xUrl && (xUrl.includes('x.com') || xUrl.includes('twitter.com'))) {
+                bodyHTML += '<a href="' + escapeHtml(xUrl) + '" target="_blank" rel="noopener noreferrer" '
+                    + 'style="display: inline-flex; align-items: center; gap: 6px; margin-top: 1.5rem; padding: 10px 18px; '
+                    + 'background: #000; color: #fff; border-radius: 8px; font-size: 0.875rem; font-weight: 600; '
+                    + 'text-decoration: none; font-family: Inter, sans-serif; transition: opacity 0.15s;" '
+                    + 'onmouseover="this.style.opacity=\'0.85\'" onmouseout="this.style.opacity=\'1\'">'
+                    + '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>'
+                    + 'View on X</a>';
+            }
+
             // Check for coordinates in multiple places (lat/lon at top level, or in raw geometry, or in assets)
             // Note: isEarthquake is already declared above (line 1577), so reuse it
             const hasCoordinates = (post.lat && post.lon) || 
