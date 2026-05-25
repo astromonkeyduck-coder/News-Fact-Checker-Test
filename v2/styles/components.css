@@ -891,7 +891,7 @@
   gap: var(--space-md);
 }
 
-@media (min-width: 640px) {
+@media (min-width: 700px) {
   .feed-placeholder,
   .feed-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -1138,6 +1138,40 @@
 
 .post-card-x-link {
   display: none;
+}
+
+/* Broken image fallback */
+.post-card-image--broken {
+  background: linear-gradient(135deg, var(--color-bg-surface) 0%, var(--color-bg-card) 100%);
+}
+
+.post-card-image--broken img {
+  display: none;
+}
+
+/* Text-only card (no image) */
+.post-card--text-only {
+  border-left: 2px solid var(--color-accent);
+}
+
+.post-card--text-only .post-card-body {
+  padding: var(--space-lg);
+}
+
+.post-card--text-only .post-card-title {
+  font-size: var(--text-lg);
+  -webkit-line-clamp: 4;
+}
+
+.post-card--text-only .post-card-excerpt {
+  -webkit-line-clamp: 3;
+}
+
+/* Wire badge inline */
+.wire-badge {
+  flex-shrink: 0;
+  font-size: 9px;
+  padding: 1px 5px;
 }
 
 /* Feed states */
@@ -1715,11 +1749,10 @@
 }
 
 .featured-story-date {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-2xs);
   color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-wide);
+  letter-spacing: var(--tracking-normal);
 }
 
 .featured-story-title {
@@ -1822,7 +1855,7 @@
 
 /* ── Large Card Variant ── */
 
-@media (min-width: 640px) {
+@media (min-width: 700px) {
   .post-card--large {
     grid-column: 1 / -1;
     display: grid;
@@ -2325,6 +2358,20 @@
 
   .btn-sm {
     min-height: 36px;
+  }
+
+  /* Wire items: larger touch targets on mobile */
+  .wire-item {
+    padding: var(--space-sm) var(--space-xs);
+    min-height: 44px;
+  }
+
+  .wire-headline {
+    white-space: normal;
+    -webkit-line-clamp: 2;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
   /* Horizontal card layout for compact mobile feed */

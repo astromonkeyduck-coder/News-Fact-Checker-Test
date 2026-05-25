@@ -25,12 +25,7 @@ body {
   font-weight: var(--weight-normal);
   line-height: var(--leading-normal);
   color: var(--color-text);
-  background: var(--color-bg) linear-gradient(
-    180deg,
-    var(--color-bg) 0%,
-    hsl(220 30% 5%) 50%,
-    var(--color-bg) 100%
-  );
+  background: var(--color-bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
@@ -38,7 +33,7 @@ body {
   position: relative;
 }
 
-/* ── CRT Scanlines ──────────────────────────────── */
+/* ── Subtle texture overlay ─────────────────────── */
 body::after {
   content: '';
   position: fixed;
@@ -49,8 +44,8 @@ body::after {
     0deg,
     transparent,
     transparent 2px,
-    rgba(0, 0, 0, 0.035) 2px,
-    rgba(0, 0, 0, 0.035) 4px
+    rgba(0, 0, 0, 0.01) 2px,
+    rgba(0, 0, 0, 0.01) 4px
   );
 }
 
@@ -67,29 +62,9 @@ body::before {
   background-size: 200px 200px;
 }
 
-/* ── Slow scanline sweep ─────────────────────────── */
-@keyframes scanSweep {
-  0%   { transform: translateY(-100%); }
-  100% { transform: translateY(100vh); }
-}
-
+/* ── Scanline sweep (disabled) ──────────────────── */
 .scanline-sweep {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 120px;
-  pointer-events: none;
-  z-index: 9997;
-  background: linear-gradient(
-    180deg,
-    transparent 0%,
-    rgba(59, 139, 242, 0.015) 40%,
-    rgba(59, 139, 242, 0.03) 50%,
-    rgba(59, 139, 242, 0.015) 60%,
-    transparent 100%
-  );
-  animation: scanSweep 8s linear infinite;
+  display: none;
 }
 
 /* ── Typography ──────────────────────────────────── */

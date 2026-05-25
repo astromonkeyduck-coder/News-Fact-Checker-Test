@@ -1842,21 +1842,6 @@
                 headerTimestamp.textContent = relativeTime;
                 headerTimestamp.style.display = 'inline-block';
             }
-
-            // For X posts, inject attribution line and hide read time
-            if (isXPost) {
-                const readTimeEl = document.getElementById('article-read-time');
-                if (readTimeEl && readTimeEl.parentElement) {
-                    readTimeEl.parentElement.style.display = 'none';
-                }
-                const metaContainer = document.querySelector('.article-header-meta');
-                if (metaContainer) {
-                    const attrDiv = document.createElement('div');
-                    attrDiv.className = 'article-header-meta-item x-attribution';
-                    attrDiv.innerHTML = `<span class="article-header-meta-label">Source:</span><span>Originally posted on <a href="${escapeHtml(postXUrl)}" target="_blank" rel="noopener noreferrer">X</a></span>`;
-                    metaContainer.appendChild(attrDiv);
-                }
-            }
             
             // Update share buttons with proper earthquake format
             const shareUrl = `${SITE_URL}/article.html?id=${encodeURIComponent(articleId)}`;
@@ -1872,6 +1857,21 @@
             if (isXPost) {
                 document.body.classList.add('news-update');
                 document.documentElement.classList.add('news-update');
+            }
+
+            // For X posts, inject attribution line and hide read time
+            if (isXPost) {
+                const readTimeEl = document.getElementById('article-read-time');
+                if (readTimeEl && readTimeEl.parentElement) {
+                    readTimeEl.parentElement.style.display = 'none';
+                }
+                const metaContainer = document.querySelector('.article-header-meta');
+                if (metaContainer) {
+                    const attrDiv = document.createElement('div');
+                    attrDiv.className = 'article-header-meta-item x-attribution';
+                    attrDiv.innerHTML = `<span class="article-header-meta-label">Source:</span><span>Originally posted on <a href="${escapeHtml(postXUrl)}" target="_blank" rel="noopener noreferrer">X</a></span>`;
+                    metaContainer.appendChild(attrDiv);
+                }
             }
             
             // For earthquakes, use the proper format: "BREAKING: M___ Earthquake Near ___. #hashtags"
@@ -2218,7 +2218,9 @@
 
             // Initialize comments (skip for X posts)
             const commentsContainer = document.getElementById('article-comments');
-            if (commentsContainer && !isXPost) {
+            if (!commentsContainer) {
+                console.error('[ArticleLoader] Comments container not found!');
+            } else if (!isXPost) {
                 // Normalize articleId for comments (handle usgs- prefix, post- prefix, etc.)
                 let commentArticleId = articleId;
                 if (articleId.startsWith('usgs-')) {
@@ -2286,8 +2288,6 @@
                 setTimeout(() => {
                     initComments();
                 }, 100);
-            } else {
-                console.error('[ArticleLoader] Comments container not found!');
             }
             
             // Load sidebar content (hide sidebar entirely for X posts)

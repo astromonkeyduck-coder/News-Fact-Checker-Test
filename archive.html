@@ -10,7 +10,7 @@
     <!-- Favicon and Theme -->
     <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="32x32">
     <link rel="apple-touch-icon" href="IMG_5794.PNG" sizes="180x180">
-    <meta name="theme-color" content="#080E1A">
+    <meta name="theme-color" content="#0F1011">
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -33,209 +33,234 @@
     <style>
         .archive-page {
             min-height: 100vh;
-            background: var(--color-bg, #07152a);
-            color: white;
+            background: var(--color-bg, #0F1011);
+            color: var(--color-text, rgba(240,242,245,0.95));
             padding-top: 0;
         }
-        
+
         .archive-container {
             max-width: var(--container-max, 1120px);
             margin: 0 auto;
             padding: 40px 20px;
         }
-        
+
         .archive-header {
-            text-align: center;
-            margin-bottom: 50px;
-            padding: 40px 20px;
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
-            border: 1px solid rgba(74, 144, 226, 0.2);
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--color-border-rule, rgba(255,255,255,0.06));
         }
-        
+
         .archive-header h1 {
-            font-size: 3rem;
-            font-weight: 900;
-            margin-bottom: 20px;
-            background: linear-gradient(135deg, #ffffff 0%, var(--color-accent, #3B8BF2) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-family: var(--font-body, 'Source Serif 4', Georgia, serif);
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--color-text, rgba(240,242,245,0.95));
         }
-        
+
         .archive-header p {
-            font-size: 1.1rem;
-            color: rgba(255, 255, 255, 0.8);
-            line-height: 1.8;
-            max-width: 700px;
-            margin: 0 auto;
+            font-family: var(--font-ui, 'Inter', sans-serif);
+            font-size: var(--text-sm, 0.875rem);
+            color: var(--color-text-secondary, rgba(240,242,245,0.55));
+            line-height: 1.5;
+            margin: 0;
         }
-        
+
         .archive-controls {
             display: flex;
-            gap: 15px;
-            margin-bottom: 30px;
+            gap: 10px;
+            margin-bottom: 24px;
             flex-wrap: wrap;
             align-items: center;
         }
-        
+
         .search-box {
             flex: 1;
-            min-width: 250px;
-            padding: 12px 20px;
-            border-radius: 8px;
-            border: 1px solid rgba(74, 144, 226, 0.3);
-            background: rgba(15, 35, 58, 0.6);
-            color: white;
-            font-size: 1rem;
+            min-width: 200px;
+            padding: 10px 14px;
+            border-radius: var(--radius-sm, 3px);
+            border: 1px solid var(--color-border, rgba(255,255,255,0.07));
+            background: var(--color-bg-elevated, #1A1B1D);
+            color: var(--color-text, rgba(240,242,245,0.95));
+            font-family: var(--font-ui, 'Inter', sans-serif);
+            font-size: var(--text-sm, 0.875rem);
         }
-        
+
         .search-box::placeholder {
-            color: rgba(255, 255, 255, 0.5);
+            color: var(--color-text-muted, rgba(240,242,245,0.32));
         }
-        
+
+        .search-box:focus {
+            outline: none;
+            border-color: var(--color-border-focus, rgba(59,139,242,0.5));
+        }
+
         .filter-select {
-            padding: 12px 20px;
-            border-radius: 8px;
-            border: 1px solid rgba(74, 144, 226, 0.3);
-            background: rgba(15, 35, 58, 0.6);
-            color: white;
-            font-size: 1rem;
+            padding: 10px 14px;
+            border-radius: var(--radius-sm, 3px);
+            border: 1px solid var(--color-border, rgba(255,255,255,0.07));
+            background: var(--color-bg-elevated, #1A1B1D);
+            color: var(--color-text, rgba(240,242,245,0.95));
+            font-family: var(--font-ui, 'Inter', sans-serif);
+            font-size: var(--text-sm, 0.875rem);
             cursor: pointer;
         }
-        
+
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--color-border-focus, rgba(59,139,242,0.5));
+        }
+
         .articles-list {
-            display: grid;
-            gap: 20px;
+            display: flex;
+            flex-direction: column;
         }
-        
+
         .article-item {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
-            border-radius: 12px;
-            padding: 25px;
-            border: 1px solid rgba(74, 144, 226, 0.2);
-            transition: all 0.3s ease;
-            display: grid;
-            grid-template-columns: auto 1fr auto;
-            gap: 20px;
-            align-items: center;
+            display: flex;
+            align-items: baseline;
+            gap: 16px;
+            padding: 14px 8px;
+            border-bottom: 1px solid var(--color-border-rule, rgba(255,255,255,0.06));
+            transition: background 0.15s ease;
         }
-        
+
         .article-item:hover {
-            transform: translateX(5px);
-            border-color: rgba(74, 144, 226, 0.5);
-            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.2);
+            background: var(--color-bg-elevated, #1A1B1D);
         }
-        
+
         .article-date {
-            font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.6);
+            font-family: var(--font-ui, 'Inter', sans-serif);
+            font-size: var(--text-2xs, 0.6875rem);
+            color: var(--color-text-muted, rgba(240,242,245,0.32));
             white-space: nowrap;
+            min-width: 90px;
+            flex-shrink: 0;
         }
-        
+
+        .article-content {
+            flex: 1;
+            min-width: 0;
+        }
+
         .article-content h3 {
-            margin: 0 0 10px 0;
-        }
-        
-        .article-content h3 a {
-            color: white;
-            text-decoration: none;
-            font-size: 1.3rem;
-            transition: color 0.2s ease;
-        }
-        
-        .article-content h3 a:hover {
-            color: #4A90E2;
-        }
-        
-        .article-content p {
-            color: rgba(255, 255, 255, 0.7);
             margin: 0;
-            line-height: 1.6;
         }
-        
+
+        .article-content h3 a {
+            font-family: var(--font-body, 'Source Serif 4', Georgia, serif);
+            color: var(--color-text, rgba(240,242,245,0.95));
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 500;
+            line-height: 1.35;
+            transition: color 0.15s ease;
+        }
+
+        .article-content h3 a:hover {
+            color: var(--color-accent, #3B8BF2);
+        }
+
+        .article-content p {
+            display: none;
+        }
+
         .article-meta-info {
-            text-align: right;
-            font-size: 0.85rem;
-            color: rgba(255, 255, 255, 0.6);
+            font-family: var(--font-ui, 'Inter', sans-serif);
+            font-size: var(--text-2xs, 0.6875rem);
+            color: var(--color-text-muted, rgba(240,242,245,0.32));
             white-space: nowrap;
+            flex-shrink: 0;
         }
-        
+
+        .article-meta-info a {
+            color: var(--color-text-muted, rgba(240,242,245,0.32));
+            text-decoration: none;
+        }
+
         .pagination {
             display: flex;
             justify-content: center;
-            gap: 10px;
-            margin-top: 40px;
+            gap: 6px;
+            margin-top: 32px;
             flex-wrap: wrap;
         }
-        
+
         .pagination button {
-            padding: 10px 20px;
-            border-radius: 8px;
-            border: 1px solid rgba(74, 144, 226, 0.3);
-            background: rgba(15, 35, 58, 0.6);
-            color: white;
+            padding: 8px 14px;
+            border-radius: var(--radius-sm, 3px);
+            border: 1px solid var(--color-border, rgba(255,255,255,0.07));
+            background: var(--color-bg-card, #18191B);
+            color: var(--color-text-secondary, rgba(240,242,245,0.55));
+            font-family: var(--font-ui, 'Inter', sans-serif);
+            font-size: var(--text-xs, 0.75rem);
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.15s ease;
         }
-        
+
         .pagination button:hover:not(:disabled) {
-            background: rgba(74, 144, 226, 0.2);
-            border-color: #4A90E2;
+            background: var(--color-bg-elevated, #1A1B1D);
+            border-color: var(--color-border-hover, rgba(255,255,255,0.14));
+            color: var(--color-text, rgba(240,242,245,0.95));
         }
-        
+
         .pagination button:disabled {
-            opacity: 0.5;
+            opacity: 0.4;
             cursor: not-allowed;
         }
-        
+
         .pagination button.active {
-            background: rgba(74, 144, 226, 0.3);
-            border-color: #4A90E2;
+            background: var(--color-accent-muted, rgba(59,139,242,0.1));
+            border-color: var(--color-accent, #3B8BF2);
+            color: var(--color-accent, #3B8BF2);
         }
-        
+
         .breadcrumbs {
-            margin-bottom: 30px;
-            font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 24px;
+            font-family: var(--font-ui, 'Inter', sans-serif);
+            font-size: var(--text-2xs, 0.6875rem);
+            color: var(--color-text-muted, rgba(240,242,245,0.32));
         }
-        
+
         .breadcrumbs a {
-            color: #4A90E2;
+            color: var(--color-text-secondary, rgba(240,242,245,0.55));
             text-decoration: none;
         }
-        
+
         .breadcrumbs a:hover {
-            color: #2ECC71;
+            color: var(--color-text, rgba(240,242,245,0.95));
         }
-        
+
         .no-results {
             text-align: center;
-            padding: 60px 20px;
-            color: rgba(255, 255, 255, 0.7);
+            padding: 48px 20px;
+            color: var(--color-text-secondary, rgba(240,242,245,0.55));
+            font-family: var(--font-ui, 'Inter', sans-serif);
         }
-        
+
         @media (max-width: 768px) {
             .archive-header h1 {
-                font-size: 2rem;
+                font-size: 1.5rem;
             }
-            
+
             .article-item {
-                grid-template-columns: 1fr;
-                gap: 15px;
+                flex-direction: column;
+                gap: 4px;
+                padding: 12px 4px;
             }
-            
-            .article-date,
+
+            .article-date {
+                min-width: auto;
+            }
+
             .article-meta-info {
-                text-align: left;
+                display: none;
             }
-            
+
             .archive-controls {
                 flex-direction: column;
             }
-            
+
             .search-box,
             .filter-select {
                 width: 100%;
@@ -268,16 +293,16 @@
     
     <main class="archive-container">
         <nav class="breadcrumbs">
-            <a href="index.html">Home</a> / <span>Archive</span>
+            <a href="/">Home</a> / <span>Archive</span>
         </nav>
         
         <div class="archive-header">
-            <h1>Article Archive</h1>
-            <p>Browse all articles from Noteworthy News. Use the search and filters below to find specific stories, or browse by category.</p>
+            <h1>Archive</h1>
+            <p>All stories from Noteworthy News, newest first.</p>
         </div>
         
         <div class="archive-controls">
-            <input type="text" id="searchInput" class="search-box" placeholder="🔍 Search articles by title or keywords...">
+            <input type="text" id="searchInput" class="search-box" placeholder="Search stories...">
             <select id="categoryFilter" class="filter-select">
                 <option value="">All Categories</option>
                 <option value="breaking-news">Breaking News</option>
@@ -433,22 +458,20 @@
             }
             
             const articlesHtml = pageArticles.map(article => {
-                const dateStr = article.date.toLocaleDateString('en-US', { 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
+                const dateStr = article.date.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: article.date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
                 });
-                
+
                 return `
                     <div class="article-item">
                         <div class="article-date">${dateStr}</div>
                         <div class="article-content">
                             <h3><a href="article.html?id=${article.id}">${article.title}</a></h3>
-                            <p>${article.excerpt}${article.excerpt.length >= 200 ? '...' : ''}</p>
                         </div>
                         <div class="article-meta-info">
-                            ${article.readTime} min read<br>
-                            <a href="category/${article.category}.html" style="color: #4A90E2; text-decoration: none; font-size: 0.8rem;">${article.category}</a>
+                            ${article.readTime} min
                         </div>
                     </div>
                 `;
