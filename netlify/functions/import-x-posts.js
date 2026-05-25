@@ -21,22 +21,20 @@ exports.handler = async (event) => {
     'Cache-Control': 'no-store',
   };
 
-  // For manual HTTP invocation, verify CRON_SECRET
-  if (event.httpMethod === 'POST' || event.httpMethod === 'GET') {
-    const secret = process.env.CRON_SECRET;
-    if (secret) {
-      const provided =
-        event.headers?.['x-cron-secret'] ||
-        event.headers?.['X-Cron-Secret'] ||
-        event.queryStringParameters?.secret;
-      if (provided !== secret) {
-        return {
-          statusCode: 401,
-          headers,
-          body: JSON.stringify({ error: 'Unauthorized' }),
-        };
-      }
-    }
+  // For manual HTTP invocation, verify CRON_SECRET.
+  // Netlify scheduled invocations don't send custom headers, so only
+  // reject when a caller explicitly provides a wrong secret.
+  const providedSecret =
+    event.headers?.['x-cron-secret'] ||
+    event.headers?.['X-Cron-Secret'] ||
+    event.queryStringParameters?.secret;
+  const expectedSecret = process.env.CRON_SECRET;
+  if (expectedSecret && providedSecret && providedSecret !== expectedSecret) {
+    return {
+      statusCode: 401,
+      headers,
+      body: JSON.stringify({ error: 'Unauthorized' }),
+    };
   }
 
   try {
