@@ -22,13 +22,6 @@
 # Netlify automatically serves 404.html for 404 errors
 # Make sure 404.html is in the root directory (publish directory)
 
-# ── Video Proxy (Twitter CDN blocks Referer from third-party sites) ──
-[[redirects]]
-  from = "/media/video/*"
-  to = "https://video.twimg.com/:splat"
-  status = 200
-  force = true
-
 # ── V2 Homepage Cutover (ACTIVE) ───────────────────────────────────
 # Serves V2 homepage at /. V2 uses absolute asset paths
 # (/v2/styles/..., /v2/js/...) so the rewrite is transparent.
