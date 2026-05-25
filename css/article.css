@@ -2377,6 +2377,8 @@ body.article-page .site-header .nav-toggle-icon {
     text-decoration: none;
     font-family: var(--font-ui, Inter, system-ui, sans-serif);
     transition: color 0.15s;
+    white-space: nowrap;
+    width: fit-content;
 }
 
 .view-on-x-link:hover {

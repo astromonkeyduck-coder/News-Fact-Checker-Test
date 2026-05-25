@@ -227,5 +227,39 @@ import { UISounds } from './ui-sounds.js';
   initAuth(onAuthChange);
   initAmbientAudio();
   initScrollReveal();
+  initCounters();
 
 })();
+
+function initCounters() {
+  const els = document.querySelectorAll('[data-count-target]');
+  if (!els.length) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  const observer = new IntersectionObserver((entries, obs) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const el = entry.target;
+      const target = parseInt(el.dataset.countTarget, 10);
+      const suffix = el.dataset.countSuffix || '';
+      if (isNaN(target)) return;
+      obs.unobserve(el);
+      animateCount(el, target, suffix);
+    });
+  }, { threshold: 0.5 });
+
+  els.forEach(el => observer.observe(el));
+}
+
+function animateCount(el, target, suffix) {
+  const duration = 1500;
+  const start = performance.now();
+  function tick(now) {
+    const progress = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const current = Math.round(eased * target);
+    el.textContent = current + suffix;
+    if (progress < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}

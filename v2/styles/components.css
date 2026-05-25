@@ -9,11 +9,10 @@
 .top-rule {
   height: 2px;
   background: var(--color-accent);
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  z-index: calc(var(--z-sticky) + 1);
 }
 
 
@@ -32,6 +31,52 @@
 [data-reveal].revealed {
   opacity: 1;
   transform: translateY(0);
+}
+
+[data-reveal="stagger"] > * {
+  opacity: 0;
+  transform: translateY(14px) scale(0.97);
+  transition:
+    opacity var(--duration-slow) var(--ease-out),
+    transform var(--duration-slow) var(--ease-spring);
+}
+
+[data-reveal="stagger"] > *.revealed {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Broadcast lower-third style for section headers */
+.section-header[data-reveal] {
+  padding-left: var(--space-md);
+  border-left: 3px solid var(--color-accent);
+  border-left-color: transparent;
+  transition:
+    opacity var(--duration-slow) var(--ease-out),
+    transform var(--duration-slow) var(--ease-out),
+    border-left-color var(--duration-slower) var(--ease-broadcast);
+}
+
+.section-header[data-reveal].revealed {
+  border-left-color: var(--color-accent);
+}
+
+.section-header[data-reveal] .section-label {
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path var(--duration-slower) var(--ease-broadcast) 100ms;
+}
+
+.section-header[data-reveal].revealed .section-label {
+  clip-path: inset(0 0 0 0);
+}
+
+.section-header[data-reveal] .section-title {
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path var(--duration-slower) var(--ease-broadcast) 200ms;
+}
+
+.section-header[data-reveal].revealed .section-title {
+  clip-path: inset(0 0 0 0);
 }
 
 
@@ -345,6 +390,22 @@
   100% { opacity: 0.5; transform: translate(5%, -3%) scale(1.1); }
 }
 
+@keyframes heroSlideIn {
+  0%   { opacity: 0; transform: translateY(24px); filter: blur(4px); }
+  100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+@keyframes heroFadeUp {
+  0%   { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes liveFlash {
+  0%   { opacity: 0; transform: scale(0.8); }
+  40%  { opacity: 1; transform: scale(1.1); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
 .hero-content {
   max-width: 700px;
 }
@@ -370,6 +431,7 @@
   padding: 3px 8px;
   border-radius: var(--radius-xs);
   border: 1px solid rgba(239, 68, 68, 0.2);
+  animation: liveFlash var(--duration-slower) var(--ease-spring) both;
 }
 
 .hero-live-dot {
@@ -399,6 +461,7 @@
   line-height: var(--leading-tight);
   letter-spacing: var(--tracking-tight);
   margin-bottom: var(--space-md);
+  animation: heroSlideIn 600ms var(--ease-broadcast) 150ms both;
 }
 
 .hero-accent {
@@ -415,12 +478,14 @@
   line-height: var(--leading-relaxed);
   max-width: 52ch;
   margin-bottom: var(--space-lg);
+  animation: heroFadeUp 500ms var(--ease-broadcast) 350ms both;
 }
 
 .hero-actions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-sm);
+  animation: heroFadeUp 500ms var(--ease-broadcast) 500ms both;
 }
 
 @media (min-width: 768px) {
@@ -525,6 +590,7 @@
   border-bottom: 1px solid var(--color-border);
   background: var(--color-bg-secondary);
   overflow: hidden;
+  animation: tickerFlash 1s var(--ease-out) both;
   position: relative;
   height: 36px;
 }
@@ -542,12 +608,14 @@
 
 .ticker-bar::before {
   left: 0;
-  background: linear-gradient(90deg, var(--color-bg-secondary), transparent);
+  width: 80px;
+  background: linear-gradient(90deg, var(--color-bg-secondary) 20%, transparent);
 }
 
 .ticker-bar::after {
   right: 0;
-  background: linear-gradient(270deg, var(--color-bg-secondary), transparent);
+  width: 80px;
+  background: linear-gradient(270deg, var(--color-bg-secondary) 20%, transparent);
 }
 
 .ticker-bar[hidden] { display: none; }
@@ -558,7 +626,7 @@
   gap: var(--space-xl);
   white-space: nowrap;
   height: 100%;
-  animation: tickerScroll 40s linear infinite;
+  animation: tickerScroll 32s linear infinite;
   width: max-content;
 }
 
@@ -569,6 +637,12 @@
 @keyframes tickerScroll {
   0%   { transform: translateX(0); }
   100% { transform: translateX(-50%); }
+}
+
+@keyframes tickerFlash {
+  0%   { opacity: 0; background: rgba(59, 139, 242, 0.15); }
+  50%  { opacity: 1; background: rgba(59, 139, 242, 0.08); }
+  100% { opacity: 1; background: var(--color-bg-secondary); }
 }
 
 .ticker-item {
@@ -979,12 +1053,46 @@
 @keyframes feedFadeIn {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(12px) scale(0.98);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
+}
+
+@keyframes cardSlideRight {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes cardSlideLeft {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+    clip-path: inset(0 0 0 100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+.feed-loaded .post-card--large {
+  animation: cardSlideRight var(--duration-slower) var(--ease-broadcast) both;
+}
+
+.feed-loaded .featured-story {
+  animation: cardSlideLeft 500ms var(--ease-broadcast) 200ms both;
 }
 
 /* Post card */
@@ -2463,13 +2571,13 @@
     min-height: 48px;
   }
 
-  /* Ticker: smaller text on mobile */
+  /* Ticker: slightly larger for urgency on mobile */
   .ticker-bar {
-    height: 32px;
+    height: 34px;
   }
 
   .ticker-item {
-    font-size: 10px;
+    font-size: 11px;
   }
 
   /* Scroll-to-top: position above audio visualizer */
@@ -2480,5 +2588,47 @@
   /* Trust strip: tighter on mobile */
   .trust-stat-number {
     font-size: var(--text-xl);
+  }
+
+  /* ── Mobile Motion Overrides ─────────────────────── */
+
+  /* Shorter reveal travel on mobile */
+  [data-reveal] {
+    transform: translateY(10px);
+  }
+
+  /* Cards swipe from the side on mobile */
+  [data-reveal="stagger"] > * {
+    transform: translateX(-16px) scale(0.97);
+  }
+
+  [data-reveal="stagger"] > *.revealed {
+    transform: translateX(0) scale(1);
+  }
+
+  /* Hero animations: tighter on mobile */
+  .hero-title {
+    animation-duration: 450ms;
+  }
+
+  .hero-subtitle,
+  .hero-actions {
+    animation-duration: 350ms;
+  }
+
+  /* Feed cards: side-slide entrance */
+  .feed-loaded .post-card {
+    animation-name: mobileCardIn;
+  }
+
+  @keyframes mobileCardIn {
+    from {
+      opacity: 0;
+      transform: translateX(-12px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+    }
   }
 }

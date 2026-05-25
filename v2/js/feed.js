@@ -23,12 +23,12 @@ const UNMUTED_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" 
 
 function isLowMagEarthquake(post) {
   const cat = (post.category || '').toLowerCase();
-  const src = (post.source || '').toLowerCase();
-  const isQuake = cat === 'earthquake' || src.includes('usgs');
+  const evtType = (post.event_type || '').toLowerCase();
+  const isQuake = cat === 'earthquake' || evtType === 'earthquake';
   if (!isQuake) return false;
   const mag = post.magnitude ?? post.mag ?? post.assets?.magnitude;
   const m = typeof mag === 'string' ? parseFloat(mag) : Number(mag);
-  return !Number.isFinite(m) || m < 6.0;
+  return !Number.isFinite(m) || m < 4.5;
 }
 
 function isNonWeatherNWSAlert(post) {
@@ -432,9 +432,9 @@ export async function initFeed() {
       alertCountEl.textContent = `${alerts.length} active alert${alerts.length !== 1 ? 's' : ''}`;
     }
 
-    _allBreaking = gridSource;
-    initFilters(gridSource);
-    initLoadMore(gridSource);
+    _allBreaking = breaking;
+    initFilters(breaking);
+    initLoadMore(breaking);
     playVisibleVideos();
     UISounds.success();
   } catch (err) {
