@@ -33,15 +33,14 @@ function formatDate(raw) {
   const diff = Date.now() - d.getTime();
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return 'Just now';
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 60) return `${mins} min ago`;
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return d.toLocaleDateString('en-US', {
-    month: 'short', day: 'numeric',
-    year: d.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined,
-  });
+  if (hours < 6) return `${hours}h ago`;
+  const opts = { month: 'short', day: 'numeric' };
+  if (d.getFullYear() !== new Date().getFullYear()) opts.year = 'numeric';
+  const dateStr = d.toLocaleDateString('en-US', opts);
+  const timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  return `${dateStr} · ${timeStr}`;
 }
 
 function getPostTitle(post) {
@@ -99,6 +98,18 @@ function badgeClass(post) {
   return 'badge-live';
 }
 
+function getSmartLabel(post) {
+  const text = (post.text || post.title || post.story || '').toUpperCase();
+  if (text.startsWith('UPDATE:') || text.startsWith('UPDATE |')) return { label: 'Update', cls: 'badge-accent' };
+  if (text.startsWith('DEVELOPING:') || text.startsWith('DEVELOPING |')) return { label: 'Developing', cls: 'badge-warning' };
+  if (text.startsWith('WATCH:') || text.startsWith('VIDEO:')) return { label: 'Watch', cls: 'badge-accent' };
+  if (post.postType === 'video' || post.video_url) return { label: 'Video', cls: 'badge-accent' };
+  const cat = getCategory(post);
+  if (cat) return { label: cat, cls: badgeClass(post) };
+  if (isBreakingText(post)) return { label: 'Breaking', cls: 'badge-live' };
+  return null;
+}
+
 // ── Card renderers ───────────────────────────────
 
 let _allBreaking = [];
@@ -108,33 +119,38 @@ function getXUrl(post) {
   return (u.includes('x.com') || u.includes('twitter.com')) ? u : '';
 }
 
+function isVideoPost(post) {
+  return post.postType === 'video' || !!post.video_url || (post.videos && post.videos.length > 0);
+}
+
+const PLAY_ICON = '<div class="media-play" aria-hidden="true"><svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg></div>';
+
 function renderCard(post, large) {
   const title = getPostTitle(post);
   const image = getPostImage(post);
   const date = formatDate(getPostDate(post));
   const source = post.source || '';
-  const category = getCategory(post);
   const url = articleUrl(post);
   const excerpt = (post.text || post.content || post.Content || '').replace(/<[^>]*>/g, '').trim();
   const short = excerpt.length > 160 ? excerpt.slice(0, 157) + '…' : excerpt;
-  const views = shortNum(post.views || post.impressions);
-  const likes = shortNum(post.likes);
-  const xLink = getXUrl(post);
+  const hasVideo = isVideoPost(post);
+  const smart = getSmartLabel(post);
 
-  const largeClass = large ? ' post-card--large' : '';
+  const classes = ['post-card'];
+  if (large) classes.push('post-card--large');
+  if (!image) classes.push('post-card--text-only');
+
   return `
-    <a href="${esc(url)}" class="post-card${largeClass}" aria-label="${esc(title)}">
-      ${image ? `<div class="post-card-image"><img src="${esc(image)}" alt="" loading="lazy" decoding="async"></div>` : ''}
+    <a href="${esc(url)}" class="${classes.join(' ')}" aria-label="${esc(title)}">
+      ${image ? `<div class="post-card-image"><img src="${esc(image)}" alt="" loading="lazy" decoding="async" onerror="this.parentElement.classList.add('post-card-image--broken')">${hasVideo ? PLAY_ICON : ''}</div>` : ''}
       <div class="post-card-body">
-        ${category ? `<span class="badge ${badgeClass(post)}">${esc(category)}</span>` : isBreakingText(post) ? '<span class="badge badge-live">Breaking</span>' : ''}
+        ${smart ? `<span class="badge ${smart.cls}">${esc(smart.label)}</span>` : ''}
         <h3 class="post-card-title">${esc(title)}</h3>
         ${short ? `<p class="post-card-excerpt">${esc(short)}</p>` : ''}
         <div class="post-card-meta">
           ${source ? `<span class="post-card-source">${esc(source)}</span>` : ''}
           ${date ? `<time class="post-card-date">${esc(date)}</time>` : ''}
-          ${xLink ? `<span class="post-card-x-link" data-href="${esc(xLink)}" onclick="event.preventDefault();event.stopPropagation();window.open(this.dataset.href,'_blank');" role="link" tabindex="0" title="View on X" aria-label="View on X"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></span>` : ''}
         </div>
-        ${(views || likes) ? `<div class="post-stats">${views ? `<span class="post-stat"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>${views}</span>` : ''}${likes ? `<span class="post-stat"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>${likes}</span>` : ''}</div>` : ''}
       </div>
     </a>`;
 }
@@ -145,23 +161,22 @@ function renderFeatured(post) {
   const date = formatDate(getPostDate(post));
   const url = articleUrl(post);
   const excerpt = (post.text || post.content || '').replace(/<[^>]*>/g, '').trim();
-  const short = excerpt.length > 240 ? excerpt.slice(0, 237) + '…' : excerpt;
-  const views = shortNum(post.views || post.impressions);
-  const likes = shortNum(post.likes);
+  const short = excerpt.length > 180 ? excerpt.slice(0, 177) + '…' : excerpt;
   const isBreaking = isBreakingText(post);
+  const xLink = getXUrl(post);
+  const hasVideo = isVideoPost(post);
 
   return `
-    <a href="${esc(url)}" class="featured-story" aria-label="${esc(title)}">
-      ${image ? `<div class="featured-story-image"><img src="${esc(image)}" alt="" loading="lazy" decoding="async"></div>` : ''}
+    <a href="${esc(url)}" class="featured-story${isBreaking ? ' featured-story--breaking' : ''}" aria-label="${esc(title)}">
+      ${image ? `<div class="featured-story-image"><img src="${esc(image)}" alt="" loading="lazy" decoding="async" onerror="this.parentElement.classList.add('post-card-image--broken')">${hasVideo ? PLAY_ICON : ''}</div>` : ''}
       <div class="featured-story-content">
         <div class="featured-story-badges">
-          ${isBreaking ? '<span class="badge badge-live">Breaking</span>' : '<span class="badge badge-accent">Latest</span>'}
+          ${(() => { const s = getSmartLabel(post); return s ? `<span class="badge ${s.cls}">${esc(s.label)}</span>` : '<span class="badge badge-accent">Latest</span>'; })()}
           ${date ? `<time class="featured-story-date">${esc(date)}</time>` : ''}
         </div>
         <h2 class="featured-story-title">${esc(title)}</h2>
         ${short ? `<p class="featured-story-excerpt">${esc(short)}</p>` : ''}
-        ${(views || likes) ? `<div class="post-stats">${views ? `<span class="post-stat"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>${views}</span>` : ''}${likes ? `<span class="post-stat"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>${likes}</span>` : ''}</div>` : ''}
-        <span class="featured-story-cta">Read Full Story &rarr;</span>
+        ${xLink ? `<span class="featured-story-source" data-href="${esc(xLink)}" onclick="event.preventDefault();event.stopPropagation();window.open(this.dataset.href,'_blank');" role="link" tabindex="0">Originally posted on X</span>` : ''}
       </div>
     </a>`;
 }
@@ -177,7 +192,7 @@ function renderAlertCard(post) {
 
   return `
     <a href="${esc(url)}" class="post-card post-card--alert" aria-label="${esc(title)}">
-      ${image ? `<div class="post-card-image"><img src="${esc(image)}" alt="" loading="lazy" decoding="async"></div>` : ''}
+      ${image ? `<div class="post-card-image"><img src="${esc(image)}" alt="" loading="lazy" decoding="async" onerror="this.parentElement.classList.add('post-card-image--broken')"></div>` : ''}
       <div class="post-card-body">
         <span class="badge ${badgeClass(post)}">${magnitude ? `M${esc(String(magnitude))} ` : ''}${esc(category)}</span>
         <h3 class="post-card-title">${esc(title)}</h3>
@@ -186,6 +201,22 @@ function renderAlertCard(post) {
           ${date ? `<time class="post-card-date">${esc(date)}</time>` : ''}
         </div>
       </div>
+    </a>`;
+}
+
+function renderWireItem(post) {
+  const title = getPostTitle(post);
+  const date = formatDate(getPostDate(post));
+  const url = articleUrl(post);
+  const smart = getSmartLabel(post);
+  const isLive = smart && smart.cls === 'badge-live';
+
+  return `
+    <a href="${esc(url)}" class="wire-item" aria-label="${esc(title)}">
+      <span class="wire-dot${isLive ? ' wire-dot--live' : ''}"></span>
+      ${smart ? `<span class="badge ${smart.cls} wire-badge">${esc(smart.label)}</span>` : ''}
+      <span class="wire-headline">${esc(title)}</span>
+      ${date ? `<time class="wire-time">${esc(date)}</time>` : ''}
     </a>`;
 }
 
@@ -277,6 +308,18 @@ export async function initFeed() {
       } else {
         breakingEl.innerHTML = renderEmpty('No breaking news right now');
         breakingEl.classList.add('feed-loaded');
+      }
+    }
+
+    // Wire feed: remaining posts beyond the grid
+    const wireEl = document.getElementById('wire-container');
+    if (wireEl && gridSource.length > BREAKING_DISPLAY + 1) {
+      const wireItems = gridSource.slice(BREAKING_DISPLAY + 1, BREAKING_DISPLAY + 1 + 12);
+      if (wireItems.length > 0) {
+        wireEl.innerHTML = wireItems.map(renderWireItem).join('');
+        wireEl.classList.add('wire-loaded');
+        const wireSection = wireEl.closest('.wire-section');
+        if (wireSection) wireSection.hidden = false;
       }
     }
 

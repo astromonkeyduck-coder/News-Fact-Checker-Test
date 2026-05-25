@@ -43,6 +43,21 @@
     }
 
     /**
+     * Strip t.co URLs from text and return both cleaned text and extracted links.
+     */
+    function stripTcoLinks(text) {
+        if (!text) return { cleaned: '', links: [] };
+        const tcoPattern = /https?:\/\/t\.co\/\w+/g;
+        const links = [];
+        let match;
+        while ((match = tcoPattern.exec(text)) !== null) {
+            links.push(match[0]);
+        }
+        const cleaned = text.replace(tcoPattern, '').replace(/\s{2,}/g, ' ').trim();
+        return { cleaned, links };
+    }
+
+    /**
      * Get earthquake hashtags in Spanish, Japanese, and location-relevant language
      */
     function getEarthquakeHashtags(location) {
@@ -309,10 +324,45 @@
 
     /**
      * Build key takeaways HTML block (empty string if no takeaways).
+     * For X posts, strips t.co links and renders source chips separately.
      */
-    function buildKeyTakeawaysHTML(post) {
+    function buildKeyTakeawaysHTML(post, isXPost) {
         const items = deriveKeyTakeaways(post);
         if (items.length === 0) return '';
+
+        if (isXPost) {
+            const allExtractedLinks = [];
+            const cleanedItems = items.map(item => {
+                const { cleaned, links } = stripTcoLinks(item);
+                allExtractedLinks.push(...links);
+                return cleaned;
+            }).filter(Boolean);
+
+            if (cleanedItems.length === 0) return '';
+
+            const listItems = cleanedItems.map(item => `<li>${escapeHtml(item)}</li>`).join('');
+
+            const sourceUrls = Array.isArray(post.source_urls) ? post.source_urls : [];
+            const chipLinks = sourceUrls.length > 0 ? sourceUrls : allExtractedLinks;
+            let chipsHTML = '';
+            if (chipLinks.length > 0) {
+                const chips = chipLinks.map((s, i) => {
+                    const href = escapeHtml(typeof s === 'string' ? s : s.url);
+                    const label = typeof s === 'string'
+                        ? `Source ${i + 1}`
+                        : (s.display || s.title || `Source ${i + 1}`);
+                    return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="source-chip">${escapeHtml(label)}</a>`;
+                }).join('');
+                chipsHTML = `<div class="source-chips">${chips}</div>`;
+            }
+
+            return `<div class="key-takeaways what-we-know" role="region" aria-label="What we know">
+                <h2 class="key-takeaways__title">What we know</h2>
+                <ul class="key-takeaways__list">${listItems}</ul>
+                ${chipsHTML}
+            </div>`;
+        }
+
         const listItems = items.map(item => `<li>${escapeHtml(item)}</li>`).join('');
         return `<div class="key-takeaways" role="region" aria-label="Key points">
             <h2 class="key-takeaways__title">Key points</h2>
@@ -1792,6 +1842,21 @@
                 headerTimestamp.textContent = relativeTime;
                 headerTimestamp.style.display = 'inline-block';
             }
+
+            // For X posts, inject attribution line and hide read time
+            if (isXPost) {
+                const readTimeEl = document.getElementById('article-read-time');
+                if (readTimeEl && readTimeEl.parentElement) {
+                    readTimeEl.parentElement.style.display = 'none';
+                }
+                const metaContainer = document.querySelector('.article-header-meta');
+                if (metaContainer) {
+                    const attrDiv = document.createElement('div');
+                    attrDiv.className = 'article-header-meta-item x-attribution';
+                    attrDiv.innerHTML = `<span class="article-header-meta-label">Source:</span><span>Originally posted on <a href="${escapeHtml(postXUrl)}" target="_blank" rel="noopener noreferrer">X</a></span>`;
+                    metaContainer.appendChild(attrDiv);
+                }
+            }
             
             // Update share buttons with proper earthquake format
             const shareUrl = `${SITE_URL}/article.html?id=${encodeURIComponent(articleId)}`;
@@ -1800,6 +1865,14 @@
             const isEarthquake = post.category === 'Earthquake' || post.event_type === 'earthquake' || post.source === 'USGS';
             const magnitude = post.magnitude || post.assets?.magnitude || null;
             const location = post.location_display || post.location || null;
+
+            // Detect imported X posts (not earthquakes) for "News Update" template
+            const postXUrl = post.x_url || post.link || '';
+            const isXPost = !isEarthquake && (postXUrl.includes('x.com') || postXUrl.includes('twitter.com'));
+            if (isXPost) {
+                document.body.classList.add('news-update');
+                document.documentElement.classList.add('news-update');
+            }
             
             // For earthquakes, use the proper format: "BREAKING: M___ Earthquake Near ___. #hashtags"
             let shareText = title;
@@ -1890,9 +1963,16 @@
                 secondary: secondary.map(s => s.substring(0, 80))
             });
             
+            // Pre-compute video URLs (needed to decide if video replaces hero image)
+            const earlyVideosRaw = [
+                ...(post.video_url || post.video || post.assets?.video_url ? [post.video_url || post.video || post.assets?.video_url] : []),
+                ...(post.videos || [])
+            ].filter(Boolean);
+            const hasVideoHero = earlyVideosRaw.some(u => u && isVideoUrl(u));
+
             // STEP 4: Render images (LOGIC ONLY - NO CSS)
-            // Render primary image ONCE if it exists
-            if (primary) {
+            // Render primary image ONCE — skip if video will be the hero
+            if (primary && !hasVideoHero) {
                 const absoluteImageUrl = ensureAbsoluteImageUrl(primary);
                 // Add retry logic for get-uploaded-image URLs that might have propagation delays
                 const isUploadedImage = absoluteImageUrl.includes('get-uploaded-image');
@@ -1929,7 +2009,7 @@
             }
             
             // Key takeaways after hero image
-            bodyHTML += buildKeyTakeawaysHTML(post);
+            bodyHTML += buildKeyTakeawaysHTML(post, isXPost);
             
             // Render secondary images ONLY if they exist and are different from primary
             if (secondary.length > 0) {
@@ -1947,7 +2027,6 @@
             }
 
             // Render videos (MP4, WebM, etc. - from admin upload or post data)
-            // Deduplicate: video_url/video/assets.video_url may also appear in post.videos
             const articleVideosRaw = [
                 ...(post.video_url || post.video || post.assets?.video_url ? [post.video_url || post.video || post.assets?.video_url] : []),
                 ...(post.videos || [])
@@ -1956,47 +2035,86 @@
                 .filter(u => u && isVideoUrl(u))
                 .map(u => ensureAbsoluteImageUrl(u))
                 .filter((url, i, arr) => arr.findIndex(u => normalizeUrl(u) === normalizeUrl(url)) === i);
-            if (videoUrls.length > 0 && !primary) {
-                // Video as hero when no primary image
-                const videoUrl = ensureAbsoluteImageUrl(videoUrls[0]);
-                bodyHTML += `<div class="article-media article-media-hero">
-                    <video src="${escapeHtml(videoUrl)}" controls style="width:100%;max-height:500px;border-radius:12px;" playsinline></video>
-                </div>`;
-            }
+
+            const xVideoLink = post.x_url || post.link || '';
+            const hasXVideoFallback = xVideoLink && (xVideoLink.includes('x.com') || xVideoLink.includes('twitter.com'));
+
             videoUrls.forEach((vUrl, idx) => {
-                if (idx === 0 && !primary) return; // Already rendered as hero
-                const absoluteVideoUrl = ensureAbsoluteImageUrl(vUrl);
-                bodyHTML += `<div class="article-media" style="margin-top: 1.5rem;">
-                    <video src="${escapeHtml(absoluteVideoUrl)}" controls style="width:100%;max-height:500px;border-radius:12px;" playsinline></video>
+                const posterAttr = primary ? ` poster="${escapeHtml(ensureAbsoluteImageUrl(primary))}"` : '';
+                const isHero = idx === 0;
+                const cls = isHero ? 'article-media article-media-hero' : 'article-media';
+                const marginStyle = isHero ? '' : ' style="margin-top: 1.5rem;"';
+                const fallbackHtml = hasXVideoFallback
+                    ? `'<div style="text-align:center;padding:2rem;"><p style="color:#666;margin-bottom:1rem;">Video could not be loaded</p><a href="${escapeHtml(xVideoLink)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;padding:10px 18px;background:#000;color:#fff;border-radius:8px;font-size:0.875rem;font-weight:600;text-decoration:none;font-family:Inter,sans-serif;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>Watch on X</a></div>'`
+                    : `'<p style="color:#666;padding:2rem;text-align:center;">Video could not be loaded</p>'`;
+
+                bodyHTML += `<div class="${cls}"${marginStyle}>
+                    <video src="${escapeHtml(vUrl)}"${posterAttr} controls style="width:100%;max-height:500px;border-radius:12px;" playsinline preload="metadata"
+                           onerror="this.parentElement.innerHTML=${fallbackHtml}"></video>
                 </div>`;
             });
             
-            // Add post text - preserve line breaks as paragraphs
-            bodyHTML += formatPostText(story);
+            // Add post text and source links
+            if (isXPost) {
+                // X post "News Update" body: strip t.co links, wrap in original-update section
+                const { cleaned: cleanedStory } = stripTcoLinks(story);
+                bodyHTML += '<section class="original-update">';
+                bodyHTML += '<h3 class="original-update__label">Original update</h3>';
+                bodyHTML += formatPostText(cleanedStory);
+                bodyHTML += '</section>';
 
-            // Source URLs extracted from X post entities
-            const sourceUrls = Array.isArray(post.source_urls) ? post.source_urls : [];
-            if (sourceUrls.length > 0) {
-                bodyHTML += '<div class="article-sources" style="margin-top: 1.5rem; padding: 1rem 1.25rem; background: #f8f9fa; border-left: 3px solid #4A90E2; border-radius: 4px;">';
-                bodyHTML += '<h4 style="margin: 0 0 0.5rem; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #666; font-family: Inter, sans-serif;">Sources</h4>';
-                sourceUrls.forEach(function(s) {
-                    const href = escapeHtml(typeof s === 'string' ? s : s.url);
-                    const label = escapeHtml(typeof s === 'string' ? s : (s.display || s.title || s.url));
-                    bodyHTML += '<a href="' + href + '" target="_blank" rel="noopener noreferrer" style="display: block; color: #4A90E2; font-size: 0.9rem; margin-bottom: 4px; word-break: break-all;">' + label + '</a>';
-                });
-                bodyHTML += '</div>';
-            }
+                // Source chips (already shown under "What we know" if present there)
+                const sourceUrls = Array.isArray(post.source_urls) ? post.source_urls : [];
+                if (sourceUrls.length > 0) {
+                    bodyHTML += '<div class="article-sources-chips">';
+                    const xLinkUrl = post.x_url || post.link;
+                    const chips = sourceUrls.map((s, i) => {
+                        const href = escapeHtml(typeof s === 'string' ? s : s.url);
+                        const label = typeof s === 'string' ? `Source ${i + 1}` : (s.display || s.title || `Source ${i + 1}`);
+                        return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="source-chip">${escapeHtml(label)}</a>`;
+                    });
+                    if (xLinkUrl) {
+                        chips.push(`<a href="${escapeHtml(xLinkUrl)}" target="_blank" rel="noopener noreferrer" class="source-chip source-chip--x">View on X</a>`);
+                    }
+                    bodyHTML += chips.join('');
+                    bodyHTML += '</div>';
+                }
 
-            // "View on X" link for X-sourced posts
-            const xUrl = post.x_url || post.link;
-            if (xUrl && (xUrl.includes('x.com') || xUrl.includes('twitter.com'))) {
-                bodyHTML += '<a href="' + escapeHtml(xUrl) + '" target="_blank" rel="noopener noreferrer" '
-                    + 'style="display: inline-flex; align-items: center; gap: 6px; margin-top: 1.5rem; padding: 10px 18px; '
-                    + 'background: #000; color: #fff; border-radius: 8px; font-size: 0.875rem; font-weight: 600; '
-                    + 'text-decoration: none; font-family: Inter, sans-serif; transition: opacity 0.15s;" '
-                    + 'onmouseover="this.style.opacity=\'0.85\'" onmouseout="this.style.opacity=\'1\'">'
-                    + '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>'
-                    + 'View on X</a>';
+                // Small "View on X" inline link
+                const xLinkUrl = post.x_url || post.link;
+                if (xLinkUrl) {
+                    bodyHTML += `<a href="${escapeHtml(xLinkUrl)}" target="_blank" rel="noopener noreferrer" class="view-on-x-link">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                        View original post on X
+                    </a>`;
+                }
+            } else {
+                // Standard article body
+                bodyHTML += formatPostText(story);
+
+                // Source URLs extracted from X post entities
+                const sourceUrls = Array.isArray(post.source_urls) ? post.source_urls : [];
+                if (sourceUrls.length > 0) {
+                    bodyHTML += '<div class="article-sources" style="margin-top: 1.5rem; padding: 1rem 1.25rem; background: #f8f9fa; border-left: 3px solid #4A90E2; border-radius: 4px;">';
+                    bodyHTML += '<h4 style="margin: 0 0 0.5rem; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #666; font-family: Inter, sans-serif;">Sources</h4>';
+                    sourceUrls.forEach(function(s) {
+                        const href = escapeHtml(typeof s === 'string' ? s : s.url);
+                        const label = escapeHtml(typeof s === 'string' ? s : (s.display || s.title || s.url));
+                        bodyHTML += '<a href="' + href + '" target="_blank" rel="noopener noreferrer" style="display: block; color: #4A90E2; font-size: 0.9rem; margin-bottom: 4px; word-break: break-all;">' + label + '</a>';
+                    });
+                    bodyHTML += '</div>';
+                }
+
+                // "View on X" link for X-sourced posts (non-update template)
+                const xUrl = post.x_url || post.link;
+                if (xUrl && (xUrl.includes('x.com') || xUrl.includes('twitter.com'))) {
+                    bodyHTML += '<a href="' + escapeHtml(xUrl) + '" target="_blank" rel="noopener noreferrer" '
+                        + 'style="display: inline-flex; align-items: center; gap: 6px; margin-top: 1.5rem; padding: 8px 0; '
+                        + 'color: #6B7280; font-size: 0.8125rem; font-weight: 500; '
+                        + 'text-decoration: none; font-family: Inter, system-ui, sans-serif; transition: color 0.15s; border-top: 1px solid rgba(0,0,0,0.08);" '
+                        + 'onmouseover="this.style.color=\'#3B8BF2\'" onmouseout="this.style.color=\'#6B7280\'">'
+                        + 'Originally posted on X &rarr;</a>';
+                }
             }
 
             // Check for coordinates in multiple places (lat/lon at top level, or in raw geometry, or in assets)
@@ -2060,9 +2178,11 @@
             bodyElement.innerHTML = bodyHTML;
             console.log('[ArticleLoader] Article body updated, total length:', bodyHTML.length);
 
-            // Mark first paragraph for lead/drop-cap styling
-            const firstP = bodyElement.querySelector('p');
-            if (firstP) firstP.classList.add('lead-paragraph');
+            // Mark first paragraph for lead/drop-cap styling (skip for X post updates)
+            if (!isXPost) {
+                const firstP = bodyElement.querySelector('p');
+                if (firstP) firstP.classList.add('lead-paragraph');
+            }
 
             // Heading IDs and table of contents (sidebar)
             buildTableOfContents(bodyElement);
@@ -2090,9 +2210,15 @@
                 }, 100);
             }
             
-            // Initialize comments
+            // Hide comments for X post updates
+            if (isXPost) {
+                const commentsSection = document.querySelector('.comments-section');
+                if (commentsSection) commentsSection.style.display = 'none';
+            }
+
+            // Initialize comments (skip for X posts)
             const commentsContainer = document.getElementById('article-comments');
-            if (commentsContainer) {
+            if (commentsContainer && !isXPost) {
                 // Normalize articleId for comments (handle usgs- prefix, post- prefix, etc.)
                 let commentArticleId = articleId;
                 if (articleId.startsWith('usgs-')) {
@@ -2164,8 +2290,15 @@
                 console.error('[ArticleLoader] Comments container not found!');
             }
             
-            // Load sidebar content
-            await loadSidebarContent(posts, post, articleId);
+            // Load sidebar content (hide sidebar entirely for X posts)
+            if (isXPost) {
+                const sidebar = document.querySelector('.article-sidebar');
+                if (sidebar) sidebar.style.display = 'none';
+                const tocWrap = document.getElementById('article-toc-wrap');
+                if (tocWrap) tocWrap.style.display = 'none';
+            } else {
+                await loadSidebarContent(posts, post, articleId);
+            }
             
             // Load more coverage
             loadMoreCoverage(posts, articleId);

@@ -8,7 +8,7 @@
   <!-- SEO -->
   <meta name="description" content="Noteworthy News delivers verified journalism, media literacy tools, and interactive fact-checking experiences. Think critically about the news.">
   <link rel="canonical" href="https://noteworthynews.co/">
-  <meta name="theme-color" content="#080E1A">
+  <meta name="theme-color" content="#0F1011">
 
   <!-- Open Graph -->
   <meta property="og:type" content="website">
@@ -34,10 +34,10 @@
 
   <!-- Critical above-the-fold styles -->
   <style>
-    :root{--color-bg:#080E1A;--color-text:rgba(240,242,245,.95);--header-height:3.25rem;--color-live:#EF4444}
+    :root{--color-bg:#0F1011;--color-text:rgba(240,242,245,.95);--header-height:3.25rem;--color-live:#EF4444}
     body{background:var(--color-bg);color:var(--color-text);margin:0;min-height:100vh}
-    .top-rule{height:3px;background:linear-gradient(90deg,var(--color-live),#3B8BF2 40%,#3B8BF2 60%,var(--color-live));position:fixed;top:0;left:0;right:0;z-index:101}
-    .site-header{position:sticky;top:3px;z-index:100;height:var(--header-height);background:rgba(8,14,26,.82);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(240,242,245,.05)}
+    .top-rule{height:2px;background:#3B8BF2;position:fixed;top:0;left:0;right:0;z-index:101}
+    .site-header{position:sticky;top:2px;z-index:100;height:var(--header-height);background:rgba(15,16,17,.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.05)}
   </style>
 
   <!-- Fonts -->
@@ -52,6 +52,10 @@
   <link rel="stylesheet" href="/v2/styles/layout.css">
   <link rel="stylesheet" href="/v2/styles/components.css">
 
+  
+  
+  
+  
   
   
   
@@ -125,11 +129,10 @@
             <span class="hero-timestamp" id="hero-time"></span>
           </div>
           <h1 class="hero-title">
-            News you can <span class="hero-accent">verify</span>.
+            News that's<br><span class="hero-accent">Noteworthy.</span>
           </h1>
           <p class="hero-subtitle">
-            Verified stories, real-time intelligence, and media literacy tools.
-            Understand the news. Don't just read it.
+            Verified stories and real-time intelligence. Understand the news, don't just read it.
           </p>
           <div class="hero-actions">
             <a class="btn btn-primary" href="#breaking">Read Latest</a>
@@ -160,11 +163,8 @@
     <section id="breaking" class="section">
       <div class="container">
         <div class="section-header" data-reveal>
-          <p class="section-label">// Breaking News</p>
-          <h2 class="section-title">Latest Developments</h2>
-          <p class="section-subtitle">
-            Verified breaking stories from around the world. Updated in real time.
-          </p>
+          <p class="section-label">Latest Developments</p>
+          <h2 class="section-title">Top Stories</h2>
         </div>
 
         <div class="filter-chips" id="breaking-filters" role="toolbar" aria-label="Filter stories"></div>
@@ -190,6 +190,19 @@
 
         <div class="section-cta" id="breaking-cta">
           <button class="btn btn-secondary" id="load-more-btn" type="button" hidden>Load More</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── Wire Feed ────────────────────────────── -->
+    <section class="section wire-section" hidden>
+      <div class="container">
+        <div class="section-header" data-reveal>
+          <p class="section-label">Wire</p>
+          <h2 class="section-title">Latest Updates</h2>
+        </div>
+        <div class="wire-container" id="wire-container"></div>
+        <div class="section-cta">
           <a class="btn btn-secondary" href="/archive.html">View Full Archive</a>
         </div>
       </div>
@@ -199,7 +212,7 @@
     <section id="alerts" class="section section-alt">
       <div class="container">
         <div class="section-header" data-reveal>
-          <p class="section-label">// Real-Time Alerts</p>
+          <p class="section-label">Real-Time Alerts</p>
           <h2 class="section-title">Verified Data Feeds</h2>
           <p class="section-subtitle">
             Earthquakes, weather, aviation, and maritime alerts from official sources.
@@ -258,7 +271,7 @@
     <section id="about" class="section section-alt">
       <div class="container">
         <div class="section-header text-center" data-reveal>
-          <p class="section-label">// Why Noteworthy</p>
+          <p class="section-label">Why Noteworthy</p>
           <h2 class="section-title">Built for critical thinkers.</h2>
           <p class="section-subtitle" style="margin-left:auto;margin-right:auto;">
             In a world of noise, we verify the signal. Every story, every source, every claim.
@@ -312,7 +325,7 @@
     <section id="experiences" class="section">
       <div class="container">
         <div class="section-header" data-reveal>
-          <p class="section-label">// Interactive</p>
+          <p class="section-label">Interactive</p>
           <h2 class="section-title">Games & Tools</h2>
           <p class="section-subtitle">
             Sharpen your media literacy with interactive challenges.
@@ -381,7 +394,7 @@
     <section id="subscribe" class="section">
       <div class="container container-narrow text-center">
         <div class="section-header" data-reveal>
-          <p class="section-label">// Subscribe</p>
+          <p class="section-label">Subscribe</p>
           <h2 class="section-title">Weekly Intelligence Brief</h2>
           <p class="section-subtitle">
             The stories that matter. Fact-checked and delivered to your inbox.
@@ -403,7 +416,7 @@
         <p class="newsletter-hint">Free. No spam. Unsubscribe anytime.</p>
 
         <div class="email-preview">
-          <p class="email-preview-label">// What you'll receive</p>
+          <p class="email-preview-label">What you'll receive</p>
           <div class="email-preview-window">
             <div class="email-preview-chrome">
               <div class="email-preview-dots" aria-hidden="true">
