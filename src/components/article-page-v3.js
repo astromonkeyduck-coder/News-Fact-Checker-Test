@@ -26,6 +26,23 @@
     return { template, isXPost, isEarthquake, isVerifiedEvent };
   }
 
+  const BREAKING_PILL = { label: 'Breaking', cls: 'nn-pill--breaking' };
+
+  function titleHasBreakingPrefix(title) {
+    return /^BREAKING\s*(?:NEWS)?\s*:?\s*/i.test(String(title || '').trim());
+  }
+
+  function stripBreakingPrefix(title) {
+    return String(title || '')
+      .replace(/^BREAKING\s*(?:NEWS)?\s*:?\s*/i, '')
+      .trim();
+  }
+
+  function categoryImpliesBreaking(post) {
+    const cat = (post.category || post.urgency || '').toUpperCase();
+    return cat.includes('BREAKING') || post.breaking === true;
+  }
+
   function getUrgencyPill(post) {
     const cat = (post.category || post.urgency || '').toUpperCase();
     const map = [
@@ -40,6 +57,34 @@
       }
     }
     return null;
+  }
+
+  /** One visible breaking indicator: badge OR title prefix, never both. */
+  function resolveArticlePresentation(post, rawTitle) {
+    const title = String(rawTitle || '').trim();
+    const pillFromCategory = getUrgencyPill(post);
+    const isBreaking =
+      categoryImpliesBreaking(post) ||
+      titleHasBreakingPrefix(title) ||
+      pillFromCategory?.cls === 'nn-pill--breaking';
+
+    let urgencyPill = pillFromCategory;
+    if (isBreaking) {
+      urgencyPill = BREAKING_PILL;
+    }
+
+    const displayTitle = isBreaking ? stripBreakingPrefix(title) || title : title;
+
+    return { displayTitle, urgencyPill, isBreaking };
+  }
+
+  function getToolbarLabel(post, classification, presentation) {
+    if (classification.isXPost) return 'News update';
+    if (classification.isEarthquake) return 'Earthquake';
+    if (presentation.isBreaking) return 'News';
+    const cat = (post.category || 'News').trim();
+    if (/breaking/i.test(cat)) return 'News';
+    return cat;
   }
 
   function formatPublishedFull(dateString, formatDate) {
@@ -303,15 +348,15 @@
   function buildBreakingBriefHTML(post, ctx) {
     const { title, story, datePosted, articleId, helpers } = ctx;
     const { escapeHtml, formatPostText, stripTcoLinks, formatPublishedFull, formatDate } = helpers;
-    const pill = getUrgencyPill(post);
+    const { displayTitle, urgencyPill } = resolveArticlePresentation(post, title);
     const postXUrl = post.x_url || post.link || '';
     const published = formatPublishedFull(datePosted, formatDate);
 
     let html = '<header class="nn-header">';
-    if (pill) {
-      html += `<span class="nn-pill ${pill.cls}">${escapeHtml(pill.label)}</span>`;
+    if (urgencyPill) {
+      html += `<span class="nn-pill ${urgencyPill.cls}">${escapeHtml(urgencyPill.label)}</span>`;
     }
-    html += `<h1 class="nn-headline" id="article-heading" tabindex="-1">${escapeHtml(title)}</h1>`;
+    html += `<h1 class="nn-headline" id="article-heading" tabindex="-1">${escapeHtml(displayTitle)}</h1>`;
     html += `<div class="nn-meta nn-meta--brief">`;
     html += `<span>${escapeHtml(published)}</span>`;
     html += `<span class="nn-meta__sep">·</span>`;
@@ -324,7 +369,7 @@
     }
     html += '</header>';
 
-    html += buildMediaHTML(post, title, helpers);
+    html += buildMediaHTML(post, displayTitle, helpers);
     html += buildWhatWeKnowHTML(post, helpers);
 
     const { cleaned } = stripTcoLinks(story);
@@ -347,20 +392,18 @@
       calculateReadTime,
       buildSourceChipsHTML,
     } = helpers;
-    const category = post.category || 'News';
+    const { displayTitle, urgencyPill } = resolveArticlePresentation(post, title);
     const dek = getDek(post);
     const author = post.author || 'Noteworthy News';
     const published = formatPublishedFull(datePosted, formatDate);
     const updatedAt = post.updated_at || post.dateModified;
     const readMin = calculateReadTime(story);
-    const pill = getUrgencyPill(post);
 
     let html = '<header class="nn-header">';
-    html += `<span class="nn-toolbar__category" id="category-chip">${escapeHtml(category)}</span>`;
-    if (pill) {
-      html += `<span class="nn-pill ${pill.cls}" style="margin-left:0.5rem;">${escapeHtml(pill.label)}</span>`;
+    if (urgencyPill) {
+      html += `<span class="nn-pill ${urgencyPill.cls}">${escapeHtml(urgencyPill.label)}</span>`;
     }
-    html += `<h1 class="nn-headline" id="article-heading" tabindex="-1">${escapeHtml(title)}</h1>`;
+    html += `<h1 class="nn-headline" id="article-heading" tabindex="-1">${escapeHtml(displayTitle)}</h1>`;
     if (dek) {
       html += `<p class="nn-dek">${escapeHtml(dek)}</p>`;
     }
@@ -380,7 +423,7 @@
     html += `<span id="article-read-time">${readMin} min read</span>`;
     html += '</div></header>';
 
-    html += buildMediaHTML(post, title, helpers);
+    html += buildMediaHTML(post, displayTitle, helpers);
 
     const bodyClass = post.lead_paragraph ? 'nn-body article-body lead-cap' : 'nn-body article-body';
     html += `<div class="${bodyClass}" id="article-body">`;
@@ -406,6 +449,10 @@
   global.ArticlePageV3 = {
     classify,
     getUrgencyPill,
+    resolveArticlePresentation,
+    getToolbarLabel,
+    stripBreakingPrefix,
+    titleHasBreakingPrefix,
     formatPublishedFull,
     buildSourceChipsHTML,
     resolveImages,

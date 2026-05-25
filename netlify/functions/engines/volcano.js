@@ -10,6 +10,7 @@ const { normalizeAirspaceSeverity, cleanLocation } = require('../lib/normalize')
 const { createPostFromEvent } = require('../lib/createPost');
 const { sendEventAlert } = require('../lib/sendAlert');
 const { generateVolcanoImage } = require('../generate-volcano-image');
+const { getVolcanoAlertImageUrl } = require('../lib/volcanoAlertImages');
 const Parser = require('rss-parser');
 
 // USGS Volcano Notification Service (VNS) - uses RSS feeds
@@ -173,18 +174,22 @@ async function processVolcanoAlert(alert, logger) {
   const locationDisplay = cleanLocation(location);
   const canonicalId = buildCanonicalId('volcano', alertId);
   
-  // Generate branded image before storing
-  let imageUrl = null;
-  try {
-    const eventIdForImage = canonicalId.replace('volcano:', '');
-    imageUrl = await generateVolcanoImage(
-      volcanoName, alertLevel,
-      alert.lat || null, alert.lon || null,
-      eventIdForImage
-    );
-    logger.info('Volcano image generated', { canonical_id: canonicalId, imageUrl });
-  } catch (imgErr) {
-    logger.warn('Failed to generate volcano image (continuing without)', imgErr.message || imgErr);
+  // Use curated photo for known volcanoes; otherwise generate branded template image.
+  let imageUrl = getVolcanoAlertImageUrl(volcanoName);
+  if (!imageUrl) {
+    try {
+      const eventIdForImage = canonicalId.replace('volcano:', '');
+      imageUrl = await generateVolcanoImage(
+        volcanoName, alertLevel,
+        alert.lat || null, alert.lon || null,
+        eventIdForImage
+      );
+      logger.info('Volcano image generated', { canonical_id: canonicalId, imageUrl });
+    } catch (imgErr) {
+      logger.warn('Failed to generate volcano image (continuing without)', imgErr.message || imgErr);
+    }
+  } else {
+    logger.info('Using curated volcano alert image', { canonical_id: canonicalId, volcanoName, imageUrl });
   }
 
   const event = {

@@ -13,12 +13,8 @@
   --nn-surface: #ffffff;
   --nn-border: #e8eaed;
   --nn-border-strong: #d0d4da;
-  --nn-accent: #0f234a;
-  --nn-accent-link: #1a4d8f;
-  --nn-pill-breaking: #b91c1c;
-  --nn-pill-watch: #b45309;
-  --nn-pill-update: #1d4ed8;
-  --nn-pill-developing: #6d28d9;
+  --nn-accent: #0b0d10;
+  --nn-accent-link: #0b0d10;
   --nn-radius: 8px;
   --nn-radius-lg: 12px;
   --nn-shadow-sm: 0 1px 3px rgba(11, 13, 16, 0.06);
@@ -98,10 +94,10 @@ body.article-page {
 .nn-toolbar__category {
   font-family: var(--nn-font-ui);
   font-size: var(--text-xs, 0.75rem);
-  font-weight: 700;
-  letter-spacing: 0.1em;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--nn-accent);
+  color: var(--nn-ink-muted);
 }
 
 .nn-toolbar__controls {
@@ -128,7 +124,7 @@ body.article-page {
 }
 
 .nn-toolbar .control-btn:focus-visible {
-  outline: 2px solid var(--nn-accent-link);
+  outline: 2px solid var(--nn-ink);
   outline-offset: 2px;
 }
 
@@ -146,15 +142,22 @@ body.article-page {
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  padding: 4px 10px;
-  border-radius: 4px;
+  padding: 3px 10px;
+  border-radius: 2px;
   margin-bottom: var(--space-md, 1rem);
+  border: 1px solid var(--nn-ink);
+  background: var(--nn-ink);
+  color: var(--nn-surface);
 }
 
-.nn-pill--breaking { background: #fef2f2; color: var(--nn-pill-breaking); }
-.nn-pill--watch { background: #fffbeb; color: var(--nn-pill-watch); }
-.nn-pill--update { background: #eff6ff; color: var(--nn-pill-update); }
-.nn-pill--developing { background: #f5f3ff; color: var(--nn-pill-developing); }
+.nn-pill--breaking,
+.nn-pill--watch,
+.nn-pill--update,
+.nn-pill--developing {
+  border-color: var(--nn-ink);
+  background: var(--nn-ink);
+  color: var(--nn-surface);
+}
 
 .nn-headline {
   font-family: var(--nn-font-head);
@@ -191,12 +194,13 @@ body.article-page {
 }
 
 .nn-meta a {
-  color: var(--nn-accent-link);
-  text-decoration: none;
+  color: var(--nn-ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .nn-meta a:hover {
-  text-decoration: underline;
+  color: var(--nn-ink-muted);
 }
 
 .nn-meta--brief .nn-meta__x {
@@ -276,9 +280,9 @@ body.article-page {
   max-width: var(--nn-content-max);
   margin-bottom: var(--space-xl, 2rem);
   padding: var(--space-lg, 1.5rem);
-  border: 1px solid var(--nn-border);
-  border-radius: var(--nn-radius-lg);
-  background: #fafbfc;
+  border: 1px solid var(--nn-border-strong);
+  border-radius: var(--nn-radius);
+  background: var(--nn-surface);
 }
 
 .nn-module__title {
@@ -287,7 +291,7 @@ body.article-page {
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--nn-accent);
+  color: var(--nn-ink-muted);
   margin: 0 0 var(--space-md, 1rem);
 }
 
@@ -338,6 +342,18 @@ body.article-page {
   color: var(--nn-ink);
 }
 
+.nn-body a,
+.article-body a {
+  color: var(--nn-ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.nn-body a:hover,
+.article-body a:hover {
+  color: var(--nn-ink-muted);
+}
+
 .nn-body p,
 .article-body p {
   margin: 0 0 1.25em;
@@ -377,7 +393,7 @@ body.article-page {
 .article-body blockquote {
   margin: 1.5em 0;
   padding-left: 1.25em;
-  border-left: 3px solid var(--nn-accent);
+  border-left: 2px solid var(--nn-ink);
   color: var(--nn-ink-muted);
   font-style: italic;
 }
@@ -435,12 +451,12 @@ body.article-page {
 }
 
 .nn-chip:hover {
-  border-color: var(--nn-accent-link);
-  background: #f8fafc;
+  border-color: var(--nn-ink);
+  background: #f5f5f5;
 }
 
 .nn-chip:focus-visible {
-  outline: 2px solid var(--nn-accent-link);
+  outline: 2px solid var(--nn-ink);
   outline-offset: 2px;
 }
 
@@ -571,8 +587,8 @@ body.article-page {
 
 #article-toc .article-toc__item:hover,
 #article-toc .article-toc__item.is-active {
-  color: var(--nn-accent-link);
-  border-left-color: var(--nn-accent-link);
+  color: var(--nn-ink);
+  border-left-color: var(--nn-ink);
 }
 
 #article-toc .article-toc__item--h3 {
@@ -743,7 +759,7 @@ body.article-page {
 .reading-progress-bar {
   height: 100%;
   width: 0%;
-  background: var(--nn-accent);
+  background: var(--nn-ink);
   transition: width 0.1s ease-out;
 }
 

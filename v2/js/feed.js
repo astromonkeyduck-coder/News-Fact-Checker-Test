@@ -6,6 +6,22 @@
  */
 
 import { UISounds } from './ui-sounds.js';
+import {
+  cancelVideoFade,
+  ensureVideoPlaying,
+  ensureVideoSrc,
+  fadeVideoIn,
+  fadeVideoOut,
+  HERO_FADE_IN_MS,
+  DEFAULT_FADE_IN_MS,
+  DEFAULT_FADE_OUT_MS,
+} from './video-audio.js';
+import {
+  buildVideoToolbarHTML,
+  initVideoToolbar,
+  updateToolbarState,
+  getPreferredVolume,
+} from './video-controls.js';
 
 const FEED_API = '/.netlify/functions/posts-read';
 const FETCH_LIMIT = 100;
@@ -17,9 +33,6 @@ const ENGINE_CATEGORIES = new Set([
   'Earthquake', 'Weather Alert', 'Volcano Alert',
   'Maritime Alert', 'Airspace Alert', 'Travel Advisory',
 ]);
-
-const MUTED_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>';
-const UNMUTED_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>';
 
 function isLowMagEarthquake(post) {
   const cat = (post.category || '').toLowerCase();
@@ -72,8 +85,17 @@ function getPostTitle(post) {
   return first.length <= 140 ? first : first.slice(0, 137) + '…';
 }
 
+function getVolcanoAlertFallbackImage(post) {
+  const cat = String(post.category || '').toLowerCase();
+  const title = String(post.title || post.text || post.story || '').toLowerCase();
+  if (!cat.includes('volcano') && !title.includes('volcano')) return null;
+  if (title.includes('kilauea')) return '/assets/alerts/kilauea-volcano.jpg';
+  if (title.includes('great sitkin')) return '/assets/alerts/great-sitkin-volcano.jpg';
+  return null;
+}
+
 function getPostImage(post) {
-  return post.imageUrl || post.image_url || post.image || post.primary_image_url || post.mediaUrl || post.media_url || null;
+  return post.imageUrl || post.image_url || post.image || post.primary_image_url || post.mediaUrl || post.media_url || getVolcanoAlertFallbackImage(post) || null;
 }
 
 function getPostDate(post) {
@@ -109,6 +131,27 @@ function shortNum(n) {
 function isBreakingText(post) {
   const t = (post.text || post.title || post.story || '').toUpperCase();
   return t.startsWith('BREAKING');
+}
+
+function normalizeFeaturedTitle(post) {
+  let title = getPostTitle(post);
+  title = title.replace(/^(?:BREAKING|VIDEO|WATCH|UPDATE|DEVELOPING)\s*:?\s*/i, '').trim();
+  return title || getPostTitle(post);
+}
+
+function shouldShowFeaturedExcerpt(title, excerpt) {
+  if (!excerpt || !title) return false;
+  const norm = (s) =>
+    s
+      .toLowerCase()
+      .replace(/[^\w\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  const a = norm(title);
+  const b = norm(excerpt);
+  if (!b || a === b) return false;
+  if (b.startsWith(a) || a.startsWith(b.slice(0, Math.min(a.length, 72)))) return false;
+  return true;
 }
 
 function badgeClass(post) {
@@ -150,61 +193,244 @@ function getVideoUrl(post) {
   return raw.replace('https://video.twimg.com/', '/media/video/');
 }
 
+function isHeroFeaturedVideo(video) {
+  return !!video.closest('.featured-story-wrap');
+}
+
+function isUserMuted(video) {
+  return video.dataset.userMuted === 'true';
+}
+
+function updateMuteButton(video) {
+  updateToolbarState(video);
+}
+
+function loadAndPlay(video) {
+  ensureVideoSrc(video);
+  if (video.readyState >= 2) {
+    return ensureVideoPlaying(video);
+  }
+  return new Promise((resolve) => {
+    video.addEventListener('canplay', () => {
+      ensureVideoPlaying(video).then(resolve).catch(resolve);
+    }, { once: true });
+  });
+}
+
+function playVideoWithSound(video) {
+  const fadeIn = () => {
+    if (isUserMuted(video)) return;
+    const target = getPreferredVolume();
+    fadeVideoIn(video, { duration: HERO_FADE_IN_MS, targetVolume: target, onComplete: () => updateMuteButton(video) });
+  };
+
+  video.muted = false;
+  video.volume = 0;
+  const attempt = video.play();
+  if (!attempt) {
+    fadeIn();
+    return;
+  }
+  attempt.then(fadeIn).catch(() => {
+    video.muted = true;
+    video.volume = 0;
+    video.play().catch(() => {});
+    const unmuteOnGesture = () => {
+      video.muted = false;
+      video.play().then(fadeIn).catch(() => {});
+    };
+    document.addEventListener('click', unmuteOnGesture, { once: true, passive: true });
+    document.addEventListener('touchstart', unmuteOnGesture, { once: true, passive: true });
+    document.addEventListener('scroll', unmuteOnGesture, { once: true, passive: true });
+  });
+}
+
+let _videoObserver = null;
+const _videoVisibility = new Map();
+let _audibleVideo = null;
+
+function setVideoAudible(video, { fadeInMs = DEFAULT_FADE_IN_MS } = {}) {
+  if (!video || isUserMuted(video)) return;
+  if (_audibleVideo && _audibleVideo !== video) {
+    fadeVideoOut(_audibleVideo, { pause: false, resetMuted: true, duration: DEFAULT_FADE_OUT_MS });
+  }
+  _audibleVideo = video;
+  loadAndPlay(video).then(() => {
+    fadeVideoIn(video, {
+      duration: fadeInMs,
+      targetVolume: getPreferredVolume(),
+      onComplete: () => updateMuteButton(video),
+    });
+  });
+}
+
+function silenceVideo(video, { pause = true } = {}) {
+  if (!video) return;
+  cancelVideoFade(video);
+  fadeVideoOut(video, {
+    duration: DEFAULT_FADE_OUT_MS,
+    pause,
+    resetMuted: true,
+    onComplete: () => {
+      if (_audibleVideo === video) _audibleVideo = null;
+      updateMuteButton(video);
+    },
+  });
+}
+
+function syncMobileAudible() {
+  const visible = [..._videoVisibility.entries()]
+    .filter(([, ratio]) => ratio > 0)
+    .sort((a, b) => b[1] - a[1]);
+
+  const heroEntry = visible.find(([v]) => isHeroFeaturedVideo(v));
+  if (heroEntry) {
+    for (const [video] of visible) {
+      if (!isHeroFeaturedVideo(video)) silenceVideo(video, { pause: false });
+    }
+    return;
+  }
+
+  const winner = visible[0]?.[0];
+
+  for (const [video] of visible) {
+    if (video === winner) {
+      if (!isUserMuted(video)) setVideoAudible(video);
+    } else {
+      silenceVideo(video, { pause: false });
+    }
+  }
+
+  if (!winner && _audibleVideo) {
+    silenceVideo(_audibleVideo, { pause: false });
+  }
+}
+
+function handleVideoEnter(video, isMobile) {
+  const isHero = isHeroFeaturedVideo(video);
+
+  if (isHero) {
+    loadAndPlay(video).then(() => playVideoWithSound(video));
+    return;
+  }
+
+  loadAndPlay(video).then(() => {
+    video.volume = 0;
+    video.muted = true;
+    if (!isMobile) updateMuteButton(video);
+  });
+}
+
+function handleVideoLeave(video, isMobile) {
+  if (isMobile && _audibleVideo === video) _audibleVideo = null;
+  silenceVideo(video, { pause: true });
+}
+
+function bindVideoControls(video) {
+  if (video.dataset.videoBound === 'true') return;
+  video.dataset.videoBound = 'true';
+  video.volume = 0;
+  video.muted = true;
+
+  if (!isHeroFeaturedVideo(video)) {
+    video.addEventListener('mouseenter', () => {
+      if (isUserMuted(video)) return;
+      if (_videoVisibility.get(video) <= 0) return;
+      loadAndPlay(video).then(() => {
+        fadeVideoIn(video, {
+          duration: DEFAULT_FADE_IN_MS,
+          targetVolume: getPreferredVolume(),
+          onComplete: () => updateMuteButton(video),
+        });
+      });
+    });
+    video.addEventListener('mouseleave', () => {
+      fadeVideoOut(video, {
+        duration: DEFAULT_FADE_OUT_MS,
+        pause: false,
+        resetMuted: true,
+        onComplete: () => updateMuteButton(video),
+      });
+    });
+  }
+
+  initVideoToolbar(video, {
+    isHero: isHeroFeaturedVideo(video),
+    onMuteClick: (_e, v) => {
+      const willMute = !isUserMuted(v);
+      v.dataset.userMuted = willMute ? 'true' : 'false';
+      if (willMute) {
+        cancelVideoFade(v);
+        fadeVideoOut(v, {
+          pause: false,
+          resetMuted: true,
+          onComplete: () => updateMuteButton(v),
+        });
+        if (_audibleVideo === v) _audibleVideo = null;
+      } else {
+        loadAndPlay(v).then(() => {
+          fadeVideoIn(v, {
+            targetVolume: getPreferredVolume(),
+            onComplete: () => updateMuteButton(v),
+          });
+          _audibleVideo = v;
+        });
+      }
+    },
+  });
+}
+
 function playVisibleVideos() {
+  if (_videoObserver) {
+    _videoObserver.disconnect();
+    _videoObserver = null;
+  }
+  _videoVisibility.clear();
+  _audibleVideo = null;
+
   const videos = document.querySelectorAll('.post-card-video video, .featured-story-image video');
   if (!videos.length) return;
 
-  const isMobile = window.matchMedia('(max-width: 767px)').matches;
+  _videoObserver = new IntersectionObserver((entries) => {
+    const isMobile = window.matchMedia('(max-width: 767px)').matches;
+    let needsMobileSync = false;
 
-  const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       const video = entry.target;
-      const btn = video.parentElement.querySelector('.video-mute-btn');
-      if (entry.isIntersecting) {
-        if (!video.src && video.dataset.src) {
-          video.src = video.dataset.src;
-          video.load();
-        }
-        video.addEventListener('canplay', () => video.play().catch(() => {}), { once: true });
-        if (video.readyState >= 2) video.play().catch(() => {});
-        if (isMobile) video.muted = false;
-        if (btn) btn.innerHTML = video.muted ? MUTED_SVG : UNMUTED_SVG;
-      } else {
-        video.pause();
-        if (isMobile) video.muted = true;
-        if (btn) btn.innerHTML = MUTED_SVG;
+      const wasVisible = (_videoVisibility.get(video) || 0) > 0;
+      const ratio = entry.isIntersecting ? entry.intersectionRatio : 0;
+      _videoVisibility.set(video, ratio);
+
+      if (entry.isIntersecting && !wasVisible) {
+        handleVideoEnter(video, isMobile);
+        if (isMobile) needsMobileSync = true;
+      } else if (!entry.isIntersecting && wasVisible) {
+        handleVideoLeave(video, isMobile);
+        if (isMobile) needsMobileSync = true;
+      } else if (entry.isIntersecting && isMobile) {
+        needsMobileSync = true;
       }
     });
-  }, { threshold: 0.5 });
+
+    if (needsMobileSync) syncMobileAudible();
+  }, { threshold: [0, 0.25, 0.5, 0.75, 1] });
 
   videos.forEach(video => {
-    video.muted = true;
-    observer.observe(video);
-
-    video.addEventListener('mouseenter', () => { video.muted = false; });
-    video.addEventListener('mouseleave', () => { video.muted = true; });
-
-    const btn = video.parentElement.querySelector('.video-mute-btn');
-    if (btn) {
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        video.muted = !video.muted;
-        btn.innerHTML = video.muted ? MUTED_SVG : UNMUTED_SVG;
-        btn.setAttribute('aria-label', video.muted ? 'Unmute' : 'Mute');
-      });
-    }
+    _videoVisibility.set(video, 0);
+    bindVideoControls(video);
+    _videoObserver.observe(video);
   });
 }
 
 function renderCard(post, large) {
-  const title = getPostTitle(post);
+  const title = normalizeFeaturedTitle(post);
   const image = getPostImage(post);
   const date = formatDate(getPostDate(post));
   const source = post.source || '';
   const url = articleUrl(post);
   const excerpt = (post.text || post.content || post.Content || '').replace(/<[^>]*>/g, '').trim();
   const short = excerpt.length > 160 ? excerpt.slice(0, 157) + '…' : excerpt;
+  const showExcerpt = shouldShowFeaturedExcerpt(title, short);
   const hasVideo = isVideoPost(post);
   const smart = getSmartLabel(post);
 
@@ -216,7 +442,7 @@ function renderCard(post, large) {
 
   let mediaHtml = '';
   if (videoSrc) {
-    mediaHtml = `<div class="post-card-image post-card-video"><video data-src="${esc(videoSrc)}" muted loop playsinline disablepictureinpicture preload="none" poster="${image ? esc(image) : ''}"></video><button class="video-mute-btn" aria-label="Unmute">${MUTED_SVG}</button></div>`;
+    mediaHtml = `<div class="post-card-image post-card-video"><video data-src="${esc(videoSrc)}" muted loop playsinline disablepictureinpicture preload="none" poster="${image ? esc(image) : ''}"></video>${buildVideoToolbarHTML()}</div>`;
   } else if (image) {
     mediaHtml = `<div class="post-card-image"><img src="${esc(image)}" alt="" loading="lazy" decoding="async" onerror="this.parentElement.classList.add('post-card-image--broken')"></div>`;
   }
@@ -227,7 +453,7 @@ function renderCard(post, large) {
       <div class="post-card-body">
         ${smart ? `<span class="badge ${smart.cls}">${esc(smart.label)}</span>` : ''}
         <h3 class="post-card-title">${esc(title)}</h3>
-        ${short ? `<p class="post-card-excerpt">${esc(short)}</p>` : ''}
+        ${showExcerpt ? `<p class="post-card-excerpt">${esc(short)}</p>` : ''}
         <div class="post-card-meta">
           ${source ? `<span class="post-card-source">${esc(source)}</span>` : ''}
           ${date ? `<time class="post-card-date">${esc(date)}</time>` : ''}
@@ -237,12 +463,13 @@ function renderCard(post, large) {
 }
 
 function renderFeatured(post) {
-  const title = getPostTitle(post);
+  const title = normalizeFeaturedTitle(post);
   const image = getPostImage(post);
   const date = formatDate(getPostDate(post));
   const url = articleUrl(post);
   const excerpt = (post.text || post.content || '').replace(/<[^>]*>/g, '').trim();
   const short = excerpt.length > 180 ? excerpt.slice(0, 177) + '…' : excerpt;
+  const showExcerpt = shouldShowFeaturedExcerpt(title, short);
   const isBreaking = isBreakingText(post);
   const xLink = getXUrl(post);
   const hasVideo = isVideoPost(post);
@@ -251,7 +478,7 @@ function renderFeatured(post) {
 
   let featuredMedia = '';
   if (videoSrc) {
-    featuredMedia = `<div class="featured-story-image post-card-video"><video data-src="${esc(videoSrc)}" muted loop playsinline disablepictureinpicture preload="none" poster="${image ? esc(image) : ''}"></video></div>`;
+    featuredMedia = `<div class="featured-story-image post-card-video"><video data-src="${esc(videoSrc)}" data-hero-featured loop playsinline disablepictureinpicture preload="auto" poster="${image ? esc(image) : ''}"></video>${buildVideoToolbarHTML()}</div>`;
   } else if (image) {
     featuredMedia = `<div class="featured-story-image"><img src="${esc(image)}" alt="" loading="lazy" decoding="async" onerror="this.parentElement.classList.add('post-card-image--broken')"></div>`;
   }
@@ -265,7 +492,7 @@ function renderFeatured(post) {
           ${date ? `<time class="featured-story-date">${esc(date)}</time>` : ''}
         </div>
         <h2 class="featured-story-title">${esc(title)}</h2>
-        ${short ? `<p class="featured-story-excerpt">${esc(short)}</p>` : ''}
+        ${showExcerpt ? `<p class="featured-story-excerpt">${esc(short)}</p>` : ''}
         ${xLink ? `<span class="featured-story-source" data-href="${esc(xLink)}" onclick="event.preventDefault();event.stopPropagation();window.open(this.dataset.href,'_blank');" role="link" tabindex="0">Originally posted on X</span>` : ''}
       </div>
     </a>`;

@@ -367,10 +367,14 @@
         }
 
         const { isXPost, isEarthquake } = classification;
-        const title = post.title || post.story || post.text || 'Breaking News Story';
+        const rawTitle = post.title || post.story || post.text || 'Breaking News Story';
         const story = post.story || post.text || post.title || '';
         const datePosted = post.datePosted || post.createdAt || post.created_at || new Date().toISOString();
         const category = post.category || 'Breaking News';
+        const presentation = v3.resolveArticlePresentation
+            ? v3.resolveArticlePresentation(post, rawTitle)
+            : { displayTitle: rawTitle, urgencyPill: null, isBreaking: false };
+        const title = presentation.displayTitle || rawTitle;
 
         const helpers = getV3Helpers();
         const ctx = {
@@ -393,7 +397,11 @@
 
         const toolbarCat = document.getElementById('toolbar-category');
         if (toolbarCat) {
-            toolbarCat.textContent = isXPost ? 'News update' : category;
+            toolbarCat.textContent = v3.getToolbarLabel
+                ? v3.getToolbarLabel(post, classification, presentation)
+                : isXPost
+                  ? 'News update'
+                  : category;
         }
 
         const bodyElement = document.getElementById('article-body');
@@ -1959,6 +1967,14 @@
                        post.image || 
                        post.images?.[0] || 
                        null;
+
+            if (!image) {
+                const haystack = `${title} ${category}`.toLowerCase();
+                if (haystack.includes('volcano')) {
+                    if (haystack.includes('kilauea')) image = '/assets/alerts/kilauea-volcano.jpg';
+                    else if (haystack.includes('great sitkin')) image = '/assets/alerts/great-sitkin-volcano.jpg';
+                }
+            }
             
             // If image is a get-uploaded-image URL, ensure it's absolute
             if (image && image.includes('get-uploaded-image')) {
