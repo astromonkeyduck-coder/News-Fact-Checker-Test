@@ -176,6 +176,17 @@ function playVisibleVideos() {
 
     video.addEventListener('mouseenter', () => { video.muted = false; });
     video.addEventListener('mouseleave', () => { video.muted = true; });
+
+    const btn = video.parentElement.querySelector('.video-mute-btn');
+    if (btn) {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        video.muted = !video.muted;
+        btn.innerHTML = video.muted ? MUTED_SVG : UNMUTED_SVG;
+        btn.setAttribute('aria-label', video.muted ? 'Unmute' : 'Mute');
+      });
+    }
   });
 }
 
@@ -198,7 +209,7 @@ function renderCard(post, large) {
 
   let mediaHtml = '';
   if (videoSrc) {
-    mediaHtml = `<div class="post-card-image post-card-video"><video data-src="${esc(videoSrc)}" muted loop playsinline disablepictureinpicture preload="none" poster="${image ? esc(image) : ''}"></video><button class="video-mute-btn" aria-label="Unmute" onclick="event.preventDefault();event.stopPropagation();const v=this.parentElement.querySelector('video');v.muted=!v.muted;this.innerHTML=v.muted?'${MUTED_SVG}':'${UNMUTED_SVG}';this.setAttribute('aria-label',v.muted?'Unmute':'Mute')"></button></div>`;
+    mediaHtml = `<div class="post-card-image post-card-video"><video data-src="${esc(videoSrc)}" muted loop playsinline disablepictureinpicture preload="none" poster="${image ? esc(image) : ''}"></video><button class="video-mute-btn" aria-label="Unmute">${MUTED_SVG}</button></div>`;
   } else if (image) {
     mediaHtml = `<div class="post-card-image"><img src="${esc(image)}" alt="" loading="lazy" decoding="async" onerror="this.parentElement.classList.add('post-card-image--broken')"></div>`;
   }
