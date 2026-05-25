@@ -18,7 +18,18 @@ const ENGINE_CATEGORIES = new Set([
   'Maritime Alert', 'Airspace Alert', 'Travel Advisory',
 ]);
 
+function isLowMagEarthquake(post) {
+  const cat = (post.category || '').toLowerCase();
+  const src = (post.source || '').toLowerCase();
+  const isQuake = cat === 'earthquake' || src.includes('usgs');
+  if (!isQuake) return false;
+  const mag = post.magnitude ?? post.mag ?? post.assets?.magnitude;
+  const m = typeof mag === 'string' ? parseFloat(mag) : Number(mag);
+  return !Number.isFinite(m) || m < 6.0;
+}
+
 function isAlertPost(post) {
+  if (isLowMagEarthquake(post)) return false;
   if (ENGINE_CATEGORIES.has(post.category)) return true;
   const src = (post.source || '').toLowerCase();
   return src.includes('usgs') || src.includes('nws') || src.includes('faa') || src.includes('uscg');
@@ -123,7 +134,9 @@ function isVideoPost(post) {
   return post.postType === 'video' || !!post.video_url || (post.videos && post.videos.length > 0);
 }
 
-const PLAY_ICON = '<div class="media-play" aria-hidden="true"><svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg></div>';
+function getVideoUrl(post) {
+  return post.video_url || (post.videos && post.videos[0]) || null;
+}
 
 function renderCard(post, large) {
   const title = getPostTitle(post);
@@ -140,9 +153,18 @@ function renderCard(post, large) {
   if (large) classes.push('post-card--large');
   if (!image) classes.push('post-card--text-only');
 
+  const videoSrc = hasVideo ? getVideoUrl(post) : null;
+
+  let mediaHtml = '';
+  if (videoSrc) {
+    mediaHtml = `<div class="post-card-image post-card-video"><video src="${esc(videoSrc)}" muted autoplay loop playsinline disablepictureinpicture preload="metadata" poster="${image ? esc(image) : ''}"></video></div>`;
+  } else if (image) {
+    mediaHtml = `<div class="post-card-image"><img src="${esc(image)}" alt="" loading="lazy" decoding="async" onerror="this.parentElement.classList.add('post-card-image--broken')"></div>`;
+  }
+
   return `
     <a href="${esc(url)}" class="${classes.join(' ')}" aria-label="${esc(title)}">
-      ${image ? `<div class="post-card-image"><img src="${esc(image)}" alt="" loading="lazy" decoding="async" onerror="this.parentElement.classList.add('post-card-image--broken')">${hasVideo ? PLAY_ICON : ''}</div>` : ''}
+      ${mediaHtml}
       <div class="post-card-body">
         ${smart ? `<span class="badge ${smart.cls}">${esc(smart.label)}</span>` : ''}
         <h3 class="post-card-title">${esc(title)}</h3>
@@ -166,9 +188,18 @@ function renderFeatured(post) {
   const xLink = getXUrl(post);
   const hasVideo = isVideoPost(post);
 
+  const videoSrc = hasVideo ? getVideoUrl(post) : null;
+
+  let featuredMedia = '';
+  if (videoSrc) {
+    featuredMedia = `<div class="featured-story-image post-card-video"><video src="${esc(videoSrc)}" muted autoplay loop playsinline disablepictureinpicture preload="metadata" poster="${image ? esc(image) : ''}"></video></div>`;
+  } else if (image) {
+    featuredMedia = `<div class="featured-story-image"><img src="${esc(image)}" alt="" loading="lazy" decoding="async" onerror="this.parentElement.classList.add('post-card-image--broken')"></div>`;
+  }
+
   return `
     <a href="${esc(url)}" class="featured-story${isBreaking ? ' featured-story--breaking' : ''}" aria-label="${esc(title)}">
-      ${image ? `<div class="featured-story-image"><img src="${esc(image)}" alt="" loading="lazy" decoding="async" onerror="this.parentElement.classList.add('post-card-image--broken')">${hasVideo ? PLAY_ICON : ''}</div>` : ''}
+      ${featuredMedia}
       <div class="featured-story-content">
         <div class="featured-story-badges">
           ${(() => { const s = getSmartLabel(post); return s ? `<span class="badge ${s.cls}">${esc(s.label)}</span>` : '<span class="badge badge-accent">Latest</span>'; })()}
@@ -280,8 +311,9 @@ export async function initFeed() {
 
   try {
     const posts = await fetchPosts();
-    const breaking = posts.filter(p => !isAlertPost(p));
-    const alerts = posts.filter(p => isAlertPost(p));
+    const visible = posts.filter(p => !isLowMagEarthquake(p));
+    const breaking = visible.filter(p => !isAlertPost(p));
+    const alerts = visible.filter(p => isAlertPost(p));
 
     const allForTicker = [...breaking.slice(0, 8), ...alerts.slice(0, 8)];
     populateTicker(allForTicker);

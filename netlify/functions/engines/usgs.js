@@ -1347,9 +1347,9 @@ async function processEarthquake(feature, logger, forceEmail = false) {
   
   const magnitude = props.mag || 0;
   
-  // Filter out earthquakes below magnitude 2.5 - don't create posts for tiny events
-  if (magnitude < 2.5) {
-    logger.info('Skipping earthquake below magnitude 2.5', { eventId, magnitude });
+  // Only create posts for significant earthquakes (M6.0+)
+  if (magnitude < 6.0) {
+    logger.info('Skipping earthquake below magnitude 6.0', { eventId, magnitude });
     return null;
   }
   

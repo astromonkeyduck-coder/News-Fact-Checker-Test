@@ -2290,6 +2290,23 @@
                 }, 100);
             }
             
+            // Fetch all posts for sidebar + more coverage
+            let allPosts = posts;
+            if (allPosts.length <= 1) {
+                try {
+                    const allRes = await fetch('/.netlify/functions/posts-read?limit=50', {
+                        cache: 'default',
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    if (allRes.ok) {
+                        const allData = await allRes.json();
+                        if (Array.isArray(allData) && allData.length > 0) allPosts = allData;
+                    }
+                } catch (e) {
+                    console.warn('[ArticleLoader] Could not fetch posts for sidebar:', e);
+                }
+            }
+
             // Load sidebar content (hide sidebar entirely for X posts)
             if (isXPost) {
                 const sidebar = document.querySelector('.article-sidebar');
@@ -2297,11 +2314,11 @@
                 const tocWrap = document.getElementById('article-toc-wrap');
                 if (tocWrap) tocWrap.style.display = 'none';
             } else {
-                await loadSidebarContent(posts, post, articleId);
+                await loadSidebarContent(allPosts, post, articleId);
             }
-            
+
             // Load more coverage
-            loadMoreCoverage(posts, articleId);
+            loadMoreCoverage(allPosts, articleId);
             
         } catch (error) {
             console.error('[ArticleLoader] Error loading article:', error);

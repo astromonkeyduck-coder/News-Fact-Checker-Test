@@ -294,7 +294,7 @@ export async function fetchWeatherAlerts() {
 /**
  * Fetch earthquakes
  */
-export async function fetchEarthquakes(minMagnitude = 4.5) {
+export async function fetchEarthquakes(minMagnitude = 6.0) {
   const cacheKey = `earthquakes_${minMagnitude}`;
   
   try {

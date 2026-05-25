@@ -32,7 +32,7 @@ const FALLBACK_POSTS = [
 ];
 
 // Use ENHANCED_ prefix to avoid duplicate declaration with post-feed-v2.js
-const ENHANCED_EARTHQUAKE_MIN_MAG = 2.5;
+const ENHANCED_EARTHQUAKE_MIN_MAG = 6.0;
 const ENHANCED_EXCLUDED_KEYWORDS = ['volcano', 'volcanic', 'embassy'];
 
 function isLowMagnitudeEarthquakeEnhanced(post) {

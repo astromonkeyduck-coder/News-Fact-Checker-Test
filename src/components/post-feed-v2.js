@@ -42,7 +42,7 @@ function getIconHTML(iconName, className = 'w-5 h-5') {
 const CACHE_KEY = 'noteworthy-posts-cache-v2';
 const CACHE_EXPIRY = 2 * 60 * 1000; // 2 minutes
 
-const EARTHQUAKE_CARD_MIN_MAGNITUDE = 2.5;
+const EARTHQUAKE_CARD_MIN_MAGNITUDE = 6.0;
 const EXCLUDED_ALERT_KEYWORDS = ['volcano', 'volcanic', 'embassy'];
 
 function isLowMagnitudeEarthquake(post) {

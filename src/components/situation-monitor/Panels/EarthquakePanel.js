@@ -35,7 +35,7 @@ export class EarthquakePanel extends BasePanel {
     this.setError(null);
 
     try {
-      const geoJson = await fetchEarthquakes(4.5);
+      const geoJson = await fetchEarthquakes(6.0);
       
       if (geoJson) {
         this.earthquakes = parseGeoJSON(geoJson);

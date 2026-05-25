@@ -2038,93 +2038,90 @@ class NoteworthyChat extends HTMLElement {
         
         @media (max-width: 768px) {
           .wrap {
-            width: calc(100vw - 32px) !important;
-            max-width: calc(100vw - 32px) !important;
-            height: 70vh !important;
-            max-height: 70vh !important;
-            min-height: 600px !important;
-            left: 16px !important;
-            top: 50% !important;
-            transform: translateY(-50%) !important;
-            border-radius: 20px !important;
-            min-width: calc(100vw - 32px) !important;
+            width: 100vw !important;
+            max-width: 100vw !important;
+            height: 100dvh !important;
+            max-height: 100dvh !important;
+            min-height: 100dvh !important;
+            left: 0 !important;
+            top: 0 !important;
+            transform: none !important;
+            border-radius: 0 !important;
+            min-width: 100vw !important;
           }
-          
+
           .wrap.open {
-            transform: translateY(-50%) !important;
+            transform: none !important;
           }
-          
+
           .launcher {
             right: 12px;
             bottom: 12px;
-            padding: 14px 20px;
+            padding: 12px 16px;
             font-size: 14px;
           }
-          
+
           .resize-handle {
             display: none;
           }
-          
+
           .head {
             padding: 14px 16px;
+            padding-top: env(safe-area-inset-top, 14px);
           }
-          
+
           .body {
             padding: 16px;
           }
-          
+
           .input {
             padding: 14px 16px;
+            padding-bottom: env(safe-area-inset-bottom, 14px);
           }
-          
+
+          .input input {
+            font-size: 16px;
+          }
+
           .message-group {
             gap: 10px;
           }
-          
+
           .message-avatar {
             width: 32px;
             height: 32px;
             font-size: 11px;
           }
+
+          .tutorial-overlay {
+            display: none !important;
+          }
         }
-        
+
         @media (max-width: 480px) {
-          .wrap {
-            width: calc(100vw - 24px) !important;
-            max-width: calc(100vw - 24px) !important;
-            height: 70vh !important;
-            max-height: 70vh !important;
-            min-height: 350px !important;
-            left: 12px !important;
-            top: 50% !important;
-            transform: translateY(-50%) !important;
-          }
-          
-          .wrap.open {
-            transform: translateY(-50%) !important;
-          }
-          
           .head {
             padding: 12px 14px;
+            padding-top: env(safe-area-inset-top, 12px);
           }
-          
+
           .body {
             padding: 14px;
-            font-size: 13px;
+            font-size: 14px;
           }
-          
+
           .input {
             padding: 12px 14px;
+            padding-bottom: env(safe-area-inset-bottom, 12px);
           }
-          
+
           .input input {
             padding: 10px 14px;
-            font-size: 13px;
+            font-size: 16px;
           }
-          
+
           .input button {
             padding: 10px 16px;
-            font-size: 13px;
+            font-size: 14px;
           }
         }
         
@@ -4529,8 +4526,9 @@ class NoteworthyChat extends HTMLElement {
     const dontShowAgain = root.querySelector('#dontShowAgain');
     const helpBtn = document.createElement('button');
     
-    // Check if tutorial should be shown
+    // Check if tutorial should be shown (never on mobile)
     const shouldShowTutorial = () => {
+      if (window.innerWidth <= 768) return false;
       const dontShow = localStorage.getItem('noteworthy-ai-tutorial-dismissed') === 'true';
       return !dontShow;
     };

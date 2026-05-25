@@ -929,9 +929,11 @@ html.article-page-active::after,
 .news-card-thumbnail {
     width: 100%;
     height: 120px;
-    object-fit: cover;
+    object-fit: contain;
+    object-position: center;
     border-radius: 0;
     margin-bottom: 12px;
+    background: #f3f4f6;
 }
 
 /* Professional Comments Section */
@@ -2363,7 +2365,7 @@ body.article-page .site-header .nav-toggle-icon {
 }
 
 /* View on X link: small, professional, inline */
-.news-update .view-on-x-link {
+.view-on-x-link {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -2377,12 +2379,15 @@ body.article-page .site-header .nav-toggle-icon {
     transition: color 0.15s;
 }
 
-.news-update .view-on-x-link:hover {
+.view-on-x-link:hover {
     color: #111827;
 }
 
-.news-update .view-on-x-link svg {
+.view-on-x-link svg {
     flex-shrink: 0;
+    display: inline;
+    width: 14px;
+    height: 14px;
 }
 
 /* Body panel: remove excess padding */
