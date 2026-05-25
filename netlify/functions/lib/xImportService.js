@@ -235,7 +235,7 @@ async function linkThreadParent(tweet, refs) {
  * @returns {{ imported_count, skipped_count, failed_count, latest_x_post_id, errors }}
  */
 async function importLatestPosts(opts) {
-  const { userId, sinceId, maxResults = 10, pages = 1 } = opts;
+  const { userId, sinceId, maxResults = 10, pages = 1, force = false } = opts;
   const result = {
     imported_count: 0,
     skipped_count: 0,
@@ -275,16 +275,22 @@ async function importLatestPosts(opts) {
           result.latest_x_post_id = tweet.id;
         }
 
-        // Check if already imported
+        // Check if already imported (Supabase + Blobs)
         const { data: existing } = await supabase
           .from('x_posts')
           .select('x_post_id')
           .eq('x_post_id', tweet.id)
           .maybeSingle();
 
-        if (existing) {
-          result.skipped_count++;
-          continue;
+        if (existing && !opts.force) {
+          // Post is in Supabase — verify the Blob projection also exists
+          const store = getPostStore();
+          const blob = await readPost(store, tweet.id);
+          if (blob) {
+            result.skipped_count++;
+            continue;
+          }
+          console.log(`[xImport] Re-projecting ${tweet.id} to Blobs (Supabase OK, Blob missing)`);
         }
 
         const mediaItems = resolveMedia(tweet, mediaMap);
@@ -292,7 +298,7 @@ async function importLatestPosts(opts) {
         const title = cleanTitle(tweet.text);
         const slug = toSlug(title, tweet.id);
 
-        // Supabase upsert
+        // Supabase upsert (idempotent ON CONFLICT)
         await upsertXPost(tweet, mediaItems, slug, refs);
 
         // Thread parent linking (best-effort, don't block on failure)
