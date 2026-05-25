@@ -146,15 +146,20 @@ function playVisibleVideos() {
     entries.forEach(entry => {
       const video = entry.target;
       if (entry.isIntersecting) {
-        video.play().catch(() => {});
+        if (!video.src && video.dataset.src) {
+          video.src = video.dataset.src;
+          video.load();
+        }
+        video.addEventListener('canplay', () => video.play().catch(() => {}), { once: true });
+        if (video.readyState >= 2) video.play().catch(() => {});
       } else {
         video.pause();
       }
     });
-  }, { threshold: 0.25 });
+  }, { threshold: 0.1 });
 
   videos.forEach(video => {
-    video.play().catch(() => {});
+    video.muted = true;
     observer.observe(video);
   });
 }
@@ -178,7 +183,7 @@ function renderCard(post, large) {
 
   let mediaHtml = '';
   if (videoSrc) {
-    mediaHtml = `<div class="post-card-image post-card-video"><video src="${esc(videoSrc)}" muted autoplay loop playsinline disablepictureinpicture preload="auto" poster="${image ? esc(image) : ''}"></video></div>`;
+    mediaHtml = `<div class="post-card-image post-card-video"><video data-src="${esc(videoSrc)}" muted loop playsinline disablepictureinpicture preload="none" poster="${image ? esc(image) : ''}"></video></div>`;
   } else if (image) {
     mediaHtml = `<div class="post-card-image"><img src="${esc(image)}" alt="" loading="lazy" decoding="async" onerror="this.parentElement.classList.add('post-card-image--broken')"></div>`;
   }
@@ -213,7 +218,7 @@ function renderFeatured(post) {
 
   let featuredMedia = '';
   if (videoSrc) {
-    featuredMedia = `<div class="featured-story-image post-card-video"><video src="${esc(videoSrc)}" muted autoplay loop playsinline disablepictureinpicture preload="auto" poster="${image ? esc(image) : ''}"></video></div>`;
+    featuredMedia = `<div class="featured-story-image post-card-video"><video data-src="${esc(videoSrc)}" muted loop playsinline disablepictureinpicture preload="none" poster="${image ? esc(image) : ''}"></video></div>`;
   } else if (image) {
     featuredMedia = `<div class="featured-story-image"><img src="${esc(image)}" alt="" loading="lazy" decoding="async" onerror="this.parentElement.classList.add('post-card-image--broken')"></div>`;
   }
