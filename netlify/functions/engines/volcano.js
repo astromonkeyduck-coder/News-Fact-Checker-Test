@@ -9,6 +9,7 @@ const { buildCanonicalId, buildCanonicalIdFromHash } = require('../lib/dedupe');
 const { normalizeAirspaceSeverity, cleanLocation } = require('../lib/normalize');
 const { createPostFromEvent } = require('../lib/createPost');
 const { sendEventAlert } = require('../lib/sendAlert');
+const { generateVolcanoImage } = require('../generate-volcano-image');
 const Parser = require('rss-parser');
 
 // USGS Volcano Notification Service (VNS) - uses RSS feeds
@@ -172,6 +173,20 @@ async function processVolcanoAlert(alert, logger) {
   const locationDisplay = cleanLocation(location);
   const canonicalId = buildCanonicalId('volcano', alertId);
   
+  // Generate branded image before storing
+  let imageUrl = null;
+  try {
+    const eventIdForImage = canonicalId.replace('volcano:', '');
+    imageUrl = await generateVolcanoImage(
+      volcanoName, alertLevel,
+      alert.lat || null, alert.lon || null,
+      eventIdForImage
+    );
+    logger.info('Volcano image generated', { canonical_id: canonicalId, imageUrl });
+  } catch (imgErr) {
+    logger.warn('Failed to generate volcano image (continuing without)', imgErr.message || imgErr);
+  }
+
   const event = {
     canonical_id: canonicalId,
     engine: 'volcano',
@@ -192,7 +207,7 @@ async function processVolcanoAlert(alert, logger) {
     status: 'active',
     tags: ['volcano', volcanoName.toLowerCase().replace(/\s+/g, '_'), alertLevel.toLowerCase(), 'breaking'],
     assets: {},
-    image_url: null,
+    image_url: imageUrl,
     alert_sent: false,
     alert_sent_at: null,
     raw: alert,
@@ -200,13 +215,13 @@ async function processVolcanoAlert(alert, logger) {
   
   const { isNew, event: storedEvent } = await storeEvent(event, logger);
   
-  // Create website post
-  if (isNew) {
+  // Create or update website post (also triggers on image backfill for existing events)
+  if (isNew || storedEvent.image_url) {
     try {
       await createPostFromEvent(storedEvent, 'Volcano Alert', 'USGS');
-      logger.info('Website post created', { canonical_id: canonicalId });
+      logger.info(isNew ? 'Website post created' : 'Website post updated with image', { canonical_id: canonicalId });
     } catch (postError) {
-      logger.warn('Failed to create website post', postError);
+      logger.warn('Failed to create/update website post', postError);
     }
   }
   
@@ -237,7 +252,7 @@ async function storeEvent(event, logger) {
   try {
     const { data: existing, error: checkError } = await supabase
       .from('verified_events')
-      .select('id, alert_sent, alert_sent_at')
+      .select('id, alert_sent, alert_sent_at, image_url')
       .eq('canonical_id', event.canonical_id)
       .single();
     
@@ -260,6 +275,11 @@ async function storeEvent(event, logger) {
         assets: event.assets,
         raw: event.raw,
       };
+      
+      // Backfill image if the existing event doesn't have one yet
+      if (event.image_url && !existing.image_url) {
+        updateData.image_url = event.image_url;
+      }
       
       if (existing.alert_sent) {
         updateData.alert_sent = true;
