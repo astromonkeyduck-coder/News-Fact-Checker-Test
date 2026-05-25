@@ -1729,7 +1729,7 @@
 .featured-story-image video {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   object-position: center;
   display: block;
 }
@@ -1814,8 +1814,9 @@
   }
 
   .featured-story-image {
-    aspect-ratio: 4 / 3;
-    min-height: 240px;
+    aspect-ratio: auto;
+    min-height: 200px;
+    max-height: 320px;
   }
 
   .featured-story-content {

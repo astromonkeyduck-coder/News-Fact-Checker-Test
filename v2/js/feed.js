@@ -138,6 +138,27 @@ function getVideoUrl(post) {
   return post.video_url || (post.videos && post.videos[0]) || null;
 }
 
+function playVisibleVideos() {
+  const videos = document.querySelectorAll('.post-card-video video, .featured-story-image video');
+  if (!videos.length) return;
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const video = entry.target;
+      if (entry.isIntersecting) {
+        video.play().catch(() => {});
+      } else {
+        video.pause();
+      }
+    });
+  }, { threshold: 0.25 });
+
+  videos.forEach(video => {
+    video.play().catch(() => {});
+    observer.observe(video);
+  });
+}
+
 function renderCard(post, large) {
   const title = getPostTitle(post);
   const image = getPostImage(post);
@@ -157,7 +178,7 @@ function renderCard(post, large) {
 
   let mediaHtml = '';
   if (videoSrc) {
-    mediaHtml = `<div class="post-card-image post-card-video"><video src="${esc(videoSrc)}" muted autoplay loop playsinline disablepictureinpicture preload="metadata" poster="${image ? esc(image) : ''}"></video></div>`;
+    mediaHtml = `<div class="post-card-image post-card-video"><video src="${esc(videoSrc)}" muted autoplay loop playsinline disablepictureinpicture preload="auto" poster="${image ? esc(image) : ''}"></video></div>`;
   } else if (image) {
     mediaHtml = `<div class="post-card-image"><img src="${esc(image)}" alt="" loading="lazy" decoding="async" onerror="this.parentElement.classList.add('post-card-image--broken')"></div>`;
   }
@@ -192,7 +213,7 @@ function renderFeatured(post) {
 
   let featuredMedia = '';
   if (videoSrc) {
-    featuredMedia = `<div class="featured-story-image post-card-video"><video src="${esc(videoSrc)}" muted autoplay loop playsinline disablepictureinpicture preload="metadata" poster="${image ? esc(image) : ''}"></video></div>`;
+    featuredMedia = `<div class="featured-story-image post-card-video"><video src="${esc(videoSrc)}" muted autoplay loop playsinline disablepictureinpicture preload="auto" poster="${image ? esc(image) : ''}"></video></div>`;
   } else if (image) {
     featuredMedia = `<div class="featured-story-image"><img src="${esc(image)}" alt="" loading="lazy" decoding="async" onerror="this.parentElement.classList.add('post-card-image--broken')"></div>`;
   }
@@ -376,6 +397,7 @@ export async function initFeed() {
     _allBreaking = gridSource;
     initFilters(gridSource);
     initLoadMore(gridSource);
+    playVisibleVideos();
     UISounds.success();
   } catch (err) {
     console.error('[Feed] Failed to load:', err);
@@ -446,6 +468,7 @@ function renderBreakingGrid(posts) {
   if (loadMoreBtn) {
     loadMoreBtn.hidden = visible.length === 0 || filtered.length <= _displayCount;
   }
+  playVisibleVideos();
 }
 
 function initFilters(breaking) {
