@@ -36,6 +36,24 @@ logs/
 
 netlify/functions/email-name-mapping.js
 
+scripts/clip-pipeline/browser/extension/vendor/*
+!scripts/clip-pipeline/browser/extension/vendor/.gitkeep
+
+# Clip pipeline (local jobs + media)
+data/clip-jobs/*.json
+data/clip-jobs/audit.jsonl
+data/clips/raw/*
+data/clips/output/*
+data/clips/thumbs/*
+data/clips/probe/*
+data/clips/buffer/*
+!data/clips/buffer/.gitkeep
+!data/clip-jobs/.gitkeep
+!data/clips/raw/.gitkeep
+!data/clips/output/.gitkeep
+!data/clips/thumbs/.gitkeep
+!data/clips/probe/.gitkeep
+
 # Large media files
 NWvidddd.MOV
 
@@ -54,6 +72,13 @@ ScreenRecording_*.mp4
 copy_*.MOV
 copy_*.mov
 copy_*.mp4
+youtube-last-*.webm
+videoplayback
+
+# Loose scratch images / screenshots at repo root
+/1622013523.jpg
+/QyGXWXKSuZMvb7nWyPhc7E.jpg
+/screenshot-*.webp
 
 # Analytics CSV files with personal data
 emailaccount_analytics_*.csv

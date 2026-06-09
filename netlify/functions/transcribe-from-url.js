@@ -147,15 +147,43 @@ async function cleanupStorage(objectKey, storageType = "blobs") {
 }
 
 /**
+ * Map a file extension to a content type Whisper understands.
+ * Whisper detects format from the filename extension, so we must preserve it
+ * (e.g. an MP4 sent as "audio.mp3" is rejected as an invalid format).
+ */
+function mediaTypeForName(fileName) {
+  const ext = (fileName || "").split(".").pop()?.toLowerCase() || "mp3";
+  const map = {
+    mp3: "audio/mpeg",
+    mpga: "audio/mpeg",
+    mpeg: "audio/mpeg",
+    wav: "audio/wav",
+    m4a: "audio/mp4",
+    mp4: "video/mp4",
+    m4v: "video/mp4",
+    mov: "video/quicktime",
+    webm: "video/webm",
+    ogg: "audio/ogg",
+    oga: "audio/ogg",
+    flac: "audio/flac",
+  };
+  return { ext, contentType: map[ext] || "audio/mpeg" };
+}
+
+/**
  * Transcribe audio using OpenAI Whisper
  */
-async function transcribeAudio(audioBuffer, language = null, includeTimestamps = false) {
+async function transcribeAudio(audioBuffer, language = null, includeTimestamps = false, fileName = "audio.mp3") {
   const openaiApiKey = process.env.OPENAI_API_KEY;
   if (!openaiApiKey) {
     throw new Error("OpenAI API key not configured");
   }
 
   const openai = new OpenAI({ apiKey: openaiApiKey });
+
+  // Preserve the original extension so Whisper detects the format correctly.
+  const { ext, contentType } = mediaTypeForName(fileName);
+  const uploadName = `audio.${ext}`;
 
   // Create a File object for OpenAI
   // OpenAI SDK v4 accepts File, Blob, or File-like objects
@@ -164,7 +192,7 @@ async function transcribeAudio(audioBuffer, language = null, includeTimestamps =
   
   if (typeof File !== "undefined") {
     // Node.js 18+ has native File API
-    audioFile = new File([audioBuffer], "audio.mp3", { type: "audio/mpeg" });
+    audioFile = new File([audioBuffer], uploadName, { type: contentType });
   } else {
     // Fallback for older Node.js: Create File-like object
     // OpenAI SDK will accept this if it has the right shape
@@ -172,8 +200,8 @@ async function transcribeAudio(audioBuffer, language = null, includeTimestamps =
     const stream = Readable.from([audioBuffer]);
     
     audioFile = Object.assign(stream, {
-      name: "audio.mp3",
-      type: "audio/mpeg",
+      name: uploadName,
+      type: contentType,
       size: audioBuffer.length,
       [Symbol.toStringTag]: "File",
     });
@@ -263,11 +291,15 @@ exports.handler = async (event, context) => {
       };
     }
 
+    // Derive the original filename so Whisper sees the correct extension.
+    const fileName = objectKey.split("/").pop() || "audio.mp3";
+
     // Transcribe audio
     const { transcript, elapsedMs, modelUsed } = await transcribeAudio(
       audioBuffer,
       language,
-      includeTimestamps
+      includeTimestamps,
+      fileName
     );
 
     // Extract transcript text and segments
@@ -288,9 +320,6 @@ exports.handler = async (event, context) => {
 
     // Clean up storage
     await cleanupStorage(objectKey, storageType);
-
-    // Get filename from objectKey (last part after /)
-    const fileName = objectKey.split("/").pop() || "audio.mp3";
 
     return {
       statusCode: 200,

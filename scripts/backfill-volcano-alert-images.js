@@ -22,6 +22,10 @@ function hasImage(post) {
   return !!(post.primary_image_url || post.image_url || post.image);
 }
 
+function currentImageUrl(post) {
+  return post.primary_image_url || post.image_url || post.image || '';
+}
+
 async function main() {
   const store = getPostStore();
   const ids = await readIndex(store);
@@ -29,12 +33,18 @@ async function main() {
 
   for (const id of ids) {
     const post = await readPost(store, id);
-    if (!post || hasImage(post)) continue;
+    if (!post) continue;
 
     const relativePath = getVolcanoAlertFallbackFromPost(post);
     if (!relativePath) continue;
 
     const imageUrl = `${BASE_URL}${relativePath}`;
+    if (currentImageUrl(post) === imageUrl) continue;
+
+    // Set curated image when missing or when replacing a generated template
+    const existing = currentImageUrl(post);
+    if (existing && !existing.includes('get-uploaded-image') && hasImage(post)) continue;
+
     post.primary_image_url = imageUrl;
     post.image_url = imageUrl;
     post.image = imageUrl;

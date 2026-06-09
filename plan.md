@@ -1254,3 +1254,34 @@ The V2 homepage and Situation Monitor are now the primary public surfaces. V1 is
 4. **Convert V2 Situation Monitor to absolute paths** → change 301 to 200 rewrite for clean URL
 5. **Delete old admin HTML pages** — redirects are active and validated
 6. **Remove V1 `index.html` weight** — once V2 is stable for 1+ week, archive or delete
+
+---
+
+## Live Clip Pipeline MVP (2026-05-25)
+
+### Goal
+
+Safe, fast local toolchain to create X-ready clips from rights-cleared HLS/RTMP feeds or local files. YouTube Data API used for metadata discovery only.
+
+### Architecture
+
+- **Local scripts** in `scripts/clip-pipeline/` — not bundled into Netlify functions
+- **JSON job store** in `data/clip-jobs/`
+- **CLI + localhost review server** — human approval required before X upload
+- **Optional X upload** via separate `X_USER_ACCESS_TOKEN` (isolated from read-only `X_BEARER_TOKEN` import)
+
+### Implementation phases (completed in order)
+
+1. Shared FFmpeg utilities + guardrails (rights, source URL validation)
+2. `make-clip.js` — transcode, thumbnail, ffprobe (local file first)
+3. Job store + `create-job.js`
+4. `youtube-metadata.js` — metadata only
+5. `record-live.js` — HLS/RTMP with reconnect
+6. `review-job.js` CLI + `review-server.js`
+7. `x-upload.js` + `x-retract.js` (last)
+
+### Future (out of scope)
+
+- Supabase `clip_jobs` table
+- Admin `#clips` view with R2/Blob storage
+- OAuth token refresh for X

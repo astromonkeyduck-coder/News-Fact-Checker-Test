@@ -1249,6 +1249,50 @@ ${textBody || '(No text content)'}`;
   }
 }
 
+/** Emails that should never receive inbound auto-replies (comma-separated env override). */
+const DEFAULT_AUTO_REPLY_BLOCKLIST = ['adkinsri@lhprep.org'];
+
+function getAutoReplyBlocklist() {
+  const fromEnv = (process.env.INBOUND_AUTO_REPLY_BLOCKLIST || '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  const merged = new Set([
+    ...DEFAULT_AUTO_REPLY_BLOCKLIST.map((e) => e.toLowerCase()),
+    ...fromEnv,
+  ]);
+  return merged;
+}
+
+function cleanInboundEmailAddress(rawEmail) {
+  if (!rawEmail) return '';
+  const emailMatch = String(rawEmail).match(/<([^>]+)>/);
+  return (emailMatch ? emailMatch[1] : String(rawEmail)).trim().toLowerCase();
+}
+
+/**
+ * Skip auto-replies that would create mail loops or go to blocked senders.
+ */
+function shouldSkipAutoReply(senderEmail, subject) {
+  const cleanSenderEmail = cleanInboundEmailAddress(senderEmail);
+  if (!cleanSenderEmail) return { skip: true, reason: 'invalid-sender' };
+
+  if (getAutoReplyBlocklist().has(cleanSenderEmail)) {
+    return { skip: true, reason: 'blocklisted-sender', email: cleanSenderEmail };
+  }
+
+  const normalizedSubject = String(subject || '').trim();
+  // Replies/forwards to our own auto-replies re-trigger the webhook and spam the sender.
+  if (/^(re|fwd|fw)\s*:/i.test(normalizedSubject)) {
+    return { skip: true, reason: 'reply-or-forward', subject: normalizedSubject };
+  }
+  if (/email received|checking for earthquakes above/i.test(normalizedSubject)) {
+    return { skip: true, reason: 'our-auto-reply-thread', subject: normalizedSubject };
+  }
+
+  return { skip: false, email: cleanSenderEmail };
+}
+
 /**
  * Send auto-reply email to the sender
  * Non-blocking - errors are logged but don't fail the webhook
@@ -1263,12 +1307,13 @@ async function sendAutoReply(senderEmail, originalSubject, wasTriggered) {
     return null;
   }
 
-  // Clean sender email - handle formats like "Name <email@example.com>" or just "email@example.com"
-  let cleanSenderEmail = senderEmail;
-  const emailMatch = senderEmail.match(/<([^>]+)>/);
-  if (emailMatch) {
-    cleanSenderEmail = emailMatch[1];
+  const skipCheck = shouldSkipAutoReply(senderEmail, originalSubject);
+  if (skipCheck.skip) {
+    console.log('[Inbound Email] Skipping auto-reply:', skipCheck);
+    return null;
   }
+
+  const cleanSenderEmail = skipCheck.email;
   
   // Basic email validation
   if (!cleanSenderEmail.includes('@')) {

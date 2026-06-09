@@ -14,6 +14,24 @@ const CONFIG = {
     jobPollInterval: 2000, // Poll job status every 2 seconds
 };
 
+// Accepted media: audio files plus video containers we can pull audio from.
+// Video files are normalized to audio server-side (ffmpeg) before transcription.
+const SUPPORTED_MEDIA_EXTENSIONS = /\.(mp3|wav|m4a|ogg|oga|webm|flac|mpga|mp4|mov|m4v|avi|mkv)$/i;
+
+function isSupportedMediaFile(file) {
+    if (!file) return false;
+    return (
+        file.type.startsWith('audio/') ||
+        file.type.startsWith('video/') ||
+        SUPPORTED_MEDIA_EXTENSIONS.test(file.name || '')
+    );
+}
+
+function isVideoFile(file) {
+    if (!file) return false;
+    return file.type.startsWith('video/') || /\.(mp4|mov|m4v|avi|mkv)$/i.test(file.name || '');
+}
+
 // State
 const state = {
     files: new Map(), // fileId -> file data
@@ -169,9 +187,7 @@ function handleDrop(e) {
     e.stopPropagation();
     elements.dropzone.classList.remove('dragover', 'drag-active');
     
-    const files = Array.from(e.dataTransfer.files).filter(f => 
-        f.type.startsWith('audio/') || f.name.endsWith('.mp3')
-    );
+    const files = Array.from(e.dataTransfer.files).filter(isSupportedMediaFile);
     
     if (files.length > 0) {
         addFiles(files);
@@ -191,9 +207,9 @@ function addFiles(files) {
     const validFiles = [];
     
     for (const file of files) {
-        // Validate file type
-        if (!file.type.startsWith('audio/') && !file.name.endsWith('.mp3')) {
-            showError(`Skipped ${file.name}: Not an audio file`);
+        // Validate file type (audio or supported video container)
+        if (!isSupportedMediaFile(file)) {
+            showError(`Skipped ${file.name}: Not a supported audio or video file`);
             continue;
         }
 
@@ -202,15 +218,16 @@ function addFiles(files) {
         // No warnings - just process the file
 
         const fileId = generateFileId();
-        // Create blob URL for audio playback (if it's an audio file)
+        // Create blob URL for in-page media playback. The <audio> element can
+        // play the audio track of MP4/MOV files too, so allow video here.
         let audioUrl = null;
-        if (file.type.startsWith('audio/') || file.name.match(/\.(mp3|webm|wav|ogg|m4a)$/i)) {
+        if (isSupportedMediaFile(file)) {
             audioUrl = URL.createObjectURL(file);
             
-            // Store audio blob in IndexedDB for persistence across page refreshes
+            // Store media blob in IndexedDB for persistence across page refreshes
             storeAudioBlob(fileId, file).catch(error => {
-                console.warn(`[addFiles] Failed to store audio blob in IndexedDB for ${fileId}:`, error);
-                // Continue anyway - audio playback will work until page refresh
+                console.warn(`[addFiles] Failed to store media blob in IndexedDB for ${fileId}:`, error);
+                // Continue anyway - playback will work until page refresh
             });
         }
         
@@ -278,6 +295,11 @@ function createFileItem(fileId, fileData) {
         'wav': '🔊',
         'ogg': '🎧',
         'm4a': '📻',
+        'mp4': '🎬',
+        'mov': '🎬',
+        'm4v': '🎬',
+        'avi': '🎬',
+        'mkv': '🎬',
     };
     const fileIcon = fileIcons[fileExtension] || '📄';
 

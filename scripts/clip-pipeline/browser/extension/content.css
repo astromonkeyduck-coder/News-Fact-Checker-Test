@@ -1,0 +1,49 @@
+#noteworthy-yt-clip-wrap {
+  position: fixed;
+  bottom: 72px;
+  right: 20px;
+  z-index: 2147483646;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  font-family: system-ui, -apple-system, sans-serif;
+  pointer-events: none;
+}
+
+#noteworthy-yt-clip-wrap .nw-clip-status {
+  pointer-events: none;
+  font-size: 11px;
+  color: #aaa;
+  background: rgba(0, 0, 0, 0.78);
+  padding: 4px 8px;
+  border-radius: 4px;
+  max-width: 240px;
+  text-align: right;
+}
+
+#noteworthy-yt-clip-wrap .nw-clip-status.error {
+  color: #ff8a80;
+}
+
+#noteworthy-yt-clip-save {
+  pointer-events: auto;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  background: #b91c1c;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+}
+
+#noteworthy-yt-clip-save:hover {
+  background: #991b1b;
+}
+
+#noteworthy-yt-clip-save:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}

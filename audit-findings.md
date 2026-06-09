@@ -469,3 +469,39 @@ Webpack only bundles `script.js` and `music-system.js` into `dist/`. Every other
 The V2 rebuild is **on the right track**. New modules are clean, focused, and well-designed. Security posture is dramatically improved. The primary risk is not engineering quality — it is **convergence timing**. The repo now carries two parallel systems (V1 and V2) for homepage, situation monitor, CSS, and tokens. This parallelism must converge within 3–5 sessions before it becomes a maintenance burden.
 
 See `stability-checkpoint.md` for full details, correction requirements, and recommended next session.
+
+---
+
+## 11. Live Clip Pipeline (2026-05-25)
+
+### 11.1 Scope
+
+Local-first breaking-news clip toolchain for rights-cleared sources only. Isolated from public site, Netlify deploy path, and existing X import cron (`import-x-posts`).
+
+### 11.2 Placement
+
+| Path | Purpose |
+|------|---------|
+| `scripts/clip-pipeline/` | CLI modules (record, clip, metadata, review, optional X upload) |
+| `data/clip-jobs/` | JSON job records + `audit.jsonl` |
+| `data/clips/raw/` | Rolling MKV recordings |
+| `data/clips/output/` | X-ready MP4 outputs |
+| `data/clips/thumbs/` | JPG thumbnails |
+| `data/clips/probe/` | ffprobe validation JSON |
+
+### 11.3 Reused infrastructure
+
+- `ffmpeg-static` (already in `package.json`; used by `process-job.js` for audio)
+- New: `ffprobe-static` for validation
+- Env pattern: `.env` / `.env.local` via `netlify dev` or direct export
+
+### 11.4 Explicit non-goals (MVP)
+
+- No YouTube media download or yt-dlp
+- No Netlify functions for recording/clipping (timeout + disk constraints)
+- No changes to `import-x-posts`, `xImportService`, or Cloudflare worker
+- No admin `#clips` section (local review server instead)
+
+### 11.5 Job storage
+
+JSON file store under `data/clip-jobs/{id}.json`. Supabase `clip_jobs` table deferred to future phase.

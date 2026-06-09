@@ -27,6 +27,21 @@ You don’t add these yourself unless you’re doing something custom.
 | **WINDY_API_KEY** | Optional: more global webcams in Live Cams (Windy API) | [windy.com](https://www.windy.com) API |
 | **NY511_API_KEY** | Optional: New York state traffic cams in Live Cams | NY511 developer program |
 
+### Live Clip Pipeline (local scripts)
+
+| Variable | Used for | Where to get it |
+|----------|----------|-----------------|
+| **YT_API_KEY** | YouTube Data API — **metadata only** (event discovery) | [Google Cloud Console](https://console.cloud.google.com/) → APIs → YouTube Data API v3 |
+| **X_USER_ACCESS_TOKEN** | Optional: upload approved clips to X (OAuth 2.0 user context) | X Developer Portal → user access token with `tweet.write` + media upload scopes |
+| **X_UPLOAD_ENABLED** | Set `true` to enable X upload from clip pipeline | Your choice (`true` / unset) |
+| **CLIP_DRY_RUN** | Print FFmpeg/API commands without executing | Set `true` for dry-run |
+| **CLIP_REVIEW_PORT** | Local review server port (default 8791) | Optional |
+| **CLIP_REVIEW_TOKEN** | Optional auth token for local review server | Any secret string you create |
+| **FFMPEG_PATH** / **FFPROBE_PATH** | Override bundled ffmpeg/ffprobe binaries | Optional |
+| **OPENAI_API_KEY** | Transcribe local MP4/audio via `npm run clip:transcribe` (Whisper) | [platform.openai.com](https://platform.openai.com/api-keys) |
+
+See `scripts/clip-pipeline/README.md` for full workflow. **Rights-cleared sources only** — do not use YouTube watch URLs as clip media sources.
+
 ---
 
 ## Live Cams (Situation Monitor)

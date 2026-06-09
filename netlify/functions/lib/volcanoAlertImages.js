@@ -6,6 +6,7 @@
 const VOLCANO_ALERT_IMAGES = [
   { match: 'kilauea', path: '/assets/alerts/kilauea-volcano.jpg' },
   { match: 'great sitkin', path: '/assets/alerts/great-sitkin-volcano.jpg' },
+  { match: 'shishaldin', path: '/assets/alerts/shishaldin-volcano.webp' },
 ];
 
 function matchVolcanoImage(text) {

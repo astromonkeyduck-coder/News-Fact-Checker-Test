@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Noteworthy Clip</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      width: 320px;
+      margin: 0;
+      padding: 14px;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 13px;
+      color: #e8eaed;
+      background: #141418;
+    }
+    h1 {
+      font-size: 14px;
+      margin: 0 0 10px;
+      font-weight: 700;
+    }
+    label { display: block; margin-bottom: 6px; color: #9aa0a6; }
+    select, button {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid #333;
+      font-size: 13px;
+    }
+    select {
+      background: #1e1e24;
+      color: #e8eaed;
+      margin-bottom: 10px;
+    }
+    button {
+      background: #b91c1c;
+      color: #fff;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      margin-bottom: 8px;
+    }
+    button:hover { background: #991b1b; }
+    button.secondary {
+      background: #2a2a32;
+      color: #e8eaed;
+    }
+    .panel {
+      background: #1a1a22;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .panel.ready {
+      border-color: #2e7d32;
+      background: #142018;
+    }
+    .panel.warn {
+      border-color: #8a6d3b;
+      background: #1a1810;
+    }
+    .panel h2 {
+      font-size: 12px;
+      margin: 0 0 6px;
+      color: #ccc;
+    }
+    .panel.ready h2 { color: #81c995; }
+    .panel code {
+      display: block;
+      font-size: 10px;
+      background: #0d0d10;
+      padding: 8px;
+      border-radius: 4px;
+      word-break: break-all;
+      color: #81c995;
+      margin: 8px 0;
+    }
+    .ext-id {
+      font-size: 10px;
+      color: #9aa0a6;
+      word-break: break-all;
+      margin: 4px 0 0;
+    }
+    .hidden { display: none; }
+    .error-detail { font-size: 11px; line-height: 1.4; }
+    details.fallback {
+      margin-bottom: 10px;
+      font-size: 11px;
+      color: #777;
+    }
+    details.fallback summary {
+      cursor: pointer;
+      color: #9aa0a6;
+      margin-bottom: 6px;
+    }
+    .hint {
+      font-size: 11px;
+      color: #777;
+      line-height: 1.45;
+      margin-top: 8px;
+    }
+    .msg {
+      font-size: 12px;
+      margin-top: 8px;
+      min-height: 1.2em;
+    }
+    .msg.error { color: #ff8a80; }
+    .msg.ok { color: #81c995; }
+    kbd {
+      background: #222;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Noteworthy Clip</h1>
+
+  <div id="panelReady" class="panel ready hidden">
+    <h2>Automatic MP4 ready</h2>
+    <p class="hint" style="margin:0;color:#81c995" id="readyDetail">
+      Native converter connected. Saves download as MP4 with no extra steps.
+    </p>
+  </div>
+
+  <div id="panelNativeSetup" class="panel warn">
+    <h2>One-time setup (about 30 seconds)</h2>
+    <p class="hint" style="margin-top:0">
+      Copy this command, paste in Terminal, press Enter. Then reload this extension.
+    </p>
+    <code id="installCmd">loading…</code>
+    <button type="button" id="copyInstallCmd" class="secondary">Copy install command</button>
+    <p class="ext-id">Extension ID: <span id="extensionId">…</span></p>
+    <p id="nativeError" class="hint error-detail hidden" style="color:#ff8a80;margin-top:8px"></p>
+  </div>
+
+  <div id="panelLocalFallback" class="panel hidden">
+    <h2>Using convert server (fallback)</h2>
+    <p class="hint" style="margin:0">
+      Native converter not installed, but the local server is running. Saves should still work.
+    </p>
+  </div>
+
+  <details id="serverFallbackDetails" class="fallback hidden">
+    <summary>Dev fallback: convert server</summary>
+    <code id="serverCmd">npm run clip:convert-server</code>
+    <button type="button" id="copyServerCmd" class="secondary">Copy server command</button>
+  </details>
+
+  <label for="bufferSeconds">Buffer length</label>
+  <select id="bufferSeconds">
+    <option value="15">15 seconds</option>
+    <option value="30" selected>30 seconds</option>
+    <option value="45">45 seconds</option>
+    <option value="60">60 seconds</option>
+  </select>
+
+  <button type="button" id="saveNow">Save last clip now</button>
+  <button type="button" id="openYoutube" class="secondary">Open YouTube</button>
+  <button type="button" id="recheckSetup" class="secondary">Recheck setup</button>
+
+  <p class="hint">
+    Play a YouTube video until the buffer fills, then save.
+    Use the on-page red button or <kbd>Alt+Shift+C</kbd>.
+  </p>
+  <p id="msg" class="msg"></p>
+
+  <script src="popup.js"></script>
+</body>
+</html>

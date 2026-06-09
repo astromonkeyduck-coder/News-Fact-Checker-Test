@@ -281,9 +281,12 @@ async function storeEvent(event, logger) {
         raw: event.raw,
       };
       
-      // Backfill image if the existing event doesn't have one yet
-      if (event.image_url && !existing.image_url) {
-        updateData.image_url = event.image_url;
+      // Backfill image if missing, or replace generated template with curated static asset
+      if (event.image_url) {
+        const isCuratedStatic = String(event.image_url).startsWith('/assets/alerts/');
+        if (!existing.image_url || isCuratedStatic) {
+          updateData.image_url = event.image_url;
+        }
       }
       
       if (existing.alert_sent) {
