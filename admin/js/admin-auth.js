@@ -136,7 +136,19 @@ export async function initAdminAuth() {
   setStatus('Verifying admin access\u2026', false);
 
   const user = await client.getUser();
-  const getToken = () => client.getTokenSilently();
+  // The SPA requests no API audience, so the access token is opaque and
+  // cannot be verified server-side. Use the ID token (a signed JWT with
+  // email + sub, aud = client_id) for all admin API calls instead.
+  const getToken = async () => {
+    try {
+      await client.getTokenSilently();
+    } catch {
+      // Silent refresh may fail without refresh tokens; the cached ID token
+      // is still usable below.
+    }
+    const claims = await client.getIdTokenClaims();
+    return claims && claims.__raw ? claims.__raw : null;
+  };
 
   let token;
   try {

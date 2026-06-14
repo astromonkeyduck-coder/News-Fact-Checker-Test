@@ -176,8 +176,16 @@ async function verifyToken(event) {
     const verifyOptions = {
       issuer: config.issuer,
     };
-    if (config.audience) {
-      verifyOptions.audience = config.audience;
+    // Accept both a configured API audience AND the client_id, so Auth0
+    // ID tokens (aud = client_id) verify even when the SPA requests no
+    // custom API audience (access tokens are then opaque/unverifiable).
+    const audiences = [];
+    if (config.audience) audiences.push(config.audience);
+    if (process.env.AUTH0_CLIENT_ID && !audiences.includes(process.env.AUTH0_CLIENT_ID)) {
+      audiences.push(process.env.AUTH0_CLIENT_ID);
+    }
+    if (audiences.length) {
+      verifyOptions.audience = audiences.length === 1 ? audiences[0] : audiences;
     }
 
     const { payload } = await jwtVerify(token, jwks, verifyOptions);
