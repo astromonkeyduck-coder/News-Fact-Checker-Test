@@ -60,8 +60,16 @@ function hasAdminRole(payload) {
   return false;
 }
 
-/** Always treated as admin (merged with ADMIN_EMAILS from env). */
-const BUILTIN_ADMIN_EMAILS = ["mr.pangolinman@gmail.com"];
+/**
+ * Always treated as admin (merged with ADMIN_EMAILS from env).
+ * Matched against the token email, the namespaced email claim, OR the Auth0
+ * `sub` — so adding a `provider|id` value here grants that account admin even
+ * when the access token carries no email claim.
+ */
+const BUILTIN_ADMIN_EMAILS = [
+  "mr.pangolinman@gmail.com",
+  "google-oauth2|100827365003946167291",
+];
 
 function isAdminEmail(email) {
   if (!email) return false;
