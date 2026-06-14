@@ -413,6 +413,11 @@
         title: '✨ New on Noteworthy News',
         body: 'Check out our latest feature: Push Notifications!',
         url: '/'
+      },
+      'live-story': {
+        title: 'DEVELOPING: Test Live Story',
+        body: 'This is how a followed live story update will appear.',
+        url: '/'
       }
     };
 

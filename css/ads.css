@@ -1,0 +1,59 @@
+/* Noteworthy News — shared ad slot styling.
+   Works with js/ads.js. A placement is just:
+   <div class="nn-ad" data-nn-ad="in_article"></div>  */
+
+.nn-ad {
+  display: block;
+  width: 100%;
+  margin: 2.25rem auto;
+  text-align: center;
+}
+
+.nn-ad__label {
+  display: block;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(120, 130, 150, 0.65);
+  margin-bottom: 6px;
+}
+
+.nn-ad ins.adsbygoogle {
+  display: block;
+  background: transparent;
+}
+
+/* Sidebar variant: sticks alongside article content on wide screens. */
+.nn-ad--sidebar {
+  margin: 0;
+  position: sticky;
+  top: 96px;
+}
+
+/* Desktop-only variant: hidden on phones (e.g. a top leaderboard that would
+   otherwise stack under a mobile promo banner). */
+@media (max-width: 767px) {
+  .nn-ad--desktop {
+    display: none !important;
+  }
+}
+
+/* Collapse fully whenever the unit is dormant or returned no ad, so the
+   layout never shows an empty box or a stray "Advertisement" label. */
+.nn-ad[data-nn-ad-state="disabled"],
+.nn-ad[data-nn-ad-state="unfilled"] {
+  display: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  min-height: 0 !important;
+  height: 0 !important;
+}
+
+@media (max-width: 1024px) {
+  .nn-ad--sidebar {
+    position: static;
+  }
+}

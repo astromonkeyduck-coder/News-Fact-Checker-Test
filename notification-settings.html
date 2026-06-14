@@ -51,6 +51,14 @@
     .ns-state { color: var(--color-text-muted); font-size: var(--text-sm); padding: var(--space-md) 0; }
     .ns-mini { color: var(--color-text-muted); font-size: var(--text-xs); margin-top: var(--space-sm); }
     .ns-pair-code { font-family: var(--font-mono); font-size: var(--text-2xl); font-weight: var(--weight-bold); letter-spacing: 0.3em; color: var(--color-accent); }
+    .ns-profile { display: flex; align-items: center; gap: var(--space-md); }
+    .ns-avatar { width: 52px; height: 52px; border-radius: var(--radius-full); background: var(--gradient-accent); color: #fff; font-family: var(--font-heading); font-weight: var(--weight-bold); font-size: var(--text-lg); display: flex; align-items: center; justify-content: center; overflow: hidden; flex: none; }
+    .ns-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .ns-profile-meta { flex: 1; min-width: 0; }
+    .ns-profile-name { font-family: var(--font-heading); font-weight: var(--weight-bold); font-size: var(--text-lg); }
+    .ns-profile-email { color: var(--color-text-secondary); font-size: var(--text-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ns-row-controls { display: flex; align-items: center; gap: var(--space-sm); flex: none; }
+    .ns-test-btn { padding: 6px 12px; font-size: var(--text-xs); }
   </style>
 </head>
 <body>
@@ -59,8 +67,12 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
       Back
     </a>
-    <h1>Notifications</h1>
-    <p class="ns-sub">Control breaking news alerts and the live stories you follow.</p>
+    <h1>Your account</h1>
+    <p class="ns-sub">Manage your profile, breaking news alerts, and the live stories you follow.</p>
+
+    <div class="ns-card" id="ns-profile-card">
+      <div id="ns-profile"><div class="ns-state">Checking sign-in…</div></div>
+    </div>
 
     <div class="ns-card">
       <div class="ns-status-line">
@@ -172,8 +184,11 @@
       prefsEl.innerHTML = types.map(function (t) {
         return '<div class="ns-row">' +
           '<div><div class="ns-row-label">' + esc(t.label) + '</div><div class="ns-row-desc">' + esc(t.description) + '</div></div>' +
-          '<label class="ns-toggle"><input type="checkbox" data-type="' + esc(t.id) + '"' + (t.enabled ? ' checked' : '') + '>' +
-          '<span class="ns-track"><span class="ns-thumb"></span></span></label>' +
+          '<div class="ns-row-controls">' +
+            '<button class="ns-btn secondary ns-test-btn" data-type="' + esc(t.id) + '">Test</button>' +
+            '<label class="ns-toggle"><input type="checkbox" data-type="' + esc(t.id) + '"' + (t.enabled ? ' checked' : '') + '>' +
+            '<span class="ns-track"><span class="ns-thumb"></span></span></label>' +
+          '</div>' +
         '</div>';
       }).join('');
       prefsEl.querySelectorAll('input[data-type]').forEach(function (input) {
@@ -181,6 +196,27 @@
           PN.updatePreference(input.dataset.type, input.checked);
         });
       });
+      prefsEl.querySelectorAll('.ns-test-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () { sendTest(btn); });
+      });
+    }
+
+    async function sendTest(btn) {
+      var type = btn.dataset.type;
+      if (PN.getPermissionState() !== 'granted') {
+        btn.textContent = 'Enable first';
+        setTimeout(function () { btn.textContent = 'Test'; }, 1800);
+        return;
+      }
+      var original = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Sent ✓';
+      try {
+        await PN.testNotification(type);
+      } catch (e) {
+        btn.textContent = 'Failed';
+      }
+      setTimeout(function () { btn.disabled = false; btn.textContent = original; }, 1800);
     }
 
     async function loadFollows() {
@@ -257,6 +293,53 @@
     refreshPermissionUI();
     loadFollows();
   })();
+  </script>
+
+  <!-- Profile / sign-in. Reuses the site's Auth0 module (self-configures via
+       get-auth0-config), so no inline secrets are needed here. -->
+  <script type="module">
+    import { initAuth, login, logout } from '/v2/js/auth.js';
+
+    const el = document.getElementById('ns-profile');
+
+    function esc(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+
+    function initials(user) {
+      const base = user.name || user.nickname || user.email || 'U';
+      return base.split(/[\s@._-]+/).filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase() || 'U';
+    }
+
+    function renderSignedOut() {
+      el.innerHTML =
+        '<div class="ns-status-line">' +
+          '<div><div class="ns-profile-name">Browsing as guest</div>' +
+          '<div class="ns-row-desc" style="color:var(--color-text-muted);font-size:var(--text-xs)">Sign in to sync your follows and account.</div></div>' +
+          '<button class="ns-btn" id="ns-signin-btn">Sign in</button>' +
+        '</div>';
+      const btn = document.getElementById('ns-signin-btn');
+      if (btn) btn.addEventListener('click', () => login());
+    }
+
+    function renderSignedIn(user) {
+      const avatar = user.picture
+        ? '<span class="ns-avatar"><img src="' + esc(user.picture) + '" alt="" referrerpolicy="no-referrer"></span>'
+        : '<span class="ns-avatar">' + esc(initials(user)) + '</span>';
+      el.innerHTML =
+        '<div class="ns-profile">' +
+          avatar +
+          '<div class="ns-profile-meta">' +
+            '<div class="ns-profile-name">' + esc(user.name || user.nickname || 'Your account') + '</div>' +
+            (user.email ? '<div class="ns-profile-email">' + esc(user.email) + '</div>' : '') +
+          '</div>' +
+          '<button class="ns-btn secondary" id="ns-signout-btn">Sign out</button>' +
+        '</div>';
+      const btn = document.getElementById('ns-signout-btn');
+      if (btn) btn.addEventListener('click', () => logout());
+    }
+
+    // initAuth fires onAuthChange(null) immediately, then again with the user
+    // if an existing session is found.
+    initAuth((user) => { user ? renderSignedIn(user) : renderSignedOut(); });
   </script>
 </body>
 </html>

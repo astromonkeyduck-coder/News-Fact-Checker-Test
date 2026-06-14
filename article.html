@@ -93,6 +93,7 @@
     </script>
     
     <link rel="stylesheet" href="/css/article-v3.css?v=20260525b">
+    <link rel="stylesheet" href="/css/ads.css">
 </head>
 <body class="article-page">
     <a href="#article-heading" class="skip-to-content">Skip to main content</a>
@@ -159,13 +160,17 @@
                     <p>Fact-checked updates and media literacy tools in your inbox.</p>
                     <a href="/index.html#newsletter-section" class="nn-chip">Subscribe</a>
                 </section>
+                <div class="nn-ad nn-ad--sidebar" data-nn-ad="display_sidebar"></div>
             </aside>
         </div>
+
+        <div class="nn-ad" data-nn-ad="in_article"></div>
         
         <section class="nn-more-coverage" aria-label="More from Noteworthy News">
             <h2 class="nn-more-coverage__title">More from Noteworthy News</h2>
             <p class="nn-more-coverage__subtitle">Explore our latest fact-checked stories and breaking news coverage</p>
             <div class="nn-more-coverage__grid" id="more-coverage-grid"></div>
+            <div class="nn-ad" data-nn-ad="multiplex"></div>
         </section>
         
         <section class="nn-comments" id="nn-comments-wrap">
@@ -261,5 +266,6 @@
     <script src="/src/components/comment-section.js"></script>
     <script src="/src/components/article-page-v3.js?v=20260525b"></script>
     <script src="/src/components/article-loader.js?v=20260525b"></script>
+    <script src="/js/ads.js"></script>
 </body>
 </html>
