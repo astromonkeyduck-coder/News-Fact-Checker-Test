@@ -86,6 +86,43 @@ function isAdmin(payload) {
   return isAdminEmail(email);
 }
 
+/**
+ * Auth0 access tokens often omit the user's email claim. When the token alone
+ * doesn't establish admin, fall back to the Auth0 /userinfo endpoint using the
+ * already-verified bearer token to resolve the email, then re-check the
+ * allowlist. Secure: the token is verified before this runs, and /userinfo is
+ * authoritative for the same token.
+ */
+async function getUserinfoEmail(event, config) {
+  try {
+    const authHeader =
+      event.headers.authorization || event.headers.Authorization;
+    if (!authHeader) return null;
+    const res = await fetch(`https://${config.domain}/userinfo`, {
+      headers: { Authorization: authHeader },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.email || null;
+  } catch (err) {
+    console.error("[requireAuth] /userinfo lookup failed:", err.message);
+    return null;
+  }
+}
+
+/**
+ * Resolves admin status for a verified payload, with a /userinfo email
+ * fallback. Returns { ok, payload } where payload may be enriched with email.
+ */
+async function resolveAdmin(event, payload, config) {
+  if (isAdmin(payload)) return { ok: true, payload };
+  const email = await getUserinfoEmail(event, config);
+  if (email && isAdminEmail(email)) {
+    return { ok: true, payload: { ...payload, email } };
+  }
+  return { ok: false, payload };
+}
+
 // ---------------------------------------------------------------------------
 // CORS headers shared by auth responses
 // ---------------------------------------------------------------------------
@@ -178,7 +215,9 @@ async function requireAdminAuth(event) {
   const authResult = await requireAuth(event);
   if (authResult.statusCode) return authResult; // pass through error
 
-  if (!isAdmin(authResult.user)) {
+  const config = getAuthConfig();
+  const resolved = await resolveAdmin(event, authResult.user, config);
+  if (!resolved.ok) {
     console.warn(
       "[requireAuth] Non-admin access attempt:",
       authResult.user.sub || authResult.user.email || "unknown"
@@ -186,7 +225,7 @@ async function requireAdminAuth(event) {
     return authResponse(403, "Forbidden — admin privileges required");
   }
 
-  return authResult;
+  return { user: resolved.payload };
 }
 
 // ---------------------------------------------------------------------------
@@ -243,10 +282,13 @@ function timingSafeEqual(a, b) {
  * @returns {{ user: object, authMethod: string } | { statusCode, headers, body }}
  */
 async function requireAdminAuthOrSecret(event, secretEnvVarName) {
-  // Try JWT first
+  // Try JWT first (with /userinfo email fallback for admin resolution)
   const jwtResult = await verifyToken(event);
-  if (jwtResult && isAdmin(jwtResult.payload)) {
-    return { user: jwtResult.payload, authMethod: "jwt" };
+  if (jwtResult) {
+    const resolved = await resolveAdmin(event, jwtResult.payload, getAuthConfig());
+    if (resolved.ok) {
+      return { user: resolved.payload, authMethod: "jwt" };
+    }
   }
 
   // Try legacy secret
