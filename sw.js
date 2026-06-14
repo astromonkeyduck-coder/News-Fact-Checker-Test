@@ -3,7 +3,7 @@
  * Provides offline support, caching, and faster page loads
  */
 
-const CACHE_VERSION = 'v2.3.0-video-fix';
+const CACHE_VERSION = 'v2.4.0-live-story';
 const CACHE_NAME = `noteworthy-news-${CACHE_VERSION}`;
 
 // Helper function to check if a URL is cacheable
@@ -33,6 +33,8 @@ const STATIC_ASSETS = [
   '/game.html',
   '/geography-game.html',
   '/geography-game.js',
+  '/story.html',
+  '/v2/js/live-story.js',
   '/logo.svg',
   '/site.webmanifest',
   '/IMG_5794.PNG',
@@ -379,6 +381,16 @@ const NOTIFICATION_CONFIGS = {
       { action: 'dismiss', title: 'Later' }
     ]
   },
+  'live-story': {
+    icon: '/IMG_5794.PNG',
+    badge: '/IMG_5794.PNG',
+    vibrate: [120, 60, 120],
+    requireInteraction: false,
+    actions: [
+      { action: 'read', title: 'Follow Live' },
+      { action: 'dismiss', title: 'Dismiss' }
+    ]
+  },
   'default': {
     icon: '/IMG_5794.PNG',
     badge: '/IMG_5794.PNG',
@@ -409,14 +421,22 @@ self.addEventListener('push', (event) => {
     icon: data.icon || config.icon,
     badge: data.badge || config.badge,
     tag: data.tag || `noteworthy-${notificationType}-${Date.now()}`,
-    vibrate: config.vibrate,
-    requireInteraction: config.requireInteraction,
+    // Payload may override the per-type defaults (used by live-story alert levels).
+    vibrate: data.silent ? undefined : (data.vibrate || config.vibrate),
+    requireInteraction: typeof data.requireInteraction === 'boolean'
+      ? data.requireInteraction
+      : config.requireInteraction,
+    renotify: data.renotify || false,
     actions: config.actions,
     data: {
       url: data.url || '/',
       type: notificationType,
       id: data.id || null,
       mapUrl: data.mapUrl || null,
+      storyId: data.storyId || null,
+      slug: data.slug || null,
+      status: data.status || null,
+      alertLevel: data.alertLevel || null,
       timestamp: Date.now()
     },
     // Rich notification features
@@ -424,21 +444,42 @@ self.addEventListener('push', (event) => {
     silent: data.silent || false
   };
 
-  // Remove null values
+  // Remove null/undefined values
   Object.keys(options).forEach(key => {
-    if (options[key] === null) delete options[key];
+    if (options[key] === null || options[key] === undefined) delete options[key];
   });
 
   event.waitUntil(
-    self.registration.showNotification(title, options)
+    self.registration.showNotification(title, options).then(() => updateAppBadge())
   );
 });
+
+/**
+ * Reflect unread notification count on the installed app icon (PWA / iOS 16.4+).
+ * We use the count of currently-visible notifications as the badge value so we
+ * don't need persistent storage across service-worker restarts.
+ */
+async function updateAppBadge() {
+  try {
+    if (!self.navigator || !('setAppBadge' in self.navigator)) return;
+    const notifications = await self.registration.getNotifications();
+    const count = notifications.length;
+    if (count > 0) {
+      await self.navigator.setAppBadge(count);
+    } else if ('clearAppBadge' in self.navigator) {
+      await self.navigator.clearAppBadge();
+    }
+  } catch (e) {
+    // Badging API not available or rejected — non-fatal.
+  }
+}
 
 // Notification click handler - handles both notification body clicks and action clicks
 self.addEventListener('notificationclick', (event) => {
   console.log('[Service Worker] Notification clicked:', event.action);
   
   event.notification.close();
+  event.waitUntil(updateAppBadge());
   
   const data = event.notification.data || {};
   let targetUrl = data.url || '/';
@@ -484,6 +525,7 @@ self.addEventListener('notificationclick', (event) => {
 self.addEventListener('notificationclose', (event) => {
   const data = event.notification.data || {};
   console.log('[Service Worker] Notification closed:', data.type, data.id);
-  
-  // Could send analytics here if needed
+
+  // Keep the app badge in sync as notifications are dismissed.
+  event.waitUntil(updateAppBadge());
 });

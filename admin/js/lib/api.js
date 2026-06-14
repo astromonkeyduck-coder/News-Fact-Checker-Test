@@ -115,6 +115,35 @@ export function sendNewsletter(options) {
   return request('send-newsletter', { method: 'POST', body: options });
 }
 
+// ── Video Watermarker ─────────────────────────────
+
+export async function getWatermarkUploadUrl(fileName, fileSize) {
+  const headers = await getHeaders();
+  const qs = new URLSearchParams({ fileName, fileSize: String(fileSize) }).toString();
+  const res = await fetch(`/.netlify/functions/watermark-upload-url?${qs}`, { headers });
+  if (!res.ok) {
+    let detail;
+    try { detail = await res.json(); } catch { detail = { error: res.statusText }; }
+    throw new Error(detail.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+export function createWatermarkJob(payload) {
+  return request('watermark-create-job', { method: 'POST', body: payload });
+}
+
+export async function getWatermarkJobStatus(jobId) {
+  const headers = await getHeaders();
+  const res = await fetch(`/.netlify/functions/watermark-job-status?id=${encodeURIComponent(jobId)}`, { headers });
+  if (!res.ok) {
+    let detail;
+    try { detail = await res.json(); } catch { detail = { error: res.statusText }; }
+    throw new Error(detail.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
 // ── Analytics ─────────────────────────────────────
 
 export async function queryLogs(params = {}) {
@@ -148,4 +177,26 @@ export function removeOldAlertPosts() {
 
 export function sendBreakingNewsAlert(alert) {
   return request('send-breaking-news-alert', { method: 'POST', body: alert });
+}
+
+// ── Live Stories ──────────────────────────────────
+
+export function listLiveStories() {
+  return request('admin-live-stories?action=list');
+}
+
+export function getLiveStory(slug) {
+  return request(`admin-live-stories?slug=${encodeURIComponent(slug)}`);
+}
+
+export function createLiveStory(fields) {
+  return request('admin-live-stories', { method: 'POST', body: { action: 'createStory', ...fields } });
+}
+
+export function updateLiveStory(fields) {
+  return request('admin-live-stories', { method: 'POST', body: { action: 'updateStory', ...fields } });
+}
+
+export function addLiveStoryUpdate(fields) {
+  return request('admin-live-stories', { method: 'POST', body: { action: 'addUpdate', ...fields } });
 }

@@ -42,6 +42,13 @@
   force = true
 # ────────────────────────────────────────────────────────────────────
 
+# Live Story deep links — /story/<slug> serves story.html (clean URLs for push)
+# 200 rewrite keeps the slug in the address bar; live-story.js parses it.
+[[redirects]]
+  from = "/story/*"
+  to = "/story.html"
+  status = 200
+
 # Favicon redirect (browsers request /favicon.ico by default)
 [[redirects]]
   from = "/favicon.ico"
@@ -126,6 +133,20 @@
   to = "/admin/"
   status = 301
   force = false
+
+# Clean deep link for the Video Watermarker tool: serve the admin SPA at
+# /admin/watermarker (the SPA router resolves the section from the path).
+[[redirects]]
+  from = "/admin/watermarker/"
+  to = "/admin/watermarker"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/admin/watermarker"
+  to = "/admin/index.html"
+  status = 200
+  force = true
 
 [[redirects]]
   from = "/datalogging"
@@ -287,6 +308,17 @@
 [functions."process-job"]
   node_bundler = "zisi"  # Use zisi to handle native ffmpeg-static binary
   included_files = ["node_modules/ffmpeg-static/**"]
+  # Note: Background function configuration is also in the function file itself (exports.config)
+
+# Video Watermarker background processor — needs the native ffmpeg binary and
+# the bundled font used to render the watermark PNG. Runs as a background
+# function (up to 15 min) since a full re-encode exceeds the 26s sync cap.
+# NOTE: ffprobe-static is intentionally NOT bundled — it ships ~300MB of
+# multi-platform binaries which would exceed Netlify's function size limits.
+# We read dimensions/duration from ffmpeg itself instead (see lib/watermarkJobs.js).
+[functions."watermark-process-background"]
+  node_bundler = "zisi"
+  included_files = ["node_modules/ffmpeg-static/**", "netlify/functions/fonts-base64.js"]
   # Note: Background function configuration is also in the function file itself (exports.config)
 
 # Configure transcribe-from-url with longer timeout for large files

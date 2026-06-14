@@ -8,9 +8,7 @@
  */
 
 const { getStore } = require("@netlify/blobs");
-
-// Store name for push subscriptions
-const STORE_NAME = "push-subscriptions";
+const { STORE_NAME, getSubscriberKey } = require("./lib/subscriberKey");
 
 // Default preferences
 const DEFAULT_PREFERENCES = {
@@ -18,6 +16,7 @@ const DEFAULT_PREFERENCES = {
   'earthquake': true,
   'weather': false,
   'website-update': true,
+  'live-story': true,
 };
 
 exports.handler = async (event, context) => {
@@ -49,14 +48,8 @@ exports.handler = async (event, context) => {
       token: process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
     });
 
-    // Generate subscription key from endpoint
-    const getSubscriptionKey = (endpoint) => {
-      if (!endpoint) return null;
-      const hash = Buffer.from(endpoint).toString('base64')
-        .replace(/[^a-zA-Z0-9]/g, '')
-        .slice(0, 64);
-      return `subscription-${hash}`;
-    };
+    // Generate subscription key from endpoint (shared helper)
+    const getSubscriptionKey = getSubscriberKey;
 
     // Handle GET request - retrieve preferences
     if (event.httpMethod === "GET") {

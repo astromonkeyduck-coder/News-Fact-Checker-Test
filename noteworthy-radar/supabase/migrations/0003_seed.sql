@@ -1,0 +1,21 @@
+-- =====================================================================
+-- Noteworthy Radar - demo seed
+--
+-- IMPORTANT: Demo users + data are seeded via the Admin API, NOT raw SQL.
+--
+--     node supabase/seed.mjs
+--
+-- Why: inserting directly into auth.users from SQL leaves NULL token
+-- columns that break GoTrue ("Database error querying schema" on login and
+-- "Database error finding users" on the Admin API). The Admin API sets every
+-- column correctly and is version-safe.
+--
+-- seed.mjs creates: 3 demo users (owner/editor/viewer, password
+-- radar-demo-123), the "Noteworthy Radar Desk" team + memberships, a
+-- "Knicks vs Spurs" event with keywords, sample leads across risk/permission
+-- states, and permission rows.
+--
+-- This file is intentionally a no-op so the schema can be applied without
+-- creating fragile auth rows.
+-- =====================================================================
+select 1;

@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Notification Settings — Noteworthy News</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#080E1A">
+  <link rel="manifest" href="/site.webmanifest">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap">
+
+  <link rel="stylesheet" href="/v2/styles/tokens.css">
+  <link rel="stylesheet" href="/v2/styles/base.css">
+
+  <style>
+    body { background: var(--color-bg); color: var(--color-text); font-family: var(--font-ui); margin: 0; -webkit-font-smoothing: antialiased; }
+    .ns-wrap { max-width: var(--container-narrow); margin: 0 auto; padding: max(env(safe-area-inset-top), var(--space-md)) var(--space-md) var(--space-4xl); }
+    .ns-back { display:inline-flex; align-items:center; gap:var(--space-xs); color:var(--color-text-secondary); text-decoration:none; font-size:var(--text-sm); font-weight:var(--weight-medium); margin:var(--space-sm) 0 var(--space-lg); }
+    .ns-back:hover { color: var(--color-text); }
+    h1 { font-family: var(--font-heading); font-weight: var(--weight-black); font-size: var(--text-3xl); letter-spacing: var(--tracking-tight); margin: 0 0 var(--space-xs); }
+    .ns-sub { color: var(--color-text-secondary); font-size: var(--text-sm); margin: 0 0 var(--space-xl); }
+    .ns-card { background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: var(--radius-xl); padding: var(--space-lg); margin-bottom: var(--space-lg); }
+    .ns-card h2 { font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-bold); margin: 0 0 var(--space-md); }
+    .ns-status-line { display:flex; align-items:center; justify-content:space-between; gap:var(--space-md); }
+    .ns-pill { font-size: var(--text-2xs); font-weight: var(--weight-bold); letter-spacing: var(--tracking-wide); text-transform: uppercase; padding: 4px 10px; border-radius: var(--radius-full); }
+    .ns-pill.on { color: var(--color-success); background: var(--color-success-muted); }
+    .ns-pill.off { color: var(--color-warning); background: var(--color-warning-muted); }
+    .ns-pill.blocked { color: var(--color-error); background: var(--color-error-muted); }
+    .ns-btn { padding: 10px 16px; border-radius: var(--radius-lg); border: 1px solid var(--color-accent-border); background: var(--gradient-accent); color: #fff; font-weight: var(--weight-semibold); font-size: var(--text-sm); cursor: pointer; }
+    .ns-btn:active { transform: scale(0.985); }
+    .ns-btn.secondary { background: var(--color-bg-surface); border-color: var(--color-border-hover); color: var(--color-text); }
+    .ns-row { display:flex; align-items:center; justify-content:space-between; gap:var(--space-md); padding: var(--space-md) 0; border-top: 1px solid var(--color-border); }
+    .ns-row:first-of-type { border-top: none; }
+    .ns-row-label { font-weight: var(--weight-semibold); font-size: var(--text-sm); }
+    .ns-row-desc { color: var(--color-text-muted); font-size: var(--text-xs); margin-top: 2px; }
+    /* toggle */
+    .ns-toggle { position: relative; width: 44px; height: 26px; flex: none; }
+    .ns-toggle input { opacity: 0; width: 0; height: 0; }
+    .ns-track { position:absolute; inset:0; background: var(--color-bg-surface); border:1px solid var(--color-border-hover); border-radius: var(--radius-full); transition: background var(--duration-fast); }
+    .ns-thumb { position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:var(--radius-full); background: var(--color-text-secondary); transition: transform var(--duration-fast) var(--ease-out), background var(--duration-fast); }
+    .ns-toggle input:checked + .ns-track { background: var(--color-accent); border-color: var(--color-accent); }
+    .ns-toggle input:checked + .ns-track .ns-thumb { transform: translateX(18px); background: #fff; }
+    .ns-toggle input:disabled + .ns-track { opacity: 0.5; }
+    .ns-follow-item { display:flex; align-items:center; justify-content:space-between; gap:var(--space-md); padding: var(--space-md) 0; border-top: 1px solid var(--color-border); }
+    .ns-follow-item:first-child { border-top: none; }
+    .ns-follow-item a { color: var(--color-text); text-decoration: none; font-weight: var(--weight-semibold); font-size: var(--text-sm); }
+    .ns-follow-item a:hover { color: var(--color-accent); }
+    .ns-state { color: var(--color-text-muted); font-size: var(--text-sm); padding: var(--space-md) 0; }
+    .ns-mini { color: var(--color-text-muted); font-size: var(--text-xs); margin-top: var(--space-sm); }
+    .ns-pair-code { font-family: var(--font-mono); font-size: var(--text-2xl); font-weight: var(--weight-bold); letter-spacing: 0.3em; color: var(--color-accent); }
+  </style>
+</head>
+<body>
+  <div class="ns-wrap">
+    <a class="ns-back" href="/">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      Back
+    </a>
+    <h1>Notifications</h1>
+    <p class="ns-sub">Control breaking news alerts and the live stories you follow.</p>
+
+    <div class="ns-card">
+      <div class="ns-status-line">
+        <div>
+          <h2 style="margin:0">Push alerts</h2>
+          <span class="ns-pill" id="ns-perm-pill">Checking…</span>
+        </div>
+        <button class="ns-btn" id="ns-enable-btn" style="display:none">Enable alerts</button>
+      </div>
+      <p class="ns-mini" id="ns-perm-hint"></p>
+    </div>
+
+    <div class="ns-card" id="ns-prefs-card" style="display:none">
+      <h2>Alert types</h2>
+      <div id="ns-prefs"></div>
+    </div>
+
+    <div class="ns-card">
+      <h2>Stories you follow</h2>
+      <div id="ns-follows"><div class="ns-state">Loading…</div></div>
+    </div>
+
+    <div class="ns-card" id="ns-pair-card" style="display:none">
+      <h2>Open in the iOS app</h2>
+      <p class="ns-mini">Install Noteworthy Live on iPhone to get Lock Screen and Dynamic Island Live Activities for the stories you follow. Generate a code, then enter it in the app once.</p>
+      <div class="ns-status-line" style="margin-top:var(--space-md)">
+        <div id="ns-pair-code" class="ns-pair-code">— — — — — —</div>
+        <button class="ns-btn secondary" id="ns-pair-btn">Generate code</button>
+      </div>
+      <p class="ns-mini" id="ns-pair-hint"></p>
+    </div>
+  </div>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/sw.js').catch(function () {});
+      });
+    }
+  </script>
+  <script src="/src/utils/push-notifications.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    var PN = window.PushNotifications;
+
+    function fnBase() {
+      var isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+      return isLocal ? 'http://localhost:8888/.netlify/functions' : '/.netlify/functions';
+    }
+    function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+
+    var permPill = document.getElementById('ns-perm-pill');
+    var permHint = document.getElementById('ns-perm-hint');
+    var enableBtn = document.getElementById('ns-enable-btn');
+    var prefsCard = document.getElementById('ns-prefs-card');
+    var prefsEl = document.getElementById('ns-prefs');
+    var followsEl = document.getElementById('ns-follows');
+
+    async function refreshPermissionUI() {
+      if (!PN || !PN.isSupported()) {
+        permPill.textContent = 'Unavailable';
+        permPill.className = 'ns-pill off';
+        var isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        var standalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+        permHint.innerHTML = (isiOS && !standalone)
+          ? 'On iPhone, tap Share then <b>Add to Home Screen</b> and open Noteworthy News from your home screen to enable alerts.'
+          : 'Push notifications aren\u2019t supported in this browser.';
+        return;
+      }
+      var state = PN.getPermissionState();
+      if (state === 'granted') {
+        var subscribed = await PN.isSubscribed();
+        permPill.textContent = subscribed ? 'On' : 'Allowed';
+        permPill.className = 'ns-pill on';
+        enableBtn.style.display = subscribed ? 'none' : 'inline-flex';
+        enableBtn.textContent = 'Turn on alerts';
+        permHint.textContent = subscribed ? 'You\u2019re set up to receive alerts on this device.' : 'Tap to start receiving alerts on this device.';
+        if (subscribed) { prefsCard.style.display = 'block'; renderPrefs(); document.getElementById('ns-pair-card').style.display = 'block'; }
+      } else if (state === 'denied') {
+        permPill.textContent = 'Blocked';
+        permPill.className = 'ns-pill blocked';
+        enableBtn.style.display = 'none';
+        permHint.textContent = 'Notifications are blocked. Enable them in your browser/site settings.';
+      } else {
+        permPill.textContent = 'Off';
+        permPill.className = 'ns-pill off';
+        enableBtn.style.display = 'inline-flex';
+        enableBtn.textContent = 'Enable alerts';
+        permHint.textContent = 'Turn on push alerts for breaking news and stories you follow.';
+      }
+    }
+
+    enableBtn.addEventListener('click', async function () {
+      enableBtn.disabled = true;
+      enableBtn.textContent = 'Enabling…';
+      try {
+        var res = await PN.subscribe();
+        if (!res.success) { permHint.textContent = res.permission === 'denied' ? 'Notifications blocked.' : 'Could not enable alerts.'; }
+      } finally {
+        enableBtn.disabled = false;
+        await refreshPermissionUI();
+        loadFollows();
+      }
+    });
+
+    function renderPrefs() {
+      var types = PN.getNotificationTypes();
+      prefsEl.innerHTML = types.map(function (t) {
+        return '<div class="ns-row">' +
+          '<div><div class="ns-row-label">' + esc(t.label) + '</div><div class="ns-row-desc">' + esc(t.description) + '</div></div>' +
+          '<label class="ns-toggle"><input type="checkbox" data-type="' + esc(t.id) + '"' + (t.enabled ? ' checked' : '') + '>' +
+          '<span class="ns-track"><span class="ns-thumb"></span></span></label>' +
+        '</div>';
+      }).join('');
+      prefsEl.querySelectorAll('input[data-type]').forEach(function (input) {
+        input.addEventListener('change', function () {
+          PN.updatePreference(input.dataset.type, input.checked);
+        });
+      });
+    }
+
+    async function loadFollows() {
+      if (!PN || !PN.isSupported()) { followsEl.innerHTML = '<div class="ns-state">Follow a live story to see it here.</div>'; return; }
+      var sub = await PN.getSubscription();
+      if (!sub) { followsEl.innerHTML = '<div class="ns-state">Enable alerts, then follow a live story to manage it here.</div>'; return; }
+      var endpoint = sub.toJSON().endpoint;
+      try {
+        var res = await fetch(fnBase() + '/follow-live-story?endpoint=' + encodeURIComponent(endpoint));
+        var data = await res.json();
+        var follows = data.follows || [];
+        if (!follows.length) { followsEl.innerHTML = '<div class="ns-state">You\u2019re not following any live stories yet.</div>'; return; }
+        followsEl.innerHTML = follows.map(function (f) {
+          return '<div class="ns-follow-item" data-slug="' + esc(f.slug) + '">' +
+            '<a href="/story/' + esc(f.slug) + '">' + esc(f.title) + '</a>' +
+            '<button class="ns-btn secondary ns-unfollow" data-slug="' + esc(f.slug) + '">Unfollow</button>' +
+          '</div>';
+        }).join('');
+        followsEl.querySelectorAll('.ns-unfollow').forEach(function (btn) {
+          btn.addEventListener('click', function () { unfollow(btn.dataset.slug, btn); });
+        });
+      } catch (e) {
+        followsEl.innerHTML = '<div class="ns-state">Could not load your followed stories.</div>';
+      }
+    }
+
+    async function unfollow(slug, btn) {
+      btn.disabled = true;
+      btn.textContent = 'Removing…';
+      try {
+        var sub = await PN.getSubscription();
+        await fetch(fnBase() + '/follow-live-story', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'unfollow', slug: slug, subscription: sub.toJSON() })
+        });
+        var item = followsEl.querySelector('.ns-follow-item[data-slug="' + (window.CSS && CSS.escape ? CSS.escape(slug) : slug) + '"]');
+        if (item) item.remove();
+        if (!followsEl.querySelector('.ns-follow-item')) followsEl.innerHTML = '<div class="ns-state">You\u2019re not following any live stories yet.</div>';
+      } catch (e) {
+        btn.disabled = false; btn.textContent = 'Unfollow';
+      }
+    }
+
+    var pairBtn = document.getElementById('ns-pair-btn');
+    if (pairBtn) {
+      pairBtn.addEventListener('click', async function () {
+        var codeEl = document.getElementById('ns-pair-code');
+        var hintEl = document.getElementById('ns-pair-hint');
+        if (!PN || !PN.isSupported()) { hintEl.textContent = 'Enable alerts first.'; return; }
+        var sub = await PN.getSubscription();
+        if (!sub) { hintEl.textContent = 'Enable alerts first, then generate a code.'; return; }
+        pairBtn.disabled = true; pairBtn.textContent = 'Generating…';
+        try {
+          var res = await fetch(fnBase() + '/device-link', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'create-code', subscription: sub.toJSON() })
+          });
+          var data = await res.json();
+          if (data.code) {
+            codeEl.textContent = data.code;
+            var mins = Math.round((data.ttlSeconds || 600) / 60);
+            hintEl.textContent = 'Enter this code in the Noteworthy Live app within ' + mins + ' minutes.';
+          } else {
+            hintEl.textContent = data.error || 'Could not generate a code.';
+          }
+        } catch (e) {
+          hintEl.textContent = 'Could not generate a code. Try again.';
+        } finally {
+          pairBtn.disabled = false; pairBtn.textContent = 'Generate code';
+        }
+      });
+    }
+
+    refreshPermissionUI();
+    loadFollows();
+  })();
+  </script>
+</body>
+</html>

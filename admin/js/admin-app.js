@@ -7,11 +7,13 @@
 import { initAdminAuth, logout } from './admin-auth.js';
 
 const SECTIONS = {
-  posts:      () => import('./views/posts.js'),
-  ingestion:  () => import('./views/ingestion.js'),
-  newsletter: () => import('./views/newsletter.js'),
-  analytics:  () => import('./views/analytics.js'),
-  system:     () => import('./views/system.js'),
+  posts:       () => import('./views/posts.js'),
+  'live-stories': () => import('./views/live-stories.js'),
+  ingestion:   () => import('./views/ingestion.js'),
+  newsletter:  () => import('./views/newsletter.js'),
+  watermarker: () => import('./views/watermarker.js'),
+  analytics:   () => import('./views/analytics.js'),
+  system:      () => import('./views/system.js'),
 };
 
 const DEFAULT_SECTION = 'posts';
@@ -61,8 +63,15 @@ export async function boot() {
 }
 
 function getSection() {
+  // Hash takes precedence (in-app nav uses hashes).
   const hash = window.location.hash.replace('#', '');
-  return SECTIONS[hash] ? hash : DEFAULT_SECTION;
+  if (SECTIONS[hash]) return hash;
+
+  // Support clean deep links like /admin/watermarker.
+  const pathSeg = window.location.pathname.replace(/\/+$/, '').split('/').pop();
+  if (SECTIONS[pathSeg]) return pathSeg;
+
+  return DEFAULT_SECTION;
 }
 
 async function navigate(section) {

@@ -14,7 +14,8 @@
     'breaking-news': { label: 'Breaking News', default: true, description: 'Major breaking news alerts' },
     'earthquake': { label: 'Earthquakes', default: true, description: 'Significant earthquake alerts (M4.5+)' },
     'weather': { label: 'Weather Alerts', default: false, description: 'Severe weather warnings in your area' },
-    'website-update': { label: 'Website Updates', default: true, description: 'New features and site updates (max 1/day)' }
+    'website-update': { label: 'Website Updates', default: true, description: 'New features and site updates (max 1/day)' },
+    'live-story': { label: 'Followed Live Stories', default: true, description: 'Updates for live stories you follow' }
   };
 
   // Local storage keys

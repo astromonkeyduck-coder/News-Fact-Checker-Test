@@ -9,9 +9,7 @@
  */
 
 const { getStore } = require("@netlify/blobs");
-
-// Store name for push subscriptions
-const STORE_NAME = "push-subscriptions";
+const { STORE_NAME, getSubscriberKeyFromSubscription } = require("./lib/subscriberKey");
 
 exports.handler = async (event, context) => {
   const headers = {
@@ -86,16 +84,8 @@ exports.handler = async (event, context) => {
         token: process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
       });
 
-      // Generate a unique key from the subscription endpoint
-      const getSubscriptionKey = (sub) => {
-        if (!sub || !sub.endpoint) return null;
-        // Create a hash-like key from the endpoint URL
-        const endpoint = sub.endpoint;
-        const hash = Buffer.from(endpoint).toString('base64')
-          .replace(/[^a-zA-Z0-9]/g, '')
-          .slice(0, 64);
-        return `subscription-${hash}`;
-      };
+      // Generate a unique key from the subscription endpoint (shared helper)
+      const getSubscriptionKey = getSubscriberKeyFromSubscription;
 
       if (action === "subscribe") {
         if (!subscription || !subscription.endpoint) {

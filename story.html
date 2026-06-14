@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Live Story — Noteworthy News</title>
+  <meta name="description" content="Follow developing news live on Noteworthy News.">
+  <meta name="theme-color" content="#080E1A">
+  <link rel="manifest" href="/site.webmanifest">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500&display=swap">
+
+  <link rel="stylesheet" href="/v2/styles/tokens.css">
+  <link rel="stylesheet" href="/v2/styles/base.css">
+
+  <style>
+    body {
+      background: var(--color-bg);
+      color: var(--color-text);
+      font-family: var(--font-ui);
+      margin: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+    .ls-wrap {
+      max-width: var(--container-narrow);
+      margin: 0 auto;
+      padding: max(env(safe-area-inset-top), var(--space-md)) var(--space-md) var(--space-4xl);
+    }
+    .ls-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-sm) 0 var(--space-lg);
+    }
+    .ls-back {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      font-size: var(--text-sm);
+      font-weight: var(--weight-medium);
+    }
+    .ls-back:hover { color: var(--color-text); }
+    .ls-brand {
+      font-family: var(--font-heading);
+      font-weight: var(--weight-bold);
+      font-size: var(--text-sm);
+      letter-spacing: var(--tracking-tight);
+    }
+
+    /* ── Status pill ─────────────────────────────── */
+    .ls-status {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      font-size: var(--text-2xs);
+      font-weight: var(--weight-bold);
+      letter-spacing: var(--tracking-wider);
+      text-transform: uppercase;
+      border: 1px solid transparent;
+    }
+    .ls-status .dot {
+      width: 7px; height: 7px; border-radius: var(--radius-full);
+      background: currentColor;
+    }
+    .ls-status[data-status="breaking"]    { color: var(--color-live); background: var(--color-live-muted); border-color: var(--color-error-border); }
+    .ls-status[data-status="developing"]  { color: var(--color-warning); background: var(--color-warning-muted); border-color: var(--color-warning-border); }
+    .ls-status[data-status="verified"]    { color: var(--color-success); background: var(--color-success-muted); border-color: var(--color-success-border); }
+    .ls-status[data-status="disputed"]    { color: var(--color-warning); background: var(--color-warning-muted); border-color: var(--color-warning-border); }
+    .ls-status[data-status="resolved"]    { color: var(--color-text-secondary); background: rgba(255,255,255,0.05); border-color: var(--color-border); }
+    .ls-status[data-status="false_report"]{ color: var(--color-error); background: var(--color-error-muted); border-color: var(--color-error-border); }
+
+    .ls-status[data-status="breaking"] .dot {
+      animation: ls-pulse 1.4s var(--ease-broadcast) infinite;
+    }
+    @keyframes ls-pulse {
+      0%   { box-shadow: 0 0 0 0 rgba(239,68,68,0.5); }
+      70%  { box-shadow: 0 0 0 6px rgba(239,68,68,0); }
+      100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+    }
+
+    .ls-title {
+      font-family: var(--font-heading);
+      font-weight: var(--weight-black);
+      font-size: var(--text-3xl);
+      line-height: var(--leading-tight);
+      letter-spacing: var(--tracking-tight);
+      margin: var(--space-md) 0 var(--space-sm);
+    }
+    .ls-summary {
+      font-family: var(--font-body);
+      font-size: var(--text-lg);
+      line-height: var(--leading-normal);
+      color: var(--color-text-secondary);
+      margin: 0 0 var(--space-lg);
+    }
+    .ls-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-md);
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      margin-bottom: var(--space-lg);
+    }
+    .ls-meta b { color: var(--color-text-secondary); font-weight: var(--weight-semibold); }
+
+    /* ── Follow button ───────────────────────────── */
+    .ls-follow {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-sm);
+      width: 100%;
+      justify-content: center;
+      padding: 14px 20px;
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--color-accent-border);
+      background: var(--gradient-accent);
+      color: var(--color-white-pure);
+      font-family: var(--font-ui);
+      font-size: var(--text-base);
+      font-weight: var(--weight-semibold);
+      cursor: pointer;
+      transition: transform var(--duration-fast) var(--ease-out), filter var(--duration-fast) var(--ease-out);
+    }
+    .ls-follow:hover { filter: brightness(1.05); }
+    .ls-follow:active { transform: scale(0.985); }
+    .ls-follow[data-following="true"] {
+      background: var(--color-bg-card);
+      border-color: var(--color-success-border);
+      color: var(--color-success);
+    }
+    .ls-follow[disabled] { opacity: 0.55; cursor: default; }
+    .ls-follow .live-dot {
+      width: 8px; height: 8px; border-radius: var(--radius-full);
+      background: currentColor;
+    }
+    .ls-hint {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      text-align: center;
+      margin: var(--space-sm) 0 0;
+      min-height: 1em;
+    }
+    .ls-hint a { color: var(--color-accent); }
+
+    /* ── Timeline ────────────────────────────────── */
+    .ls-timeline-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: var(--space-2xl) 0 var(--space-md);
+    }
+    .ls-timeline-title {
+      font-family: var(--font-heading);
+      font-weight: var(--weight-bold);
+      font-size: var(--text-lg);
+    }
+    .ls-live-tag {
+      font-size: var(--text-2xs);
+      font-weight: var(--weight-bold);
+      letter-spacing: var(--tracking-wider);
+      text-transform: uppercase;
+      color: var(--color-live);
+      display: inline-flex; align-items: center; gap: var(--space-xs);
+    }
+    .ls-live-tag .dot {
+      width: 6px; height: 6px; border-radius: var(--radius-full); background: currentColor;
+      animation: ls-pulse 1.4s var(--ease-broadcast) infinite;
+    }
+
+    .ls-timeline { list-style: none; margin: 0; padding: 0; position: relative; }
+    .ls-timeline::before {
+      content: ""; position: absolute; left: 6px; top: 4px; bottom: 4px;
+      width: 2px; background: var(--color-border);
+    }
+    .ls-update {
+      position: relative;
+      padding: 0 0 var(--space-lg) var(--space-xl);
+    }
+    .ls-update::before {
+      content: ""; position: absolute; left: 0; top: 4px;
+      width: 14px; height: 14px; border-radius: var(--radius-full);
+      background: var(--color-bg); border: 2px solid var(--color-accent);
+    }
+    .ls-update[data-kind="major"]::before  { border-color: var(--color-live); }
+    .ls-update[data-kind="final"]::before   { border-color: var(--color-success); background: var(--color-success); }
+    .ls-update[data-kind="correction"]::before { border-color: var(--color-warning); }
+    .ls-update-meta {
+      display: flex; align-items: center; gap: var(--space-sm);
+      font-size: var(--text-2xs); color: var(--color-text-muted);
+      text-transform: uppercase; letter-spacing: var(--tracking-wide);
+      margin-bottom: var(--space-xs);
+    }
+    .ls-update-kind {
+      font-weight: var(--weight-bold);
+      color: var(--color-text-secondary);
+    }
+    .ls-update[data-kind="major"] .ls-update-kind { color: var(--color-live); }
+    .ls-update[data-kind="final"] .ls-update-kind { color: var(--color-success); }
+    .ls-update[data-kind="correction"] .ls-update-kind { color: var(--color-warning); }
+    .ls-update-body {
+      font-family: var(--font-body);
+      font-size: var(--text-base);
+      line-height: var(--leading-normal);
+      color: var(--color-text);
+    }
+    .ls-update-source {
+      display: inline-block; margin-top: var(--space-xs);
+      font-family: var(--font-ui); font-size: var(--text-xs);
+      color: var(--color-accent); text-decoration: none;
+    }
+    .ls-update-source:hover { text-decoration: underline; }
+
+    .ls-update.is-new { animation: ls-flash 1.6s var(--ease-out); }
+    @keyframes ls-flash {
+      0%   { background: var(--color-accent-muted); box-shadow: -8px 0 0 var(--color-accent-muted); }
+      100% { background: transparent; box-shadow: none; }
+    }
+
+    .ls-state {
+      text-align: center; padding: var(--space-3xl) var(--space-md);
+      color: var(--color-text-muted); font-size: var(--text-sm);
+    }
+    .ls-error { color: var(--color-error); }
+
+    .ls-toast {
+      position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + var(--space-lg));
+      transform: translateX(-50%) translateY(20px);
+      background: var(--color-bg-elevated); color: var(--color-text);
+      border: 1px solid var(--color-border-hover);
+      padding: 10px 16px; border-radius: var(--radius-full);
+      font-size: var(--text-sm); box-shadow: var(--shadow-lg);
+      opacity: 0; pointer-events: none; transition: all var(--duration-slow) var(--ease-spring);
+      z-index: var(--z-overlay);
+    }
+    .ls-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+  <div class="ls-wrap">
+    <div class="ls-topbar">
+      <a class="ls-back" href="/">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Back
+      </a>
+      <span class="ls-brand">Noteworthy<span style="color:var(--color-accent)">.</span>Live</span>
+    </div>
+
+    <main id="ls-root">
+      <div class="ls-state">Loading live story&hellip;</div>
+    </main>
+  </div>
+
+  <div class="ls-toast" id="ls-toast" role="status" aria-live="polite"></div>
+
+  <script>
+    // Register the shared service worker so push works from this page.
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
+    }
+  </script>
+  <script src="/src/utils/push-notifications.js"></script>
+  <script src="/v2/js/live-story.js"></script>
+</body>
+</html>

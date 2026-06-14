@@ -44,6 +44,123 @@ See `scripts/clip-pipeline/README.md` for full workflow. **Rights-cleared source
 
 ---
 
+## Video Watermarker (admin tool)
+
+Lives in the admin app at `/admin/watermarker` (also reachable via `/admin/#watermarker`). It lets an authorized admin paste an authorized Facebook video link (compliant Meta Graph API retrieval) or upload a video manually, then exports a Noteworthy News watermarked MP4.
+
+**Authentication:** uses the existing Auth0 admin login + server-side `requireAdminAuth`. No new auth — admins are whoever passes `ADMIN_EMAILS` / the admin role (same as the rest of `/admin`).
+
+**Storage:** uses the existing **Cloudflare R2** variables for temporary originals and finished videos, and **Netlify Blobs** (`watermark-jobs` store) for job state.
+
+| Variable | Used for | Notes |
+|----------|----------|-------|
+| **R2_ACCESS_KEY_ID** | Temp video storage (uploads + outputs) | Required for uploads/downloads; reuses the Clemens R2 bucket |
+| **R2_SECRET_ACCESS_KEY** | Same | |
+| **R2_BUCKET** | Same | |
+| **R2_ENDPOINT** | Same | R2 S3-compatible endpoint URL |
+| **META_ACCESS_TOKEN** | Optional: compliant Facebook video retrieval via Graph API `source` | Only works for videos the token may access; without it, the tool always falls back to manual upload |
+| **META_APP_ID** | Optional: Meta app identity (future token refresh) | |
+| **META_APP_SECRET** | Optional: Meta app secret (server-only) | Never sent to the client |
+| **META_GRAPH_VERSION** | Optional: Graph API version | Defaults to `v19.0` |
+| **MAX_VIDEO_MB** | Max accepted video size | Default `150` (keep well under Lambda's ~512MB `/tmp`, which holds source + output) |
+| **MAX_VIDEO_DURATION_SECONDS** | Max accepted video duration | Default `600` |
+| **TEMP_VIDEO_TTL_MINUTES** | How long finished videos/jobs are retained | Default `60`; expired outputs are deleted opportunistically |
+
+### Required vs optional (production)
+
+- **Required:** `AUTH0_DOMAIN` (admin auth), `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_ENDPOINT` (storage). `NETLIFY_SITE_ID` + `NETLIFY_BLOB_READ_WRITE_TOKEN` are set by Netlify automatically (job state).
+- **Recommended:** `ADMIN_EMAILS` (comma-separated admin allowlist).
+- **Optional:** `META_ACCESS_TOKEN` (+ `META_APP_ID`, `META_APP_SECRET`, `META_GRAPH_VERSION`) to enable the compliant Facebook fetch path; `MAX_VIDEO_MB`, `MAX_VIDEO_DURATION_SECONDS`, `TEMP_VIDEO_TTL_MINUTES` to override defaults.
+- If `R2_*` is missing, the tool returns a clear 503 ("Video storage is not configured…") instead of failing silently.
+
+### Required R2 (S3) CORS settings
+
+The browser uploads directly to R2 via a presigned `PUT` and plays/downloads the result via a presigned `GET`, so the bucket must allow your admin origin. In the R2 bucket → Settings → CORS policy:
+
+```json
+[
+  {
+    "AllowedOrigins": ["https://noteworthynews.co", "http://localhost:8888"],
+    "AllowedMethods": ["PUT", "GET", "HEAD"],
+    "AllowedHeaders": ["content-type"],
+    "ExposeHeaders": ["ETag"],
+    "MaxAgeSeconds": 3600
+  }
+]
+```
+
+Replace the origins with your production domain(s) and dev origin. `content-type` must be allowed because the presigned PUT binds the upload's `Content-Type`.
+
+### Known limitations
+
+- **Arbitrary Facebook links usually cannot be fetched.** The only compliant automated path is the Meta Graph API `source` field, which returns media only for videos the configured token may access (typically videos on Pages/accounts you administer). For most pasted links the tool will (correctly) show the manual-upload fallback — **manual upload is the reliable path.**
+- **Size/length caps exist for serverless reasons.** Defaults: 150 MB / 10 minutes. The processor runs as a Netlify background function (~15 min max) and Lambda gives ~512 MB of `/tmp` (must hold source + output). Very long/large videos are rejected with a clear message rather than timing out cryptically.
+- **`ffprobe-static` is not bundled.** It ships ~300 MB of multi-platform binaries that would exceed Netlify's function-size limits. Dimensions/duration are read from `ffmpeg` itself, so only the single `ffmpeg-static` binary (~44 MB) is bundled.
+- **No automatic background sweeper.** Expired outputs are cleaned opportunistically when a job is polled after its TTL, and manual originals are deleted right after processing. For a guaranteed backstop, add an R2 lifecycle rule (below).
+- **Rotation metadata:** watermark *placement* uses ffmpeg overlay expressions (robust to rotation); font *size* is derived from probed width, which is correct for standard exports.
+
+### Recommended R2 lifecycle rule (backstop cleanup)
+
+Add a lifecycle rule on the bucket to auto-expire temp objects after 1 day, covering any orphans:
+
+- Prefix `watermark-uploads/` → expire after 1 day
+- Prefix `watermark-outputs/` → expire after 1 day
+
+### Local test
+
+```bash
+npm install            # deps already present: ffmpeg-static, @resvg/resvg-js, sharp, @aws-sdk/*, @netlify/blobs
+npm run dev            # netlify dev on http://localhost:8888
+```
+
+Then sign into `/admin`, open **Video Watermarker**, and upload a vertical (1080x1920), horizontal (1920x1080), and square video. Confirm: watermark scales per aspect and is readable, audio is intact, second line reads exactly `VIDEO: @username/FB`, and the download is an MP4.
+
+### Production deploy checklist
+
+1. Set required env vars in Netlify → Site settings → Environment variables: `AUTH0_DOMAIN`, `ADMIN_EMAILS`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_ENDPOINT` (+ `META_ACCESS_TOKEN` if using the Facebook path).
+2. Apply the R2 CORS policy above with your production origin.
+3. (Recommended) Add the R2 lifecycle expiry rules above.
+4. Deploy. Confirm the `watermark-process-background` function bundled successfully (it uses the `zisi` bundler + `ffmpeg-static`).
+5. Sign into `/admin` as an allowlisted admin → **Video Watermarker**.
+6. Manual upload test: vertical + horizontal + square → each completes, plays in the preview, downloads as MP4 with intact audio and a readable watermark.
+7. Facebook test: paste a link the token cannot access → confirm the manual-upload fallback message appears (no crash, no false claim of download).
+8. Abuse test: oversized/over-length/non-video file → confirm a clear rejection.
+
+**Facebook retrieval is intentionally limited.** We never scrape Facebook or bypass login/DRM/anti-bot controls. The only automated path is the official Graph API `source` field for videos the configured token is permitted to access. If retrieval isn't permitted, the UI shows: *"Facebook does not allow this video to be fetched automatically. Upload the video file manually instead."*
+
+---
+
+## Follow Live Story (web push + iOS Live Activities)
+
+Powers the "Follow Live" feature: editors create live stories in `/admin/#live-stories` and post timeline updates; followers get web push (PWA) and, if they install the iOS companion app, native Live Activities.
+
+**Storage:** Supabase (migrations `005_create_live_stories.sql`, `006_create_ios_devices.sql`) + the existing Netlify Blobs `push-subscriptions` store. Apply both migrations before use.
+
+### Web push (Phase 1)
+
+| Variable | Used for | Notes |
+|----------|----------|-------|
+| **VAPID_PUBLIC_KEY** | Web Push (VAPID) public key | Generate once: `npx web-push generate-vapid-keys` |
+| **VAPID_PRIVATE_KEY** | Web Push (VAPID) private key (server-only) | Same command; never expose to the client |
+| **VAPID_SUBJECT** | VAPID contact | Optional; defaults to `mailto:richard@noteworthynews.co` |
+| **SUPABASE_URL**, **SUPABASE_SERVICE_ROLE_KEY** | Story/follow/device tables | Already used elsewhere |
+
+### iOS Live Activities (Phase 2 — APNs)
+
+Used by `netlify/functions/lib/apnsClient.js` + `lib/liveActivityNotify.js` to update/end/push-to-start Live Activities. APNs uses HTTP/2 (Node's built-in `http2`) with a token-based `.p8` key signed via `jose` (ES256). No new npm dependency.
+
+| Variable | Used for | Where to get it |
+|----------|----------|-----------------|
+| **APNS_KEY_P8** | APNs auth key (.p8), **base64-encoded** | Apple Developer → Certificates, IDs & Profiles → Keys → new key with "Apple Push Notifications service (APNs)". Encode: `base64 -i AuthKey_XXXX.p8` |
+| **APNS_KEY_ID** | 10-char key ID for that key | Shown when you create the key |
+| **APNS_TEAM_ID** | 10-char Apple Team ID | Apple Developer → Membership |
+| **APNS_BUNDLE_ID** | App bundle id (topic base) | e.g. `co.noteworthynews.live` (must match the iOS app) |
+| **APNS_DEFAULT_ENVIRONMENT** | `sandbox` or `production` fallback | Per-device env is stored at pairing; this is the default. Use `sandbox` for TestFlight/dev |
+
+If the APNS_* vars are absent, Live Activity dispatch is a **no-op** — web push still works and the editorial write never fails. See `ios/NoteworthyLive/README.md` for the app/Xcode setup.
+
+---
+
 ## Live Cams (Situation Monitor)
 
 **You do not need any API keys** for the main camera list. These work without keys:
