@@ -134,9 +134,16 @@ function getAuth0Config() {
     authorizationParams: {
       // Canonical callback — matches Netlify / → V2 rewrite and one Auth0 allowlist entry
       redirect_uri: `${window.location.origin}/`,
+      // offline_access is required to receive a refresh token.
+      scope: 'openid profile email offline_access',
     },
     cacheLocation: 'localstorage',
-    useRefreshTokens: false, // Disable refresh tokens for SPA
+    // Use refresh tokens (stored in localStorage) instead of hidden-iframe
+    // silent auth. iOS Safari's ITP blocks the iframe/third-party-cookie
+    // flow, which made sessions vanish ("browsing as guest") after login.
+    useRefreshTokens: true,
+    // If refresh fails (e.g. token revoked), fall back to silent iframe auth.
+    useRefreshTokensFallback: true,
   };
 }
 

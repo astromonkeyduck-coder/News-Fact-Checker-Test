@@ -96,8 +96,16 @@ async function createClient() {
     clientId,
     authorizationParams: {
       redirect_uri: getRedirectUri(),
+      // offline_access is required to receive a refresh token.
+      scope: 'openid profile email offline_access',
     },
-    cacheLocation: 'memory',
+    // Persist the session across navigations/reloads and use refresh tokens
+    // instead of hidden-iframe silent auth, which iOS Safari ITP blocks.
+    // Previously 'memory' + no refresh tokens -> session lost ("guest") on
+    // every page load, especially on iOS Safari.
+    cacheLocation: 'localstorage',
+    useRefreshTokens: true,
+    useRefreshTokensFallback: true,
   });
   return client;
 }
