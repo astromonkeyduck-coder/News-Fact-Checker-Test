@@ -51,6 +51,7 @@
   <link rel="stylesheet" href="/v2/styles/base.css">
   <link rel="stylesheet" href="/v2/styles/layout.css">
   <link rel="stylesheet" href="/v2/styles/components.css">
+  <link rel="stylesheet" href="/v2/styles/live-rail.css">
 
   
   
@@ -166,6 +167,18 @@
     <div class="ticker-bar" id="hero-ticker" aria-label="Trending headlines" hidden>
       <div class="ticker-track" id="ticker-track"></div>
     </div>
+
+    <!-- ─── Live Stories Rail ──────────────────────── -->
+    <!-- Populated by /v2/js/live-rail.js; stays hidden when no active stories. -->
+    <section id="live-stories" class="section live-rail-section" hidden aria-label="Live stories you can follow">
+      <div class="container">
+        <div class="section-header" data-reveal>
+          <p class="section-label"><span class="live-rail-pulse"></span> Following Live</p>
+          <h2 class="section-title">Developing Now</h2>
+        </div>
+        <div class="live-rail" id="live-rail"></div>
+      </div>
+    </section>
 
     <!-- ─── Breaking News ─────────────────────────── -->
     <section id="breaking" class="section">
@@ -545,6 +558,7 @@
   </button>
 
   <script type="module" src="/v2/js/main.js"></script>
+  <script src="/v2/js/live-rail.js" defer></script>
 
   <!-- Noteworthy News AI chat (same widget as legacy homepage) -->
   <script src="/src/widgets/voice-audio-engine.js"></script>

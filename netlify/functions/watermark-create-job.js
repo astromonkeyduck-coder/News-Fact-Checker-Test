@@ -16,7 +16,7 @@ const { URL } = require("url");
 
 const { corsHeaders, optionsResponse } = require("./lib/corsHeaders");
 const { requireAdminAuth } = require("./middleware/requireAuth");
-const { composeCreditLine, sanitizeUsername } = require("./lib/watermark");
+const { composeCreditLine, sanitizeUsername } = require("./lib/watermarkText");
 const { resolveFacebookVideo, isValidFacebookUrl } = require("./lib/facebook");
 const { isR2Configured } = require("./lib/r2");
 const jobs = require("./lib/watermarkJobs");

@@ -27,6 +27,20 @@ const FB_HOSTS = new Set([
 
 const GRAPH_VERSION = process.env.META_GRAPH_VERSION || "v19.0";
 
+/**
+ * fetch with a hard timeout so a slow/blocked Facebook request can never hang
+ * the serverless function into a platform 502/timeout. Throws on timeout.
+ */
+async function fetchWithTimeout(url, options = {}, ms = 4000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function isFacebookHost(hostname) {
   return FB_HOSTS.has(String(hostname || "").toLowerCase());
 }
@@ -148,7 +162,7 @@ async function resolveRedirect(url, maxHops = 5) {
     if (!isValidFacebookUrl(current)) return null;
     let res;
     try {
-      res = await fetch(current, {
+      res = await fetchWithTimeout(current, {
         method: "GET",
         redirect: "manual",
         headers: {
@@ -197,7 +211,7 @@ async function fetchGraphSource(videoId) {
 
   let res;
   try {
-    res = await fetch(endpoint, { method: "GET" });
+    res = await fetchWithTimeout(endpoint, { method: "GET" }, 6000);
   } catch (err) {
     return { ok: false, reason: "GRAPH_REQUEST_FAILED" };
   }
@@ -235,6 +249,18 @@ async function fetchGraphSource(videoId) {
 async function resolveFacebookVideo(inputUrl) {
   if (!isValidFacebookUrl(inputUrl)) {
     return { retrievable: false, username: "Facebook", reason: "INVALID_URL" };
+  }
+
+  // No Graph token configured → automated retrieval is impossible. Short-circuit
+  // immediately (no network calls) so the UI gets the manual-upload fallback
+  // instantly instead of the function spending time on redirect/Graph lookups.
+  if (!process.env.META_ACCESS_TOKEN) {
+    const parsedNoToken = parseFacebookUrl(inputUrl);
+    return {
+      retrievable: false,
+      username: extractUsername(parsedNoToken),
+      reason: "GRAPH_NOT_CONFIGURED",
+    };
   }
 
   let parsed = parseFacebookUrl(inputUrl);

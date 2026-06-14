@@ -27,8 +27,8 @@ export function render(container) {
 
     <div id="wm-notice"></div>
 
-    <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:var(--space-lg);align-items:start">
-      <div style="display:flex;flex-direction:column;gap:var(--space-lg)">
+    <div class="wm-layout">
+      <div class="wm-col">
 
         <!-- Shared credit + placement -->
         <div class="admin-card">
@@ -88,7 +88,7 @@ export function render(container) {
       </div>
 
       <!-- Preview / status column -->
-      <div style="display:flex;flex-direction:column;gap:var(--space-lg)">
+      <div class="wm-col">
         <div class="admin-card">
           <h3 class="admin-card-title">Watermark preview</h3>
           <div style="position:relative;background:#111;border-radius:10px;aspect-ratio:16/9;display:flex;align-items:flex-end;overflow:hidden">

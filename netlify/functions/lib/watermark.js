@@ -19,8 +19,7 @@
  */
 
 const { Resvg } = require("@resvg/resvg-js");
-
-const LINE1_TEXT = "Noteworthy News";
+const { LINE1_TEXT, sanitizeUsername, composeCreditLine } = require("./watermarkText");
 
 let _boldFontBuffer = null;
 
@@ -139,32 +138,6 @@ function renderWatermark({ width, height, line2 }) {
     height: rendered.height,
     fontSize,
   };
-}
-
-/**
- * Sanitize a username/page slug to the watermark's allowed charset.
- * Returns "" when nothing usable remains.
- */
-function sanitizeUsername(raw) {
-  if (!raw) return "";
-  let s = String(raw).trim();
-  // Drop a leading @ and any URL-ish wrapping the caller may have left.
-  s = s.replace(/^@+/, "");
-  s = s.replace(/[^a-zA-Z0-9._-]/g, "");
-  return s.slice(0, 64);
-}
-
-/**
- * Compose the exact second line of the watermark.
- *   - known username -> "VIDEO: @username/FB"
- *   - unknown        -> "VIDEO: Facebook/FB"
- */
-function composeCreditLine(username) {
-  const clean = sanitizeUsername(username);
-  if (!clean || clean.toLowerCase() === "facebook") {
-    return "VIDEO: Facebook/FB";
-  }
-  return `VIDEO: @${clean}/FB`;
 }
 
 module.exports = {

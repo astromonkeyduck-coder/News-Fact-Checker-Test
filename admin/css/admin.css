@@ -420,6 +420,26 @@
   gap: var(--space-md);
 }
 
+/* ── Video Watermarker layout ────────────────────── */
+.wm-layout {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: var(--space-lg);
+  align-items: start;
+}
+
+.wm-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  min-width: 0;
+}
+
+/* Mobile menu button: shown only on small screens (CSS-driven, not JS) */
+#admin-mobile-menu {
+  display: none;
+}
+
 /* ── Post Text Truncation ────────────────────────── */
 .text-truncate {
   overflow: hidden;
@@ -465,8 +485,34 @@
     grid-template-columns: 1fr;
   }
 
+  .wm-layout {
+    grid-template-columns: 1fr;
+  }
+
   .admin-topbar {
     padding: 0 var(--space-md);
+  }
+
+  #admin-mobile-menu {
+    display: inline-flex;
+  }
+
+  /* Prevent iOS Safari from auto-zooming when focusing inputs:
+     any control under 16px triggers the zoom, so bump to 16px on mobile. */
+  .admin-input,
+  .admin-select,
+  .admin-textarea {
+    font-size: 16px;
+  }
+
+  /* Full-width primary actions are easier to tap on phones */
+  .wm-col .admin-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .admin-user-label {
+    display: none;
   }
 }
 

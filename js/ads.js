@@ -22,13 +22,7 @@
     display: '1458252598',          // Display unit (responsive) — banners, top/bottom of lists
     display_sidebar: '7417197842',  // Display unit (responsive) — article sidebar (sticky)
     in_article: '3864965643',       // In-article unit (native) — inside long-form content
-    multiplex: '1210840580',        // Multiplex unit ("Matched content") — recommendation grid
-    in_feed: ''                     // In-feed unit (native) — between cards in a list/feed
-  };
-
-  // In-feed units ALSO need a layout key (from AdSense, alongside the slot ID).
-  var AD_LAYOUT_KEYS = {
-    in_feed: ''                     // paste the "data-ad-layout-key" value here
+    multiplex: '1210840580'         // Multiplex unit ("Matched content") — recommendation grid
   };
 
   // How each placement type configures its <ins> element.
@@ -47,10 +41,6 @@
     },
     multiplex: function (ins) {
       ins.setAttribute('data-ad-format', 'autorelaxed');
-    },
-    in_feed: function (ins) {
-      ins.setAttribute('data-ad-format', 'fluid');
-      ins.setAttribute('data-ad-layout-key', AD_LAYOUT_KEYS.in_feed);
     }
   };
 
@@ -64,13 +54,6 @@
 
     // No slot configured (or unknown type): keep it hidden, render nothing.
     if (!slot || !AD_TYPES[type]) {
-      setState(wrap, 'disabled');
-      return;
-    }
-
-    // In-feed units are useless without their layout key — stay dormant
-    // until both are provided.
-    if (type === 'in_feed' && !AD_LAYOUT_KEYS.in_feed) {
       setState(wrap, 'disabled');
       return;
     }
