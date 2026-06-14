@@ -77,9 +77,23 @@ function formatDate(raw) {
   return `${dateStr} · ${timeStr}`;
 }
 
+// Remove URLs (http/https, t.co, pic.twitter.com) so raw links never render in cards.
+function stripUrls(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/https?:\/\/\S+/gi, '')
+    .replace(/\b(?:pic\.twitter\.com|t\.co)\/\S+/gi, '')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\s+([.,!?;:])/g, '$1')
+    .trim();
+}
+
 function getPostTitle(post) {
-  if (post.title && post.title.trim()) return post.title.trim();
-  const text = post.text || post.content || post.Content || '';
+  if (post.title && post.title.trim()) {
+    const cleaned = stripUrls(post.title);
+    if (cleaned) return cleaned;
+  }
+  const text = stripUrls(post.text || post.content || post.Content || '');
   if (!text) return 'Untitled';
   const first = text.split('\n')[0].trim();
   return first.length <= 140 ? first : first.slice(0, 137) + '…';
@@ -428,7 +442,7 @@ function renderCard(post, large) {
   const date = formatDate(getPostDate(post));
   const source = post.source || '';
   const url = articleUrl(post);
-  const excerpt = (post.text || post.content || post.Content || '').replace(/<[^>]*>/g, '').trim();
+  const excerpt = stripUrls((post.text || post.content || post.Content || '').replace(/<[^>]*>/g, ''));
   const short = excerpt.length > 160 ? excerpt.slice(0, 157) + '…' : excerpt;
   const showExcerpt = shouldShowFeaturedExcerpt(title, short);
   const hasVideo = isVideoPost(post);
@@ -467,7 +481,7 @@ function renderFeatured(post) {
   const image = getPostImage(post);
   const date = formatDate(getPostDate(post));
   const url = articleUrl(post);
-  const excerpt = (post.text || post.content || '').replace(/<[^>]*>/g, '').trim();
+  const excerpt = stripUrls((post.text || post.content || '').replace(/<[^>]*>/g, ''));
   const short = excerpt.length > 180 ? excerpt.slice(0, 177) + '…' : excerpt;
   const showExcerpt = shouldShowFeaturedExcerpt(title, short);
   const isBreaking = isBreakingText(post);
