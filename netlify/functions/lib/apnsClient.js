@@ -7,7 +7,8 @@
  *
  * Env:
  *   APNS_KEY_P8_BASE64      base64 of the .p8 PEM private key (primary)
- *   APNS_KEY_P8             legacy alias for APNS_KEY_P8_BASE64
+ *   APNS_KEY_P8             legacy alias for APNS_KEY_P8_BASE64 (do not set both)
+ *   APNS_KEY_STORE          set to "blob" when key is in Netlify Blobs (see ENV_KEYS.md)
  *   APNS_KEY_ID             10-char key id
  *   APNS_TEAM_ID            10-char team id
  *   APNS_BUNDLE_ID          app bundle id (topic base)
@@ -33,13 +34,48 @@ let _signedAt = 0;
 const TOKEN_TTL_MS = 50 * 60 * 1000; // APNs allows up to 60 min; refresh at 50.
 
 /** Netlify env: APNS_KEY_P8_BASE64 (primary). APNS_KEY_P8 is a legacy alias. */
-function apnsKeyP8() {
+function apnsKeyFromEnv() {
   return process.env.APNS_KEY_P8_BASE64 || process.env.APNS_KEY_P8 || "";
 }
 
+/** When set to "blob", the .p8 key is loaded from Netlify Blobs (see scripts/upload-apns-key-to-blob.js). */
+function useBlobKeyStore() {
+  return process.env.APNS_KEY_STORE === "blob";
+}
+
+let _cachedKeyP8 = null;
+
+async function resolveApnsKeyP8() {
+  if (_cachedKeyP8) return _cachedKeyP8;
+  const fromEnv = apnsKeyFromEnv();
+  if (fromEnv) {
+    _cachedKeyP8 = fromEnv;
+    return fromEnv;
+  }
+  if (
+    useBlobKeyStore() &&
+    process.env.NETLIFY_SITE_ID &&
+    process.env.NETLIFY_BLOB_READ_WRITE_TOKEN
+  ) {
+    const { getStore } = require("@netlify/blobs");
+    const store = getStore({
+      name: "server-secrets",
+      siteID: process.env.NETLIFY_SITE_ID,
+      token: process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
+    });
+    const val = await store.get("apns-key-p8", { type: "text" });
+    if (val) {
+      _cachedKeyP8 = val;
+      return val;
+    }
+  }
+  return "";
+}
+
 function isConfigured() {
+  const hasKey = apnsKeyFromEnv() || useBlobKeyStore();
   return !!(
-    apnsKeyP8() &&
+    hasKey &&
     process.env.APNS_KEY_ID &&
     process.env.APNS_TEAM_ID &&
     process.env.APNS_BUNDLE_ID
@@ -73,7 +109,8 @@ async function getProviderToken() {
   }
   const { importPKCS8, SignJWT } = require("jose");
 
-  const raw = apnsKeyP8();
+  const raw = await resolveApnsKeyP8();
+  if (!raw) throw new Error("APNs key not configured");
   let pem = Buffer.from(raw, "base64").toString("utf8");
   // Tolerate keys stored as raw PEM (not base64) as well.
   if (!pem.includes("BEGIN PRIVATE KEY") && raw.includes("BEGIN PRIVATE KEY")) {

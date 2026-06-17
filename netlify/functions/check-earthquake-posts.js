@@ -52,31 +52,30 @@ exports.handler = async (event, context) => {
 
     // Check blob storage (posts)
     try {
-      try {
-        const store = getPostStore();
-        const ids = await readIndex(store);
+      const store = getPostStore();
+      const ids = await readIndex(store);
 
-        const earthquakePostIds = ids.filter(id => id.startsWith('usgs-'));
-        results.blob_storage.total = earthquakePostIds.length;
+      const earthquakePostIds = ids.filter(id => id.startsWith('usgs-'));
+      results.blob_storage.total = earthquakePostIds.length;
 
-        for (const postId of earthquakePostIds.slice(0, 5)) {
-          try {
-            const post = await readPost(store, postId);
-            if (post) {
-              results.blob_storage.posts.push({
-                id: postId,
-                title: post.title,
-                category: post.category,
-                source: post.source,
-                image: post.image,
-                datePosted: post.datePosted,
-              });
-            }
-          } catch (err) {
-            // Post not found
+      for (const postId of earthquakePostIds.slice(0, 5)) {
+        try {
+          const post = await readPost(store, postId);
+          if (post) {
+            results.blob_storage.posts.push({
+              id: postId,
+              title: post.title,
+              category: post.category,
+              source: post.source,
+              image: post.image,
+              datePosted: post.datePosted,
+            });
           }
+        } catch (err) {
+          // Post not found
         }
-      } catch (blobErr) {
+      }
+    } catch (blobErr) {
       results.blob_storage.error = blobErr.message;
     }
 

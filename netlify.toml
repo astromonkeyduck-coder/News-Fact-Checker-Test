@@ -334,8 +334,15 @@
 # We read dimensions/duration from ffmpeg itself instead (see lib/watermarkJobs.js).
 [functions."watermark-process-background"]
   node_bundler = "zisi"
-  included_files = ["node_modules/ffmpeg-static/**", "netlify/functions/fonts-base64.js"]
+  included_files = ["node_modules/ffmpeg-static/**", "netlify/functions/fonts-base64.js", "node_modules/@resvg/resvg-js/**"]
   # Note: Background function configuration is also in the function file itself (exports.config)
+
+[functions."check-earthquake-posts"]
+  node_bundler = "esbuild"
+
+[functions."generate-volcano-image"]
+  node_bundler = "zisi"
+  included_files = ["netlify/functions/fonts-base64.js", "node_modules/@resvg/resvg-js/**"]
 
 # Configure transcribe-from-url with longer timeout for large files
 [functions."transcribe-from-url"]

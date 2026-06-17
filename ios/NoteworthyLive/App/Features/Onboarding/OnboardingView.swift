@@ -156,7 +156,7 @@ private struct PermissionPageView: View {
                     .font(.ntSoraExtraBold(28, relativeTo: .largeTitle))
                     .foregroundStyle(NT.Palette.textPrimary)
                     .fixedSize(horizontal: false, vertical: true)
-                Text("Follow a developing story and watch it update right on your Lock Screen and Dynamic Island. Breaking-news and story push alerts are rolling out soon, allow notifications now so you're ready.")
+                Text("Follow a developing story and watch it update on your Lock Screen and Dynamic Island. Allow notifications to receive breaking news and live story alerts on this iPhone.")
                     .font(.ntBody)
                     .foregroundStyle(NT.Palette.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)

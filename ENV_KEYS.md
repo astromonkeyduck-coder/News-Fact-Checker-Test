@@ -160,8 +160,9 @@ APNs uses HTTP/2 (Node's built-in `http2`) with a token-based `.p8` key signed v
 | **APNS_TEAM_ID** | 10-char Apple Team ID | Apple Developer → Membership |
 | **APNS_BUNDLE_ID** | App bundle id (topic base) | e.g. `co.noteworthynews.live` (must match the iOS app) |
 | **APNS_DEFAULT_ENVIRONMENT** | `sandbox` or `production` fallback | Per-device env is stored at pairing; this is the default. Use `sandbox` only for local **development/debug device builds**. **TestFlight and App Store builds use `production`** APNs. |
+| **APNS_KEY_STORE** | Optional: set to `blob` when the `.p8` is stored in Netlify Blobs instead of env | See **Netlify 4KB function env limit** below. Requires one-time `node scripts/upload-apns-key-to-blob.js`. |
 
-> **Var name note:** the code reads **`APNS_KEY_P8_BASE64`** (base64 of the `.p8`). `APNS_KEY_P8` is accepted as a legacy alias. The key value may also be stored as raw PEM (not base64); the client tolerates both.
+> **Var name note:** the code reads **`APNS_KEY_P8_BASE64`** (base64 of the `.p8`). `APNS_KEY_P8` is a legacy alias — **do not set both** (wastes ~600 bytes toward Netlify's 4KB function env cap). The key value may also be stored as raw PEM (not base64); the client tolerates both. With **`APNS_KEY_STORE=blob`**, delete both env key vars after uploading via `scripts/upload-apns-key-to-blob.js`.
 
 If the APNS_* vars are absent, **both** Live Activity and standard-push dispatch are a **no-op** — web push still works and the editorial write never fails. See `ios/NoteworthyLive/README.md` for the app/Xcode setup and `IOS_NOTIFICATIONS_TESTING.md` for real-device test steps.
 
@@ -205,6 +206,28 @@ These reuse the existing `x-posts` Netlify Blobs store (via `lib/postStore`) and
 - **WINDY_API_KEY** – adds global Windy webcams (many more international cams).
 - **NY511_API_KEY** – adds New York state traffic cams.
 - **CAMS_TOKEN** – optional secret to protect `/api/cams/*` from abuse; if unset, endpoints still work (dev mode).
+
+---
+
+## Netlify 4KB function environment limit
+
+Netlify attaches **all function-scoped env vars** to every function upload. The combined size of key names + values must stay **under 4KB** or deploy fails (often on `watermark-process-background` or the next new function).
+
+**Fastest fixes (do all that apply):**
+
+1. **Remove duplicate APNs key** — keep only `APNS_KEY_P8_BASE64`; delete legacy `APNS_KEY_P8` if both exist (~600 bytes saved).
+2. **Move APNs .p8 to Netlify Blobs** (recommended when still over limit):
+   ```bash
+   # With site creds from: netlify env:list --json
+   APNS_KEY_P8_BASE64="$(base64 -i AuthKey_XXXX.p8)" \
+     NETLIFY_SITE_ID=... NETLIFY_BLOB_READ_WRITE_TOKEN=... \
+     node scripts/upload-apns-key-to-blob.js
+   ```
+   Then in Netlify Dashboard: set **`APNS_KEY_STORE=blob`**, delete **`APNS_KEY_P8_BASE64`** and **`APNS_KEY_P8`**, redeploy (~600+ bytes saved).
+3. **Scope build-only vars** — in Netlify Dashboard → Environment variables → each var → **Scopes**: uncheck **Functions** for vars only used at build time or in local scripts (e.g. `CLIP_*`, `YT_API_KEY`, `FFMPEG_PATH`, `FFPROBE_PATH`, `CLIP_REVIEW_*`). Keep `AUTH0_*`, `SUPABASE_*`, `APNS_*` (except the moved .p8), `R2_*`, etc. on Functions.
+4. **Delete unused keys** — remove any obsolete or test secrets still listed in the site env.
+
+Verify after deploy: `admin-live-stories?action=apnsStatus` should show `configured:true` and `keyP8Source:"blob"` when using blob storage.
 
 ---
 

@@ -270,7 +270,8 @@ function apnsStatus() {
     alertTopic: bundle || null,
     keyIdLast4: keyId ? keyId.slice(-4) : null,
     teamIdSet: !!process.env.APNS_TEAM_ID,
-    keyP8Set: !!(process.env.APNS_KEY_P8_BASE64 || process.env.APNS_KEY_P8),
+    keyP8Set: !!(process.env.APNS_KEY_P8_BASE64 || process.env.APNS_KEY_P8 || process.env.APNS_KEY_STORE === "blob"),
+    keyP8Source: process.env.APNS_KEY_STORE === "blob" ? "blob" : (process.env.APNS_KEY_P8_BASE64 || process.env.APNS_KEY_P8 ? "env" : null),
   });
 }
 

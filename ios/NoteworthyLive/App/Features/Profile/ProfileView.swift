@@ -173,10 +173,10 @@ struct ProfileView: View {
     private var aboutSection: some View {
         Section {
             Button { showWeb = true } label: { Label("Open noteworthynews.co", systemImage: "safari") }
-            Link(destination: Config.webBaseURL.appendingPathComponent("privacy")) {
+            Link(destination: Config.webBaseURL.appendingPathComponent("privacy.html")) {
                 Label("Privacy Policy", systemImage: "hand.raised")
             }
-            Link(destination: Config.webBaseURL.appendingPathComponent("terms")) {
+            Link(destination: Config.webBaseURL.appendingPathComponent("terms.html")) {
                 Label("Terms", systemImage: "doc.text")
             }
             HStack {

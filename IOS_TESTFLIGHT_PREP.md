@@ -19,7 +19,7 @@ First internal TestFlight build of the **NoteworthyLive** SwiftUI app (Milestone
 Content / honesty:
 - [ ] **Archive the production "TEST Live Story" row** in `/admin` ▸ Live Stories. It is real backend data (a Supabase row), not an app mock, so it WILL show on the Live tab and in the Home "Developing Now" rail until archived. Do this before inviting testers.
 - [ ] Confirm real content loads: `curl -s "https://noteworthynews.co/.netlify/functions/mobile-feed?limit=3"` returns items (verified live, HTTP 200).
-- [ ] Onboarding copy is honest: the permission screen reads "Turn on Live Activities" and frames breaking/story push alerts as "rolling out soon" (no overpromise).
+- [ ] Onboarding copy is honest: the permission screen reads "Turn on Live Activities" and describes live Lock Screen updates plus breaking/live story push alerts (no "coming soon" overpromise).
 - [ ] No mock leakage: a Release build never shows mock stories. Mock data only appears under `-UseMockData`, SwiftUI previews, or a **DEBUG-only** network-failure fallback - all disabled in Release.
 - [ ] No DEBUG overlay in Release: the Profile ▸ "Developer (DEBUG)" data-mode section is compiled out of Release (`#if DEBUG`).
 
@@ -78,7 +78,7 @@ Paste into App Store Connect ▸ TestFlight ▸ Test Information ▸ What to Tes
 
 > Welcome to the first internal beta of the Noteworthy iOS app.
 >
-> This build focuses on the native reader experience: Home, Live Stories, Story Detail, Saved, Explore, onboarding, and local Live Activity behavior. Breaking-news push alerts and remote Live Activity updates are rolling out in a later build, so you will not receive push notifications yet.
+> This build focuses on the native reader experience: Home, Live Stories, Story Detail, Saved, Explore, onboarding, Live Activities, and standard push alerts (beta). Push requires notification permission and a paired device; remote Live Activity updates require the newsroom APNs config.
 >
 > Please check:
 > - Onboarding reads clearly and the "Allow notifications" step makes sense.
