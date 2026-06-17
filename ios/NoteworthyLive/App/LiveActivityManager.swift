@@ -11,6 +11,13 @@ final class LiveActivityManager: ObservableObject {
 
     private var pushToStartObserved = false
 
+    /// Latest push-to-start token (iOS 17.2+), cached even before pairing so it
+    /// can be sent to the backend at pairing time. Hex string.
+    private(set) var cachedPushToStartToken: String?
+    /// Latest per-activity update tokens by story slug, cached so they can be
+    /// (re)registered once the device is paired.
+    private var cachedActivityTokens: [String: String] = [:]
+
     var areActivitiesEnabled: Bool {
         ActivityAuthorizationInfo().areActivitiesEnabled
     }
@@ -153,6 +160,9 @@ final class LiveActivityManager: ObservableObject {
         Task {
             for await tokenData in activity.pushTokenUpdates {
                 let hex = tokenData.map { String(format: "%02x", $0) }.joined()
+                // Cache so we can re-register after pairing even if the POST below
+                // fails (e.g. the activity started before this device was paired).
+                cachedActivityTokens[slug] = hex
                 try? await APIClient.shared.activityStarted(slug: slug, token: hex)
             }
         }
@@ -165,8 +175,24 @@ final class LiveActivityManager: ObservableObject {
             Task {
                 for await tokenData in Activity<LiveStoryAttributes>.pushToStartTokenUpdates {
                     let hex = tokenData.map { String(format: "%02x", $0) }.joined()
+                    cachedPushToStartToken = hex
                     try? await APIClient.shared.registerPushToStart(token: hex)
                 }
+            }
+        }
+    }
+
+    /// Called right after a successful pairing. The push-to-start and per-activity
+    /// tokens are typically emitted at launch — before a device secret exists — so
+    /// their initial registration POSTs fail silently. Re-send the cached tokens now
+    /// that the device is authenticated so remote start/update works immediately.
+    func registerTokensAfterPairing() {
+        Task {
+            if let pts = cachedPushToStartToken {
+                try? await APIClient.shared.registerPushToStart(token: pts)
+            }
+            for (slug, token) in cachedActivityTokens where activeSlugs.contains(slug) {
+                try? await APIClient.shared.activityStarted(slug: slug, token: token)
             }
         }
     }

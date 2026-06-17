@@ -21,6 +21,8 @@ function getSupabase() {
 }
 
 const ATTRIBUTES_TYPE = "LiveStoryAttributes";
+// Statuses that close a story → end any running Live Activity.
+const TERMINAL_STATUS = new Set(["resolved", "false_report"]);
 const HEADLINE_MAX = 140;
 const STALE_AFTER_MS = 30 * 60 * 1000; // content goes stale after 30 min
 const DISMISS_AFTER_MS = 4 * 60 * 60 * 1000; // ended activity auto-dismisses after 4h
@@ -84,13 +86,31 @@ async function notifyLiveActivities({ story, update, logger = console, dryRun = 
   out.configured = true;
 
   const status = update.status_at_time || story.status || "developing";
-  const isFinal = level === "final";
+  // Terminal: an explicit final alert OR the story reaching a closed status.
+  // Today's web flow can move a story to resolved/false_report with a normal
+  // update; that should still END the Live Activity, not just refresh it.
+  const isFinal = level === "final" || TERMINAL_STATUS.has(status);
   const withAlert = level === "urgent" || level === "final";
   const priority = withAlert ? 10 : 5;
   const now = Date.now();
-  const cs = contentState(story, update, status, isFinal);
 
   const sb = getSupabase();
+
+  // Server-authoritative timeline length so the "N updates" footer is accurate
+  // on remote pushes (the Swift ContentState.updateCount is optional). Best
+  // effort: a count failure must not block dispatch.
+  let updateCount;
+  try {
+    const { count, error } = await sb
+      .from("live_story_updates")
+      .select("id", { count: "exact", head: true })
+      .eq("story_id", story.id);
+    if (!error && Number.isFinite(count)) updateCount = count;
+  } catch (err) {
+    logger.warn("[liveActivityNotify] update count failed:", err.message);
+  }
+
+  const cs = contentState({ ...story, update_count: updateCount }, update, status, isFinal);
 
   // 1) Existing running activities → update or end.
   let activities = [];
@@ -187,10 +207,43 @@ async function notifyLiveActivities({ story, update, logger = console, dryRun = 
 
   await applyTokenStateChanges(sb, { endedActivityIds, staleActivityIds, clearPtsDeviceIds, logger });
 
+  await auditDispatch(sb, { story, update, level, out, logger });
+
   logger.log(
     `[liveActivityNotify] story=${story.slug} level=${level} updated=${out.updated} started=${out.started} ended=${out.ended} failed=${out.failed}`
   );
   return out;
+}
+
+/**
+ * Record a Live Activity dispatch in the shared live_story_send_log so APNs
+ * delivery is auditable alongside web push. detail.channel = "live_activity"
+ * distinguishes it from notifyFollowers rows. Fail-soft: a logging error must
+ * never affect delivery or the editorial write.
+ */
+async function auditDispatch(sb, { story, update, level, out, logger }) {
+  try {
+    await sb.from("live_story_send_log").insert({
+      story_id: story.id || null,
+      update_id: update.id || null,
+      alert_level: level,
+      recipients: out.updated + out.started + out.ended + out.failed,
+      sent: out.updated + out.started + out.ended,
+      failed: out.failed,
+      skipped: 0,
+      actor: "live_activity",
+      detail: {
+        channel: "live_activity",
+        updated: out.updated,
+        started: out.started,
+        ended: out.ended,
+        failed: out.failed,
+        reason: out.reason || null,
+      },
+    });
+  } catch (err) {
+    logger.warn("[liveActivityNotify] audit log skipped:", err.message);
+  }
 }
 
 /**

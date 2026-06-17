@@ -2,7 +2,18 @@
 
 Milestone 1 shipped the full native reader app, the Live Activities surface, and a normalized content API. M2 covers the deferred backend hardening and the superior native notification layer. Each item lists the exact files/tables affected.
 
-## A. Standard APNs notifications (the big one)
+## DONE — Milestone 2A (Live Activity / Dynamic Island product pass)
+Polished Lock Screen + Dynamic Island (NW badge, status chips, signal dot, update count, decisive final state), local start/update/end + demo helpers, previews, and backend `updateCount` content-state prep.
+
+## DONE — Milestone 2B (Remote Live Activity / Dynamic Island updates)
+Remote ActivityKit start/update/end from the `/admin` `addUpdate` flow over APNs:
+- Reliable iOS token registration after pairing (cache push-to-start + per-activity tokens, re-register on redeem) — [`LiveActivityManager.swift`](ios/NoteworthyLive/App/LiveActivityManager.swift), [`PairingView.swift`](ios/NoteworthyLive/App/Views/PairingView.swift).
+- Server-side `updateCount` (counts `live_story_updates`) + end-on-terminal-status (`resolved`/`false_report` or `alert_level:final`) — [`lib/liveActivityNotify.js`](netlify/functions/lib/liveActivityNotify.js).
+- Per-dispatch audit row in `live_story_send_log` (`detail.channel="live_activity"`).
+- Admin-auth `apnsStatus` diagnostic (secret-safe) + `testLiveActivity` trigger — [`admin-live-stories.js`](netlify/functions/admin-live-stories.js).
+- Docs: [`ENV_KEYS.md`](ENV_KEYS.md) (verify), [`IOS_TESTFLIGHT_PREP.md`](IOS_TESTFLIGHT_PREP.md) section G (runbook).
+
+## A. Standard APNs notifications — Milestone 2C (the big one)
 Today only Live Activity pushes exist. Add real breaking/story alerts to the device.
 
 1. **Device token registration**
@@ -21,7 +32,7 @@ Today only Live Activity pushes exist. Add real breaking/story alerts to the dev
 1. **Rate limiting** on public mutation endpoints: [`follow-live-story.js`](netlify/functions/follow-live-story.js), [`device-link.js`](netlify/functions/device-link.js) (per-IP/subscriber token-bucket in Netlify Blobs, mirroring `lib/alertRateLimit.js`).
 2. **Pairing-code sweeper**: scheduled function to delete expired `device_pairing_codes` (TTL is checked at redeem but rows accumulate).
 3. **Stale token cleanup**: scheduled job to mark `live_activity_tokens` stale/ended and clear dead `push_to_start_token`s (currently only opportunistic on 410).
-4. **iOS dispatch audit**: persist Live Activity dispatch results to `live_story_send_log` (today it records web-push only), add a `channel` column or a sibling `live_activity_send_log`.
+4. ~~**iOS dispatch audit**: persist Live Activity dispatch results to `live_story_send_log`~~ — DONE in 2B (writes a row with `detail.channel="live_activity"`). A dedicated `channel` column / sibling table is still optional if cleaner querying is wanted.
 5. **APNs HTTP/2 session reuse** across dispatches within a warm Lambda (today one session per `sendLiveActivityBatch` call), minor.
 
 ## C. Content API extensions

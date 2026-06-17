@@ -279,7 +279,9 @@ struct PairingView: View {
         errorText = nil
         Task {
             do {
-                let follows = try await APIClient.shared.redeem(code: trimmed, pushToStartToken: nil)
+                let ptsToken = await LiveActivityManager.shared.cachedPushToStartToken
+                let follows = try await APIClient.shared.redeem(code: trimmed, pushToStartToken: ptsToken)
+                await LiveActivityManager.shared.registerTokensAfterPairing()
                 await MainActor.run {
                     working = false
                     succeeded = true

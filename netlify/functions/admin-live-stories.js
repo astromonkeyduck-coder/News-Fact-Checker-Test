@@ -19,6 +19,7 @@ const { corsHeaders, optionsResponse } = require("./lib/corsHeaders");
 const { requireAdminAuth } = require("./middleware/requireAuth");
 const { notifyFollowers } = require("./lib/liveStoryNotify");
 const { notifyLiveActivities } = require("./lib/liveActivityNotify");
+const apns = require("./lib/apnsClient");
 
 const STATUSES = ["breaking", "developing", "verified", "disputed", "resolved", "false_report"];
 const KINDS = ["major", "minor", "correction", "final"];
@@ -41,6 +42,7 @@ exports.handler = async (event) => {
   try {
     if (event.httpMethod === "GET") {
       const params = event.queryStringParameters || {};
+      if (params.action === "apnsStatus") return apnsStatus();
       if (params.slug) return await getStoryDetail(params.slug);
       return await listStories();
     }
@@ -54,6 +56,8 @@ exports.handler = async (event) => {
           return await updateStory(body, actor);
         case "addUpdate":
           return await addUpdate(body, actor);
+        case "testLiveActivity":
+          return await testLiveActivity(body, actor);
         default:
           return json(400, { error: "Invalid or missing action" });
       }
@@ -237,6 +241,56 @@ async function addUpdate(body, actor) {
 
   const dispatch = { ...webResult, liveActivity: liveActivityResult };
   return json(200, { success: true, update, story: freshStory, dispatch });
+}
+
+/* ── Live Activity diagnostics + test (admin-only) ──── */
+
+/**
+ * Secret-safe APNs config readout. Never returns the .p8 key or a signed JWT —
+ * only whether each var is present and the derived topic/environment. Lets an
+ * admin confirm the Netlify APNS_* vars are set without exposing secrets.
+ */
+function apnsStatus() {
+  const keyId = process.env.APNS_KEY_ID || "";
+  return json(200, {
+    configured: apns.isConfigured(),
+    environment: apns.defaultEnvironment(),
+    bundleId: process.env.APNS_BUNDLE_ID || null,
+    topic: process.env.APNS_BUNDLE_ID ? `${process.env.APNS_BUNDLE_ID}.push-type.liveactivity` : null,
+    keyIdLast4: keyId ? keyId.slice(-4) : null,
+    teamIdSet: !!process.env.APNS_TEAM_ID,
+    keyP8Set: !!process.env.APNS_KEY_P8,
+  });
+}
+
+/**
+ * Send a synthetic Live Activity update/end to a story's running activities (and
+ * push-to-start followers) WITHOUT writing the timeline or sending web push.
+ * For real-device verification of remote ActivityKit delivery from /admin.
+ */
+async function testLiveActivity(body, actor) {
+  const story = await resolveStory(body);
+  if (!story) return json(404, { error: "Story not found" });
+  if (!apns.isConfigured()) {
+    return json(200, { success: true, dispatch: { configured: false, reason: "apns not configured" } });
+  }
+
+  const isFinal = body.final === true;
+  const status = STATUSES.includes(body.status) ? body.status : story.status;
+  const update = {
+    id: null, // synthetic — not persisted
+    body: (body.headline || "Test update from the newsroom.").trim(),
+    status_at_time: status,
+    alert_level: isFinal ? "final" : "normal",
+  };
+
+  const result = await notifyLiveActivities({ story, update, logger: console, dryRun: false }).catch((err) => {
+    console.error("[admin-live-stories] testLiveActivity failed:", err.message);
+    return { error: err.message };
+  });
+
+  console.log(`[admin-live-stories] ${actor} sent test Live Activity to ${story.slug} (final=${isFinal})`);
+  return json(200, { success: true, dispatch: result });
 }
 
 /* ── helpers ─────────────────────────────────────────── */

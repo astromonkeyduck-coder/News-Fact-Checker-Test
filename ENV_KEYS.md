@@ -159,6 +159,18 @@ Used by `netlify/functions/lib/apnsClient.js` + `lib/liveActivityNotify.js` to u
 
 If the APNS_* vars are absent, Live Activity dispatch is a **no-op** — web push still works and the editorial write never fails. See `ios/NoteworthyLive/README.md` for the app/Xcode setup.
 
+**Verify the config without exposing secrets** (Milestone 2B): signed into `/admin`, call the admin-authenticated diagnostic:
+
+```bash
+# Returns { configured, environment, bundleId, topic, keyIdLast4, teamIdSet, keyP8Set }
+curl -s "https://noteworthynews.co/.netlify/functions/admin-live-stories?action=apnsStatus" \
+  -H "Authorization: Bearer <admin Auth0 token>"
+```
+
+It never returns the `.p8` key or a signed JWT — only whether each var is present and the derived topic/environment. `configured:false` means at least one of `APNS_KEY_P8 / APNS_KEY_ID / APNS_TEAM_ID / APNS_BUNDLE_ID` is missing.
+
+**Sandbox vs production:** APNs picks the host per device from `live_story_devices.apns_environment` (set at pairing). Debug builds run on a real device register as `sandbox`; **TestFlight/App Store builds register as `production`**. A token created by a sandbox build will 400/`BadDeviceToken` on the production host and vice-versa — if a device "won't update," confirm its build type matches the environment. `APNS_DEFAULT_ENVIRONMENT` is only the fallback when a device has no stored environment.
+
 ### Native iOS app content API (no keys required)
 
 The native iOS reader app consumes two **read-only, public** endpoints that normalize the existing content into a stable mobile contract:
