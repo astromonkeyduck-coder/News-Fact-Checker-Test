@@ -1033,6 +1033,21 @@ body.article-page {
 
 /* ── Reader toolbar polish + mobile layout ──────────────── */
 
+/* styles.css ships a global mobile "overflow fix" (svg { width:100% !important })
+   that blows up every inline icon. Restore intrinsic icon sizing inside the
+   article surfaces with higher specificity + !important so labels don't wrap. */
+.nn-article svg,
+.nn-toolbar svg,
+.nn-source-card svg,
+.nn-more-coverage svg,
+.nn-sidebar svg,
+.nn-actions svg,
+.nn-chips svg {
+  width: auto !important;
+  height: auto !important;
+  max-width: 100% !important;
+}
+
 .nn-toolbar .control-btn {
   min-width: 34px;
   text-align: center;
