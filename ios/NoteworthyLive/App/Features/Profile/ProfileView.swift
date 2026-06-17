@@ -5,6 +5,9 @@ struct ProfileView: View {
     @State private var showPairing = false
     @State private var showUnlinkConfirm = false
     @State private var showWeb = false
+    #if DEBUG
+    @StateObject private var dataMode = DataMode.shared
+    #endif
 
     var body: some View {
         List {
@@ -12,6 +15,9 @@ struct ProfileView: View {
             settingsSection
             relationshipSection
             aboutSection
+            #if DEBUG
+            developerSection
+            #endif
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
@@ -42,6 +48,43 @@ struct ProfileView: View {
             Text("Live Activities you started stay until they end, but this device will stop receiving remote updates and following from the app.")
         }
     }
+
+    // MARK: Developer (DEBUG only)
+
+    #if DEBUG
+    @ViewBuilder private var developerSection: some View {
+        Section {
+            HStack {
+                Text("Data mode").foregroundStyle(NT.Palette.textPrimary)
+                Spacer()
+                Text(dataMode.source.rawValue)
+                    .font(.system(.subheadline, design: .monospaced))
+                    .foregroundStyle(dataMode.source == .live ? NT.Palette.green : NT.Palette.amber)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Base URL").font(.ntMeta).foregroundStyle(NT.Palette.textSecondary)
+                Text(dataMode.baseURL)
+                    .font(.system(.caption2, design: .monospaced))
+                    .foregroundStyle(NT.Palette.textTertiary)
+                    .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+            }
+            if let err = dataMode.lastError {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Last API error").font(.ntMeta).foregroundStyle(NT.Palette.textSecondary)
+                    Text(err)
+                        .font(.system(.caption2, design: .monospaced))
+                        .foregroundStyle(NT.Palette.red)
+                        .lineLimit(3).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        } header: {
+            Text("Developer (DEBUG)")
+        } footer: {
+            Text("Not shipped in Release. Launch with -UseMockData or -UseLiveData to control the source.")
+        }
+        .listRowBackground(NT.Palette.surface)
+    }
+    #endif
 
     // MARK: Pairing
 

@@ -16,30 +16,45 @@ struct LiveService {
         }
     }
 
+    private func mark(_ source: DataMode.Source, _ endpoint: String = "", _ error: String? = nil) async {
+        await MainActor.run { DataMode.shared.record(source, endpoint: endpoint, error: error) }
+    }
+
     /// Active (non-resolved) live stories for the Live screen + Home rail.
     func activeStories(includeResolved: Bool = false) async throws -> [LiveStory] {
-        if AppConfig.useMockData { return MockData.liveStories }
+        if AppConfig.useMockData { await mark(.mock); return MockData.liveStories }
         do {
             struct Wrapper: Decodable { var stories: [LiveStory] }
             var q: [URLQueryItem] = []
             if includeResolved { q.append(URLQueryItem(name: "includeResolved", value: "true")) }
             let w: Wrapper = try await HTTP.get("live-stories", query: q)
-            if w.stories.isEmpty && AppConfig.allowMockFallback { return MockData.liveStories }
+            if w.stories.isEmpty && AppConfig.allowMockFallback {
+                await mark(.fallback, "live-stories", "empty response")
+                return MockData.liveStories
+            }
+            await mark(.live, "live-stories")
             return w.stories
         } catch {
-            if AppConfig.allowMockFallback { return MockData.liveStories }
+            if AppConfig.allowMockFallback {
+                await mark(.fallback, "live-stories", (error as? LocalizedError)?.errorDescription ?? "\(error)")
+                return MockData.liveStories
+            }
             throw error
         }
     }
 
     /// Story + timeline for Story Detail.
     func detail(slug: String) async throws -> LiveStoryDetail {
-        if AppConfig.useMockData, let d = MockData.liveDetail(slug: slug) { return d }
+        if AppConfig.useMockData, let d = MockData.liveDetail(slug: slug) { await mark(.mock); return d }
         do {
             let d: LiveStoryDetail = try await HTTP.get("live-stories", query: [URLQueryItem(name: "slug", value: slug)])
+            await mark(.live, "live-stories")
             return d
         } catch {
-            if AppConfig.allowMockFallback, let d = MockData.liveDetail(slug: slug) { return d }
+            if AppConfig.allowMockFallback, let d = MockData.liveDetail(slug: slug) {
+                await mark(.fallback, "live-stories", (error as? LocalizedError)?.errorDescription ?? "\(error)")
+                return d
+            }
             throw error
         }
     }

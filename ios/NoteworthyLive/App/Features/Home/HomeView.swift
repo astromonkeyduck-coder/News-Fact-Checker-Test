@@ -21,7 +21,16 @@ struct HomeView: View {
                     ErrorStateView(message: message) { Task { await model.refresh() } }
                         .padding(.top, Space.xxxl)
                 case .loaded:
-                    loadedContent.transition(.opacity)
+                    if model.isEmpty {
+                        EmptyStateView(systemImage: "newspaper",
+                                       title: "No stories yet",
+                                       message: "There's nothing in the feed right now. Pull to refresh, or check back in a moment.",
+                                       actionTitle: "Refresh",
+                                       action: { Task { await model.refresh() } })
+                            .padding(.top, Space.xxxl)
+                    } else {
+                        loadedContent.transition(.opacity)
+                    }
                 }
             }
             .padding(.bottom, Space.lg)
@@ -87,6 +96,7 @@ struct HomeView: View {
             }
         }
 
+        if !model.latest.isEmpty {
         VStack(alignment: .leading, spacing: Space.md) {
             SectionHeader(title: "Latest").ntScreenPadding()
 
@@ -114,6 +124,7 @@ struct HomeView: View {
                 }
             }
             .ntScreenPadding()
+        }
         }
     }
 

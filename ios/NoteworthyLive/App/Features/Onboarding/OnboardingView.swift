@@ -60,7 +60,7 @@ struct OnboardingView: View {
     }
 
     private var footerTitle: String {
-        page == pages.count ? "Turn on alerts" : "Continue"
+        page == pages.count ? "Allow notifications" : "Continue"
     }
 
     private func advance() {
@@ -152,11 +152,11 @@ private struct PermissionPageView: View {
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: Space.sm) {
-                Text("Turn on Noteworthy alerts")
+                Text("Turn on Live Activities")
                     .font(.ntSoraExtraBold(28, relativeTo: .largeTitle))
                     .foregroundStyle(NT.Palette.textPrimary)
                     .fixedSize(horizontal: false, vertical: true)
-                Text("We'll notify you for breaking stories, followed live updates, and important developments.")
+                Text("Follow a developing story and watch it update right on your Lock Screen and Dynamic Island. Breaking-news and story push alerts are rolling out soon, allow notifications now so you're ready.")
                     .font(.ntBody)
                     .foregroundStyle(NT.Palette.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)

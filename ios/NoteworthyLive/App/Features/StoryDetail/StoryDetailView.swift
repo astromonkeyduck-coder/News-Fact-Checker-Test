@@ -164,7 +164,26 @@ struct StoryDetailView: View {
                 Rectangle().fill(NT.Palette.border).frame(height: 1)
                     .padding(.top, Space.xs)
 
-                if item.imageUrl != nil {
+                if item.isVideo {
+                    Button { showWeb = true } label: {
+                        ZStack {
+                            RemoteImage(urlString: item.imageUrl)
+                                .frame(height: 220).frame(maxWidth: .infinity).clipped()
+                            ZStack {
+                                Circle().fill(.black.opacity(0.55)).frame(width: 60, height: 60)
+                                Image(systemName: "play.fill")
+                                    .font(.system(size: 24, weight: .bold))
+                                    .foregroundStyle(.white)
+                            }
+                        }
+                        .clipShape(RoundedRectangle(cornerRadius: NT.Radius.card, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Play video")
+                    .accessibilityHint("Opens the video on the web")
+                    Text("Video plays on the web")
+                        .font(.ntMeta).foregroundStyle(NT.Palette.textTertiary)
+                } else if item.imageUrl != nil {
                     RemoteImage(urlString: item.imageUrl)
                         .frame(height: 220).frame(maxWidth: .infinity).clipped()
                         .clipShape(RoundedRectangle(cornerRadius: NT.Radius.card, style: .continuous))

@@ -18,7 +18,7 @@ Deferred work (standard APNs push, NSE, hardening): [`../../IOS_M2_BACKLOG.md`](
 - **Profile / Pairing**, redeem a website pairing code, Keychain-stored device secret, paired state, unlink.
 - **Live Activities**, Lock Screen + Dynamic Island for all story statuses, deep-linking into the exact story.
 
-The app is fully usable **without pairing or APNs**, it falls back to realistic mock data so every screen looks shipped before the backend has content.
+The app is fully usable **without pairing or APNs**. It loads **real content** from `noteworthynews.co` (`mobile-feed` / `mobile-story` / `live-stories`); in DEBUG it falls back to mock only if the network/endpoint is unavailable (with a loud console warning and a Profile ▸ Developer indicator). Run with `-UseLiveData` for strict live, `-UseMockData` to force mock. See [`../../IOS_APP_SETUP.md`](../../IOS_APP_SETUP.md) for the real-content status and curl commands.
 
 ## How content flows
 - Editorial feed/detail: `mobile-feed` / `mobile-story` (normalized, read-only) via `ContentService`.

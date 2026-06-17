@@ -81,6 +81,14 @@ struct NotificationsView: View {
 
     private var alertsSection: some View {
         Section {
+            HStack(alignment: .top, spacing: Space.sm) {
+                Image(systemName: "clock.badge")
+                    .foregroundStyle(NT.Palette.amber)
+                Text("Push alerts are rolling out soon. Set your preferences now, they'll apply once delivery is live. Live Activities already work on your Lock Screen.")
+                    .font(.ntMeta)
+                    .foregroundStyle(NT.Palette.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             Toggle(isOn: prefs.masterEnabled) { Label("All alerts", systemImage: "app.badge") }
             Toggle(isOn: prefs.breakingNews) { Label("Breaking news", systemImage: "bolt.fill") }
                 .disabled(!prefsStore.prefs.masterEnabled)

@@ -14,6 +14,13 @@ final class HomeViewModel: ObservableObject {
         state.value?.first { $0.isBreaking }
     }
 
+    /// True when the feed loaded successfully but has nothing to show
+    /// (no posts and no live stories) so Home can render an empty state
+    /// instead of a bare masthead.
+    var isEmpty: Bool {
+        (state.value?.isEmpty ?? true) && liveStories.isEmpty
+    }
+
     /// Feed minus the hero breaking item (so it doesn't appear twice).
     var latest: [FeedItem] {
         guard let items = state.value else { return [] }

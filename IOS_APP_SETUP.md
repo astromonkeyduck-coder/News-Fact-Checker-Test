@@ -2,7 +2,7 @@
 
 The native SwiftUI reader app lives in [`ios/NoteworthyLive/`](ios/NoteworthyLive/). It is a full Noteworthy News app, Home, Live stories, Story Detail, Saved, Explore, Notifications, Profile/Pairing, plus the signature Live Activities / Dynamic Island. The website remains the production content engine and newsroom.
 
-This is **Milestone 1**: the complete app on real public endpoints (with mock fallback), an openable Xcode project, and one new backend content API. Standard-APNs push notifications, the Notification Service Extension, and backend hardening are **Milestone 2** (see [`IOS_M2_BACKLOG.md`](IOS_M2_BACKLOG.md)).
+This is **Milestone 1**: the complete app on **real public endpoints** (verified live — see [Real content status](#15-real-content-status--test-commands)), an openable Xcode project, and the new backend content API. Standard-APNs push notifications, the Notification Service Extension dispatch, and backend hardening are **Milestone 2** (see [`IOS_M2_BACKLOG.md`](IOS_M2_BACKLOG.md)). Future design/polish ideas are tracked in [`IOS_FUTURE_DESIGN_BACKLOG.md`](IOS_FUTURE_DESIGN_BACKLOG.md). The first internal TestFlight runbook is [`IOS_TESTFLIGHT_PREP.md`](IOS_TESTFLIGHT_PREP.md).
 
 ---
 
@@ -19,8 +19,11 @@ open NoteworthyLive.xcodeproj
 
 Then in Xcode: select the **NoteworthyLive** scheme and a simulator or device, and Run.
 
-- The app runs without any backend or Apple credentials, it falls back to realistic mock data (DEBUG builds) so every screen is populated.
-- Force mock data anytime: Scheme ▸ Run ▸ Arguments ▸ add `-UseMockData`. Force live data: `-UseLiveData`.
+### Data source modes
+- **Default**: the app hits the real endpoints at `https://noteworthynews.co`. In **DEBUG** only, if a call fails or returns empty it falls back to mock so the screen is never blank.
+- `-UseLiveData` (Scheme ▸ Run ▸ Arguments): **strict live** — disables the mock fallback so you see real data or a real empty/error state. Use this to confirm the live path.
+- `-UseMockData`: force mock everywhere (offline demos / UI work).
+- Mock never silently masquerades as live: in DEBUG a fallback logs a loud `⚠️ [DataMode] FALLBACK` console warning, and **Profile ▸ Developer (DEBUG)** shows the current source (Live / Mock / Fallback), the base URL, and the last API error. None of this ships in Release.
 - SwiftUI previews work per-file (many views ship `#Preview`s).
 
 ### Targets
@@ -33,6 +36,35 @@ Then in Xcode: select the **NoteworthyLive** scheme and a simulator or device, a
 > The NSE is a real target now (matches the planned 3-target structure) but is a safe pass-through: it only runs for pushes sent with `mutable-content: 1`, and M1 sends no such pushes. It needs its own App ID (`co.noteworthynews.live.NotificationService`), automatic signing creates it. No M2 dispatch logic lives in it yet.
 
 Minimum deployment: **iOS 16.2** (Live Activities). Push-to-start remote Live Activities require **iOS 17.2+**; on 16.2-17.1 the app starts them locally.
+
+---
+
+## 1.5 Real content status & test commands
+
+Verified live in production (Jun 2026):
+
+| Surface | Endpoint | Real? |
+|---------|----------|-------|
+| Home feed (Latest, breaking, alerts) | `mobile-feed` / `/api/mobile/feed` | **Real** — NWS alerts, breaking news, video posts |
+| Story Detail (posts) | `mobile-story?id=<postId>` | **Real** — includes `bodyText` |
+| Live stories + timeline | `live-stories` (+ `?slug=`) | **Real** — Supabase-backed |
+| Feed/story images | `imageUrl` | **Real where available** (e.g. twimg thumbnails); null images render a clean fallback, no ugly gaps |
+| Video posts | `videoUrl` + `imageUrl` + `isVideo` | **Real metadata** — thumbnail + video badge shown; inline playback is a future-backlog item (video opens via the source/web) |
+
+Still mock-only: nothing on the happy path. Mock appears only in `-UseMockData`, SwiftUI previews, or a DEBUG fallback when the network/endpoint is down.
+
+Test the backend directly:
+```bash
+# Feed (grab a real id from the output):
+curl -s "https://noteworthynews.co/.netlify/functions/mobile-feed?limit=3" | head
+# Single story detail — NOTE: mobile-story takes ?id=<postId>, NOT ?slug=
+curl -s "https://noteworthynews.co/.netlify/functions/mobile-story?id=<postId-from-feed>" | head
+# Live stories:
+curl -s "https://noteworthynews.co/.netlify/functions/live-stories" | head
+```
+Live stories use `?slug=` (`live-stories?slug=test-live-story`); editorial posts use `mobile-story?id=`.
+
+> The "TEST Live Story" you may see is **real backend data** (a Supabase row), not an app mock. Archive it in `/admin` ▸ Live Stories when you want it gone.
 
 ---
 
@@ -71,11 +103,12 @@ Already applied in production: `005_create_live_stories.sql`, `006_create_ios_de
 ## 5. Real-device testing (M1)
 
 1. Run on a device. The app is fully usable unpaired (browse Home/Live/Story/Saved/Explore).
-2. **Deep links**: from Terminal with the app installed on a booted simulator:
+2. **Deep links**: the app must be **installed and launched** on the booted simulator first (Run from Xcode, or `xcrun simctl install`). Then:
    ```bash
    xcrun simctl openurl booted "noteworthylive://story/election-night"
    ```
    It should open the Live tab and push native Story Detail for that slug.
+   > If you just ran `xcrun simctl uninstall booted co.noteworthynews.live`, `openurl` will fail with `LSApplicationWorkspaceErrorDomain error 115` — there's no app to handle the scheme. Reinstall/run first, then deep-link.
 3. **Pairing** (unlocks following + Live Activities from the phone):
    - On noteworthynews.co ▸ Notification settings ▸ generate a pairing code.
    - In the app ▸ Profile ▸ Enter pairing code.
@@ -105,7 +138,7 @@ Already applied in production: `005_create_live_stories.sql`, `006_create_ios_de
 | Symptom | Cause / fix |
 |---------|-------------|
 | `xcodegen: command not found` | `brew install xcodegen` |
-| Build fails on signing | Set your Team on both targets in Signing & Capabilities |
+| Build fails on signing | Set your Team on all three targets (app, widget, NSE) in Signing & Capabilities |
 | App icon | Real icon shipped: bold "NW" monogram (Sora ExtraBold, white) on a navy gradient at `App/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon1024.png`. Regenerate with `swift /tmp/mkmark.swift <Sora-ExtraBold.ttf> <icon.png> <mark1x> <mark2x> <mark3x>`, or drop your own opaque 1024px PNG (no alpha) in its place. The launch/splash mark lives in `LaunchMark.imageset`. |
 | Empty feed in Release | Release builds don't mock-fallback; ensure `mobile-feed` is deployed and the blob store has posts |
 | Live Activity won't start | Live Activities are disabled in iOS Settings ▸ Noteworthy, or the device is < iOS 16.2 |
@@ -120,10 +153,11 @@ Already applied in production: `005_create_live_stories.sql`, `006_create_ios_de
 - TestFlight upload (Xcode ▸ Archive ▸ Distribute).
 
 ### TestFlight checklist
-- [x] App icon added (1024px NW monogram on navy)
-- [ ] Team + signing set on both targets
-- [ ] `APNS_*` env vars set in Netlify (for push features)
-- [ ] Version/build bumped (`MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `project.yml`)
+> Full archive/upload runbook: [`IOS_TESTFLIGHT_PREP.md`](IOS_TESTFLIGHT_PREP.md).
+- [x] App icon added (1024px NW monogram on navy, opaque)
+- [x] Version/build set for first internal beta (`MARKETING_VERSION` 0.1.0 / `CURRENT_PROJECT_VERSION` 1 in `project.yml`)
+- [ ] Team + signing set on all three targets (app, widget, NSE)
+- [ ] `APNS_*` env vars set in Netlify (for push features, Milestone 2)
 - [ ] Archive the `NoteworthyLive` scheme (Release) and validate
 - [ ] Export compliance: app sets `ITSAppUsesNonExemptEncryption = false`
 - [ ] Privacy nutrition labels filled in App Store Connect
