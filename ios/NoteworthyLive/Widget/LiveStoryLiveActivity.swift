@@ -11,7 +11,8 @@ struct LiveStoryLiveActivity: Widget {
             // ── Lock Screen / banner (also the StandBy baseline) ──
             LockScreenView(context: context)
                 .widgetURL(LiveStoryDeepLink.url(slug: context.attributes.storySlug))
-                .activityBackgroundTint(Color.black.opacity(0.85))
+                // Noteworthy navy canvas (#080E1A) to match the website/app brand.
+                .activityBackgroundTint(Color(red: 0.031, green: 0.055, blue: 0.102).opacity(0.92))
                 .activitySystemActionForegroundColor(.white)
 
         } dynamicIsland: { context in

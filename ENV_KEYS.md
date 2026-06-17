@@ -155,9 +155,18 @@ Used by `netlify/functions/lib/apnsClient.js` + `lib/liveActivityNotify.js` to u
 | **APNS_KEY_ID** | 10-char key ID for that key | Shown when you create the key |
 | **APNS_TEAM_ID** | 10-char Apple Team ID | Apple Developer → Membership |
 | **APNS_BUNDLE_ID** | App bundle id (topic base) | e.g. `co.noteworthynews.live` (must match the iOS app) |
-| **APNS_DEFAULT_ENVIRONMENT** | `sandbox` or `production` fallback | Per-device env is stored at pairing; this is the default. Use `sandbox` for TestFlight/dev |
+| **APNS_DEFAULT_ENVIRONMENT** | `sandbox` or `production` fallback | Per-device env is stored at pairing; this is the default. Use `sandbox` only for local **development/debug device builds**. **TestFlight and App Store builds use `production`** APNs. |
 
 If the APNS_* vars are absent, Live Activity dispatch is a **no-op** — web push still works and the editorial write never fails. See `ios/NoteworthyLive/README.md` for the app/Xcode setup.
+
+### Native iOS app content API (no keys required)
+
+The native iOS reader app consumes two **read-only, public** endpoints that normalize the existing content into a stable mobile contract:
+
+- `mobile-feed` (alias `/api/mobile/feed`) — normalized post feed (`{ items, nextCursor, total }`)
+- `mobile-story` (alias `/api/mobile/story?id=`) — single normalized post (`{ story }`)
+
+These reuse the existing `x-posts` Netlify Blobs store (via `lib/postStore`) and the shared `lib/postNormalize` module. **No new environment variables are needed.** Live stories continue to use the existing `live-stories` endpoint. Full app setup: see `IOS_APP_SETUP.md`.
 
 ---
 

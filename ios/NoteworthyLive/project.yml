@@ -1,0 +1,99 @@
+# XcodeGen project definition for the Noteworthy News native iOS app.
+#
+# Generate the .xcodeproj with:
+#   cd ios/NoteworthyLive
+#   brew install xcodegen   # one-time
+#   xcodegen generate
+#   open NoteworthyLive.xcodeproj
+#
+# Three targets:
+#   NoteworthyLive, the SwiftUI reader app (App/ + Shared/)
+#   LiveStoryWidget, Live Activity / Dynamic Island widget extension (Widget/ + Shared/)
+#   NotificationServiceExtension, NSE scaffold (pass-through in M1; rich media in M2)
+
+name: NoteworthyLive
+
+options:
+  bundleIdPrefix: co.noteworthynews
+  deploymentTarget:
+    iOS: "16.2"
+  createIntermediateGroups: true
+  groupSortPosition: top
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGN_STYLE: Automatic
+    TARGETED_DEVICE_FAMILY: "1"
+    ENABLE_USER_SCRIPT_SANDBOXING: "YES"
+    SWIFT_EMIT_LOC_STRINGS: "YES"
+    DEVELOPMENT_ASSET_PATHS: ""
+    # Leave DEVELOPMENT_TEAM empty: set your Apple Team in Xcode > Signing.
+    DEVELOPMENT_TEAM: ""
+
+targets:
+  NoteworthyLive:
+    type: application
+    platform: iOS
+    deploymentTarget: "16.2"
+    sources:
+      - path: App
+      - path: Shared
+    settings:
+      base:
+        PRODUCT_NAME: NoteworthyLive
+        PRODUCT_BUNDLE_IDENTIFIER: co.noteworthynews.live
+        INFOPLIST_FILE: SupportingFiles/Info.plist
+        CODE_SIGN_ENTITLEMENTS: SupportingFiles/NoteworthyLive.entitlements
+        GENERATE_INFOPLIST_FILE: "NO"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        ENABLE_PREVIEWS: "YES"
+    dependencies:
+      - target: LiveStoryWidget
+        embed: true
+      - target: NotificationServiceExtension
+        embed: true
+
+  LiveStoryWidget:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "16.2"
+    sources:
+      - path: Widget
+      - path: Shared
+    settings:
+      base:
+        PRODUCT_NAME: LiveStoryWidget
+        PRODUCT_BUNDLE_IDENTIFIER: co.noteworthynews.live.LiveStoryWidget
+        INFOPLIST_FILE: SupportingFiles/Widget-Info.plist
+        GENERATE_INFOPLIST_FILE: "NO"
+        ENABLE_PREVIEWS: "YES"
+
+  NotificationServiceExtension:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "16.2"
+    sources:
+      - path: NotificationServiceExtension
+    settings:
+      base:
+        PRODUCT_NAME: NotificationServiceExtension
+        PRODUCT_BUNDLE_IDENTIFIER: co.noteworthynews.live.NotificationService
+        INFOPLIST_FILE: SupportingFiles/NotificationService-Info.plist
+        GENERATE_INFOPLIST_FILE: "NO"
+
+schemes:
+  NoteworthyLive:
+    build:
+      targets:
+        NoteworthyLive: all
+        LiveStoryWidget: all
+        NotificationServiceExtension: all
+    run:
+      config: Debug
+    archive:
+      config: Release

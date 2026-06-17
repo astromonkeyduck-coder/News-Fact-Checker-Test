@@ -1,6 +1,6 @@
 import Foundation
 
-/// Thin networking layer over the existing Netlify Functions. No article CMS —
+/// Thin networking layer over the existing Netlify Functions. No article CMS, 
 /// just pairing, token registration, and the followed-stories list.
 struct FollowedStory: Codable, Identifiable {
     var slug: String

@@ -30,20 +30,39 @@ final class LiveActivityManager: ObservableObject {
     // MARK: Start / end
 
     func startActivity(for story: FollowedStory) {
+        start(slug: story.slug, title: story.title, category: story.category ?? "",
+              status: story.status, severity: story.severity,
+              confidence: story.confidence ?? "medium",
+              headline: story.latestHeadline ?? story.summary ?? "")
+    }
+
+    /// Start a Live Activity for a public LiveStory (Live screen / Story Detail).
+    func startActivity(for story: LiveStory) {
+        start(slug: story.slug, title: story.title, category: story.category ?? "",
+              status: story.status, severity: story.severity,
+              confidence: story.confidence ?? "medium",
+              headline: story.latestHeadline ?? story.summary ?? "")
+    }
+
+    /// Shared start path. Local start works on iOS 16.2+ even without pairing;
+    /// the backend takes over remote updates once the per-activity token is
+    /// registered (which requires the device to be paired).
+    private func start(slug: String, title: String, category: String,
+                       status: String, severity: Int, confidence: String, headline: String) {
         guard areActivitiesEnabled else { return }
-        guard !activeSlugs.contains(story.slug) else { return }
+        guard !activeSlugs.contains(slug) else { return }
 
         let attributes = LiveStoryAttributes(
-            storySlug: story.slug,
-            storyId: story.slug, // storyId not needed client-side; slug is the key
-            title: story.title,
-            category: story.category ?? ""
+            storySlug: slug,
+            storyId: slug, // storyId not needed client-side; slug is the key
+            title: title,
+            category: category
         )
         let state = LiveStoryAttributes.ContentState(
-            status: story.status,
-            headline: story.latestHeadline ?? story.summary ?? "",
-            severity: story.severity,
-            confidence: story.confidence ?? "medium",
+            status: status,
+            headline: headline,
+            severity: severity,
+            confidence: confidence,
             updatedAt: Int(Date().timeIntervalSince1970),
             isFinal: false
         )
@@ -59,7 +78,7 @@ final class LiveActivityManager: ObservableObject {
             } else {
                 activity = try Activity.request(attributes: attributes, contentState: state, pushType: .token)
             }
-            activeSlugs.insert(story.slug)
+            activeSlugs.insert(slug)
             observeToken(of: activity)
         } catch {
             print("[LiveActivity] start failed: \(error)")

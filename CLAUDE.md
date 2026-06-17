@@ -1,78 +1,177 @@
-# CLAUDE.md
+# Noteworthy News Engineering Instructions
 
-## Project purpose
-Noteworthy News is a public news/media-literacy product with interactive experiences, admin tooling, feed ingestion, analytics, newsletters, and specialty dashboards.
-Primary goal: make the public site feel premium, fast, trustworthy, and maintainable without breaking live workflows.
+You are working on Noteworthy News, a serious social-first news product with an existing deployed website/backend and a planned full native iOS app.
 
-## Stack reality
+This project is NOT greenfield.
+
+## Core stack
+
+Preserve the existing stack unless an audit proves it is structurally bad:
+
 - Static-first HTML/CSS/JS public site
-- Netlify Functions for APIs/background operations
-- Netlify Blobs for some post/content storage
-- Supabase migrations for event/transcription-related data
-- Auth0 present in the repo
-- Cloudflare Worker for feed/X sync
-- Separate websocket server with Redis for multiplayer/realtime
-- Some React/JSX islands exist, but this is not a clean SPA
+- V2 lives in /v2/ and is served at / through Netlify rewrite
+- Netlify Functions, Node 20, CommonJS, for APIs
+- Supabase Postgres for structured data
+- Supabase accessed server-side with service-role key
+- RLS blocks anon access
+- Netlify Blobs for web-push subscriptions
+- Web Push through VAPID/web-push
+- Service worker at /sw.js
+- Auth0 for public/admin login
+- Existing Live Story / Follow Live system
+- Native iOS app should use SwiftUI, ActivityKit, WidgetKit, APNs, and UserNotifications
 
-## Architecture constraints
-- Do not treat this repo like a greenfield app.
-- Preserve working public routes unless the plan explicitly changes them.
-- Prefer simplifying boundaries over adding abstractions.
-- Treat admin surfaces and destructive endpoints as privileged systems, not normal UI pages.
-- One subsystem at a time: public site, admin, ingest, realtime, specialty dashboards.
+Do not migrate the website to Next.js, React, React Native, Expo, Capacitor, or a WebView wrapper unless explicitly instructed.
 
-## Non-negotiable rules
-- Plan first. Do not edit before writing findings and a phased plan.
-- Keep changes scoped. Do not rewrite the entire repo.
-- No new frameworks unless clearly justified.
-- No browser-only “security” for privileged behavior.
-- No query-string auth, no localStorage/sessionStorage used as a trust boundary.
-- Do not duplicate ingestion or storage logic; consolidate toward one canonical path per domain.
-- Prefer thin handlers + shared utilities over giant serverless files.
+## Product direction
 
-## Coding standards
-- Prefer small, explicit modules with clear ownership.
-- Use shared contracts/types for request/response shapes where possible.
-- Reduce inline JS/CSS when touching a file.
-- If splitting a large file, do it by responsibility, not by arbitrary helper extraction.
-- Preserve existing behavior unless the plan explicitly improves/replaces it.
+The native iOS app is now a full flagship Noteworthy News app, not just a thin companion.
 
-## Performance rules
-- Avoid blocking startup work on the homepage.
-- No Babel-in-browser or runtime JSX compilation on production-critical paths.
-- Lazy-load specialty experiences (Situation Monitor, globe, heavy game logic) where possible.
-- Keep audio/animation opt-in or lightweight by default.
-- Remove fallback hacks when a cleaner lifecycle fix is possible.
+The website/backend remains the production engine:
+- public site
+- admin/newsroom dashboard
+- Live Story OS
+- Supabase/Netlify API layer
+- web push/PWA surface
 
-## Security rules
-- All admin/destructive operations must be server-authenticated and authorized.
-- Public admin HTML pages are not acceptable as the security boundary.
-- Validate and rate-limit mutation endpoints on the server.
-- Log sensitive admin mutations.
+The iOS app should become the best user experience:
+- native
+- premium
+- fast
+- smooth
+- serious
+- modern
+- editorial
+- trustworthy
+- social-first
+- not obviously AI-generated
+- not a generic app template
+- not a WebView
 
-## UI/UX bar
-- Public site should feel coherent, premium, and calm.
-- One public design language, one internal/admin design language.
-- Favor clarity, hierarchy, and trust over visual noise.
-- Accessibility is required: focus states, reduced motion, contrast, keyboard/touch support.
+The iOS app must feel 10x better than the website while preserving the existing backend unless the backend audit proves the base is bad.
 
-## Editing workflow
-1. Inspect relevant files.
-2. Update `audit-findings.md` with findings.
-3. Update `plan.md` with the scoped plan.
-4. Explain the planned change before editing.
-5. Implement only the approved scope.
-6. Validate and summarize tradeoffs, risks, and follow-ups.
+## Backend rule
 
-## Commands
-- **install (root):** `npm install`
-- **install (subpackages, when needed):** `npm install` in `cloudflare-worker/` and/or `websocket-server/`
-- **dev (site + Netlify Functions):** `npm run dev` or `npm run serve` (both run `npx netlify dev`)
-- **dev (Cloudflare worker):** `cd cloudflare-worker && npm run dev`
-- **dev (websocket server):** `cd websocket-server && npm run dev`
-- **build (production prep):** `npm run build` (runs timestamp/auth0 inject + webpack minify)
-- **test:** `npm run test:games` (Jest, `GamesGallery`); other scripts include `npm run validate:games`, `npm run test:webhook`, and several `test:earthquake*` / `test:video` Node scripts—see root `package.json`
-- **lint/typecheck:** Root TypeScript: `npx tsc --noEmit` (uses `tsconfig.json`; `cloudflare-worker` excluded). Worker package: `cd cloudflare-worker && npm run type-check`. There is no repo-wide ESLint configuration today.
+Before building major app features on the existing backend, audit the backend honestly.
 
-## Why these rules exist
-This repo already has too many overlapping systems. The biggest risk is not under-building. The biggest risk is making sprawl worse.
+Do not blindly preserve the backend.
+Do not blindly rebuild the backend.
+
+Use this decision model:
+- Keep: backend is solid and only needs app endpoints/docs/tests.
+- Harden: backend is basically good but needs rate limits, tests, cleanup jobs, better logs, or APNs audit persistence.
+- Partial rebuild: some parts are bad, but the data model/deployment stack can stay.
+- Full rebuild: only if the current foundation would seriously hurt the native app.
+
+If recommending a rebuild, explain:
+- exact structural problems
+- why hardening is insufficient
+- migration path
+- risks
+- files/tables/functions affected
+- what can be preserved
+
+## Output style
+
+Be concise and high-density.
+
+For normal explanations:
+- no fluff
+- no generic encouragement
+- no long intros
+- no repeated summaries
+- no “here’s what I did” essays unless asked
+
+For small code changes:
+- output only the modified code block, patch, or diff
+- do not rewrite the entire file unless the whole file truly changed
+- do not include setup guides or explanations unless needed
+- if a change touches 1 function, show only that function
+- if a change touches 2-3 small areas, show a minimal unified diff
+
+For large implementation tasks:
+- inspect first
+- give a short plan
+- implement
+- summarize files changed, what works, what remains blocked
+
+Never hide important blockers. If Apple credentials, signing, APNs keys, or real-device testing are required, say so clearly.
+
+## Context management
+
+Manage context aggressively.
+
+Before reading many files, state what you need to inspect.
+Do not reread unrelated files.
+Do not keep restating the entire project brief.
+Use the repo as source of truth.
+If old assumptions conflict with actual files, follow actual files.
+Prefer targeted edits over massive rewrites.
+Clean up temporary files after using them.
+
+## Model / effort guidance
+
+For big engineering work:
+- use Opus 4.8 xhigh / Extra
+
+For backend architecture audits and final bug hunts:
+- use Opus 4.8 max
+
+For small patches:
+- use high or Sonnet-level effort if available
+- use patch-only output
+
+Do not use Max for every tiny edit.
+
+## Design quality
+
+The app must not look AI-generated.
+
+Avoid:
+- purple gradients
+- beige editorial templates
+- generic SaaS cards
+- boring white list apps
+- childish emojis
+- random glassmorphism
+- fake futuristic UI
+- over-spaced placeholder layouts
+- obvious Apple News clone
+- obvious Twitter/X clone
+- generic dashboard look
+
+Noteworthy News visual direction:
+- dark mode first
+- near-black base
+- graphite surfaces
+- crisp white typography
+- Noteworthy red accent
+- thin borders
+- compact editorial density
+- live pulse language
+- status chips
+- ticker-inspired motion
+- premium newsroom command-center feel
+
+The app should feel like:
+Apple News polish + Bloomberg urgency + live election tracker + social-first breaking news speed.
+
+But it must still feel like Noteworthy News.
+
+## Native iOS requirements
+
+Use native SwiftUI.
+
+Required iOS surfaces:
+- main app
+- Live Activities
+- Lock Screen
+- Dynamic Island compact/minimal/expanded states
+- APNs push notifications
+- Notification Service Extension for rich notifications if useful
+- deep links into exact stories/live stories
+- notification preferences
+- pairing with web/PWA identity/device state if preserving existing bridge
+
+Do not fake Apple capabilities.
+Do not claim the website alone can create Live Activities or Dynamic Island experiences.

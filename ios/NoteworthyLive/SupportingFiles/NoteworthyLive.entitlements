@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  APP target entitlements. Use "development" for debug/TestFlight-sandbox builds
-  and "production" for App Store builds (Xcode automatic signing manages this).
+  APP target entitlements. aps-environment is "development" here, which is correct
+  for local debug device builds (sandbox APNs). For TestFlight AND App Store builds,
+  Xcode automatic distribution signing promotes this to "production" APNs at archive
+  time. NOTE: TestFlight uses PRODUCTION APNs, not sandbox.
 -->
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">

@@ -2,7 +2,7 @@ import SwiftUI
 import SafariServices
 
 /// In-app browser used to open /story/<slug> on the website. The app never
-/// renders article content itself — the website remains the source of truth.
+/// renders article content itself, the website remains the source of truth.
 struct SafariView: UIViewControllerRepresentable {
     let url: URL
 

@@ -212,6 +212,19 @@
   status = 200
   force = true
 
+# Mobile app content API (normalized, read-only) for the native iOS app
+[[redirects]]
+  from = "/api/mobile/feed"
+  to = "/.netlify/functions/mobile-feed"
+  status = 200
+  force = false
+
+[[redirects]]
+  from = "/api/mobile/story"
+  to = "/.netlify/functions/mobile-story"
+  status = 200
+  force = false
+
 # Clemens Converter API routes
 [[redirects]]
   from = "/api/get-upload-url"

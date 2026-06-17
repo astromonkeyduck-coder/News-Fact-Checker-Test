@@ -1,45 +1,61 @@
-# Noteworthy Live — iOS companion app
+# Noteworthy News, iOS app
 
-A deliberately thin SwiftUI app. Its only job is to unlock native Apple surfaces
-(ActivityKit Live Activities, Dynamic Island, Lock Screen) for stories the user
-already follows on noteworthynews.com. It does **not** render articles — taps
-open the website's `/story/<slug>` page in an in-app browser.
+The flagship native SwiftUI reader for Noteworthy News. Not a WebView, not React
+Native, not a wrapper, a real Apple-native app. The website remains the
+production content engine and newsroom; this app is the premium reader plus the
+signature Live Activities / Dynamic Island experience.
 
-## What it does
-1. User follows live stories on the web/PWA (anonymous, keyed by web-push endpoint).
-2. User opens **Notification settings → Open in the iOS app** on the website to get a 6-char pairing code.
-3. App redeems the code (`device-link`), which links the device to the same `subscriber_key` and returns the followed stories.
-4. App registers APNs tokens (`device-register`): per-activity update tokens and, on iOS 17.2+, a push-to-start token.
-5. When an editor posts an update, the backend updates web push subscribers **and** the iOS Live Activities (`lib/liveActivityNotify.js` → APNs).
-6. Tapping the Live Activity opens `noteworthylive://story/<slug>` → the app shows `https://noteworthynews.co/story/<slug>`.
+Full setup, signing, and TestFlight steps: see [`../../IOS_APP_SETUP.md`](../../IOS_APP_SETUP.md).
+Deferred work (standard APNs push, NSE, hardening): [`../../IOS_M2_BACKLOG.md`](../../IOS_M2_BACKLOG.md).
+
+## What it does (Milestone 1)
+- **Home**, breaking hero, "Developing Now" live rail, latest feed, pull-to-refresh, skeleton/empty/error/offline states.
+- **Live**, active + followed live stories, status chips, Follow Live, Start/Stop Live Activity.
+- **Story Detail**, headline, summary/body, source, live timeline (polls), Follow, Live Activity, Save, Share, Open on web.
+- **Saved**, device-local saved stories.
+- **Explore**, topic chips, client-side search, recent searches (server search is M2).
+- **Notifications**, system permission + Live Activity availability, alert toggles, quiet hours (synced server-side in M2).
+- **Profile / Pairing**, redeem a website pairing code, Keychain-stored device secret, paired state, unlink.
+- **Live Activities**, Lock Screen + Dynamic Island for all story statuses, deep-linking into the exact story.
+
+The app is fully usable **without pairing or APNs**, it falls back to realistic mock data so every screen looks shipped before the backend has content.
+
+## How content flows
+- Editorial feed/detail: `mobile-feed` / `mobile-story` (normalized, read-only) via `ContentService`.
+- Live stories + timeline: public `live-stories` via `LiveService`.
+- Following + Live Activity tokens (paired devices): `device-link` / `device-register` / `device-live-stories` via `APIClient`.
+- Live Activity payloads share `Shared/LiveStoryAttributes.swift` with `netlify/functions/lib/liveActivityNotify.js` byte-for-byte.
 
 ## Source layout
 ```
 ios/NoteworthyLive/
-  App/                     App target (SwiftUI)
-    NoteworthyLiveApp.swift, AppDelegate.swift, Config.swift
-    APIClient.swift, Keychain.swift, DeviceIdentity.swift, LiveActivityManager.swift
-    Views/ (RootView, PairingView, FollowedStoriesView, SafariView)
-  Widget/                  Widget extension (Live Activity UI only)
-    LiveStoryWidgetBundle.swift, LiveStoryLiveActivity.swift
-  Shared/                  Membership in BOTH targets
-    LiveStoryAttributes.swift, StatusStyle.swift, DeepLink.swift
-  SupportingFiles/         Info.plist keys + entitlements to merge in Xcode
+  project.yml                 XcodeGen project (app + LiveStoryWidget + NotificationServiceExtension)
+  App/
+    NoteworthyLiveApp.swift, AppDelegate.swift, RootView (gate)
+    Config.swift, APIClient.swift, Keychain.swift, DeviceIdentity.swift, LiveActivityManager.swift
+    DesignSystem/             Theme, Typography, Spacing, Haptics, Components/
+    Models/                   FeedItem, LiveStory, SavedItem, NotificationPreferences
+    Services/                 ContentService, LiveService, HTTP, MockData, SavedStore,
+                              Reachability, NotificationManager, AppRouter, AppConfig
+    Support/                  Formatters, LoadState, ShareSheet
+    Features/                 Onboarding, Home, Live, StoryDetail, Saved, Search, Notifications, Profile
+    Views/                    PairingView, SafariView
+    Resources/                Assets.xcassets (AppIcon placeholder, AccentColor, LaunchBackground)
+  Widget/                     Live Activity UI (LiveStoryWidgetBundle, LiveStoryLiveActivity)
+  NotificationServiceExtension/  NSE scaffold (pass-through in M1; rich media in M2)
+  Shared/                     In BOTH app + widget targets: LiveStoryAttributes, StatusStyle, DeepLink
+  SupportingFiles/            Info.plist, Widget-Info.plist, NotificationService-Info.plist, entitlements
 ```
 
-## Xcode setup (one-time, project file is not committed)
-1. Create an iOS App project named `NoteworthyLive`, SwiftUI lifecycle, minimum deployment **iOS 16.2**. Add the files in `App/`.
-2. File → New → Target → **Widget Extension** named `LiveStoryWidget` (check "Include Live Activity"). Replace its template with the files in `Widget/`.
-3. Add the three files in `Shared/` to **both** targets (Target Membership: app + widget).
-4. Bundle IDs: app `co.noteworthynews.live`, widget `co.noteworthynews.live.LiveStoryWidget`. (If you change these, update `APNS_BUNDLE_ID`.)
-5. Capabilities (app target): **Push Notifications**; merge `SupportingFiles/App-Info.plist` keys (`NSSupportsLiveActivities`, URL scheme, background mode) and add `SupportingFiles/NoteworthyLive.entitlements`.
-6. Signing: automatic. Debug/TestFlight → APNs **sandbox**; App Store → production. `Config.apnsEnvironment` follows the build config and is sent to the backend, which routes to the matching APNs host.
+## Build
+```bash
+brew install xcodegen
+cd ios/NoteworthyLive && xcodegen generate && open NoteworthyLive.xcodeproj
+```
+Bundle IDs: app `co.noteworthynews.live`, widget `co.noteworthynews.live.LiveStoryWidget`. Minimum iOS 16.2.
 
-## Backend dependency
-Requires the Phase 2 backend (already in this repo):
-`device-link.js`, `device-register.js`, `device-live-stories.js`, `lib/liveActivityNotify.js`, `lib/apnsClient.js`, migration `006_create_ios_devices.sql`, and the APNS_* env vars (see repo `ENV_KEYS.md`).
-
-## Notes / limits (honest)
-- iOS 16.2–17.1: the app starts Live Activities locally (when the user taps "Start Live Activity" or when paired). The backend updates/ends them remotely.
-- iOS 17.2+: the backend can also remote-start a Live Activity for followed stories via the push-to-start token.
-- Live Activities require the user to have the app installed and Live Activities enabled in Settings. There is no way to do this from the website alone.
+## Honest platform limits
+- Live Activities require the installed app + Live Activities enabled in Settings; there's no web-only path.
+- iOS 16.2-17.1: the app starts Live Activities locally; the backend updates/ends them remotely.
+- iOS 17.2+: the backend can also remote-start via push-to-start.
+- Standard breaking/story push notifications and rich (image) notifications are Milestone 2 (`APNS_*` env vars + Notification Service Extension).
