@@ -9,11 +9,23 @@
  * Manual invocation is protected by CRON_SECRET.
  */
 
+const crypto = require('crypto');
 const { resolveUserId } = require('./lib/xApiClient');
 const {
   importLatestPosts,
   getLatestImportedId,
 } = require('./lib/xImportService');
+
+// Constant-time secret comparison (avoids leaking the secret via timing).
+function secretsMatch(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  if (a.length === 0 || b.length === 0 || a.length !== b.length) return false;
+  try {
+    return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+  } catch {
+    return false;
+  }
+}
 
 exports.handler = async (event) => {
   const headers = {
@@ -21,15 +33,29 @@ exports.handler = async (event) => {
     'Cache-Control': 'no-store',
   };
 
-  // For manual HTTP invocation, verify CRON_SECRET.
-  // Netlify scheduled invocations don't send custom headers, so only
-  // reject when a caller explicitly provides a wrong secret.
+  // Auth model — this is a Netlify SCHEDULED function (see netlify.toml:
+  // [functions."import-x-posts"].schedule). Per Netlify, a function with a
+  // `schedule` "does not accept incoming web requests": direct public HTTP
+  // calls return 500 and never reach this code, so in production the cron
+  // schedule is the ONLY path that runs. The checks below are defense-in-depth
+  // for local dev / branch deploys / any future change that drops the schedule:
+  //   • the genuine scheduled invocation arrives with a { next_run } body and
+  //     carries no secret, so it is allowed;
+  //   • EVERY other (manual/HTTP) caller MUST present a matching CRON_SECRET.
+  // FAIL-CLOSED: a manual call without the secret is rejected even when
+  // CRON_SECRET is unset (previously this path failed OPEN). A "forged
+  // { next_run }" body cannot originate from a public caller in production
+  // because the platform refuses to route HTTP to a scheduled function.
   const providedSecret =
     event.headers?.['x-cron-secret'] ||
     event.headers?.['X-Cron-Secret'] ||
     event.queryStringParameters?.secret;
   const expectedSecret = process.env.CRON_SECRET;
-  if (expectedSecret && providedSecret && providedSecret !== expectedSecret) {
+  const isScheduledInvocation = (() => {
+    try { return !!JSON.parse(event.body || '{}').next_run; } catch { return false; }
+  })();
+  const secretOk = secretsMatch(providedSecret, expectedSecret);
+  if (!isScheduledInvocation && !secretOk) {
     return {
       statusCode: 401,
       headers,

@@ -10,6 +10,50 @@ const {
   readPost,
 } = require("./lib/postStore");
 
+// Public field allowlist for posts returned to anonymous web/app clients.
+// This is the UNION of every field actually rendered by the public surfaces
+// (feed.js, news-card.js, article-loader.js, article-page-v3.js, the mobile
+// feed normalizer and article-preview) plus the canonical fields written by
+// createPost.js and the X import projection. Any field NOT listed here — e.g.
+// internal ingestion/processing metadata, upstream raw API payloads, status
+// flags, or author IDs that may live on a blob — is stripped before returning,
+// so posts-read never leaks raw internal blob fields.
+const PUBLIC_POST_FIELDS = new Set([
+  // identity / links
+  "id", "postId", "slug",
+  "link", "url", "x_url", "authorUrl", "source_url", "sourceUrl", "source_urls",
+  // title / body
+  "title", "story", "text", "content", "Content",
+  "summary", "excerpt", "description", "dek", "lead_paragraph",
+  "key_takeaways",
+  // media
+  "image", "image_url", "primary_image_url", "images", "secondary_images",
+  "usgs_images", "mediaUrl", "media_url", "image_caption", "image_credit",
+  "video", "video_url", "videos",
+  // meta
+  "category", "source", "sourceName", "author", "postType", "readTime",
+  "tags", "urgency", "breaking",
+  // dates
+  "datePosted", "createdAt", "created_at", "Date", "updated_at", "timestamp",
+  "created_at_x",
+  // geo / earthquake / event
+  "location", "location_display", "location_english_name",
+  "lat", "lon", "depth", "magnitude", "mag", "severity",
+  "event_type", "eventId", "event_id",
+  "assets", "raw", "public_metrics",
+  // social metrics
+  "views", "likes", "reposts", "replies",
+]);
+
+function toPublicPost(post) {
+  if (!post || typeof post !== "object") return post;
+  const out = {};
+  for (const key of Object.keys(post)) {
+    if (PUBLIC_POST_FIELDS.has(key)) out[key] = post[key];
+  }
+  return out;
+}
+
 /**
  * Read latest posts from blob storage
  */
@@ -48,7 +92,7 @@ exports.handler = async (event) => {
         return {
           statusCode: 200,
           headers,
-          body: JSON.stringify([post]),
+          body: JSON.stringify([toPublicPost(post)]),
         };
       }
       // Legacy fallback: eq- prefix may still exist for older earthquake posts
@@ -58,7 +102,7 @@ exports.handler = async (event) => {
           return {
             statusCode: 200,
             headers,
-            body: JSON.stringify([eqPost]),
+            body: JSON.stringify([toPublicPost(eqPost)]),
           };
         }
       }
@@ -94,7 +138,7 @@ exports.handler = async (event) => {
       return dateB.getTime() - dateA.getTime();
     });
 
-    const topPosts = validPosts.slice(0, maxLimit);
+    const topPosts = validPosts.slice(0, maxLimit).map(toPublicPost);
 
     console.log(`[posts-read] Returning ${topPosts.length} of ${validPosts.length} valid posts`);
 

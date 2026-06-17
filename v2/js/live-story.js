@@ -53,6 +53,24 @@
     return d.innerHTML;
   }
 
+  // textContent->innerHTML does not escape quotes, so use this when the value is
+  // placed inside an HTML attribute value (e.g. href="...").
+  function attrEsc(s) {
+    return esc(s).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  // Only allow http(s) links. Blocks javascript:/data: and other schemes that
+  // could execute if an editor-authored source_url were ever crafted maliciously.
+  function safeUrl(u) {
+    if (!u) return null;
+    try {
+      var parsed = new URL(String(u), location.href);
+      return (parsed.protocol === 'http:' || parsed.protocol === 'https:') ? parsed.href : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   function relTime(iso) {
     if (!iso) return '';
     var then = new Date(iso).getTime();
@@ -154,16 +172,17 @@
     list.innerHTML = state.updates.map(function (u) {
       var isNew = isPoll && !state.knownIds[u.id];
       var kind = u.kind || 'minor';
-      return '<li class="ls-update' + (isNew ? ' is-new' : '') + '" data-kind="' + esc(kind) + '">' +
+      var srcUrl = safeUrl(u.source_url);
+      return '<li class="ls-update' + (isNew ? ' is-new' : '') + '" data-kind="' + attrEsc(kind) + '">' +
         '<div class="ls-update-meta">' +
           '<span class="ls-update-kind">' + esc(KIND_LABELS[kind] || 'Update') + '</span>' +
           '<span>&middot;</span>' +
           '<span>' + esc(relTime(u.created_at)) + '</span>' +
         '</div>' +
         '<div class="ls-update-body">' + esc(u.body) + '</div>' +
-        (u.source_url
-          ? '<a class="ls-update-source" href="' + esc(u.source_url) + '" target="_blank" rel="noopener noreferrer">' +
-              'Source: ' + esc(u.source_label || hostOf(u.source_url)) + '</a>'
+        (srcUrl
+          ? '<a class="ls-update-source" href="' + attrEsc(srcUrl) + '" target="_blank" rel="noopener noreferrer">' +
+              'Source: ' + esc(u.source_label || hostOf(srcUrl)) + '</a>'
           : '') +
       '</li>';
     }).join('');

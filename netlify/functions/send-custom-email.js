@@ -1,7 +1,20 @@
 // Send custom email with optional image attachment
 // Used by AI assistant to send emails on behalf of users
 
+const crypto = require('crypto');
 const { Resend } = require('resend');
+
+// Constant-time secret comparison so admin-token validation does not leak the
+// token length/contents via response timing.
+function secretsMatch(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  if (a.length === 0 || b.length === 0 || a.length !== b.length) return false;
+  try {
+    return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Extract images from HTML and prepare them as CID attachments
@@ -258,7 +271,7 @@ exports.handler = async (event, context) => {
         body: JSON.stringify({ error: 'Security configuration error' }),
       };
     }
-    if (admin_password !== adminToken) {
+    if (!secretsMatch(admin_password, adminToken)) {
       return {
         statusCode: 401,
         headers,

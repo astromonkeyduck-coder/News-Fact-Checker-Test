@@ -194,7 +194,19 @@ let _allBreaking = [];
 
 function getXUrl(post) {
   const u = post.x_url || post.link || '';
-  return (u.includes('x.com') || u.includes('twitter.com')) ? u : '';
+  if (!u) return '';
+  try {
+    const parsed = new URL(u);
+    // Require a real http(s) X/Twitter URL — a substring check would let a
+    // crafted "javascript:...x.com" through to window.open().
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return '';
+    const host = parsed.hostname.replace(/^www\./, '');
+    const ok = host === 'x.com' || host.endsWith('.x.com') ||
+               host === 'twitter.com' || host.endsWith('.twitter.com');
+    return ok ? u : '';
+  } catch (e) {
+    return '';
+  }
 }
 
 function isVideoPost(post) {
