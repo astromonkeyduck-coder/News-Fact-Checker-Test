@@ -662,8 +662,14 @@
     /**
      * Update SEO meta tags
      */
+    function cleanHeadline(post) {
+        const cn = window.ContentNormalize;
+        if (cn && cn.cleanHeadline) return cn.cleanHeadline(post) || 'Breaking News Story';
+        return (post.title || post.story || post.text || 'Breaking News Story');
+    }
+
     function updatePostMetaTags(post, postId) {
-        const title = escapeHtml(post.title || post.story || post.text || 'Breaking News Story');
+        const title = escapeHtml(cleanHeadline(post));
         const story = post.story || post.text || post.title || '';
         const description = truncateDescription(story);
         // CRITICAL: Prioritize GIF (video_url) first, then PNG (primary_image_url) for social media previews
@@ -1955,7 +1961,7 @@
             });
 
             // Extract post data
-            const title = post.title || post.story || post.text || 'Breaking News Story';
+            const title = cleanHeadline(post);
             console.log('[ArticleLoader] Extracted title:', title.substring(0, 100));
             const story = post.story || post.text || post.title || '';
             const datePosted = post.datePosted || post.createdAt || post.created_at || new Date().toISOString();
@@ -2008,7 +2014,7 @@
                 const structuredData = {
                     "@context": "https://schema.org",
                     "@type": "NewsArticle",
-                    "headline": title,
+                    "headline": cleanHeadline(post),
                     "description": truncateDescription(story),
                     "image": ensureAbsoluteImageUrl(image),
                     "datePublished": datePosted,
@@ -2275,7 +2281,9 @@
             if (grid) {
                 grid.innerHTML = more.map(post => {
                     const postId = post.id || `post-${Date.now()}`;
-                    const title = post.title || post.story || post.text || 'Untitled';
+                    const title = (window.ContentNormalize && window.ContentNormalize.cleanHeadline)
+                        ? window.ContentNormalize.cleanHeadline(post)
+                        : (post.title || post.story || post.text || 'Untitled');
                     const shortTitle = title.length > 80 ? title.substring(0, 77) + '...' : title;
                     const image = post.primary_image_url || post.image_url || post.image || post.images?.[0] || '';
                     const datePosted = post.datePosted || post.createdAt || post.created_at || new Date().toISOString();
@@ -2332,7 +2340,7 @@
                                     >
                                 ` : ''}
                                 <div class="news-card-thumbnail-placeholder" style="${image && safeImageUrl ? 'display: none;' : ''}">
-                                    <div class="news-card-thumbnail-placeholder-icon">📰</div>
+                                    <div class="news-card-thumbnail-placeholder-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 22h16a2 2 0 0 0 2-2V4a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v16a2 2 0 0 0 2 2Z"/><path d="M18 14h-8M15 18h-5M10 6h8v4h-8z"/><path d="M2 6h4v14"/></svg></div>
                                     <div class="news-card-thumbnail-placeholder-text">${escapedCategory}</div>
                                 </div>
                             </div>

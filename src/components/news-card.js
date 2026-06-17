@@ -6,6 +6,8 @@
 (function() {
     'use strict';
 
+    const PLACEHOLDER_ICON = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 22h16a2 2 0 0 0 2-2V4a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v16a2 2 0 0 0 2 2Z"/><path d="M18 14h-8M15 18h-5M10 6h8v4h-8z"/><path d="M2 6h4v14"/></svg>';
+
     /**
      * Format relative time (e.g., "2h ago", "3d ago")
      */
@@ -75,10 +77,13 @@
         } = options;
 
         const postId = getPostId(post);
-        const title = post.title || post.story || post.text || 'Untitled';
-        const shortTitle = title.length > maxTitleLength 
-            ? title.substring(0, maxTitleLength - 3) + '...' 
-            : title;
+        const cn = (typeof window !== 'undefined' && window.ContentNormalize) || null;
+        const title = (cn && cn.cleanHeadline)
+            ? cn.cleanHeadline(post)
+            : (post.title || post.story || post.text || 'Untitled');
+        const shortTitle = (cn && cn.truncate)
+            ? cn.truncate(title, maxTitleLength)
+            : (title.length > maxTitleLength ? title.substring(0, maxTitleLength - 3) + '...' : title);
         const datePosted = post.datePosted || post.createdAt || post.created_at || new Date().toISOString();
         const relativeTime = formatRelativeTime(datePosted);
         const image = post.primary_image_url || post.image_url || post.image || post.images?.[0] || null;
@@ -112,7 +117,7 @@
             // Placeholder for missing/broken images
             const placeholderStyle = image ? 'display: none;' : '';
             cardHTML += `<div class="news-card-thumbnail-placeholder" style="${placeholderStyle}">
-                <div class="news-card-thumbnail-placeholder-icon">📰</div>
+                <div class="news-card-thumbnail-placeholder-icon">${PLACEHOLDER_ICON}</div>
                 <div class="news-card-thumbnail-placeholder-text">${escapeHtml(category)}</div>
             </div>`;
             

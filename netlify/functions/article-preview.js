@@ -11,6 +11,7 @@
  */
 
 const { getPostStore, readPost } = require("./lib/postStore");
+const contentNormalize = require("../../lib/contentNormalize");
 
 // Embedded article page shell template (for regular users)
 // This is the full AP-style article.html template embedded to avoid fragile fs.readFileSync
@@ -178,6 +179,7 @@ function getArticlePageShell() {
     <script src="/js/article-page.js"></script>
     <script src="/src/components/news-card.js"></script>
     <script src="/src/components/comment-section.js"></script>
+    <script src="/lib/contentNormalize.js"></script>
     <script src="/src/components/article-page-v3.js"></script>
     <script src="/src/components/article-loader.js"></script>
 </body>
@@ -310,8 +312,10 @@ function getCacheKey(post) {
  * Generate prerendered HTML for crawlers
  */
 function generatePrerenderedHTML(post, articleId, userAgent, cardType = 'summary') {
-    const title = post.title || post.story || post.text || 'Breaking News Story';
-    const story = post.story || post.text || post.title || '';
+    const title = contentNormalize.cleanHeadline(post) || 'Breaking News Story';
+    const story = contentNormalize.normalizeSocialPostText(
+      post.story || post.text || post.title || ''
+    );
   
   // Format relative time
     const datePosted = post.datePosted || post.createdAt || post.created_at || new Date().toISOString();
@@ -436,7 +440,7 @@ function generatePrerenderedHTML(post, articleId, userAgent, cardType = 'summary
     <meta property="og:image:height" content="675">
     <meta property="og:site_name" content="Noteworthy News">
     <meta property="og:locale" content="en_US">
-    <meta property="article:published_time" content="${datePosted}">
+    <meta property="article:published_time" content="${escapeHtml(datePosted)}">
     <meta property="article:author" content="Noteworthy News">
     ${usePlayerCard && playerUrl ? `
     <meta property="og:video" content="${escapeHtml(playerUrl)}">

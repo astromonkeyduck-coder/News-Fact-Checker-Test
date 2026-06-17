@@ -6,6 +6,9 @@
   'use strict';
 
   const X_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>';
+  const ICON_LINK = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
+  const ICON_SHARE = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>';
+  const ICON_FLAG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>';
 
   function classify(post) {
     const isEarthquake =
@@ -61,7 +64,14 @@
 
   /** One visible breaking indicator: badge OR title prefix, never both. */
   function resolveArticlePresentation(post, rawTitle) {
-    const title = String(rawTitle || '').trim();
+    // Always run through the shared headline cleaner so a raw t.co URL or
+    // duplicated source label never reaches the <h1>.
+    const cn = (typeof window !== 'undefined' && window.ContentNormalize) ||
+      (typeof global !== 'undefined' && global.ContentNormalize) || null;
+    let title = String(rawTitle || '').trim();
+    if (cn && cn.cleanHeadline) {
+      title = cn.cleanHeadline({ ...post, title: title || post.title }) || title;
+    }
     const pillFromCategory = getUrgencyPill(post);
     const isBreaking =
       categoryImpliesBreaking(post) ||
@@ -140,9 +150,17 @@
     return `<div class="nn-chips" role="navigation" aria-label="Sources">${chips.join('')}</div>`;
   }
 
+  function getContentNormalize() {
+    return (typeof window !== 'undefined' && window.ContentNormalize) ||
+      (typeof global !== 'undefined' && global.ContentNormalize) || null;
+  }
+
   function resolveImages(post, helpers) {
     const { normalizeUrl, ensureAbsoluteImageUrl, isVideoUrl } = helpers;
+    const cn = getContentNormalize();
     let primary = post.primary_image_url || post.image_url || post.image || null;
+    // Never let an avatar / brand logo (e.g. an X profile image) become the hero.
+    if (primary && cn && cn.isLikelyLogo && cn.isLikelyLogo(primary)) primary = null;
     if (post.category === 'Earthquake' || post.source === 'USGS') {
       const fromAssets =
         post.assets?.standard_image ||
@@ -162,7 +180,9 @@
       }
     }
     if (primary && isVideoUrl(primary)) primary = null;
+    if (primary && cn && cn.isLikelyLogo && cn.isLikelyLogo(primary)) primary = null;
 
+    const notLogo = (u) => !(cn && cn.isLikelyLogo && cn.isLikelyLogo(u));
     const secondaryCandidates = [
       ...(post.secondary_images || []),
       ...(post.images || []),
@@ -171,7 +191,8 @@
       ...(post.assets?.usgs_images || []),
     ]
       .filter(Boolean)
-      .filter((u) => !isVideoUrl(u));
+      .filter((u) => !isVideoUrl(u))
+      .filter(notLogo);
 
     const primaryNorm = primary ? normalizeUrl(ensureAbsoluteImageUrl(primary)) : null;
     const secondary = secondaryCandidates
@@ -313,16 +334,16 @@
     if (isX) {
       html += `<a href="${escapeHtml(xUrl)}" target="_blank" rel="noopener noreferrer" class="nn-chip nn-chip--x">${X_ICON}<span>View original on X</span></a>`;
     }
-    html += `<button type="button" class="utility-btn" id="copy-link-btn" aria-label="Copy article link"><span>🔗</span><span>Copy link</span></button>`;
-    html += `<button type="button" class="utility-btn" id="share-menu-btn" aria-label="Share article" aria-haspopup="true" aria-expanded="false"><span>📤</span><span>Share</span></button>`;
+    html += `<button type="button" class="utility-btn" id="copy-link-btn" aria-label="Copy article link">${ICON_LINK}<span>Copy link</span></button>`;
+    html += `<button type="button" class="utility-btn" id="share-menu-btn" aria-label="Share article" aria-haspopup="true" aria-expanded="false">${ICON_SHARE}<span>Share</span></button>`;
     html += `<div class="share-menu" id="share-menu" role="menu" aria-hidden="true" style="display:none;">
-      <a href="#" class="share-option" id="share-twitter" target="_blank" rel="noopener" role="menuitem"><span>𝕏</span><span>X (Twitter)</span></a>
+      <a href="#" class="share-option" id="share-twitter" target="_blank" rel="noopener" role="menuitem">${X_ICON}<span>X (Twitter)</span></a>
       <a href="#" class="share-option" id="share-facebook" target="_blank" rel="noopener" role="menuitem"><span>Facebook</span></a>
       <a href="#" class="share-option" id="share-linkedin" target="_blank" rel="noopener" role="menuitem"><span>LinkedIn</span></a>
       <a href="#" class="share-option" id="share-email" role="menuitem"><span>Email</span></a>
       <a href="#" class="share-option" id="share-reddit" target="_blank" rel="noopener" role="menuitem"><span>Reddit</span></a>
     </div>`;
-    html += `<a href="mailto:richard@noteworthynews.co?subject=Correction%20Request" class="utility-btn" aria-label="Report correction"><span>✉️</span><span>Report correction</span></a>`;
+    html += `<a href="mailto:richard@noteworthynews.co?subject=Correction%20Request" class="utility-btn" aria-label="Report correction">${ICON_FLAG}<span>Report correction</span></a>`;
     html += '</div>';
 
     if (sourceUrls.length > 0) {
@@ -345,11 +366,42 @@
     return '';
   }
 
+  /**
+   * Refined X/source attribution card. Doubles as the lead visual when a post
+   * has no usable media, so a giant X logo never becomes the hero.
+   */
+  function buildSourceCardHTML(post, helpers, opts) {
+    const { escapeHtml, stripTcoLinks } = helpers;
+    const xUrl = post.x_url || post.link || '';
+    if (!xUrl) return '';
+    const showQuote = opts && opts.showQuote;
+    const author = post.author || 'Noteworthy News';
+
+    let quote = '';
+    if (showQuote) {
+      const raw = post.story || post.text || '';
+      const { cleaned } = stripTcoLinks(raw);
+      const trimmed = (cleaned || '').trim();
+      if (trimmed) {
+        const snippet = trimmed.length > 200 ? trimmed.slice(0, 199).trim() + '\u2026' : trimmed;
+        quote = `<p class="nn-source-card__quote">${escapeHtml(snippet)}</p>`;
+      }
+    }
+
+    return `<aside class="nn-source-card" aria-label="Original source">
+      <div class="nn-source-card__head">
+        <span class="nn-source-card__mark">${X_ICON}</span>
+        <span class="nn-source-card__by">Originally posted by <strong>${escapeHtml(author)}</strong> on X</span>
+      </div>
+      ${quote}
+      <a href="${escapeHtml(xUrl)}" target="_blank" rel="noopener noreferrer" class="nn-source-card__link">View original on X</a>
+    </aside>`;
+  }
+
   function buildBreakingBriefHTML(post, ctx) {
     const { title, story, datePosted, articleId, helpers } = ctx;
     const { escapeHtml, formatPostText, stripTcoLinks, formatPublishedFull, formatDate } = helpers;
     const { displayTitle, urgencyPill } = resolveArticlePresentation(post, title);
-    const postXUrl = post.x_url || post.link || '';
     const published = formatPublishedFull(datePosted, formatDate);
 
     let html = '<header class="nn-header">';
@@ -359,17 +411,13 @@
     html += `<h1 class="nn-headline" id="article-heading" tabindex="-1">${escapeHtml(displayTitle)}</h1>`;
     html += `<div class="nn-meta nn-meta--brief">`;
     html += `<span>${escapeHtml(published)}</span>`;
-    html += `<span class="nn-meta__sep">·</span>`;
-    html += `<span class="nn-meta__x">Originally posted by <strong>Noteworthy News</strong> on <a href="${escapeHtml(postXUrl)}" target="_blank" rel="noopener noreferrer">X</a></span>`;
     html += '</div>';
-    if (postXUrl) {
-      html += `<div class="nn-chips" style="margin-top:1rem;">`;
-      html += `<a href="${escapeHtml(postXUrl)}" target="_blank" rel="noopener noreferrer" class="nn-chip nn-chip--x">${X_ICON}<span>View original on X</span></a>`;
-      html += '</div>';
-    }
     html += '</header>';
 
-    html += buildMediaHTML(post, displayTitle, helpers);
+    const mediaHTML = buildMediaHTML(post, displayTitle, helpers);
+    html += mediaHTML;
+    // When there's no real media, the source card carries the lead visual.
+    html += buildSourceCardHTML(post, helpers, { showQuote: !mediaHTML });
     html += buildWhatWeKnowHTML(post, helpers);
 
     const { cleaned } = stripTcoLinks(story);
@@ -460,6 +508,7 @@
     buildWhatWeKnowHTML,
     buildKeyPointsHTML,
     buildActionsHTML,
+    buildSourceCardHTML,
     buildBreakingBriefHTML,
     buildLongformHTML,
     getDek,

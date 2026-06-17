@@ -14,30 +14,19 @@
  *     isVideo, magnitude }
  */
 
+const contentNormalize = require("../../../lib/contentNormalize");
+
 const ENGINE_CATEGORIES = new Set([
   "Earthquake", "Weather Alert", "Volcano Alert",
   "Maritime Alert", "Airspace Alert", "Travel Advisory",
 ]);
 
-function stripUrls(str) {
-  if (!str) return "";
-  return String(str)
-    .replace(/https?:\/\/\S+/gi, "")
-    .replace(/\b(?:pic\.twitter\.com|t\.co)\/\S+/gi, "")
-    .replace(/[ \t]{2,}/g, " ")
-    .replace(/\s+([.,!?;:])/g, "$1")
-    .trim();
-}
+// Delegate to the shared single-source-of-truth normalizer so the mobile API,
+// the web article page, and the OG/crawler path all produce identical output.
+const stripUrls = contentNormalize.stripUrls;
 
 function getTitle(post) {
-  if (post.title && String(post.title).trim()) {
-    const cleaned = stripUrls(post.title);
-    if (cleaned) return cleaned;
-  }
-  const text = stripUrls(post.text || post.content || post.Content || "");
-  if (!text) return "Untitled";
-  const first = text.split("\n")[0].trim();
-  return first.length <= 140 ? first : first.slice(0, 137) + "\u2026";
+  return contentNormalize.cleanHeadline(post);
 }
 
 function getSummary(post) {
