@@ -13,6 +13,9 @@
 # R2_BUCKET is not a secret - it's just a bucket name (public configuration)
 [build.environment]
   SECRETS_SCAN_OMIT_KEYS = "AUTH0_DOMAIN,AUTH0_CLIENT_ID,R2_BUCKET,NEWSLETTER_KEY"
+  # Xcode project must not commit DEVELOPMENT_TEAM (matches APNS_TEAM_ID). Omit ios/
+  # so a local Xcode save doesn't block website deploys; set Team in Xcode locally only.
+  SECRETS_SCAN_OMIT_PATHS = "ios/**"
   NODE_VERSION = "20"
   # Disable auto earthquake email alerts until ready (set to "false" to re-enable)
   EARTHQUAKE_EMAIL_ALERTS_DISABLED = "true"
