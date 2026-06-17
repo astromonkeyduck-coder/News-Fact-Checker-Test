@@ -30,11 +30,20 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
 
     func application(_ application: UIApplication,
                      didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-        // Standard APNs device token. M1 does not register it server-side
-        // (standard breaking/story push dispatch is a Milestone 2 backend feature).
-        // Live Activities use their own per-activity / push-to-start tokens.
+        // Standard APNs device token (Milestone 2C). Cache it and, if this device
+        // is already paired, register it server-side so standard breaking/story
+        // pushes can be delivered. Live Activities use their own per-activity /
+        // push-to-start tokens and are unaffected.
         let hex = deviceToken.map { String(format: "%02x", $0) }.joined()
-        print("[APNs] device token: \(hex.prefix(12))… (server registration is M2)")
+        DeviceIdentity.shared.cacheApnsToken(hex)
+        #if DEBUG
+        print("[APNs] standard device token: \(hex.prefix(12))…")
+        #endif
+        Task {
+            guard DeviceIdentity.shared.isPaired else { return }
+            do { try await APIClient.shared.registerApnsToken(hex) }
+            catch { /* fail soft: heartbeat will retry the token */ }
+        }
     }
 
     func application(_ application: UIApplication,
@@ -54,7 +63,11 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 didReceive response: UNNotificationResponse) async {
         let info = response.notification.request.content.userInfo
-        if let slug = (info["slug"] as? String) ?? slug(fromURL: info["url"]) {
+        if let urlStr = info["url"] as? String, let url = URL(string: urlStr), url.scheme == Config.urlScheme {
+            await MainActor.run { AppRouter.shared.handleDeepLink(url) }
+        } else if let postId = info["contentPostId"] as? String ?? info["postId"] as? String {
+            await MainActor.run { AppRouter.shared.openPost(id: postId) }
+        } else if let slug = info["slug"] as? String {
             await MainActor.run { AppRouter.shared.openLiveStory(slug: slug) }
         }
         await MainActor.run { UIApplication.shared.applicationIconBadgeNumber = 0 }

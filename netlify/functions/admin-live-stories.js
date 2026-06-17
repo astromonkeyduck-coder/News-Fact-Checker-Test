@@ -19,6 +19,7 @@ const { corsHeaders, optionsResponse } = require("./lib/corsHeaders");
 const { requireAdminAuth } = require("./middleware/requireAuth");
 const { notifyFollowers } = require("./lib/liveStoryNotify");
 const { notifyLiveActivities } = require("./lib/liveActivityNotify");
+const { notifyStandardPush } = require("./lib/standardPushNotify");
 const apns = require("./lib/apnsClient");
 
 const STATUSES = ["breaking", "developing", "verified", "disputed", "resolved", "false_report"];
@@ -58,6 +59,8 @@ exports.handler = async (event) => {
           return await addUpdate(body, actor);
         case "testLiveActivity":
           return await testLiveActivity(body, actor);
+        case "testStandardPush":
+          return await testStandardPush(body, actor);
         default:
           return json(400, { error: "Invalid or missing action" });
       }
@@ -225,10 +228,11 @@ async function addUpdate(body, actor) {
     .single();
   if (storyErr) throw storyErr;
 
-  // Dispatch to web push followers AND native iOS Live Activities in parallel.
-  // Both fail soft so a delivery problem never blocks the editorial write.
+  // Dispatch to web push followers, native iOS Live Activities, AND native iOS
+  // standard push in parallel. All fail soft so a delivery problem never blocks
+  // the editorial write.
   const dryRun = process.env.DRY_RUN === "true";
-  const [webResult, liveActivityResult] = await Promise.all([
+  const [webResult, liveActivityResult, standardPushResult] = await Promise.all([
     notifyFollowers({ story: freshStory, update, actor, logger: console, dryRun }).catch((err) => {
       console.error("[admin-live-stories] notifyFollowers failed:", err.message);
       return { error: err.message };
@@ -237,9 +241,13 @@ async function addUpdate(body, actor) {
       console.error("[admin-live-stories] notifyLiveActivities failed:", err.message);
       return { error: err.message };
     }),
+    notifyStandardPush({ story: freshStory, update, logger: console, dryRun }).catch((err) => {
+      console.error("[admin-live-stories] notifyStandardPush failed:", err.message);
+      return { error: err.message };
+    }),
   ]);
 
-  const dispatch = { ...webResult, liveActivity: liveActivityResult };
+  const dispatch = { ...webResult, liveActivity: liveActivityResult, standardPush: standardPushResult };
   return json(200, { success: true, update, story: freshStory, dispatch });
 }
 
@@ -252,14 +260,17 @@ async function addUpdate(body, actor) {
  */
 function apnsStatus() {
   const keyId = process.env.APNS_KEY_ID || "";
+  const bundle = process.env.APNS_BUNDLE_ID || null;
   return json(200, {
     configured: apns.isConfigured(),
     environment: apns.defaultEnvironment(),
-    bundleId: process.env.APNS_BUNDLE_ID || null,
-    topic: process.env.APNS_BUNDLE_ID ? `${process.env.APNS_BUNDLE_ID}.push-type.liveactivity` : null,
+    bundleId: bundle,
+    topic: bundle ? `${bundle}.push-type.liveactivity` : null,
+    liveActivityTopic: bundle ? `${bundle}.push-type.liveactivity` : null,
+    alertTopic: bundle || null,
     keyIdLast4: keyId ? keyId.slice(-4) : null,
     teamIdSet: !!process.env.APNS_TEAM_ID,
-    keyP8Set: !!process.env.APNS_KEY_P8,
+    keyP8Set: !!(process.env.APNS_KEY_P8_BASE64 || process.env.APNS_KEY_P8),
   });
 }
 
@@ -290,6 +301,45 @@ async function testLiveActivity(body, actor) {
   });
 
   console.log(`[admin-live-stories] ${actor} sent test Live Activity to ${story.slug} (final=${isFinal})`);
+  return json(200, { success: true, dispatch: result });
+}
+
+/**
+ * Send a synthetic STANDARD push (alert banner) to a story's followers WITHOUT
+ * writing the timeline or sending web push / Live Activities. For real-device
+ * verification of standard APNs delivery and rich media from /admin.
+ *
+ * Body: { id|slug, headline?, alert_level?(normal|urgent|final), status?, image? }
+ */
+async function testStandardPush(body, actor) {
+  const story = await resolveStory(body);
+  if (!story) return json(404, { error: "Story not found" });
+  if (!apns.isConfigured()) {
+    return json(200, { success: true, dispatch: { configured: false, reason: "apns not configured" } });
+  }
+
+  const level = ["normal", "urgent", "final"].includes(body.alert_level) ? body.alert_level : "normal";
+  const status = STATUSES.includes(body.status) ? body.status : story.status;
+  const update = {
+    id: null, // synthetic — not persisted, dedupe skipped
+    body: (body.headline || "Test alert from the newsroom.").trim(),
+    status_at_time: status,
+    alert_level: level,
+    image: typeof body.image === "string" ? body.image : null,
+  };
+
+  const result = await notifyStandardPush({
+    story,
+    update,
+    logger: console,
+    dryRun: false,
+    skipDedupe: true,
+  }).catch((err) => {
+    console.error("[admin-live-stories] testStandardPush failed:", err.message);
+    return { error: err.message };
+  });
+
+  console.log(`[admin-live-stories] ${actor} sent test standard push to ${story.slug} (level=${level})`);
   return json(200, { success: true, dispatch: result });
 }
 

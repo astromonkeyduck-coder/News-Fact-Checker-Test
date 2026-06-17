@@ -35,11 +35,14 @@ final class DeviceIdentity: ObservableObject {
         static let email = "linked_email"
         static let name = "linked_name"
         static let pictureUrl = "linked_picture_url"
+        static let apnsToken = "apns_standard_token"
     }
 
     @Published private(set) var isPaired: Bool
     @Published private(set) var linkType: LinkType
     @Published private(set) var linkedProfile: LinkedProfile?
+    /// Whether a standard-push APNs device token has been cached for this install.
+    @Published private(set) var hasApnsToken: Bool
 
     let deviceUuid: String
 
@@ -54,10 +57,25 @@ final class DeviceIdentity: ObservableObject {
         isPaired = Keychain.get(Keys.secret) != nil
         linkType = LinkType(rawValue: Keychain.get(Keys.linkType) ?? "") ?? .browser
         linkedProfile = DeviceIdentity.loadProfile()
+        hasApnsToken = Keychain.get(Keys.apnsToken) != nil
     }
 
     var deviceSecret: String? { Keychain.get(Keys.secret) }
     var subscriberKey: String? { Keychain.get(Keys.subscriberKey) }
+    /// The cached standard-push APNs device token (hex), if registered.
+    var apnsToken: String? { Keychain.get(Keys.apnsToken) }
+
+    /// Cache the latest standard-push APNs token. Returns true when the value
+    /// changed (so the caller can avoid redundant server writes).
+    @discardableResult
+    func cacheApnsToken(_ token: String) -> Bool {
+        let normalized = token.lowercased()
+        guard !normalized.isEmpty else { return false }
+        let changed = Keychain.get(Keys.apnsToken) != normalized
+        Keychain.set(normalized, for: Keys.apnsToken)
+        if !hasApnsToken { DispatchQueue.main.async { self.hasApnsToken = true } }
+        return changed
+    }
 
     private static func loadProfile() -> LinkedProfile? {
         let sub = Keychain.get(Keys.authSub)

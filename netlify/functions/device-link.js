@@ -168,6 +168,13 @@ async function redeem(body) {
   const deviceSecretHash = sha256(deviceSecret);
   const apnsEnvironment = body.apnsEnvironment === "sandbox" ? "sandbox" : "production";
 
+  // Carry a standard-push token through pairing so a freshly paired device is
+  // immediately push-ready (validated: 64+ hex chars).
+  const apnsToken =
+    typeof body.apnsToken === "string" && /^[0-9a-f]{64,200}$/.test(body.apnsToken.trim().toLowerCase())
+      ? body.apnsToken.trim().toLowerCase()
+      : null;
+
   // Carry the verified web profile (captured at code creation) onto the device.
   const hasProfile = Boolean(row.auth0_sub);
 
@@ -180,6 +187,8 @@ async function redeem(body) {
         subscriber_key: subscriberKey,
         apns_environment: apnsEnvironment,
         push_to_start_token: body.pushToStartToken || null,
+        apns_token: apnsToken,
+        apns_token_updated_at: apnsToken ? new Date().toISOString() : null,
         platform: body.platform || "ios",
         app_version: body.appVersion || null,
         locale: body.locale || null,

@@ -134,7 +134,7 @@ Then sign into `/admin`, open **Video Watermarker**, and upload a vertical (1080
 
 Powers the "Follow Live" feature: editors create live stories in `/admin/#live-stories` and post timeline updates; followers get web push (PWA) and, if they install the iOS companion app, native Live Activities.
 
-**Storage:** Supabase (migrations `005_create_live_stories.sql`, `006_create_ios_devices.sql`) + the existing Netlify Blobs `push-subscriptions` store. Apply both migrations before use.
+**Storage:** Supabase (migrations `005_create_live_stories.sql`, `006_create_ios_devices.sql`, `007_device_linked_profile.sql`, `008_ios_push.sql`) + the existing Netlify Blobs `push-subscriptions` store. Apply all migrations before use. Migration `008` is additive (adds `apns_token` + notification-preference columns to `live_story_devices`); no data migration required.
 
 ### Web push (Phase 1)
 
@@ -145,29 +145,35 @@ Powers the "Follow Live" feature: editors create live stories in `/admin/#live-s
 | **VAPID_SUBJECT** | VAPID contact | Optional; defaults to `mailto:richard@noteworthynews.co` |
 | **SUPABASE_URL**, **SUPABASE_SERVICE_ROLE_KEY** | Story/follow/device tables | Already used elsewhere |
 
-### iOS Live Activities (Phase 2 — APNs)
+### iOS Live Activities + standard push (Phase 2 / 2B / 2C — APNs)
 
-Used by `netlify/functions/lib/apnsClient.js` + `lib/liveActivityNotify.js` to update/end/push-to-start Live Activities. APNs uses HTTP/2 (Node's built-in `http2`) with a token-based `.p8` key signed via `jose` (ES256). No new npm dependency.
+Used by `netlify/functions/lib/apnsClient.js` with:
+- `lib/liveActivityNotify.js` — update/end/push-to-start Live Activities (2A/2B), push type `liveactivity`, topic `<bundle>.push-type.liveactivity`.
+- `lib/standardPushNotify.js` — standard alert notifications to the native app (2C), push type `alert`, topic `<bundle>`.
+
+APNs uses HTTP/2 (Node's built-in `http2`) with a token-based `.p8` key signed via `jose` (ES256). No new npm dependency. Both push types share the same `.p8` key and env vars below.
 
 | Variable | Used for | Where to get it |
 |----------|----------|-----------------|
-| **APNS_KEY_P8** | APNs auth key (.p8), **base64-encoded** | Apple Developer → Certificates, IDs & Profiles → Keys → new key with "Apple Push Notifications service (APNs)". Encode: `base64 -i AuthKey_XXXX.p8` |
+| **APNS_KEY_P8_BASE64** | APNs auth key (.p8), **base64-encoded** | Apple Developer → Certificates, IDs & Profiles → Keys → new key with "Apple Push Notifications service (APNs)". Encode: `base64 -i AuthKey_XXXX.p8` |
 | **APNS_KEY_ID** | 10-char key ID for that key | Shown when you create the key |
 | **APNS_TEAM_ID** | 10-char Apple Team ID | Apple Developer → Membership |
 | **APNS_BUNDLE_ID** | App bundle id (topic base) | e.g. `co.noteworthynews.live` (must match the iOS app) |
 | **APNS_DEFAULT_ENVIRONMENT** | `sandbox` or `production` fallback | Per-device env is stored at pairing; this is the default. Use `sandbox` only for local **development/debug device builds**. **TestFlight and App Store builds use `production`** APNs. |
 
-If the APNS_* vars are absent, Live Activity dispatch is a **no-op** — web push still works and the editorial write never fails. See `ios/NoteworthyLive/README.md` for the app/Xcode setup.
+> **Var name note:** the code reads **`APNS_KEY_P8_BASE64`** (base64 of the `.p8`). `APNS_KEY_P8` is accepted as a legacy alias. The key value may also be stored as raw PEM (not base64); the client tolerates both.
 
-**Verify the config without exposing secrets** (Milestone 2B): signed into `/admin`, call the admin-authenticated diagnostic:
+If the APNS_* vars are absent, **both** Live Activity and standard-push dispatch are a **no-op** — web push still works and the editorial write never fails. See `ios/NoteworthyLive/README.md` for the app/Xcode setup and `IOS_NOTIFICATIONS_TESTING.md` for real-device test steps.
+
+**Verify the config without exposing secrets** (Milestone 2B/2C): signed into `/admin`, call the admin-authenticated diagnostic:
 
 ```bash
-# Returns { configured, environment, bundleId, topic, keyIdLast4, teamIdSet, keyP8Set }
+# Returns { configured, environment, bundleId, topic, liveActivityTopic, alertTopic, keyIdLast4, teamIdSet, keyP8Set }
 curl -s "https://noteworthynews.co/.netlify/functions/admin-live-stories?action=apnsStatus" \
   -H "Authorization: Bearer <admin Auth0 token>"
 ```
 
-It never returns the `.p8` key or a signed JWT — only whether each var is present and the derived topic/environment. `configured:false` means at least one of `APNS_KEY_P8 / APNS_KEY_ID / APNS_TEAM_ID / APNS_BUNDLE_ID` is missing.
+It never returns the `.p8` key or a signed JWT — only whether each var is present and the derived topics/environment. `configured:false` means at least one of `APNS_KEY_P8_BASE64 / APNS_KEY_ID / APNS_TEAM_ID / APNS_BUNDLE_ID` is missing. `liveActivityTopic` = `<bundle>.push-type.liveactivity`; `alertTopic` = `<bundle>`.
 
 **Sandbox vs production:** APNs picks the host per device from `live_story_devices.apns_environment` (set at pairing). Debug builds run on a real device register as `sandbox`; **TestFlight/App Store builds register as `production`**. A token created by a sandbox build will 400/`BadDeviceToken` on the production host and vice-versa — if a device "won't update," confirm its build type matches the environment. `APNS_DEFAULT_ENVIRONMENT` is only the fallback when a device has no stored environment.
 

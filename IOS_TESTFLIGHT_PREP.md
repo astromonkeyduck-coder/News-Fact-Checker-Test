@@ -96,11 +96,10 @@ Paste into App Store Connect ▸ TestFlight ▸ Test Information ▸ What to Tes
 
 ## E. Known beta limitations
 
-- **Push alerts are not live yet.** Notification preferences can be set, but no breaking/story push is delivered in this build.
-- **Standard APNs notifications** (breaking/story alerts, device-token registration, dispatch) are **Milestone 2C**.
+- **Standard APNs push alerts are live (Milestone 2C)** once the `APNS_*` vars are configured in Netlify. A paired device that grants notifications registers its token and receives breaking/story/final alerts for stories it follows. Without the `APNS_*` vars, dispatch is a no-op (web push still works). See section H for the runbook.
 - **Remote Live Activity updates** (push-to-start, server-driven timeline updates) work once the `APNS_*` vars are configured in Netlify (**Milestone 2B**). Without them, Live Activities still start locally and update locally. See section G for the remote test runbook.
-- **Notification Service Extension** is a safe pass-through (rich media / grouping is Milestone 2).
-- **Notification preferences and quiet hours are device-local** for now and do not yet sync to the newsroom.
+- **Notification Service Extension** attaches rich images (https `image` payload) and groups by story (Milestone 2C). It fails soft to a plain alert on any download error/timeout.
+- **Notification preferences and quiet hours now sync to the newsroom** (Milestone 2C) and are honored at dispatch. Quiet hours use the device's reported UTC offset.
 - **Some videos open on the web** rather than playing inline; inline native playback is a future item.
 - **Explore search is client-side** over a loaded slice of recent stories (full archive search is Milestone 2).
 - **Saved stories are device-local** (no cross-device sync).
@@ -134,7 +133,7 @@ Remote update/end runs over APNs (`apns-push-type: liveactivity`). It requires t
 ### One-time setup
 1. Apple Developer ▸ Certificates, IDs & Profiles ▸ **Keys** ▸ create a key with **Apple Push Notifications service (APNs)**. Download the `.p8` (once).
 2. Base64 it: `base64 -i AuthKey_XXXXXXXXXX.p8 | pbcopy` and set in Netlify ▸ Environment variables:
-   - `APNS_KEY_P8` (the base64), `APNS_KEY_ID` (10-char), `APNS_TEAM_ID` (10-char), `APNS_BUNDLE_ID=co.noteworthynews.live`, `APNS_DEFAULT_ENVIRONMENT=production`.
+   - `APNS_KEY_P8_BASE64` (the base64), `APNS_KEY_ID` (10-char), `APNS_TEAM_ID` (10-char), `APNS_BUNDLE_ID=co.noteworthynews.live`, `APNS_DEFAULT_ENVIRONMENT=production`.
 3. Redeploy. Verify (signed into `/admin`):
    `curl "…/.netlify/functions/admin-live-stories?action=apnsStatus" -H "Authorization: Bearer <admin token>"` → `configured:true`.
 
@@ -166,3 +165,37 @@ curl -X POST "…/.netlify/functions/admin-live-stories" -H "Authorization: Bear
 - **Netlify ▸ Functions ▸ admin-live-stories / lib logs**: each dispatch logs `[liveActivityNotify] story=… updated=N started=N ended=N failed=N`. A `failed>0` line prints the APNs `status` + `reason`.
 - Every dispatch is also audited in `live_story_send_log` with `detail.channel = "live_activity"` (query by `story_id`).
 - `reason:"apns not configured"` ⇒ env vars missing (run `apnsStatus`). `BadDeviceToken`/`Unregistered`/410 ⇒ stale or wrong-environment token (auto-marked stale; re-pair / restart the activity). No `updated/started` but `configured:true` ⇒ no running activity and no push-to-start follower for that story.
+
+---
+
+## H. Standard push test (Milestone 2C)
+
+Standard alert notifications run over APNs (`apns-push-type: alert`, topic `co.noteworthynews.live`). Same `APNS_*` vars and `.p8` key as Live Activities; requires a **real device** (Simulator cannot receive remote APNs). Verify `apnsStatus` returns `configured:true` and note `alertTopic` = the plain bundle id.
+
+### End-to-end test (real iPhone)
+1. Build/run on the device (Debug = sandbox). In onboarding (or **Notifications**), **grant notifications** — this registers the standard APNs token (`device-register {action:"apns-token"}`).
+2. Pair in **Profile** with a code from the website (the token is also carried through `redeem`). In **Notifications**, confirm **Device registered: Yes** and **Preferences: Synced**.
+3. **Follow** a live story (so the device has a follow row for it).
+4. In `/admin` ▸ Live Stories, **post an update** to that story → a banner arrives within seconds. Normal updates are quiet; urgent/final ring and (if enabled) arrive Time-Sensitive.
+5. **Tap** the banner → the app opens that exact story (`noteworthylive://story/<slug>`).
+6. Toggle a preference (e.g. turn off **Live story updates**, or enable **Quiet hours** spanning now) and re-post → the suppressed category is skipped (see `skipped` + `reasons` in the audit row).
+7. Delete the app (or disable notifications) and re-post → the dead token is cleared on `410`/`Unregistered` (the device row's `apns_token` is nulled).
+
+### Silent test trigger (no timeline write, no web push, no Live Activity)
+Send a synthetic standard push to a story's followers (optionally a rich image):
+
+```bash
+# normal banner
+curl -X POST "…/.netlify/functions/admin-live-stories" -H "Authorization: Bearer <admin token>" \
+  -H "Content-Type: application/json" \
+  -d '{"action":"testStandardPush","slug":"<slug>","headline":"Test alert from newsroom"}'
+# urgent + rich image
+curl -X POST "…/.netlify/functions/admin-live-stories" -H "Authorization: Bearer <admin token>" \
+  -H "Content-Type: application/json" \
+  -d '{"action":"testStandardPush","slug":"<slug>","alert_level":"urgent","headline":"Breaking test","image":"https://…/photo.jpg"}'
+```
+
+### Inspect logs / triage
+- **Netlify ▸ Functions ▸ admin-live-stories**: each dispatch logs `[standardPushNotify] story=… sent=N failed=N skipped=N`.
+- Audited in `live_story_send_log` with `detail.channel = "ios_standard_push"` (incl. a `reasons` breakdown: `master_off`, `category_off`, `quiet_hours`).
+- Full APNs error reference + device-side checks: [`IOS_NOTIFICATIONS_TESTING.md`](IOS_NOTIFICATIONS_TESTING.md).

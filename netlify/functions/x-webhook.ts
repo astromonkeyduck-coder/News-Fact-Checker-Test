@@ -82,6 +82,22 @@ async function handleWebhookEvent(body: any): Promise<{ status: string; processe
       await writePost(store, tweetId, card);
       newIds.push(tweetId);
       processed++;
+
+      try {
+        const { notifyXPostLiveActivity } = require("./lib/xPostLiveActivityNotify");
+        await notifyXPostLiveActivity({
+          post: {
+            id: tweetId,
+            slug: card.slug,
+            title: card.title,
+            text: card.text || card.story,
+            story: card.story,
+          },
+          logger: console,
+        });
+      } catch (laErr: any) {
+        console.warn(`[x-webhook] Live Activity skipped for ${tweetId}:`, laErr?.message);
+      }
     } catch (err) {
       console.error(`Error processing tweet ${tweetId}:`, err);
     }

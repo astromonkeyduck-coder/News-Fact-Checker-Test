@@ -8,4 +8,8 @@ enum LiveStoryDeepLink {
     static func url(slug: String) -> URL {
         URL(string: "\(scheme)://story/\(slug)")!
     }
+
+    static func post(id: String) -> URL {
+        URL(string: "\(scheme)://post/\(id)")!
+    }
 }

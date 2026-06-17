@@ -13,20 +13,23 @@ Remote ActivityKit start/update/end from the `/admin` `addUpdate` flow over APNs
 - Admin-auth `apnsStatus` diagnostic (secret-safe) + `testLiveActivity` trigger — [`admin-live-stories.js`](netlify/functions/admin-live-stories.js).
 - Docs: [`ENV_KEYS.md`](ENV_KEYS.md) (verify), [`IOS_TESTFLIGHT_PREP.md`](IOS_TESTFLIGHT_PREP.md) section G (runbook).
 
-## A. Standard APNs notifications — Milestone 2C (the big one)
-Today only Live Activity pushes exist. Add real breaking/story alerts to the device.
+## DONE — Milestone 2C (Standard APNs notifications, rich alerts, preference sync, hardening)
+Real breaking/story alert notifications to the native app, alongside web push + Live Activities.
 
-1. **Device token registration**
-   - Migration: add `apns_token` (+ `apns_token_updated_at`) to `live_story_devices`, or a new `ios_device_tokens` table keyed by `device_id`.
-   - iOS: in [`AppDelegate.didRegisterForRemoteNotificationsWithDeviceToken`](ios/NoteworthyLive/App/AppDelegate.swift) send the hex token to a new `device-register` action (`action: "apns-token"`).
-2. **Dispatch path**
-   - New `netlify/functions/lib/standardPushNotify.js`: alert payload (`apns-push-type: alert`, topic = bundle id, thread-id per story, interruption-level `time-sensitive` only for urgent/final), reusing the JWT-signing approach in [`lib/apnsClient.js`](netlify/functions/lib/apnsClient.js) (generalize it beyond `liveactivity`).
-   - Wire into `admin-live-stories.addUpdate` alongside web push + Live Activities.
-3. **Notification Service Extension** (target already scaffolded in M1: `NotificationServiceExtension/NotificationService.swift`)
-   - Implement rich image attachments from a payload `image`/`media-url` URL and thread-id grouping inside the existing pass-through `didReceive`; requires the dispatch backend to send `mutable-content: 1`.
-4. **Notification preferences sync**
-   - Persist [`NotificationPreferences`](ios/NoteworthyLive/App/Models/NotificationPreferences.swift) server-side (new `ios_notification_preferences` table) via a `device-register` action; honor master/breaking/live/quiet-hours/time-sensitive at dispatch time.
-5. **iOS test push** endpoints: `ios-test-push`, `ios-test-live-activity` (admin-auth) so the Notifications screen test buttons are real.
+1. **Device token registration** — DONE
+   - Migration [`008_ios_push.sql`](supabase/migrations/008_ios_push.sql): additive `apns_token` + `apns_token_updated_at` + 8 preference columns + `utc_offset_minutes` on `live_story_devices` (partial index on `apns_token`).
+   - iOS: [`AppDelegate.didRegisterForRemoteNotificationsWithDeviceToken`](ios/NoteworthyLive/App/AppDelegate.swift) caches the hex token in [`DeviceIdentity`](ios/NoteworthyLive/App/DeviceIdentity.swift) and registers it via `device-register {action:"apns-token"}`; token also carried through `redeem` and every `heartbeat` ([`APIClient.swift`](ios/NoteworthyLive/App/APIClient.swift)).
+2. **Dispatch path** — DONE
+   - [`lib/apnsClient.js`](netlify/functions/lib/apnsClient.js) generalized: `topicFor(pushType)`, per-item `pushType`, `apns-collapse-id`, `sendAlertBatch`/`sendAlert` (Live Activity path byte-for-byte unchanged).
+   - New [`lib/standardPushNotify.js`](netlify/functions/lib/standardPushNotify.js): targets followers' devices with a token, honors prefs/quiet-hours/time-sensitive, builds the alert payload (thread-id, category, deep link, optional image), dead-token cleanup, audit `detail.channel="ios_standard_push"`, best-effort dedupe.
+   - Wired into [`admin-live-stories.addUpdate`](netlify/functions/admin-live-stories.js) `Promise.all` (fail-soft) + admin-auth `testStandardPush`.
+3. **Notification Service Extension** — DONE
+   - [`NotificationService.swift`](ios/NoteworthyLive/NotificationServiceExtension/NotificationService.swift) downloads the https `image` (10s timeout / 5MB cap), attaches it, applies `thread-id`, and fails soft to the original.
+4. **Notification preferences sync** — DONE
+   - 1:1 columns on `live_story_devices` (no extra table/join). [`NotificationPreferences`](ios/NoteworthyLive/App/Models/NotificationPreferences.swift) debounced sync via `device-register {action:"preferences"}`; honored at dispatch; honest Notifications UI (device-registered + synced/pending/failed, no "rolling out soon" copy).
+5. **Hardening** — DONE: `device-register` rate-limited (60/min per IP); dead-token cleanup on `410`/`BadDeviceToken`/`Unregistered`/`DeviceTokenNotForTopic`.
+
+Test surface stays inside the already-admin-authed function (`testStandardPush` / `testLiveActivity`) rather than new public endpoints. See [`IOS_NOTIFICATIONS_TESTING.md`](IOS_NOTIFICATIONS_TESTING.md).
 
 ## B. Hardening (from the audit "can wait until after first TestFlight")
 1. **Rate limiting** on public mutation endpoints: [`follow-live-story.js`](netlify/functions/follow-live-story.js), [`device-link.js`](netlify/functions/device-link.js) (per-IP/subscriber token-bucket in Netlify Blobs, mirroring `lib/alertRateLimit.js`).

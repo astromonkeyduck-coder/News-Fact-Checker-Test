@@ -39,12 +39,16 @@ public struct LiveStoryAttributes: ActivityAttributes {
     public var storyId: String
     public var title: String
     public var category: String
+    /// When set (X-post Live Activities), tap opens `noteworthylive://post/<id>`.
+    public var contentPostId: String?
 
-    public init(storySlug: String, storyId: String, title: String, category: String) {
+    public init(storySlug: String, storyId: String, title: String, category: String,
+                contentPostId: String? = nil) {
         self.storySlug = storySlug
         self.storyId = storyId
         self.title = title
         self.category = category
+        self.contentPostId = contentPostId
     }
 }
 

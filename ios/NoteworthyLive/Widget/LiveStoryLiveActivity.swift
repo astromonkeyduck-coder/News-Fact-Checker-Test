@@ -17,7 +17,7 @@ struct LiveStoryLiveActivity: Widget {
         ActivityConfiguration(for: LiveStoryAttributes.self) { context in
             // ── Lock Screen / banner (also the StandBy baseline) ──
             LockScreenView(context: context)
-                .widgetURL(LiveStoryDeepLink.url(slug: context.attributes.storySlug))
+                .widgetURL(activityDeepLink(context.attributes))
                 .activityBackgroundTint(NWBrand.ink.opacity(0.92))
                 .activitySystemActionForegroundColor(.white)
 
@@ -64,9 +64,18 @@ struct LiveStoryLiveActivity: Widget {
             } minimal: {
                 SignalDot(status: status, size: 7)
             }
-            .widgetURL(LiveStoryDeepLink.url(slug: context.attributes.storySlug))
+            .widgetURL(activityDeepLink(context.attributes))
             .keylineTint(StatusStyle.color(status))
         }
+    }
+
+    /// X-post activities carry `contentPostId` → open the native article; live
+    /// stories keep the existing `story/<slug>` route.
+    private func activityDeepLink(_ attributes: LiveStoryAttributes) -> URL {
+        if let pid = attributes.contentPostId, !pid.isEmpty {
+            return LiveStoryDeepLink.post(id: pid)
+        }
+        return LiveStoryDeepLink.url(slug: attributes.storySlug)
     }
 }
 

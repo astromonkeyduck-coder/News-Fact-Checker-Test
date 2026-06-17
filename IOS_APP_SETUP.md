@@ -86,7 +86,7 @@ These steps need the Apple Developer portal and Xcode, they cannot be scripted h
 |----------|-----------|--------|
 | (none) | `mobile-feed` / `mobile-story` content API | Works today, read-only, no new keys |
 | `VAPID_*` | Web push | Already set |
-| `APNS_KEY_P8` (base64) | Live Activity / push dispatch | **M2**, not set yet (dispatch no-ops) |
+| `APNS_KEY_P8_BASE64` (base64) | Live Activity / push dispatch | **M2**, not set yet (dispatch no-ops) |
 | `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_BUNDLE_ID` | APNs auth/topic | **M2** |
 | `APNS_DEFAULT_ENVIRONMENT` | `sandbox` (local development/debug device) / `production` (TestFlight + App Store) | **M2** |
 
@@ -116,12 +116,15 @@ Already applied in production: `005_create_live_stories.sql`, `006_create_ios_de
 
 ---
 
-## 6. Push & remote Live Activity testing (after M2 APNs setup)
+## 6. Push & remote Live Activity testing (after APNs setup)
 
-1. Set `APNS_*` env vars in Netlify; redeploy.
-2. Pair the device, follow a live story, start a Live Activity.
-3. In `/admin` ▸ Live Stories, post an update.
-4. Verify the Lock Screen + Dynamic Island update, tapping opens the exact story, and a `final` update ends the activity.
+1. Set `APNS_*` env vars in Netlify; redeploy. Verify with `?action=apnsStatus` (`configured:true`).
+2. **Permission + token (2C):** grant notifications on the device → the standard APNs token is registered (`device-register {action:"apns-token"}`) and cached in the Keychain. The **Notifications** screen shows *Device registered: Yes* and *Preferences: Synced*.
+3. Pair the device (token also carried through `redeem`), follow a live story, optionally start a Live Activity.
+4. In `/admin` ▸ Live Stories, post an update. Verify:
+   - **Standard push (2C):** a banner arrives for followers; tapping opens the exact story; urgent/final ring + Time-Sensitive; preferences/quiet-hours are honored.
+   - **Live Activity (2B):** Lock Screen + Dynamic Island update; a `final` update ends the activity.
+5. Full standard-push runbook + APNs error reference: [`IOS_NOTIFICATIONS_TESTING.md`](IOS_NOTIFICATIONS_TESTING.md).
 
 ---
 

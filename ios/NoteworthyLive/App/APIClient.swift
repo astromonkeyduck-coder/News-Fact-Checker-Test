@@ -40,6 +40,7 @@ final class APIClient {
             "deviceUuid": identity.deviceUuid,
             "apnsEnvironment": Config.apnsEnvironment,
             "pushToStartToken": pushToStartToken,
+            "apnsToken": identity.apnsToken,
             "platform": "ios",
             "appVersion": Config.appVersion,
             "locale": Locale.current.identifier,
@@ -48,6 +49,8 @@ final class APIClient {
         let linkType = LinkType(rawValue: res.linkType ?? "") ?? .browser
         identity.storePairing(secret: res.deviceSecret, subscriberKey: res.subscriberKey,
                               linkType: linkType, profile: res.linkedProfile)
+        // Push the current preferences to the freshly paired device row.
+        try? await NotificationPreferencesStore.shared.syncNow()
         return res.follows
     }
 
@@ -55,6 +58,19 @@ final class APIClient {
 
     func registerPushToStart(token: String) async throws {
         try await authedVoid("device-register", extra: ["action": "push-to-start", "pushToStartToken": token])
+    }
+
+    /// Register/refresh the standard-push APNs device token (Milestone 2C).
+    func registerApnsToken(_ token: String) async throws {
+        try await authedVoid("device-register", extra: ["action": "apns-token", "apnsToken": token])
+    }
+
+    /// Push the current notification preferences to the backend (Milestone 2C).
+    func syncPreferences(_ prefs: NotificationPreferences) async throws {
+        try await authedVoid("device-register", extra: [
+            "action": "preferences",
+            "preferences": prefs.serverPayload,
+        ])
     }
 
     func activityStarted(slug: String, token: String) async throws {
@@ -72,7 +88,10 @@ final class APIClient {
     }
 
     func heartbeat() async throws {
-        let res: HeartbeatResponse = try await authed("device-register", extra: ["action": "heartbeat", "apnsEnvironment": Config.apnsEnvironment, "appVersion": Config.appVersion])
+        var extra: [String: Any] = ["action": "heartbeat", "apnsEnvironment": Config.apnsEnvironment, "appVersion": Config.appVersion]
+        // Opportunistically refresh the standard-push token on every heartbeat.
+        if let token = identity.apnsToken { extra["apnsToken"] = token }
+        let res: HeartbeatResponse = try await authed("device-register", extra: extra)
         let linkType = LinkType(rawValue: res.linkType ?? "") ?? .browser
         identity.updateLinkedProfile(linkType: linkType, profile: res.linkedProfile)
     }

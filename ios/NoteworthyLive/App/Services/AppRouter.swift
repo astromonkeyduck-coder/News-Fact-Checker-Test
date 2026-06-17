@@ -27,11 +27,25 @@ final class AppRouter: ObservableObject {
         livePath.append(StoryRoute.live(slug: slug))
     }
 
+    func openPost(id: String) {
+        selectedTab = .home
+        homePath = NavigationPath()
+        homePath.append(StoryRoute.post(FeedItem(id: id, title: "Noteworthy", isBreaking: true)))
+    }
+
     func handleDeepLink(_ url: URL) {
-        guard url.scheme == Config.urlScheme, url.host == "story" else { return }
-        let slug = url.pathComponents.last(where: { $0 != "/" }) ?? ""
-        guard !slug.isEmpty else { return }
-        openLiveStory(slug: slug)
+        guard url.scheme == Config.urlScheme else { return }
+        if url.host == "story" {
+            let slug = url.pathComponents.last(where: { $0 != "/" }) ?? ""
+            guard !slug.isEmpty else { return }
+            openLiveStory(slug: slug)
+            return
+        }
+        if url.host == "post" {
+            let id = url.pathComponents.last(where: { $0 != "/" }) ?? ""
+            guard !id.isEmpty else { return }
+            openPost(id: id)
+        }
     }
 }
 

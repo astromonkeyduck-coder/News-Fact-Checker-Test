@@ -5,6 +5,7 @@ import ActivityKit
 struct NotificationsView: View {
     @EnvironmentObject var notifications: NotificationManager
     @EnvironmentObject var prefsStore: NotificationPreferencesStore
+    @ObservedObject private var identity = DeviceIdentity.shared
     @Environment(\.dismiss) private var dismiss
 
     private var prefs: Binding<NotificationPreferences> { $prefsStore.prefs }
@@ -14,9 +15,9 @@ struct NotificationsView: View {
     var body: some View {
         List {
             systemSection
+            deliverySection
             alertsSection
             quietHoursSection
-            syncNoteSection
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
@@ -77,22 +78,54 @@ struct NotificationsView: View {
         return Text(text).font(.ntMeta).foregroundStyle(color)
     }
 
+    // MARK: Delivery status
+
+    private var deliverySection: some View {
+        Section {
+            HStack {
+                Label("Device registered", systemImage: "iphone.radiowaves.left.and.right")
+                Spacer()
+                Text(identity.hasApnsToken ? "Yes" : "No")
+                    .font(.ntMeta)
+                    .foregroundStyle(identity.hasApnsToken ? NT.Palette.green : NT.Palette.amber)
+            }
+            HStack {
+                Label("Preferences", systemImage: "arrow.triangle.2.circlepath")
+                Spacer()
+                syncBadge
+            }
+        } header: {
+            Text("Delivery")
+        } footer: {
+            Text(identity.hasApnsToken
+                 ? "This iPhone is registered to receive Noteworthy push alerts. Your preferences sync to the newsroom."
+                 : "Turn on notifications above to register this iPhone for push alerts.")
+        }
+        .listRowBackground(NT.Palette.surface)
+    }
+
+    private var syncBadge: some View {
+        let (text, color): (String, Color) = {
+            switch prefsStore.syncState {
+            case .synced: return ("Synced", NT.Palette.green)
+            case .pending: return ("Syncing…", NT.Palette.amber)
+            case .failed: return ("Failed", NT.Palette.red)
+            case .idle: return (identity.isPaired ? "—" : "Local", NT.Palette.textTertiary)
+            }
+        }()
+        return Text(text).font(.ntMeta).foregroundStyle(color)
+    }
+
     // MARK: Alert types
 
     private var alertsSection: some View {
         Section {
-            HStack(alignment: .top, spacing: Space.sm) {
-                Image(systemName: "clock.badge")
-                    .foregroundStyle(NT.Palette.amber)
-                Text("Push alerts are rolling out soon. Set your preferences now, they'll apply once delivery is live. Live Activities already work on your Lock Screen.")
-                    .font(.ntMeta)
-                    .foregroundStyle(NT.Palette.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
             Toggle(isOn: prefs.masterEnabled) { Label("All alerts", systemImage: "app.badge") }
             Toggle(isOn: prefs.breakingNews) { Label("Breaking news", systemImage: "bolt.fill") }
                 .disabled(!prefsStore.prefs.masterEnabled)
             Toggle(isOn: prefs.liveStoryUpdates) { Label("Live story updates", systemImage: "dot.radiowaves.left.and.right") }
+                .disabled(!prefsStore.prefs.masterEnabled)
+            Toggle(isOn: prefs.finalUpdates) { Label("Final & corrections", systemImage: "checkmark.seal") }
                 .disabled(!prefsStore.prefs.masterEnabled)
             Toggle(isOn: prefs.allowTimeSensitive) { Label("Time-Sensitive urgent alerts", systemImage: "exclamationmark.bubble") }
                 .disabled(!prefsStore.prefs.masterEnabled)
@@ -121,22 +154,10 @@ struct NotificationsView: View {
         } header: {
             Text("Quiet hours")
         } footer: {
-            Text("During quiet hours, only urgent and final updates will alert. Quiet hours apply once preference sync ships.")
+            Text("During quiet hours, routine updates stay silent on this iPhone. Urgent and final updates still alert.")
         }
         .listRowBackground(NT.Palette.surface)
         .tint(NT.Palette.accent)
-    }
-
-    private var syncNoteSection: some View {
-        Section {
-            Label {
-                Text("These preferences are saved on this iPhone for now. Soon they'll sync to the newsroom so your settings follow you on every device.")
-                    .font(.ntMeta).foregroundStyle(NT.Palette.textSecondary)
-            } icon: {
-                Image(systemName: "icloud.and.arrow.up").foregroundStyle(NT.Palette.textTertiary)
-            }
-        }
-        .listRowBackground(NT.Palette.surface)
     }
 
     private func hourLabel(_ hour: Int) -> String {
