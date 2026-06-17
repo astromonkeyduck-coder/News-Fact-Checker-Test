@@ -47,6 +47,7 @@
 		760F913C60831C15D49F66AC /* Config.swift in Sources */ = {isa = PBXBuildFile; fileRef = 357CC38CF49E4955BEDF4FB3 /* Config.swift */; };
 		80CD72402E005344DBD3EDB1 /* AppShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6188ADEE8A9519AB41B88068 /* AppShell.swift */; };
 		884A8C3A7E42D80F1C650AF0 /* SearchViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5C0924741879E068395A1BA /* SearchViewModel.swift */; };
+		89595137E0341101FC2137DC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AE30DF69C1D40CD66B8DDE03 /* Assets.xcassets */; };
 		902050FA6D3B00FBE0E5DED9 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E551E46DA6CD85FFD7226E26 /* ProfileView.swift */; };
 		A15ED6C3CAF2F2C7425E06D9 /* Spacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98442A224DE1AF875B2C4BBE /* Spacing.swift */; };
 		A263CEC068D94B7BC151C424 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32408CF9679FA31799DC11D0 /* APIClient.swift */; };
@@ -112,12 +113,12 @@
 		056346DEAB5CC9C0D40AF5AB /* LiveViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveViewModel.swift; sourceTree = "<group>"; };
 		066EF783A2E96AB3EE158E84 /* LiveActivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityManager.swift; sourceTree = "<group>"; };
 		0DB8DF78210FE2CB04E3F0DA /* LiveStory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveStory.swift; sourceTree = "<group>"; };
-		127FE664498BA55A0A9F9929 /* LiveStoryWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = LiveStoryWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		127FE664498BA55A0A9F9929 /* LiveStoryWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = LiveStoryWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		1302151962543F8EA6DA8EF7 /* LiveView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveView.swift; sourceTree = "<group>"; };
 		18B991CB7DA35CBB695F7A07 /* LiveService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveService.swift; sourceTree = "<group>"; };
 		1EE4FBDEB14049BAE4949D4E /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		1F238D4D73497CCB5AB7F4DB /* TopicChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopicChip.swift; sourceTree = "<group>"; };
-		211A3879E86E8F0AA9A58BD2 /* NoteworthyLive.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = NoteworthyLive.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		211A3879E86E8F0AA9A58BD2 /* NoteworthyLive.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NoteworthyLive.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		248993500B895B1EDE386353 /* DeviceIdentity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceIdentity.swift; sourceTree = "<group>"; };
 		2836FF768D5C5515D3502587 /* FeedItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedItem.swift; sourceTree = "<group>"; };
 		32408CF9679FA31799DC11D0 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
@@ -142,7 +143,7 @@
 		7BD0EBF44DD62D07A8F98B80 /* StatusChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusChip.swift; sourceTree = "<group>"; };
 		7C421A21CF8C20492AEDDF3C /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haptics.swift; sourceTree = "<group>"; };
 		7D63EBE5535D177886DF42A7 /* HTTP.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTP.swift; sourceTree = "<group>"; };
-		8001474668E4B3804CCB83E3 /* NotificationServiceExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = NotificationServiceExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		8001474668E4B3804CCB83E3 /* NotificationServiceExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = NotificationServiceExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		91C3FB6A5105D758C8B09C12 /* MockData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockData.swift; sourceTree = "<group>"; };
 		9347096DE7D50E1143407BD7 /* LiveStoryAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveStoryAttributes.swift; sourceTree = "<group>"; };
 		98442A224DE1AF875B2C4BBE /* Spacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Spacing.swift; sourceTree = "<group>"; };
@@ -150,6 +151,7 @@
 		A4168936154925E55C44C207 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
 		A894D0F2B051C2A578008895 /* SafariView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariView.swift; sourceTree = "<group>"; };
 		AA60598C80C4CA3B1EF25B29 /* StoryDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoryDetailViewModel.swift; sourceTree = "<group>"; };
+		AE30DF69C1D40CD66B8DDE03 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AF8F98718324032ECCBE960A /* LiveStoryLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveStoryLiveActivity.swift; sourceTree = "<group>"; };
 		B1D674DEC080465A724DB114 /* LivePulse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LivePulse.swift; sourceTree = "<group>"; };
 		B46621C10E08F60C0D3197A2 /* NTButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NTButtonStyle.swift; sourceTree = "<group>"; };
@@ -364,6 +366,7 @@
 		D3847292FA9579E60EF00894 /* Widget */ = {
 			isa = PBXGroup;
 			children = (
+				AE30DF69C1D40CD66B8DDE03 /* Assets.xcassets */,
 				AF8F98718324032ECCBE960A /* LiveStoryLiveActivity.swift */,
 				52EE4CE65E6577DC9F41551F /* LiveStoryWidgetBundle.swift */,
 			);
@@ -418,6 +421,7 @@
 			buildConfigurationList = 09AA75406160BEDA7B28D3CC /* Build configuration list for PBXNativeTarget "LiveStoryWidget" */;
 			buildPhases = (
 				E11E6257D426A6315AB8956C /* Sources */,
+				8835D8A54004A3E464D161ED /* Resources */,
 			);
 			buildRules = (
 			);
@@ -478,15 +482,12 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					32F4265A9A06988E88021FD0 = {
-						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 					48395389C8F662B616AC7F8A = {
-						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 					DAD49DCA9CF4D1312FEE2B60 = {
-						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -518,6 +519,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				59BE630E7B0023E382CC3BF5 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8835D8A54004A3E464D161ED /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				89595137E0341101FC2137DC /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -630,6 +639,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = SupportingFiles/NoteworthyLive.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 2T26RT65RM;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = SupportingFiles/Info.plist;
@@ -648,6 +658,7 @@
 		27C7F5BA8BFE2F15DC9C1ED3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				DEVELOPMENT_TEAM = 2T26RT65RM;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "SupportingFiles/Widget-Info.plist";
@@ -667,6 +678,7 @@
 		5E89D1E94234E64294CCFF55 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				DEVELOPMENT_TEAM = 2T26RT65RM;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "SupportingFiles/NotificationService-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
@@ -749,6 +761,7 @@
 		88947563D0017CEEDE1EEB4D /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				DEVELOPMENT_TEAM = 2T26RT65RM;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "SupportingFiles/Widget-Info.plist";
@@ -843,6 +856,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = SupportingFiles/NoteworthyLive.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 2T26RT65RM;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = SupportingFiles/Info.plist;
@@ -861,6 +875,7 @@
 		DCCDF1E6C2142E248C756D3E /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				DEVELOPMENT_TEAM = 2T26RT65RM;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "SupportingFiles/NotificationService-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.2;

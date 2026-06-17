@@ -261,7 +261,18 @@
     }
 
     var pairBtn = document.getElementById('ns-pair-btn');
+    // Reflect whether a generated code will link to an account or just this
+    // browser. Called by the auth module when sign-in state resolves.
+    window.nsUpdatePairHint = function () {
+      var hintEl = document.getElementById('ns-pair-hint');
+      if (!hintEl || hintEl.dataset.locked === '1') return;
+      var signedIn = window.NW_AUTH && window.NW_AUTH.isSignedIn && window.NW_AUTH.isSignedIn();
+      hintEl.textContent = signedIn
+        ? 'This code links the app to your Noteworthy account.'
+        : 'This code links the app to this browser. Sign in first to link your account.';
+    };
     if (pairBtn) {
+      window.nsUpdatePairHint();
       pairBtn.addEventListener('click', async function () {
         var codeEl = document.getElementById('ns-pair-code');
         var hintEl = document.getElementById('ns-pair-hint');
@@ -270,15 +281,26 @@
         if (!sub) { hintEl.textContent = 'Enable alerts first, then generate a code.'; return; }
         pairBtn.disabled = true; pairBtn.textContent = 'Generating…';
         try {
+          var headers = { 'Content-Type': 'application/json' };
+          // Attach the VERIFIED Auth0 ID token when signed in so the backend
+          // can link the device to the account. Never send raw profile fields.
+          try {
+            var idToken = window.NW_AUTH && window.NW_AUTH.getIdToken ? await window.NW_AUTH.getIdToken() : null;
+            if (idToken) headers['Authorization'] = 'Bearer ' + idToken;
+          } catch (_) { /* anonymous pairing */ }
           var res = await fetch(fnBase() + '/device-link', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            method: 'POST', headers: headers,
             body: JSON.stringify({ action: 'create-code', subscription: sub.toJSON() })
           });
           var data = await res.json();
           if (data.code) {
             codeEl.textContent = data.code;
             var mins = Math.round((data.ttlSeconds || 600) / 60);
-            hintEl.textContent = 'Enter this code in the Noteworthy Live app within ' + mins + ' minutes.';
+            var linkLine = data.linkType === 'account'
+              ? ' It will link to your Noteworthy account.'
+              : ' It will link to this browser.';
+            hintEl.textContent = 'Enter this code in the Noteworthy Live app within ' + mins + ' minutes.' + linkLine;
+            hintEl.dataset.locked = '1';
           } else {
             hintEl.textContent = data.error || 'Could not generate a code.';
           }
@@ -298,9 +320,14 @@
   <!-- Profile / sign-in. Reuses the site's Auth0 module (self-configures via
        get-auth0-config), so no inline secrets are needed here. -->
   <script type="module">
-    import { initAuth, login, logout } from '/v2/js/auth.js';
+    import { initAuth, login, logout, getIdToken } from '/v2/js/auth.js';
 
     const el = document.getElementById('ns-profile');
+
+    // Expose the verified ID-token getter + sign-in state to the (non-module)
+    // pairing script so a signed-in user's pairing code links to their account.
+    let signedIn = false;
+    window.NW_AUTH = { getIdToken, isSignedIn: () => signedIn };
 
     function esc(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
 
@@ -339,7 +366,12 @@
 
     // initAuth fires onAuthChange(null) immediately, then again with the user
     // if an existing session is found.
-    initAuth((user) => { user ? renderSignedIn(user) : renderSignedOut(); });
+    initAuth((user) => {
+      signedIn = !!user;
+      user ? renderSignedIn(user) : renderSignedOut();
+      // Let the pairing card reflect whether a code will link an account.
+      if (typeof window.nsUpdatePairHint === 'function') window.nsUpdatePairHint();
+    });
   </script>
 </body>
 </html>

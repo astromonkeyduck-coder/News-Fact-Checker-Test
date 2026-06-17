@@ -230,6 +230,22 @@ export async function getToken() {
   }
 }
 
+/**
+ * Raw Auth0 ID token (JWT). Unlike the access token (opaque without a custom
+ * API audience), the ID token has `aud = client_id` and is verifiable
+ * server-side, carrying email/name/picture for scope `openid profile email`.
+ * Returns null when signed out or unavailable.
+ */
+export async function getIdToken() {
+  if (!client) return null;
+  try {
+    const claims = await client.getIdTokenClaims();
+    return claims?.__raw || null;
+  } catch {
+    return null;
+  }
+}
+
 export function isAuthenticated() {
   return !!currentUser;
 }

@@ -28,6 +28,8 @@ final class APIClient {
         var deviceSecret: String
         var subscriberKey: String
         var follows: [FollowedStory]
+        var linkType: String?
+        var linkedProfile: LinkedProfile?
     }
 
     /// Redeem a pairing code shown on the website. Stores the issued secret.
@@ -43,7 +45,9 @@ final class APIClient {
             "locale": Locale.current.identifier,
         ]
         let res: RedeemResponse = try await post("device-link", body: body)
-        identity.storePairing(secret: res.deviceSecret, subscriberKey: res.subscriberKey)
+        let linkType = LinkType(rawValue: res.linkType ?? "") ?? .browser
+        identity.storePairing(secret: res.deviceSecret, subscriberKey: res.subscriberKey,
+                              linkType: linkType, profile: res.linkedProfile)
         return res.follows
     }
 
@@ -61,8 +65,16 @@ final class APIClient {
         try await authedVoid("device-register", extra: ["action": "activity-end", "storySlug": slug])
     }
 
+    struct HeartbeatResponse: Codable {
+        var success: Bool?
+        var linkType: String?
+        var linkedProfile: LinkedProfile?
+    }
+
     func heartbeat() async throws {
-        try await authedVoid("device-register", extra: ["action": "heartbeat", "apnsEnvironment": Config.apnsEnvironment, "appVersion": Config.appVersion])
+        let res: HeartbeatResponse = try await authed("device-register", extra: ["action": "heartbeat", "apnsEnvironment": Config.apnsEnvironment, "appVersion": Config.appVersion])
+        let linkType = LinkType(rawValue: res.linkType ?? "") ?? .browser
+        identity.updateLinkedProfile(linkType: linkType, profile: res.linkedProfile)
     }
 
     // MARK: Followed stories

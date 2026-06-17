@@ -43,4 +43,32 @@ enum StatusStyle {
         fmt.unitsStyle = .abbreviated
         return fmt.localizedString(for: date, relativeTo: Date())
     }
+
+    /// Whether the status should read as an actively-developing/live story
+    /// (drives the live pulse). Closed states are calm.
+    static func isLive(_ status: String) -> Bool {
+        switch status {
+        case "resolved", "false_report": return false
+        default: return true
+        }
+    }
+
+    /// Compact label for the Dynamic Island compact/minimal slots.
+    static func compactLabel(_ status: String) -> String {
+        switch status {
+        case "breaking": return "LIVE"
+        case "developing": return "LIVE"
+        case "verified": return "Verified"
+        case "disputed": return "Disputed"
+        case "resolved": return "Closed"
+        case "false_report": return "Correction"
+        default: return "Update"
+        }
+    }
+
+    /// "7 updates" / "1 update" / "" when count is nil or zero.
+    static func updatesText(_ count: Int?) -> String {
+        guard let count, count > 0 else { return "" }
+        return count == 1 ? "1 update" : "\(count) updates"
+    }
 }

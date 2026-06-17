@@ -38,7 +38,7 @@ exports.handler = async (event) => {
     switch (body.action) {
       case "heartbeat":
         await supabase.from("live_story_devices").update(meta).eq("id", device.id);
-        return json(200, { success: true });
+        return json(200, { success: true, ...linkInfo(device) });
 
       case "push-to-start":
         if (!body.pushToStartToken) return json(400, { error: "Missing pushToStartToken" });
@@ -110,6 +110,25 @@ async function getStory(slug) {
     .maybeSingle();
   if (error) throw error;
   return data;
+}
+
+/**
+ * Build the linked-profile payload from a device row so the app can refresh /
+ * repair its Profile display. Anonymous (browser-only) devices return no profile.
+ */
+function linkInfo(device) {
+  const hasProfile = Boolean(device.auth0_sub);
+  return {
+    linkType: hasProfile ? "account" : "browser",
+    linkedProfile: hasProfile
+      ? {
+          sub: device.auth0_sub,
+          email: device.email || null,
+          name: device.name || null,
+          pictureUrl: device.picture_url || null,
+        }
+      : null,
+  };
 }
 
 function json(statusCode, payload) {

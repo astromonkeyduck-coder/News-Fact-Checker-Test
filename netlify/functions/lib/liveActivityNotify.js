@@ -40,7 +40,7 @@ function truncate(s, n) {
 }
 
 function contentState(story, update, status, isFinal) {
-  return {
+  const cs = {
     status,
     headline: truncate(update.body, HEADLINE_MAX),
     severity: story.severity || 3,
@@ -48,6 +48,11 @@ function contentState(story, update, status, isFinal) {
     updatedAt: Math.floor(Date.now() / 1000),
     isFinal: !!isFinal,
   };
+  // Matches the optional Swift `ContentState.updateCount`. Populate when the
+  // caller knows the timeline length so the Live Activity can show "N updates".
+  const count = story.update_count ?? story.updateCount;
+  if (Number.isFinite(count)) cs.updateCount = count;
+  return cs;
 }
 
 function alertBlock(story, update, status) {
