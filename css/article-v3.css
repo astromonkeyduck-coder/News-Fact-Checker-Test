@@ -30,6 +30,13 @@ body.article-page {
   background-color: var(--nn-surface) !important;
   background-image: none !important;
   color: var(--nn-ink);
+  /* styles.css reserves space for a fixed header; article nav is sticky in-flow */
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
+html.article-page-active {
+  padding-top: 0 !important;
 }
 
 .starfield { display: none !important; }
@@ -223,13 +230,25 @@ body.article-page {
 }
 
 .nn-media--hero {
-  aspect-ratio: 16 / 9;
+  aspect-ratio: unset;
   max-height: min(50vh, 405px);
+  height: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  box-shadow: none;
 }
 
 .nn-media--hero img,
 .nn-media--hero video {
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: min(50vh, 405px);
   object-fit: contain;
+  border-radius: var(--nn-radius-lg);
+  box-shadow: var(--nn-shadow-sm);
 }
 
 .nn-media img,
@@ -649,7 +668,7 @@ body.article-page {
 
 .nn-more-coverage__title {
   font-family: var(--nn-font-head);
-  font-size: var(--text-2xl, 1.5rem);
+  font-size: var(--text-xl, 1.25rem);
   font-weight: 700;
   margin: 0 0 var(--space-sm, 0.5rem);
 }
@@ -663,8 +682,15 @@ body.article-page {
 
 .nn-more-coverage__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: var(--space-lg, 1.5rem);
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-md, 1rem);
+}
+
+@media (min-width: 881px) {
+  .nn-more-coverage__grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-md, 1rem);
+  }
 }
 
 /* Professional related-story cards */
@@ -696,6 +722,7 @@ body.article-page {
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
+  max-height: 120px;
   overflow: hidden;
   background: #0e1422;
   display: flex;
@@ -748,16 +775,16 @@ body.article-page {
 }
 
 .nn-more-coverage__grid .news-card-content {
-  padding: var(--space-md, 1rem);
+  padding: var(--space-sm, 0.75rem) var(--space-md, 1rem);
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm, 0.5rem);
+  gap: 4px;
   flex-grow: 1;
 }
 
 .nn-more-coverage__grid .news-card-title {
   font-family: var(--nn-font-head);
-  font-size: 1.0625rem;
+  font-size: 0.875rem;
   font-weight: 600;
   line-height: 1.35;
   margin: 0;
@@ -1082,9 +1109,10 @@ body.article-page {
    restore the hero box and cap inline body images on article pages. */
 body.article-page .nn-media--hero video,
 body.article-page .nn-media--hero img {
-  width: 100% !important;
-  height: 100% !important;
-  max-height: none !important;
+  width: auto !important;
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: min(50vh, 405px) !important;
   object-fit: contain;
 }
 
