@@ -36,12 +36,17 @@
   status = 200
   force = true
 
-# V2 Situation Monitor — redirect old URL to V2 version
-# Uses 301 (not 200 rewrite) because V2 SM uses relative asset paths
+# TEMPORARY — Situation Monitor disabled until re-enabled
 [[redirects]]
   from = "/situation-monitor.html"
-  to = "/v2/situation-monitor.html"
-  status = 301
+  to = "/"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/v2/situation-monitor.html"
+  to = "/"
+  status = 302
   force = true
 # ────────────────────────────────────────────────────────────────────
 

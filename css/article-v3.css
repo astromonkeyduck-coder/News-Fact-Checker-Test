@@ -5,7 +5,7 @@
 
 :root {
   --nn-content-max: 720px;
-  --nn-hero-max: 1040px;
+  --nn-hero-max: 720px;
   --nn-page-max: 1200px;
   --nn-ink: #0b0d10;
   --nn-ink-muted: #5b6573;
@@ -224,6 +224,12 @@ body.article-page {
 
 .nn-media--hero {
   aspect-ratio: 16 / 9;
+  max-height: min(50vh, 405px);
+}
+
+.nn-media--hero img,
+.nn-media--hero video {
+  object-fit: contain;
 }
 
 .nn-media img,
@@ -913,6 +919,19 @@ body.article-page {
   overflow: hidden;
 }
 
+.earthquake-animation-media img {
+  max-height: 420px;
+  object-fit: contain;
+}
+
+#earthquake-interactive-map {
+  height: min(320px, 50vh) !important;
+}
+
+#earthquake-3d-viewer {
+  height: min(360px, 55vh) !important;
+}
+
 /* ── Skeleton & loading ─────────────────────────────────── */
 
 .nn-skeleton {
@@ -1059,6 +1078,30 @@ body.article-page {
   flex-shrink: 0;
 }
 
+/* styles.css mobile overflow fixes force video/img height:auto !important;
+   restore the hero box and cap inline body images on article pages. */
+body.article-page .nn-media--hero video,
+body.article-page .nn-media--hero img {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: none !important;
+  object-fit: contain;
+}
+
+body.article-page .nn-body img,
+body.article-page .article-body img {
+  max-width: 100%;
+  height: auto;
+  max-height: 420px;
+  object-fit: contain;
+}
+
+/* Collapse ad slots that never received a unit (avoids stray "Advertisement" gap) */
+body.article-page .nn-ad:not(:has(ins.adsbygoogle)) {
+  display: none !important;
+  margin: 0 !important;
+}
+
 /* Tighten the editorial column on phones; kill dead side gutters */
 @media (max-width: 600px) {
   .nn-article-shell {
@@ -1097,11 +1140,15 @@ body.article-page {
     font-size: var(--text-base, 1rem);
   }
 
+  .nn-media--hero {
+    max-height: min(42vh, 280px);
+  }
+
   .nn-media-block,
   .nn-source-card,
   .nn-module,
   .nn-original-update {
-    margin-bottom: var(--space-lg, 1.5rem);
+    margin-bottom: var(--space-md, 1rem);
   }
 
   .nn-module {

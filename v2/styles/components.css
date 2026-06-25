@@ -2770,3 +2770,10 @@
     }
   }
 }
+
+/* TEMPORARY: hide Situation Monitor until re-enabled */
+a[href*="situation-monitor"],
+.situation-monitor-feature,
+#monitor-teaser {
+  display: none !important;
+}
