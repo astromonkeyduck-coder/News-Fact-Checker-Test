@@ -200,14 +200,18 @@
       .filter((url) => normalizeUrl(url) !== primaryNorm)
       .filter((url, i, arr) => arr.findIndex((u) => normalizeUrl(u) === normalizeUrl(url)) === i);
 
-    const videoUrls = [
-      ...(post.video_url || post.video || post.assets?.video_url
-        ? [post.video_url || post.video || post.assets?.video_url]
-        : []),
-      ...(post.videos || []),
-    ]
-      .filter(Boolean)
-      .filter(isVideoUrl)
+    const normalized = cn && cn.normalizeMedia ? cn.normalizeMedia(post) : null;
+    const videoCandidates = normalized && normalized.videos.length > 0
+      ? normalized.videos
+      : [
+          ...(post.video_url || post.video || post.assets?.video_url
+            ? [post.video_url || post.video || post.assets?.video_url]
+            : []),
+          ...(post.videos || []),
+          ...secondaryCandidates.filter(isVideoUrl),
+        ].filter(Boolean).filter(isVideoUrl)
+          .map((u) => String(u).replace('https://video.twimg.com/', '/media/video/'));
+    const videoUrls = videoCandidates
       .map((u) => ensureAbsoluteImageUrl(u))
       .map((u) => u.replace('https://video.twimg.com/', '/media/video/'))
       .filter((url, i, arr) => arr.findIndex((u) => normalizeUrl(u) === normalizeUrl(url)) === i);

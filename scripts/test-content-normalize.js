@@ -84,6 +84,23 @@ test('detects video and rewrites twimg host', () => {
   assert.strictEqual(m.poster, 'https://x/p.jpg');
 });
 
+test('detects twimg video without file extension', () => {
+  assert.strictEqual(cn.isVideoUrl('https://video.twimg.com/ext_tw_video/1/pu/vid/abc'), true);
+  const m = cn.normalizeMedia({ video_url: 'https://video.twimg.com/ext_tw_video/1/pu/vid/abc' });
+  assert.strictEqual(m.hasVideo, true);
+  assert.strictEqual(m.videos[0], '/media/video/ext_tw_video/1/pu/vid/abc');
+});
+
+test('detects uploaded mp4 and video misfiled in images[]', () => {
+  const m = cn.normalizeMedia({
+    images: ['/.netlify/functions/get-uploaded-image?key=abc&format=mp4'],
+    primary_image_url: 'https://example.com/poster.jpg',
+  });
+  assert.strictEqual(m.hasVideo, true);
+  assert.ok(m.videos[0].includes('format=mp4'));
+  assert.strictEqual(m.secondary.length, 0);
+});
+
 // 8. normalizeSocialPostText strips urls but keeps text
 test('normalizeSocialPostText cleans urls, keeps content', () => {
   const out = cn.normalizeSocialPostText('Live updates here\n\nFollow https://t.co/x');
