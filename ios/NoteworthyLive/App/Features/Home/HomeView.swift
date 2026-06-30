@@ -69,8 +69,8 @@ struct HomeView: View {
     // MARK: Loaded
 
     @ViewBuilder private var loadedContent: some View {
-        if let hero = model.topBreaking {
-            HeroBreakingCard(item: hero,
+        if let hero = model.heroPost {
+            HeroStoryCard(item: hero,
                              isSaved: saved.isSaved(id: hero.id),
                              onTap: { open(hero) },
                              onSave: { saved.toggle(hero) })
@@ -143,8 +143,8 @@ struct HomeView: View {
     private func openLive(_ slug: String) { router.homePath.append(StoryRoute.live(slug: slug)) }
 }
 
-/// Large, urgent hero treatment for the top breaking story.
-struct HeroBreakingCard: View {
+/// Large hero treatment for the newest story at the top of the feed.
+struct HeroStoryCard: View {
     let item: FeedItem
     var isSaved: Bool
     var onTap: () -> Void
@@ -163,7 +163,9 @@ struct HeroBreakingCard: View {
                                            startPoint: .center, endPoint: .bottom)
                         )
                     HStack(spacing: Space.sm) {
-                        StatusChip(status: "breaking")
+                        if item.isBreaking {
+                            StatusChip(status: "breaking")
+                        }
                         if let cat = item.category, !cat.isEmpty {
                             Text(cat).ntKickerStyle(.white.opacity(0.9))
                         }
@@ -201,7 +203,7 @@ struct HeroBreakingCard: View {
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Breaking. \(item.title)")
+        .accessibilityLabel(item.isBreaking ? "Breaking. \(item.title)" : item.title)
         .accessibilityAddTraits(.isButton)
         .accessibilityAction(named: Text(isSaved ? "Remove from saved" : "Save story")) { onSave() }
     }

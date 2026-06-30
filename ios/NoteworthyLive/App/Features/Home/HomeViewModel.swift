@@ -10,8 +10,9 @@ final class HomeViewModel: ObservableObject {
     private var nextCursor: String?
     private var hasLoadedOnce = false
 
-    var topBreaking: FeedItem? {
-        state.value?.first { $0.isBreaking }
+    /// Top-of-feed hero: always the newest post in the loaded feed.
+    var heroPost: FeedItem? {
+        state.value?.first
     }
 
     /// True when the feed loaded successfully but has nothing to show
@@ -21,10 +22,10 @@ final class HomeViewModel: ObservableObject {
         (state.value?.isEmpty ?? true) && liveStories.isEmpty
     }
 
-    /// Feed minus the hero breaking item (so it doesn't appear twice).
+    /// Feed minus the hero item (so it doesn't appear twice).
     var latest: [FeedItem] {
         guard let items = state.value else { return [] }
-        guard let hero = topBreaking else { return items }
+        guard let hero = heroPost else { return items }
         return items.filter { $0.id != hero.id }
     }
 
