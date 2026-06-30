@@ -1,7 +1,7 @@
 export default async (request) => {
   const url = new URL(request.url);
   const videoPath = url.pathname.replace('/media/video/', '');
-  const videoUrl = `https://video.twimg.com/${videoPath}`;
+  const videoUrl = `https://video.twimg.com/${videoPath}${url.search}`;
 
   const resp = await fetch(videoUrl);
 

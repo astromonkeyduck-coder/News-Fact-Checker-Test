@@ -323,6 +323,8 @@
     }
 
     function isVideoUrl(url) {
+        const cn = window.ContentNormalize;
+        if (cn && cn.isVideoUrl) return cn.isVideoUrl(url);
         return url && typeof url === 'string' && /\.(mp4|webm|mov|m4v)(\?|$)/i.test(url.toLowerCase());
     }
 
