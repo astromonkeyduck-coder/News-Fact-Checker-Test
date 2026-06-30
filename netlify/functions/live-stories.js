@@ -2,7 +2,7 @@
  * Live Stories — public read API
  *
  * GET /.netlify/functions/live-stories
- *   → { stories: [...] }   active (non-archived) stories, pinned first
+ *   → { stories: [...] }   active editorial stories (manual admin only), pinned first
  *
  * GET /.netlify/functions/live-stories?slug=<slug>
  *   → { story: {...}, updates: [...] }   single story with its timeline
@@ -13,6 +13,7 @@
 
 const supabase = require("./lib/supabaseClient");
 const { corsHeaders, optionsResponse } = require("./lib/corsHeaders");
+const { excludeAutoXPostStories } = require("./lib/liveStoryCategories");
 
 const STORY_PUBLIC_COLUMNS =
   "id, slug, title, summary, status, category, severity, confidence, pinned, follower_count, last_update_at, created_at, updated_at";
@@ -53,10 +54,12 @@ async function listStories(params) {
   const limit = Math.min(Number(params.limit) || 50, 100);
   const includeResolved = params.includeResolved === "true";
 
-  let query = supabase
-    .from("live_stories")
-    .select(STORY_PUBLIC_COLUMNS)
-    .eq("archived", false)
+  let query = excludeAutoXPostStories(
+    supabase
+      .from("live_stories")
+      .select(STORY_PUBLIC_COLUMNS)
+      .eq("archived", false)
+  )
     .order("pinned", { ascending: false })
     .order("last_update_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false })
