@@ -67,7 +67,7 @@ function buildInstructions(groundingContext) {
   const todayStr = new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
   return `You are Noteworthy News AI, the voice briefing assistant for Noteworthy News (noteworthynews.co) - a fact-first breaking news site. Motto: "Developing means developing. Confirmed means confirmed."
 
-TODAY'S DATE: ${todayStr}
+TODAY'S DATE: ${todayStr}${aiGrounding.buildKnowledgeCorrections()}${aiGrounding.buildCutoffRules()}
 
 You are SPEAKING out loud, so:
 - Keep answers short: a couple of sentences per point, no lists, no markdown, no URLs

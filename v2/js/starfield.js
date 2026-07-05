@@ -25,6 +25,14 @@ const prefersReducedMotion =
   typeof window !== 'undefined' &&
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+// Eased scroll position, fed by main.js's motion loop so star parallax
+// glides in sync with the planet instead of stepping with raw scrollY.
+let easedScroll = null;
+
+export function setStarfieldScroll(y) {
+  easedScroll = y;
+}
+
 function rand(min, max) {
   return min + Math.random() * (max - min);
 }
@@ -143,7 +151,7 @@ export function initStarfield() {
   function frame(now) {
     rafId = null;
     if (!running) return;
-    paint(now, window.scrollY);
+    paint(now, easedScroll ?? window.scrollY);
     rafId = requestAnimationFrame(frame);
   }
 

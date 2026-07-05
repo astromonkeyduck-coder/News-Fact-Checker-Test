@@ -10,7 +10,7 @@ import { initAuth, login, signup, logout } from './auth.js';
 import { initAmbientAudio } from './ambient-audio.js';
 import { initScrollReveal } from './scroll-reveal.js';
 import { initPhoneStage } from './phone-stage.js';
-import { initStarfield } from './starfield.js';
+import { initStarfield, setStarfieldScroll } from './starfield.js';
 import { UISounds } from './ui-sounds.js';
 
 (function () {
@@ -65,6 +65,8 @@ import { UISounds } from './ui-sounds.js';
   let heroSpan = 1;
   let targetHp = 0;
   let currentHp = -1; // -1: snap to target on the first frame (no intro sweep)
+  let targetMx = 0, targetMy = 0;
+  let curMx = 0, curMy = 0;
   let spinDeg = 0;
   let motionRaf = 0;
   let lastT = 0;
@@ -86,11 +88,22 @@ import { UISounds } from './ui-sounds.js';
     currentHp = currentHp < 0 ? targetHp : currentHp + (targetHp - currentHp) * k;
     if (Math.abs(targetHp - currentHp) < 0.0003) currentHp = targetHp;
 
+    // Pointer depth eases through the same loop, so mouse drift and the
+    // return-to-center on pointerleave glide instead of snapping.
+    const kp = 1 - Math.exp(-dt * 6);
+    curMx += (targetMx - curMx) * kp;
+    curMy += (targetMy - curMy) * kp;
+    if (Math.abs(targetMx - curMx) < 0.001) curMx = targetMx;
+    if (Math.abs(targetMy - curMy) < 0.001) curMy = targetMy;
+
     // Ambient drift: 0.4deg/s, visible over seconds, never distracting.
     spinDeg = (spinDeg + dt * 0.4) % 360;
 
     heroEl.style.setProperty('--hp', currentHp.toFixed(4));
+    heroEl.style.setProperty('--mx', curMx.toFixed(4));
+    heroEl.style.setProperty('--my', curMy.toFixed(4));
     if (planetEl) planetEl.style.setProperty('--spin', spinDeg.toFixed(3) + 'deg');
+    setStarfieldScroll(currentHp * heroSpan);
 
     if (heroOnScreen && !document.hidden) {
       motionRaf = requestAnimationFrame(motionFrame);
@@ -143,6 +156,7 @@ import { UISounds } from './ui-sounds.js';
   startMotion();
 
   // ── Hero pointer depth: planet/nebula drift + story-card glare ──
+  // Targets only; the eased values are written by motionFrame above.
   if (heroEl && !prefersReducedMotion && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
     const heroCard = document.getElementById('hero-card');
     let pointerEvt = null;
@@ -152,10 +166,9 @@ import { UISounds } from './ui-sounds.js';
       pointerRaf = null;
       if (!pointerEvt) return;
       const r = heroEl.getBoundingClientRect();
-      const mx = ((pointerEvt.clientX - r.left) / r.width - 0.5) * 2;
-      const my = ((pointerEvt.clientY - r.top) / r.height - 0.5) * 2;
-      heroEl.style.setProperty('--mx', mx.toFixed(3));
-      heroEl.style.setProperty('--my', my.toFixed(3));
+      targetMx = ((pointerEvt.clientX - r.left) / r.width - 0.5) * 2;
+      targetMy = ((pointerEvt.clientY - r.top) / r.height - 0.5) * 2;
+      startMotion();
 
       if (heroCard) {
         const cr = heroCard.getBoundingClientRect();
@@ -173,8 +186,9 @@ import { UISounds } from './ui-sounds.js';
 
     heroEl.addEventListener('pointerleave', () => {
       pointerEvt = null;
-      heroEl.style.setProperty('--mx', '0');
-      heroEl.style.setProperty('--my', '0');
+      targetMx = 0;
+      targetMy = 0;
+      startMotion();
     });
   }
 

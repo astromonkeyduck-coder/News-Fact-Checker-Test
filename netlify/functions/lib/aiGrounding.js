@@ -195,6 +195,72 @@ function buildVoiceContext({ recentPosts, liveStories, currentArticle, currentLi
   return parts.length > 0 ? `\n\n${parts.join("\n\n")}` : "";
 }
 
+/**
+ * Corrections for things the model's training data reliably gets wrong.
+ * Each fact is date-bounded so stale lines drop out automatically instead of
+ * becoming misinformation later.
+ */
+function buildKnowledgeCorrections() {
+  const now = Date.now();
+  const facts = [];
+
+  // Second Trump term: elected Nov 2024, inaugurated Jan 20 2025 - Jan 20 2029.
+  // Models trained before the 2024 election default to "former president".
+  if (now >= Date.parse("2025-01-20T17:00:00Z") && now < Date.parse("2029-01-20T17:00:00Z")) {
+    facts.push('Donald Trump IS the sitting President of the United States. He won the November 2024 election and was inaugurated January 20, 2025. Refer to him as "President Trump" - NEVER "former president".');
+    facts.push("JD Vance is the sitting Vice President of the United States.");
+  }
+
+  if (facts.length === 0) return "";
+  return `\n\nKNOWLEDGE CORRECTIONS (your training data predates these - treat them as fact):\n${facts.map((f) => `- ${f}`).join("\n")}`;
+}
+
+/**
+ * Shared warning about the model's training cutoff. Keeps titles and
+ * "current" facts anchored to the provided sources instead of stale memory.
+ */
+function buildCutoffRules() {
+  return `
+YOUR TRAINING DATA IS OUT OF DATE:
+- Your training ended well before today's date. Elections, officeholders, titles, champions, prices, and records may have changed since.
+- NEVER assert someone's current title or status from memory. Use titles EXACTLY as they appear in the verified articles and search results you are given - if a source says "President Trump", say "President Trump", do not "correct" it to "former president".
+- When your memory conflicts with the provided sources, the sources win. Do not editorialize the difference.`;
+}
+
+/** True when Trump is the sitting U.S. president (second term). */
+function isTrumpPresidency() {
+  const now = Date.now();
+  return now >= Date.parse("2025-01-20T17:00:00Z") && now < Date.parse("2029-01-20T17:00:00Z");
+}
+
+/**
+ * Reminder appended to search_web tool results so the model does not
+ * "correct" live headlines back to stale training-data titles.
+ */
+function buildSearchResultsFooter() {
+  if (isTrumpPresidency()) {
+    return `\n\nREMINDER: Donald Trump IS the sitting U.S. President (inaugurated January 20, 2025). If results mention Trump in a presidential context, say "President Trump" — NEVER "former president". Copy titles from the results above verbatim; do not substitute from memory.`;
+  }
+  return `\n\nREMINDER: Copy titles from the results above verbatim. Do not substitute officeholder titles from your training data.`;
+}
+
+/**
+ * Last-resort fix when the model still emits stale titles despite prompts.
+ * Only applies date-bounded corrections so they expire automatically.
+ */
+function sanitizeOfficeholderTitles(text) {
+  if (!text || typeof text !== "string") return text;
+  if (!isTrumpPresidency()) return text;
+
+  return text
+    .replace(/\bformer\s+President\s+Donald\s+Trump\b/gi, "President Donald Trump")
+    .replace(/\bformer\s+president\s+Donald\s+Trump\b/gi, "President Donald Trump")
+    .replace(/\bformer\s+President\s+Trump\b/gi, "President Trump")
+    .replace(/\bformer\s+president\s+Trump\b/gi, "President Trump")
+    .replace(/\bex-?President\s+Donald\s+Trump\b/gi, "President Donald Trump")
+    .replace(/\bex-?President\s+Trump\b/gi, "President Trump");
+}
+
 module.exports = {
   fetchRecentPosts,
   fetchPostById,
@@ -202,4 +268,9 @@ module.exports = {
   fetchLiveStoryBySlug,
   loadGrounding,
   buildVoiceContext,
+  buildKnowledgeCorrections,
+  buildCutoffRules,
+  buildSearchResultsFooter,
+  sanitizeOfficeholderTitles,
+  isTrumpPresidency,
 };

@@ -908,7 +908,7 @@ When the user says "this story", "this article", or "this", they mean the articl
       const todayStr = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
       const baseSystemPrompt = `You are Noteworthy News AI, the research assistant built into Noteworthy News (noteworthynews.co) - a fact-first breaking news site focused on verified reporting and media literacy. Motto: "Developing means developing. Confirmed means confirmed."
 
-TODAY'S DATE: ${todayStr}
+TODAY'S DATE: ${todayStr}${aiGrounding.buildKnowledgeCorrections()}${aiGrounding.buildCutoffRules()}
 
 WHAT YOU CAN DO:
 - Explain and add context to news stories, headlines, and claims
@@ -1370,7 +1370,7 @@ RESPONSE STYLE:
                       }
                       formattedResults += '\n';
                     });
-                    toolResponse = formattedResults;
+                    toolResponse = formattedResults + aiGrounding.buildSearchResultsFooter();
                   } else {
                     toolResponse = `I searched for "${toolArgs.query}" but couldn't find current information. Please try rephrasing your query.`;
                   }
@@ -1411,7 +1411,7 @@ RESPONSE STYLE:
                     formattedResults += '\n';
                   });
                   
-                  toolResponse = formattedResults;
+                  toolResponse = formattedResults + aiGrounding.buildSearchResultsFooter();
                   console.log(`[Noteworthy Chat] ✅ Web search completed: Found ${results.length} results`);
                   searchInProgress = false; // Search completed
                 } else {
@@ -1505,6 +1505,9 @@ RESPONSE STYLE:
       if (message) {
         reply = message.content || "";
       }
+
+      // Fix stale officeholder titles the model still emits despite prompts
+      reply = aiGrounding.sanitizeOfficeholderTitles(reply);
       
       if (!reply) {
         console.warn("[Noteworthy Chat] No reply content after tool handling:", JSON.stringify(data, null, 2));
