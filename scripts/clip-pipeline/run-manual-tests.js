@@ -111,7 +111,7 @@ async function testJobStore() {
   const job = await createJob({
     title: 'Test job',
     source_type: 'local_file',
-    rights_basis: 'Test rights — manual test only',
+    rights_basis: 'Test rights - manual test only',
     source_attribution: '@test',
   });
   assert(Boolean(job.id), 'creates job with id');
@@ -137,7 +137,7 @@ async function testSaveLastFromFile() {
   console.log('\n[save-last from file]');
   const testInput = process.env.CLIP_TEST_INPUT || 'data/clips/raw/test-source.mp4';
   if (!fs.existsSync(testInput)) {
-    console.log('  ⚠ Skipped — no test video at', testInput);
+    console.log('  ⚠ Skipped - no test video at', testInput);
     return;
   }
 
@@ -167,7 +167,7 @@ async function testMakeClipDryRun() {
   console.log('\n[make-clip dry-run]');
   const testInput = process.env.CLIP_TEST_INPUT;
   if (!testInput || !fs.existsSync(testInput)) {
-    console.log('  ⚠ Skipped — set CLIP_TEST_INPUT to a local video file for integration test');
+    console.log('  ⚠ Skipped - set CLIP_TEST_INPUT to a local video file for integration test');
     return;
   }
 
@@ -176,7 +176,7 @@ async function testMakeClipDryRun() {
 
   const result = await makeClip(testInput, '0:00:01', '0:00:03', outPath, {
     dryRun: true,
-    rightsBasis: 'Test rights — manual test only',
+    rightsBasis: 'Test rights - manual test only',
     maxDuration: 120,
   });
   assert(result.dryRun === true, 'make-clip dry-run completes');

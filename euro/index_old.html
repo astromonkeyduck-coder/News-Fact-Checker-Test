@@ -583,7 +583,7 @@ a:hover{text-decoration:underline}
 <div class="detail-panel" id="detailPanel">
   <div class="detail-header">
     <div>
-      <h2 id="detailTitle">—</h2>
+      <h2 id="detailTitle">-</h2>
       <div style="margin-top:4px" id="detailMeta"></div>
     </div>
     <button class="detail-close" id="detailClose">&times;</button>
@@ -617,9 +617,9 @@ a:hover{text-decoration:underline}
       <div>
         <div class="legend-section">
           <h4>Importance Tiers</h4>
-          <div class="legend-item"><div class="legend-pin tier-dot t1"></div>Tier 1 — Must know cold</div>
-          <div class="legend-item"><div class="legend-pin tier-dot t2" style="width:8px;height:8px"></div>Tier 2 — Important context</div>
-          <div class="legend-item"><div class="legend-pin tier-dot t3" style="width:5px;height:5px"></div>Tier 3 — Enrichment / complexity</div>
+          <div class="legend-item"><div class="legend-pin tier-dot t1"></div>Tier 1 - Must know cold</div>
+          <div class="legend-item"><div class="legend-pin tier-dot t2" style="width:8px;height:8px"></div>Tier 2 - Important context</div>
+          <div class="legend-item"><div class="legend-pin tier-dot t3" style="width:5px;height:5px"></div>Tier 3 - Enrichment / complexity</div>
         </div>
         <div class="legend-section" style="margin-top:var(--space-md)">
           <h4>Visual Elements</h4>
@@ -635,7 +635,7 @@ a:hover{text-decoration:underline}
 
 <script>
 /* ══════════════════════════════════════════════════
-   AP Euro Master Timeline — Interactive Engine
+   AP Euro Master Timeline - Interactive Engine
    ══════════════════════════════════════════════════ */
 
 const UNIT_COLORS = ['','#D4A84B','#E07B42','#C45A5A','#4DA8A8','#B84040','#6B8DB5','#8FA85A','#7A8B9A','#9B7DB8'];
@@ -973,8 +973,8 @@ function openDetail(id){
     <span style="font-size:var(--text-xs);color:var(--color-text-secondary);margin-left:8px">${d.date}</span>
   `;
   let html=`
-    <div class="detail-section"><h4>Description</h4><p>${d.description||'—'}</p></div>
-    <div class="detail-section"><h4>Why It Matters</h4><p>${d.whyItMatters||'—'}</p></div>
+    <div class="detail-section"><h4>Description</h4><p>${d.description||'-'}</p></div>
+    <div class="detail-section"><h4>Why It Matters</h4><p>${d.whyItMatters||'-'}</p></div>
   `;
   if((d.causes||[]).length){
     html+=`<div class="detail-section"><h4>Causes</h4><ul>${d.causes.map(c=>`<li>${c}</li>`).join('')}</ul></div>`;

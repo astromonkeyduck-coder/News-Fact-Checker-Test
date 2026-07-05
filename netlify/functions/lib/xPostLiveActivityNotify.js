@@ -24,7 +24,7 @@ function getSupabase() {
 const ATTRIBUTES_TYPE = "LiveStoryAttributes";
 const X_CATEGORY = "X";
 const STALE_AFTER_MS = 30 * 60 * 1000;
-const DISMISS_AFTER_MS = 2 * 60 * 60 * 1000; // X posts are ephemeral — dismiss after 2h
+const DISMISS_AFTER_MS = 2 * 60 * 60 * 1000; // X posts are ephemeral - dismiss after 2h
 const HEADLINE_MAX = 140;
 
 function truncate(s, n) {
@@ -104,7 +104,7 @@ async function endPriorXPostActivities(sb, logger) {
   const now = Date.now();
   const cs = {
     status: "resolved",
-    headline: "Updated — see the latest post in Noteworthy.",
+    headline: "Updated - see the latest post in Noteworthy.",
     severity: 3,
     confidence: "medium",
     updatedAt: Math.floor(now / 1000),
@@ -185,7 +185,7 @@ async function notifyXPostLiveActivity({ post, logger = console, dryRun = false 
   }
 
   if (!apns.isConfigured()) {
-    logger.warn("[xPostLiveActivity] APNs not configured — skipping");
+    logger.warn("[xPostLiveActivity] APNs not configured - skipping");
     return { ...out, reason: "apns not configured" };
   }
   out.configured = true;

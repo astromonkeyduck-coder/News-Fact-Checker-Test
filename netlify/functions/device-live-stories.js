@@ -1,5 +1,5 @@
 /**
- * Device Live Stories — list + manage follows for a paired iOS device
+ * Device Live Stories - list + manage follows for a paired iOS device
  *
  * POST (device-authenticated with { deviceUuid, deviceSecret }):
  *   { action: "list" }            → followed stories + latest update (for the app

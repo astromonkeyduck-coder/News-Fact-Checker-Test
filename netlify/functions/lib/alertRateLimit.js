@@ -11,7 +11,7 @@
 const { getStore } = require('@netlify/blobs');
 
 const STORE_NAME = 'alert-dedup';
-const TTL_SECONDS = 24 * 60 * 60; // 24 hours — event alerts expire after a day
+const TTL_SECONDS = 24 * 60 * 60; // 24 hours - event alerts expire after a day
 
 /**
  * Check if we already sent notifications for this event ID.

@@ -206,7 +206,7 @@ CONTENT QUALITY REQUIREMENTS (CRITICAL - ZERO TOLERANCE):
 
 2. FACTUAL ACCURACY - MANDATORY:
    - All information must be factually correct based on your training data
-   - Include proper attribution and sources (e.g., "@AP", "— WTAE4", "according to officials")
+   - Include proper attribution and sources (e.g., "@AP", "- WTAE4", "according to officials")
    - If you're unsure about a detail, either omit it or clearly state uncertainty
    - Never fabricate quotes, names, or details
 
@@ -229,7 +229,7 @@ CONTENT QUALITY REQUIREMENTS (CRITICAL - ZERO TOLERANCE):
    - When: Specific times, dates, or relative timeframes
    - Where: Specific locations (cities, states, countries)
    - Why: Context and background when relevant
-   - Source: Attribution for all claims (e.g., "@AP", "— WTAE4", "according to officials")
+   - Source: Attribution for all claims (e.g., "@AP", "- WTAE4", "according to officials")
 
 6. FORWARD-LOOKING SECTIONS - MANDATORY:
    - Include "What we're watching next" with SPECIFIC, ACTIONABLE items

@@ -1,5 +1,5 @@
 /**
- * Admin API Client — Noteworthy News
+ * Admin API Client - Noteworthy News
  *
  * Every request includes Authorization: Bearer <jwt>.
  * No query-string tokens. No sessionStorage secrets.

@@ -33,9 +33,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="dns-prefetch" href="https://fonts.googleapis.com">
 
-  <!-- Hero image preload (LCP) -->
-  <link rel="preload" as="image" href="/v2/assets/hero-earth-night.webp" media="(min-width: 720px)">
-  <link rel="preload" as="image" href="/v2/assets/hero-earth-night-sm.webp" media="(max-width: 719px)">
+  <!-- Hero planet texture preload -->
+  <link rel="preload" as="image" href="/v2/assets/earth-disc.webp?v=5" media="(min-width: 720px)">
+  <link rel="preload" as="image" href="/v2/assets/earth-disc-sm.webp?v=5" media="(max-width: 719px)">
 
   <!-- Critical above-the-fold styles -->
   <style>
@@ -55,6 +55,14 @@
   <link rel="stylesheet" href="/v2/styles/base.css">
   <link rel="stylesheet" href="/v2/styles/v4.css">
 
+  
+  
+  
+  
+  
+  
+  
+  
   <!-- Auth0 Configuration - Inject environment variables for production -->
     <script>
       window.AUTH0_DOMAIN = null;
@@ -117,13 +125,23 @@
 
   <main>
 
-    <!-- Hero -->
-    <section class="hero" id="top" aria-label="Noteworthy News introduction">
+    <!-- Hero: story-first front page -->
+    <section class="hero" id="top" aria-label="Noteworthy News front page">
       <div class="hero-bg" aria-hidden="true">
-        <picture>
-          <source srcset="/v2/assets/hero-earth-night-sm.webp" media="(max-width: 719px)">
-          <img class="hero-earth" src="/v2/assets/hero-earth-night.webp" alt="" width="2000" height="1333" fetchpriority="high" decoding="async">
-        </picture>
+        <div class="hero-nebula"></div>
+        <canvas class="hero-starfield"></canvas>
+        <div class="hero-planet">
+          <div class="planet-surface"></div>
+          <div class="planet-shade"></div>
+          <div class="planet-aurora"></div>
+          <div class="planet-pings">
+            <span class="ping" style="--px: 30.9%; --py: 92.9%; --pd: 0s;"></span>
+            <span class="ping ping--gold" style="--px: 40.2%; --py: 96%; --pd: 1.7s;"></span>
+            <span class="ping" style="--px: 51.6%; --py: 97.2%; --pd: 3.1s;"></span>
+            <span class="ping ping--blue" style="--px: 61.4%; --py: 95.6%; --pd: 0.8s;"></span>
+            <span class="ping" style="--px: 70.6%; --py: 92.2%; --pd: 2.4s;"></span>
+          </div>
+        </div>
         <div class="hero-veil"></div>
       </div>
 
@@ -139,89 +157,90 @@
             Breaking news,<br><em>followed through.</em>
           </h1>
           <p class="hero-sub hero-load hero-load-3">
-            Live updates, source notes, and plain context as each story changes.
+            What happened, what changed, and what is confirmed.
           </p>
           <div class="hero-cta hero-load hero-load-4">
             <a class="btn btn-primary btn-lg" href="#developing" data-live-cta>Follow live stories</a>
-            <a class="btn btn-outline btn-lg" href="#app">See the app</a>
+            <a class="btn btn-outline btn-lg" href="#top-stories">Read top stories</a>
           </div>
           <p class="hero-trust hero-load hero-load-5">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             Independent newsroom. No paywall. Corrections in public.
           </p>
 
-          <div class="hero-card hero-load hero-load-6" id="hero-card" data-hero-source="none" aria-label="Featured story">
-            <div class="hero-card-skeleton" aria-hidden="true">
-              <div class="hcs-top"><span class="hcs-chip"></span><span class="hcs-time"></span></div>
-              <div class="hcs-line"></div>
-              <div class="hcs-line short"></div>
+          <a class="hero-app-teaser hero-load hero-load-6" href="#app">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="3"/><circle cx="12" cy="18" r="0.5"/></svg>
+            <span class="hero-app-teaser-text">Noteworthy for iOS: Live Activities for stories you follow.</span>
+            <span class="hero-app-teaser-tag">In development</span>
+          </a>
+        </div>
+
+        <!-- Flagship story (real lead story, real media) -->
+        <div class="hero-story hero-load hero-load-7" id="hero-card" data-hero-source="none" aria-label="Lead story">
+          <div class="hero-story-skeleton" aria-hidden="true">
+            <div class="hss-media"></div>
+            <div class="hss-body">
+              <div class="hss-line"></div>
+              <div class="hss-line short"></div>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- App showcase rail (desktop) -->
-        <aside class="hero-rail hero-load hero-load-7" aria-label="Noteworthy News iOS app preview">
-          <div class="rail-head">
-            <p class="rail-title">The app keeps the story with you.</p>
-            <p class="rail-sub">Follow a story once. Every verified update reaches your Lock Screen.</p>
-          </div>
-
-          <div class="rail-phone" aria-hidden="true">
-            <div class="rail-phone-island">
-              <span class="island-dot"></span>
-              <span class="island-text mono">LIVE</span>
-            </div>
-            <p class="rail-phone-time">9:41</p>
-            <p class="rail-phone-date">Tuesday, June 17</p>
-            <div class="rail-la">
-              <div class="rail-la-head">
-                <img src="/IMG_5794.PNG" alt="" width="14" height="14">
-                <span>Noteworthy News</span>
-                <span class="rail-la-live">LIVE</span>
-              </div>
-              <p class="rail-la-title">M6.2 earthquake off Honshu coast</p>
-              <p class="rail-la-update">Update 14: Tsunami advisory lifted for coastal prefectures</p>
-              <div class="rail-la-track"><i></i></div>
-              <div class="rail-la-meta"><span>Developing</span><span>2m ago</span></div>
-            </div>
-            <div class="rail-notif">
-              <div class="rail-la-head">
-                <img src="/IMG_5794.PNG" alt="" width="14" height="14">
-                <span>Noteworthy News</span>
-                <span class="rail-la-when">now</span>
-              </div>
-              <p class="rail-la-title">NWS tornado watch until 9:00 PM</p>
-              <p class="rail-la-update">Tap to follow the live story.</p>
-            </div>
-            <p class="rail-phone-caption">App preview</p>
-          </div>
-
-          <ul class="rail-points">
-            <li>
-              <span class="rail-point-name">Follow Live Stories</span>
-              <span class="rail-point-text">Every update until the story closes.</span>
-            </li>
-            <li>
-              <span class="rail-point-name">Live Activities</span>
-              <span class="rail-point-text">Lock Screen and Dynamic Island.</span>
-            </li>
-            <li>
-              <span class="rail-point-name">Alerts you control</span>
-              <span class="rail-point-text">Thresholds, follows, quiet hours.</span>
-            </li>
-          </ul>
-
-          <div class="rail-foot">
-            <span class="chip chip-dev">iOS app in development</span>
-            <a class="rail-foot-link" href="#app">See what is coming
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-            </a>
-          </div>
-        </aside>
+      <!-- Wire ticker: decorative echo of The Wire section below -->
+      <div class="hero-wire" id="hero-wire" aria-hidden="true" hidden>
+        <span class="hero-wire-label">
+          <span class="live-dot live-dot--calm"></span>
+          Wire
+        </span>
+        <div class="hero-wire-viewport">
+          <div class="hero-wire-track" id="hero-wire-track"></div>
+        </div>
       </div>
     </section>
 
-    <!-- Developing Now -->
+    <!-- Top Stories -->
+    <section class="stories" id="top-stories">
+      <div class="container-wide">
+        <div class="band-head" data-reveal>
+          <div>
+            <p class="band-kicker">Top stories</p>
+            <h2 class="band-title">What happened. What changed. What is confirmed.</h2>
+          </div>
+          <a class="band-link" href="/archive.html">
+            Archive
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </a>
+        </div>
+
+        <div class="filter-chips" id="breaking-filters" role="toolbar" aria-label="Filter stories"></div>
+
+        <div class="stories-grid">
+          <div class="stories-lead" id="lead-story">
+            <div class="lead-skeleton" aria-hidden="true">
+              <div class="ls-media"></div>
+              <div class="ls-line"></div>
+              <div class="ls-line short"></div>
+            </div>
+          </div>
+
+          <div class="stories-secondary" id="secondary-stories" aria-label="More stories">
+            <div class="cell-skeleton" aria-hidden="true"></div>
+            <div class="cell-skeleton" aria-hidden="true"></div>
+            <div class="cell-skeleton" aria-hidden="true"></div>
+            <div class="cell-skeleton" aria-hidden="true"></div>
+          </div>
+        </div>
+
+        <div class="stories-more" id="stories-more" aria-label="Additional stories"></div>
+
+        <div class="stories-foot">
+          <button class="btn btn-outline" id="load-more-btn" type="button" hidden>Load more</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Developing Now: compact live strip -->
     <section class="developing" id="developing" aria-label="Developing now">
       <div class="container-wide">
         <div class="dev-head" data-reveal>
@@ -254,151 +273,27 @@
       </div>
     </section>
 
-    <!-- Top Stories + The Wire -->
-    <section class="stories" id="top-stories">
+    <!-- The Wire -->
+    <section class="wire-band" id="wire" aria-label="The Wire, latest updates">
       <div class="container-wide">
         <div class="band-head" data-reveal>
           <div>
-            <p class="band-kicker">Top stories</p>
-            <h2 class="band-title">What happened. What changed. What is confirmed.</h2>
+            <p class="band-kicker">The Wire</p>
+            <h2 class="band-title band-title-sm">Quick updates from stories we track.</h2>
           </div>
           <a class="band-link" href="/archive.html">
-            Archive
+            Full archive
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
           </a>
         </div>
 
-        <div class="filter-chips" id="breaking-filters" role="toolbar" aria-label="Filter stories"></div>
-
-        <div class="stories-grid">
-          <div class="stories-lead" id="lead-story" data-reveal>
-            <div class="lead-skeleton" aria-hidden="true">
-              <div class="ls-media"></div>
-              <div class="ls-line"></div>
-              <div class="ls-line short"></div>
-            </div>
-          </div>
-
-          <div class="stories-secondary" id="secondary-stories" aria-label="More stories">
-            <div class="row-skeleton" aria-hidden="true"></div>
-            <div class="row-skeleton" aria-hidden="true"></div>
-            <div class="row-skeleton" aria-hidden="true"></div>
-            <div class="row-skeleton" aria-hidden="true"></div>
-          </div>
-
-          <aside class="wire" id="wire-panel" data-reveal="right" aria-label="The Wire, latest updates">
-            <div class="wire-head">
-              <p class="wire-title">The Wire</p>
-              <p class="wire-sub">Quick updates from stories we track.</p>
-            </div>
-            <div class="wire-list" id="wire-list">
-              <div class="wire-skeleton" aria-hidden="true"></div>
-              <div class="wire-skeleton" aria-hidden="true"></div>
-              <div class="wire-skeleton" aria-hidden="true"></div>
-              <div class="wire-skeleton" aria-hidden="true"></div>
-            </div>
-            <a class="wire-more" href="/archive.html">Full archive
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-            </a>
-          </aside>
-        </div>
-
-        <div class="stories-foot">
-          <button class="btn btn-outline" id="load-more-btn" type="button" hidden>Load more</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- App ecosystem -->
-    <section class="app" id="app">
-      <div class="container-wide app-grid">
-        <div class="app-copy" data-reveal="left">
-          <p class="band-kicker">Noteworthy News for iOS</p>
-          <h2 class="band-title">The story stays on your Lock Screen until it ends.</h2>
-          <p class="band-sub">
-            Follow a developing story once. The app carries every verified update
-            to your Lock Screen and Dynamic Island, with controls that keep alerts quiet until they matter.
-          </p>
-
-          <ul class="app-features">
-            <li class="app-feature">
-              <span class="app-feature-icon" aria-hidden="true">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-              </span>
-              <span><strong>Follow Live Story.</strong> One tap to follow. Every update arrives until the story closes.</span>
-            </li>
-            <li class="app-feature">
-              <span class="app-feature-icon" aria-hidden="true">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="3"/><circle cx="12" cy="6" r="1"/></svg>
-              </span>
-              <span><strong>Live Activities.</strong> The story unfolds on the Lock Screen and in the Dynamic Island. No unlocking.</span>
-            </li>
-            <li class="app-feature">
-              <span class="app-feature-icon" aria-hidden="true">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-              </span>
-              <span><strong>Alerts you control.</strong> Severity thresholds, story follows, and quiet hours. Nothing else breaks through.</span>
-            </li>
-            <li class="app-feature">
-              <span class="app-feature-icon" aria-hidden="true">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-              </span>
-              <span><strong>Deep links.</strong> Every alert opens the exact update it came from. No hunting.</span>
-            </li>
-          </ul>
-
-          <div class="app-status">
-            <span class="chip chip-dev">In development</span>
-            <span class="app-status-text">Built with SwiftUI, ActivityKit, and APNs. TestFlight coming soon.</span>
-          </div>
-          <a class="btn btn-outline" href="#brief">Get notified when it ships</a>
-        </div>
-
-        <div class="app-stage" data-reveal="phone" aria-hidden="true">
-          <div class="stage-phone">
-            <div class="stage-island">
-              <span class="island-dot"></span>
-              <span class="island-text mono">LIVE</span>
-              <span class="island-wave" aria-hidden="true"><i></i><i></i><i></i></span>
-            </div>
-            <div class="stage-screen">
-              <p class="stage-time">9:41</p>
-              <p class="stage-date">Tuesday, June 17</p>
-
-              <div class="stage-card stage-card-la">
-                <div class="stage-card-head">
-                  <img src="/IMG_5794.PNG" alt="" width="15" height="15">
-                  <span>Noteworthy News</span>
-                  <span class="stage-live">LIVE</span>
-                </div>
-                <p class="stage-card-title">M6.2 earthquake off Honshu coast</p>
-                <p class="stage-card-text">Update 14: Tsunami advisory lifted for coastal prefectures</p>
-                <div class="stage-track"><i></i></div>
-                <div class="stage-card-meta"><span>Developing</span><span>2m ago</span></div>
-              </div>
-
-              <div class="stage-card">
-                <div class="stage-card-head">
-                  <img src="/IMG_5794.PNG" alt="" width="15" height="15">
-                  <span>Noteworthy News</span>
-                  <span class="stage-when">now</span>
-                </div>
-                <p class="stage-card-title">Severe weather alert for your area</p>
-                <p class="stage-card-text">NWS tornado watch until 9:00 PM. Tap to follow live.</p>
-              </div>
-
-              <div class="stage-card">
-                <div class="stage-card-head">
-                  <img src="/IMG_5794.PNG" alt="" width="15" height="15">
-                  <span>Noteworthy News</span>
-                  <span class="stage-when">9m ago</span>
-                </div>
-                <p class="stage-card-title">Story you follow was updated</p>
-                <p class="stage-card-text">Ceasefire talks: joint statement expected tonight.</p>
-              </div>
-            </div>
-          </div>
-          <p class="stage-caption">Interface preview. TestFlight coming soon.</p>
+        <div class="wire-columns" id="wire-list">
+          <div class="wire-skeleton" aria-hidden="true"></div>
+          <div class="wire-skeleton" aria-hidden="true"></div>
+          <div class="wire-skeleton" aria-hidden="true"></div>
+          <div class="wire-skeleton" aria-hidden="true"></div>
+          <div class="wire-skeleton" aria-hidden="true"></div>
+          <div class="wire-skeleton" aria-hidden="true"></div>
         </div>
       </div>
     </section>
@@ -456,6 +351,163 @@
 
           <button class="btn btn-primary" type="button" data-open-chat>Ask Noteworthy AI</button>
           <p class="ai-note">Answers cite sources and link back to our reporting. When something is not confirmed, it says so.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- App preview -->
+    <section class="app" id="app">
+      <div class="container-wide app-grid">
+        <div class="app-copy" data-reveal="left">
+          <p class="band-kicker">Product preview: Noteworthy for iOS</p>
+          <h2 class="band-title">The app keeps the story with you.</h2>
+          <p class="band-sub">
+            Follow a developing story once. The app carries every verified update
+            to your Lock Screen and Dynamic Island, with controls that keep alerts quiet until they matter.
+          </p>
+
+          <ul class="app-features">
+            <li class="app-feature">
+              <span class="app-feature-icon" aria-hidden="true">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+              </span>
+              <span><strong>Follow Live Story.</strong> One tap to follow. Every update arrives until the story closes.</span>
+            </li>
+            <li class="app-feature">
+              <span class="app-feature-icon" aria-hidden="true">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="3"/><circle cx="12" cy="6" r="1"/></svg>
+              </span>
+              <span><strong>Live Activities.</strong> The story unfolds on the Lock Screen and in the Dynamic Island. No unlocking.</span>
+            </li>
+            <li class="app-feature">
+              <span class="app-feature-icon" aria-hidden="true">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+              </span>
+              <span><strong>Alerts you control.</strong> Severity thresholds, story follows, and quiet hours. Nothing else breaks through.</span>
+            </li>
+            <li class="app-feature">
+              <span class="app-feature-icon" aria-hidden="true">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+              </span>
+              <span><strong>Deep links.</strong> Every alert opens the exact update it came from. No hunting.</span>
+            </li>
+          </ul>
+
+          <div class="app-status">
+            <span class="chip chip-dev">In development</span>
+            <span class="app-status-text">Built with SwiftUI, ActivityKit, and APNs. TestFlight coming soon.</span>
+          </div>
+          <a class="btn btn-outline" href="#brief">Get notified when it ships</a>
+        </div>
+
+        <div class="app-stage" data-reveal="phone" aria-hidden="true">
+          <div class="stage-scene">
+            <div class="torch-beam"></div>
+            <div class="stage-phone">
+              <span class="phone-btn phone-btn-action"></span>
+              <span class="phone-btn phone-btn-volup"></span>
+              <span class="phone-btn phone-btn-voldown"></span>
+              <span class="phone-btn phone-btn-power"></span>
+              <span class="phone-btn phone-btn-camctl"></span>
+              <div class="phone-frame">
+                <div class="stage-screen">
+                  <img class="screen-wallpaper" src="/v2/assets/earth-disc-sm.webp?v=5" alt="" loading="lazy" decoding="async">
+                  <div class="screen-shade"></div>
+
+                  <div class="screen-statusbar">
+                    <p class="stage-location" id="stage-location">Noteworthy</p>
+                    <div class="statusbar-icons">
+                      <svg class="sb-icon" width="17" height="11" viewBox="0 0 18 11" fill="currentColor" aria-hidden="true">
+                        <rect x="0" y="7.2" width="3" height="3.8" rx="1"/>
+                        <rect x="4.9" y="5" width="3" height="6" rx="1"/>
+                        <rect x="9.8" y="2.6" width="3" height="8.4" rx="1"/>
+                        <rect x="14.7" y="0.2" width="3" height="10.8" rx="1"/>
+                      </svg>
+                      <svg class="sb-icon" width="16" height="13" viewBox="0 0 16 13" fill="none" aria-hidden="true">
+                        <path d="M1.2 4.3c3.9-3.7 9.7-3.7 13.6 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                        <path d="M3.6 6.9c2.5-2.4 6.3-2.4 8.8 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                        <path d="M6.1 9.4c1.1-1 2.7-1 3.8 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                        <circle cx="8" cy="11.4" r="1.15" fill="currentColor"/>
+                      </svg>
+                      <div class="stage-battery" id="stage-battery" hidden>
+                        <svg class="stage-battery-icon" width="27" height="13" viewBox="0 0 27 13" aria-hidden="true">
+                          <rect x="0.5" y="0.5" width="22" height="12" rx="3.8" fill="none" stroke="currentColor" stroke-opacity="0.4"/>
+                          <rect id="stage-battery-fill" x="2" y="2" width="19" height="9" rx="2.4" fill="currentColor"/>
+                          <path d="M24.2 4.4v4.2c1-.3 1.7-1.1 1.7-2.1s-.7-1.8-1.7-2.1z" fill="currentColor" fill-opacity="0.45"/>
+                        </svg>
+                        <span class="stage-battery-level" id="stage-battery-level"></span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="stage-island">
+                    <span class="island-dot"></span>
+                    <span class="island-text mono">LIVE</span>
+                    <span class="island-wave" aria-hidden="true"><i></i><i></i><i></i></span>
+                    <span class="island-lens"></span>
+                  </div>
+
+                  <div class="screen-clock">
+                    <p class="stage-date" id="stage-date">Tuesday, June 17</p>
+                    <p class="stage-time" id="stage-time">9:41</p>
+                  </div>
+
+                  <div class="stage-cards">
+                    <div class="stage-card stage-card-la">
+                      <div class="stage-card-head">
+                        <img src="/IMG_5794.PNG" alt="" width="20" height="20">
+                        <span>Noteworthy News</span>
+                        <span class="stage-live">LIVE</span>
+                      </div>
+                      <p class="stage-card-title">M6.2 earthquake off Honshu coast</p>
+                      <p class="stage-card-text">Update 14: Tsunami advisory lifted for coastal prefectures</p>
+                      <div class="stage-track"><i></i></div>
+                      <div class="stage-card-meta"><span>Developing</span><span>2m ago</span></div>
+                    </div>
+
+                    <div class="stage-card">
+                      <div class="stage-card-head">
+                        <img src="/IMG_5794.PNG" alt="" width="20" height="20">
+                        <span>Noteworthy News</span>
+                        <span class="stage-when">now</span>
+                      </div>
+                      <p class="stage-card-title" data-stage-weather-area>Severe weather alert for your area</p>
+                      <p class="stage-card-text">NWS tornado watch until 9:00 PM. Tap to follow live.</p>
+                    </div>
+
+                    <div class="stage-card">
+                      <div class="stage-card-head">
+                        <img src="/IMG_5794.PNG" alt="" width="20" height="20">
+                        <span>Noteworthy News</span>
+                        <span class="stage-when">9m ago</span>
+                      </div>
+                      <p class="stage-card-title">Story you follow was updated</p>
+                      <p class="stage-card-text">Ceasefire talks: joint statement expected tonight.</p>
+                    </div>
+                  </div>
+
+                  <div class="screen-dock">
+                    <button type="button" class="dock-btn dock-btn-flashlight" id="stage-flashlight" tabindex="-1">
+                      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M8.2 2.5h7.6v2.9L13.5 9v10.4a1.7 1.7 0 0 1-3.4 0V9L8.2 5.4z"/>
+                        <path d="M12 6.9v.01"/>
+                      </svg>
+                    </button>
+                    <span class="dock-btn">
+                      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M3 8.2A2.2 2.2 0 0 1 5.2 6h2L9 3.6h6L16.8 6h2A2.2 2.2 0 0 1 21 8.2v9.6a2.2 2.2 0 0 1-2.2 2.2H5.2A2.2 2.2 0 0 1 3 17.8z"/>
+                        <circle cx="12" cy="12.6" r="3.7"/>
+                      </svg>
+                    </span>
+                  </div>
+
+                  <p class="screen-swipe">Swipe up to open</p>
+                  <span class="screen-home"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="stage-caption">Interface preview. TestFlight coming soon.</p>
         </div>
       </div>
     </section>

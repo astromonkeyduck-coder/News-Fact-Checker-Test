@@ -1,5 +1,5 @@
 /**
- * Analytics View — Admin
+ * Analytics View - Admin
  *
  * Query logs, basic stats, user profile lookup.
  */

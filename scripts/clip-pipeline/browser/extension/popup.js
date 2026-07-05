@@ -38,7 +38,7 @@ async function copyText(text, successLabel) {
     await navigator.clipboard.writeText(text);
     show(successLabel, 'ok');
   } catch {
-    show('Copy failed — select the command manually', 'error');
+    show('Copy failed - select the command manually', 'error');
   }
 }
 
@@ -62,7 +62,7 @@ function renderSetupStatus(status) {
     readyDetail.textContent = 'Native converter connected. Saves download as MP4 automatically.';
     nativeErrorEl.classList.add('hidden');
     nativeErrorEl.textContent = '';
-    show('Setup complete — ready to clip', 'ok');
+    show('Setup complete - ready to clip', 'ok');
   } else if (localOk) {
     nativeErrorEl.classList.toggle('hidden', !status?.nativeError);
     nativeErrorEl.textContent = status?.nativeError
@@ -74,7 +74,7 @@ function renderSetupStatus(status) {
     nativeErrorEl.textContent = status?.nativeError
       ? `Native host issue: ${status.nativeError}. Confirm the Extension ID above matches your install command, then quit and reopen Chrome.`
       : 'Run the install command, quit and reopen Chrome, then reload the extension.';
-    show('Setup incomplete — see details below', 'error');
+    show('Setup incomplete - see details below', 'error');
   }
 }
 
@@ -105,7 +105,7 @@ bufferSelect.addEventListener('change', () => {
 });
 
 copyInstallBtn.addEventListener('click', () => {
-  copyText(installCmd, 'Copied install command — paste in Terminal');
+  copyText(installCmd, 'Copied install command - paste in Terminal');
 });
 
 copyServerBtn.addEventListener('click', () => {
@@ -122,7 +122,7 @@ saveBtn.addEventListener('click', () => {
       return;
     }
     if (!response?.ok) {
-      show(response?.error || 'Failed — open a YouTube watch page.', 'error');
+      show(response?.error || 'Failed - open a YouTube watch page.', 'error');
       return;
     }
     const via = response.via ? ` (${response.via})` : '';

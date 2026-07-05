@@ -43,7 +43,7 @@ exports.handler = async (event) => {
 
     console.log('[generate-sample-earthquake-map] Generating sample image...');
 
-    // Sample: M6.2 east of Tokyo — real place, coordinates for Kanto region
+    // Sample: M6.2 east of Tokyo - real place, coordinates for Kanto region
     const magnitude = 6.2;
     const location = 'Tokyo, Japan';
     const eventId = 'newsletter-sample';

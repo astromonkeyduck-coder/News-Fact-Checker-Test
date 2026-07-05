@@ -48,7 +48,7 @@ async function cmdShow(jobId) {
   console.log(`Title:       ${job.title}`);
   console.log(`Status:      ${job.status}`);
   console.log(`Attribution: ${job.source_attribution || '(none)'}`);
-  console.log(`Rights:      ${job.rights_basis || '(MISSING — upload blocked)'}`);
+  console.log(`Rights:      ${job.rights_basis || '(MISSING - upload blocked)'}`);
   console.log(`Clip:        ${job.requested_clip_start} → ${job.requested_clip_end}`);
   console.log(`Output:      ${job.output_path || '(none)'}`);
   console.log(`Thumbnail:   ${job.thumbnail_path || '(none)'}`);

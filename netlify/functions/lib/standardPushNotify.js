@@ -97,7 +97,7 @@ async function notifyStandardPush({ story, update, logger = console, dryRun = fa
   if (level === "silent" || level === "badge") return { ...out, reason: level };
 
   if (!apns.isConfigured()) {
-    logger.warn("[standardPushNotify] APNs not configured — skipping standard push");
+    logger.warn("[standardPushNotify] APNs not configured - skipping standard push");
     return { ...out, reason: "apns not configured" };
   }
   out.configured = true;
@@ -114,7 +114,7 @@ async function notifyStandardPush({ story, update, logger = console, dryRun = fa
         .eq("actor", AUDIT_CHANNEL)
         .limit(1);
       if (existing && existing.length) {
-        logger.log(`[standardPushNotify] update ${update.id} already dispatched — skipping`);
+        logger.log(`[standardPushNotify] update ${update.id} already dispatched - skipping`);
         return { ...out, reason: "already dispatched" };
       }
     } catch (err) {

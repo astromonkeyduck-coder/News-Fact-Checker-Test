@@ -146,7 +146,7 @@ async function notifyLiveActivities({ story, update, logger = console, dryRun = 
   });
 
   // 2) Push-to-start (iOS 17.2+) for followers without a running activity.
-  //    Skip on final updates — no point starting an activity just to end it.
+  //    Skip on final updates - no point starting an activity just to end it.
   if (!isFinal) {
     try {
       const startTargets = await findPushToStartTargets(sb, story.id);

@@ -493,7 +493,7 @@ This is an automated notification from your website.`,
 
 Hi ${welcomeDisplayName},
 
-Thank you for subscribing to Noteworthy News! We're thrilled to have you join our community of fact-checkers and critical thinkers.
+Thank you for subscribing to Noteworthy News! We're thrilled to have you join a newsroom community that checks the news carefully.
 
 You'll now receive:
 • Weekly fact-checked news stories
@@ -530,7 +530,7 @@ To unsubscribe from future emails, visit: ${unsubscribeUrl}`,
           <tr>
             <td style="padding: 30px; background-color: #ffffff;">
               <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 15px 0;">Hi ${welcomeDisplayName},</p>
-              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">Thank you for subscribing to Noteworthy News! We're thrilled to have you join our community of fact-checkers and critical thinkers.</p>
+              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">Thank you for subscribing to Noteworthy News! We're thrilled to have you join a newsroom community that checks the news carefully.</p>
               <p style="color: #4a90e2; font-size: 17px; font-weight: bold; margin: 0 0 15px 0;">You'll now receive:</p>
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                 <tr>

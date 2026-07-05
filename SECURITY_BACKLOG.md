@@ -1,4 +1,4 @@
-# Security Backlog — Noteworthy News
+# Security Backlog - Noteworthy News
 
 Tracks deferred/low-severity security items from the pre-launch audit. Critical/
 High/simple-Medium fixes were applied in code; everything below is intentionally
@@ -10,7 +10,7 @@ remains) · `DONE` (kept for context).
 
 ---
 
-## 1. Wildcard CORS on public APIs — DEFERRED (Low)
+## 1. Wildcard CORS on public APIs - DEFERRED (Low)
 
 **Where:** `netlify/functions/lib/corsHeaders.js` and per-function headers set
 `Access-Control-Allow-Origin: *`.
@@ -33,7 +33,7 @@ Device/admin auth uses explicit bearer secrets, not cookies.
 
 ---
 
-## 2. Enforced Content-Security-Policy — DEFERRED (Medium, F7)
+## 2. Enforced Content-Security-Policy - DEFERRED (Medium, F7)
 
 **Decision:** Did **not** ship a `Content-Security-Policy-Report-Only` header
 yet. It is non-breaking by definition, but with no `report-to`/`report-uri`
@@ -77,7 +77,7 @@ cover clickjacking and MIME-sniffing.
 
 ---
 
-## 3. notification-preferences endpoint hardening — DEFERRED (Low)
+## 3. notification-preferences endpoint hardening - DEFERRED (Low)
 
 **Where:** `netlify/functions/notification-preferences.js`.
 
@@ -98,7 +98,7 @@ cover clickjacking and MIME-sniffing.
 
 ---
 
-## 4. Auth0 ID-token-as-bearer — DEFERRED / DOCUMENT (Low, F9)
+## 4. Auth0 ID-token-as-bearer - DEFERRED / DOCUMENT (Low, F9)
 
 **Where:** `device-link.js` → `verifiedProfile()` → `middleware/requireAuth.verifyToken`.
 
@@ -111,7 +111,7 @@ Client-provided profile fields are never trusted.
 **Documentation/caveats:**
 - ID tokens are audience-scoped to the SPA `client_id`, **not** to an API
   audience. Do not reuse this pattern for endpoints that perform privileged
-  mutations — those should require an Auth0 **access token** with the correct
+  mutations - those should require an Auth0 **access token** with the correct
   API `audience` and scopes.
 - Keep ID-token acceptance limited to identity-capture flows (`device-link`).
 - Confirm `verifyToken` enforces `aud === AUTH0_CLIENT_ID` and `iss` matches the
@@ -119,11 +119,11 @@ Client-provided profile fields are never trusted.
 
 ---
 
-## 5. Pairing-code retention policy — PARTIAL (Low, F12)
+## 5. Pairing-code retention policy - PARTIAL (Low, F12)
 
 **Done:** Added opportunistic cleanup in `device-link.js`
 (`cleanupPairingCodes()`): on ~15% of pairing requests it deletes expired and
-already-redeemed `device_pairing_codes` rows (these carry short-lived PII —
+already-redeemed `device_pairing_codes` rows (these carry short-lived PII -
 verified email/name/picture captured at code creation). It only removes dead
 rows, never an in-flight unredeemed code.
 
@@ -138,7 +138,7 @@ rows, never an in-flight unredeemed code.
 
 ---
 
-## 6. Remaining low / info items — DEFERRED
+## 6. Remaining low / info items - DEFERRED
 
 - **import-x-posts platform reliance (F1):** Public unauthenticated triggering
   is blocked primarily by Netlify (scheduled functions reject HTTP with 500).
@@ -148,7 +148,7 @@ rows, never an in-flight unredeemed code.
   cryptographically distinguish a real scheduler invocation from a forged
   `next_run`; the platform guarantee is the control. If the schedule is ever
   removed (function exposed as a normal HTTP endpoint), `CRON_SECRET` becomes
-  mandatory for all calls — keep it set.
+  mandatory for all calls - keep it set.
 - **send-custom-email admin secret in body:** Admin token is passed in the JSON
   body (`admin_password`) rather than an `Authorization` header. Now compared
   with `crypto.timingSafeEqual` (F8). Follow-up: migrate to a bearer header and

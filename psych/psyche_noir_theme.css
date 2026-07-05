@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   PSYCHE NOIR EDITORIAL — Creative Identity Layer
+   PSYCHE NOIR EDITORIAL - Creative Identity Layer
    Layered on top of psych_styles.css
    ═══════════════════════════════════════════════════════════════ */
 
@@ -617,7 +617,7 @@ body::after {
   stroke-width: 1.2;
 }
 
-/* Per-portrait positioning — each face placed where it looks best */
+/* Per-portrait positioning - each face placed where it looks best */
 /* Freud: classic right-bleed, face centered */
 .hero-portrait[data-idx="0"] {
   right: -20%;
@@ -729,7 +729,7 @@ body::after {
 }
 
 /* Audio-reactive portrait breathing */
-/* Portraits excluded from audio reactivity — carousel looks best untouched */
+/* Portraits excluded from audio reactivity - carousel looks best untouched */
 
 @media (max-width: 1024px) {
   .hero-portrait { width: 85% !important; max-width: 420px !important; right: -10% !important; bottom: -5% !important; }
@@ -890,7 +890,7 @@ body::after {
 
 /* ═══════════════════════════════════════════════════════════════
    AUDIO-REACTIVE CSS (gated by data-audio-active="1")
-   Heavy reactivity — the entire site breathes with the music
+   Heavy reactivity - the entire site breathes with the music
    ═══════════════════════════════════════════════════════════════ */
 :root {
   --audio-bass: 0;

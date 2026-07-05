@@ -1,5 +1,5 @@
 /**
- * Noteworthy YouTube clip extension — content script.
+ * Noteworthy YouTube clip extension - content script.
  */
 (function () {
   'use strict';
@@ -7,7 +7,7 @@
   const DEFAULT_BUFFER_SECONDS = 30;
   const MIN_BYTES = 5000;
   const MIN_TOTAL_BYTES = 100000;
-  /** Restart only after this many 1s chunks (~2 min) to cap memory — not when buffer fills */
+  /** Restart only after this many 1s chunks (~2 min) to cap memory - not when buffer fills */
   const MAX_SESSION_CHUNKS = 120;
 
   let bufferSeconds = DEFAULT_BUFFER_SECONDS;
@@ -18,7 +18,7 @@
   let statusEl = null;
   let saving = false;
   let activeMimeType = '';
-  /** @type {Blob[]} — all chunks from the current recorder session (never drop mid-session) */
+  /** @type {Blob[]} - all chunks from the current recorder session (never drop mid-session) */
   let sessionChunks = [];
   /** @type {Blob | null} */
   let initChunk = null;
@@ -42,7 +42,7 @@
     await withTimeout(
       pending,
       Math.max(500, deadline - Date.now()),
-      'Buffer sync timed out — refresh YouTube and try again'
+      'Buffer sync timed out - refresh YouTube and try again'
     );
 
     while (Date.now() < deadline) {
@@ -52,7 +52,7 @@
       await withTimeout(
         pending,
         Math.max(200, deadline - Date.now()),
-        'Buffer sync timed out — refresh YouTube and try again'
+        'Buffer sync timed out - refresh YouTube and try again'
       );
     }
   }
@@ -102,7 +102,7 @@
   }
 
   function pickMimeType() {
-    // WebM only — Chrome MediaRecorder MP4 fragments are unplayable until finalized.
+    // WebM only - Chrome MediaRecorder MP4 fragments are unplayable until finalized.
     const candidates = [
       'video/webm;codecs=vp9,opus',
       'video/webm;codecs=vp8,opus',
@@ -141,7 +141,7 @@
     button.disabled = saving || !bufferReady;
     button.title = bufferReady
       ? `Save last ${bufferSeconds}s as MP4 (Alt+Shift+C)`
-      : `Buffering ${sessionChunks.length}/${bufferSeconds}s — keep playing`;
+      : `Buffering ${sessionChunks.length}/${bufferSeconds}s - keep playing`;
   }
 
   function setSaving(active) {
@@ -169,7 +169,7 @@
     return new Blob(chunks, { type: activeMimeType || 'video/webm' });
   }
 
-  /** Soft cap — restart only after long sessions, never when buffer first fills. */
+  /** Soft cap - restart only after long sessions, never when buffer first fills. */
   async function restartSessionIfTooLong(video) {
     if (sessionChunks.length < MAX_SESSION_CHUNKS || saving) return;
     setStatus('Starting fresh buffer (session limit)…');
@@ -226,7 +226,7 @@
         if (!saving) {
           const kb = Math.round(sessionChunks.reduce((n, b) => n + b.size, 0) / 1024);
           if (sessionChunks.length >= bufferSeconds) {
-            setStatus(`Ready — ${sessionChunks.length}s buffered (saves last ${bufferSeconds}s, ${kb} KB)`);
+            setStatus(`Ready - ${sessionChunks.length}s buffered (saves last ${bufferSeconds}s, ${kb} KB)`);
           } else {
             const initOk = initChunk ? 'ready' : 'waiting for header';
             setStatus(`Buffering ${sessionChunks.length}/${bufferSeconds}s (${kb} KB, ${initOk})`);
@@ -241,10 +241,10 @@
       });
     };
 
-    recorder.onerror = () => setStatus('Recorder error — refresh page.', true);
+    recorder.onerror = () => setStatus('Recorder error - refresh page.', true);
 
     recorder.start(1000);
-    setStatus(`Recording — need ${bufferSeconds}s before save`);
+    setStatus(`Recording - need ${bufferSeconds}s before save`);
   }
 
   function startBuffer(video) {
@@ -329,7 +329,7 @@
         });
       }),
       timeoutMs,
-      'Extension did not respond — reload the extension at chrome://extensions, refresh YouTube, and try again'
+      'Extension did not respond - reload the extension at chrome://extensions, refresh YouTube, and try again'
     );
   }
 
@@ -371,7 +371,7 @@
 
     const merged = buildSessionBlob(chunks);
     if (!merged || !(await blobHasWebmHeader(merged.slice(0, 4)))) {
-      throw new Error('Invalid capture — refresh YouTube, play the video, then try again.');
+      throw new Error('Invalid capture - refresh YouTube, play the video, then try again.');
     }
   }
 
@@ -463,7 +463,7 @@
   async function uploadMergedWebmForConvert(chunks, filename) {
     const merged = await mergedWebmBlob(chunks);
     if (!(await blobHasWebmHeader(merged.slice(0, 4)))) {
-      throw new Error('Invalid WebM capture — refresh YouTube, play the video, then save again.');
+      throw new Error('Invalid WebM capture - refresh YouTube, play the video, then save again.');
     }
 
     const trimSeconds = chunks.length > bufferSeconds ? bufferSeconds : 0;
@@ -489,7 +489,7 @@
       console.warn('[Noteworthy clip] Background convert failed:', err.message);
     }
 
-    throw lastError || new Error('Could not convert clip — is npm run clip:convert-server running?');
+    throw lastError || new Error('Could not convert clip - is npm run clip:convert-server running?');
   }
 
   async function convertChunksToMp4(chunks, filename) {
@@ -605,7 +605,7 @@
       const contextDead = isContextInvalidatedError(err);
 
       if (contextDead) {
-        setStatus('Extension reloaded — refresh this page (F5)', true);
+        setStatus('Extension reloaded - refresh this page (F5)', true);
         alert(
           'The extension was updated or reloaded while this tab was open.\n\n' +
             '1. Refresh YouTube (F5)\n' +
@@ -618,7 +618,7 @@
       if (chunks.length > 0) {
         const merged = await mergedWebmBlob(chunks);
         downloadBlob(merged, `${baseName}.webm`);
-        setStatus('Saved WebM fallback — see alert', true);
+        setStatus('Saved WebM fallback - see alert', true);
         alert(
           `MP4 convert failed: ${err.message}\n\n` +
             `Saved merged WebM: ${baseName}.webm\n\n` +
@@ -698,7 +698,7 @@
       return;
     }
 
-    // Same video but recorder died — restart without clearing if we still have chunks.
+    // Same video but recorder died - restart without clearing if we still have chunks.
     if (!recorder || recorder.state !== 'recording') {
       startBuffer(video);
     }

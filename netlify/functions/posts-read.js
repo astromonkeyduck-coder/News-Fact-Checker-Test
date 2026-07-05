@@ -14,9 +14,9 @@ const {
 // This is the UNION of every field actually rendered by the public surfaces
 // (feed.js, news-card.js, article-loader.js, article-page-v3.js, the mobile
 // feed normalizer and article-preview) plus the canonical fields written by
-// createPost.js and the X import projection. Any field NOT listed here — e.g.
+// createPost.js and the X import projection. Any field NOT listed here - e.g.
 // internal ingestion/processing metadata, upstream raw API payloads, status
-// flags, or author IDs that may live on a blob — is stripped before returning,
+// flags, or author IDs that may live on a blob - is stripped before returning,
 // so posts-read never leaks raw internal blob fields.
 const PUBLIC_POST_FIELDS = new Set([
   // identity / links

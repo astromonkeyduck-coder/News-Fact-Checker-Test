@@ -10,46 +10,69 @@ try {
   console.warn('@netlify/blobs not available, rate limiting will be disabled');
 }
 
-// Canonical post store for x-posts reads
-const postStore = require('./lib/postStore');
+// Shared grounding data (recent posts, live stories, page context)
+const aiGrounding = require('./lib/aiGrounding');
 
 /**
- * Fetch recent posts from blob storage for AI context
+ * Extract readable text from non-image documents (PDF, DOCX, TXT, MD, CSV).
+ * Returns { name, text } or null when the format isn't text-extractable.
  */
-async function fetchRecentPosts(event, limit = 10) {
+const MAX_DOC_TEXT_CHARS = 12000;
+async function extractDocumentText(file) {
+  const fileType = (file.type || "").toLowerCase();
+  const fileName = file.name || "document";
+  const ext = fileName.split(".").pop()?.toLowerCase() || "";
+  const base64Data = (file.data || "").replace(/^data:[^;]+;base64,/, "");
+  if (!base64Data) return null;
+  const buffer = Buffer.from(base64Data, "base64");
+
   try {
-    const store = postStore.getPostStore();
-    const ids = await postStore.readIndex(store);
-
-    if (ids.length === 0) return [];
-
-    const postIds = ids.slice(0, Math.min(limit, ids.length));
-
-    const postPromises = postIds.map(async (id) => {
+    if (fileType === "application/pdf" || ext === "pdf") {
+      const { PDFParse } = require("pdf-parse");
+      // pdfjs resolves its worker relative to the importing module, which
+      // breaks under esbuild bundling - point it at the real file instead.
       try {
-        return await postStore.readPost(store, id);
-      } catch (err) {
-        console.error(`[Noteworthy Chat] Error fetching post ${id}:`, err);
-        return null;
+        const path = require("path");
+        const { pathToFileURL } = require("url");
+        const workerPath = path.join(path.dirname(require.resolve("pdf-parse")), "pdf.worker.mjs");
+        PDFParse.setWorker(pathToFileURL(workerPath).href);
+      } catch (workerErr) {
+        console.warn("[Noteworthy Chat] Could not set pdf worker path:", workerErr.message);
       }
-    });
+      const parser = new PDFParse({ data: new Uint8Array(buffer) });
+      try {
+        const parsed = await parser.getText({ last: 50 });
+        const text = (parsed.text || "").replace(/--\s*\d+\s+of\s+\d+\s*--/g, "").trim();
+        if (!text) return { name: fileName, text: "(No selectable text found in this PDF - it may be a scanned document. Ask the user to upload it as an image instead.)" };
+        return { name: fileName, text: text.substring(0, MAX_DOC_TEXT_CHARS) };
+      } finally {
+        try { await parser.destroy(); } catch (_) {}
+      }
+    }
 
-    const posts = await Promise.all(postPromises);
-    // Filter out nulls and sort by timestamp (newest first)
-    const validPosts = posts
-      .filter(p => p !== null)
-      .sort((a, b) => {
-        const timeA = a.timestamp || a.createdAt || 0;
-        const timeB = b.timestamp || b.createdAt || 0;
-        return timeB - timeA;
-      })
-      .slice(0, limit);
+    if (
+      fileType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+      ext === "docx"
+    ) {
+      const mammoth = require("mammoth");
+      const result = await mammoth.extractRawText({ buffer });
+      const text = (result.value || "").trim();
+      return { name: fileName, text: text.substring(0, MAX_DOC_TEXT_CHARS) };
+    }
 
-    return validPosts;
-  } catch (error) {
-    console.error('[Noteworthy Chat] Error fetching recent posts:', error);
-    return [];
+    if (
+      fileType.startsWith("text/") ||
+      ["txt", "md", "csv", "json", "log"].includes(ext)
+    ) {
+      const text = buffer.toString("utf-8").trim();
+      return { name: fileName, text: text.substring(0, MAX_DOC_TEXT_CHARS) };
+    }
+  } catch (err) {
+    console.error(`[Noteworthy Chat] Document text extraction failed for ${fileName}:`, err.message);
+    return { name: fileName, text: `(Could not extract text from this document: ${err.message})` };
   }
+
+  return null;
 }
 
 /**
@@ -74,7 +97,13 @@ async function checkRateLimit(userId) {
   }
 
   try {
-    const store = getStore({ name: 'ai-rate-limits' });
+    // Prefer explicit credentials (same pattern as postStore); fall back to
+    // the auto-injected blobs context in production functions.
+    const siteID = process.env.NETLIFY_SITE_ID;
+    const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN;
+    const store = siteID && token
+      ? getStore({ name: 'ai-rate-limits', siteID, token })
+      : getStore({ name: 'ai-rate-limits' });
     const key = `user-${userId}`;
     
     // Get existing timestamps
@@ -108,11 +137,9 @@ async function checkRateLimit(userId) {
     // Add current timestamp
     recentTimestamps.push(now);
     
-    // Store updated timestamps (with expiry after 30 minutes)
-    await store.set(key, JSON.stringify(recentTimestamps), {
-      contentType: 'application/json',
-      expiry: Math.floor((now + RATE_LIMIT_WINDOW) / 1000), // TTL in seconds
-    });
+    // Store updated timestamps. Netlify Blobs has no TTL - old timestamps are
+    // pruned on read by the window filter above, so entries stay small.
+    await store.set(key, JSON.stringify(recentTimestamps));
 
     return {
       allowed: true,
@@ -191,6 +218,7 @@ exports.handler = async (event, context) => {
     let message = "";
     let files = [];
     let chatHistory = [];
+    let pageContext = null;
     
     // Parse request body as JSON (files are sent as base64 in JSON)
     try {
@@ -205,6 +233,16 @@ exports.handler = async (event, context) => {
       message = requestBody.message || "";
       files = requestBody.files || [];
       chatHistory = requestBody.chatHistory || [];
+      
+      // Optional context about the page the reader is on (sent by the widget)
+      if (requestBody.pageContext && typeof requestBody.pageContext === 'object') {
+        pageContext = {
+          url: String(requestBody.pageContext.url || '').substring(0, 300),
+          title: String(requestBody.pageContext.title || '').substring(0, 300),
+          articleId: String(requestBody.pageContext.articleId || '').substring(0, 100),
+          storySlug: String(requestBody.pageContext.storySlug || '').substring(0, 100),
+        };
+      }
       
       // Log incoming files for debugging
       if (files && files.length > 0) {
@@ -388,6 +426,23 @@ exports.handler = async (event, context) => {
       }
     }
     
+    // Pull text out of document files (PDF, DOCX, TXT, MD, CSV) so they can be
+    // analyzed as text. Whatever remains goes through image conversion below.
+    let documentTexts = [];
+    if (files && files.length > 0) {
+      const remainingFiles = [];
+      for (const file of files) {
+        const doc = await extractDocumentText(file);
+        if (doc) {
+          console.log(`[Noteworthy Chat] Extracted ${doc.text.length} chars of text from ${doc.name}`);
+          documentTexts.push(doc);
+        } else {
+          remainingFiles.push(file);
+        }
+      }
+      files = remainingFiles;
+    }
+
     // Process and convert files if needed
     if (files && files.length > 0) {
       const convertedFiles = [];
@@ -432,16 +487,16 @@ exports.handler = async (event, context) => {
         }
       }
       
-      // If we have conversion errors, return helpful error message
-      if (conversionErrors.length > 0 && convertedFiles.length === 0) {
+      // If we have conversion errors and nothing usable at all, return a helpful error
+      if (conversionErrors.length > 0 && convertedFiles.length === 0 && documentTexts.length === 0) {
         const fileList = conversionErrors.map(f => `"${f.name}" (${f.type})`).join(', ');
         return {
           statusCode: 400,
           headers,
           body: JSON.stringify({ 
-            error: `Unable to process the uploaded files. Files are automatically converted when possible. Please ensure your files are images (PNG, JPEG, WEBP, GIF, HEIC, TIFF, BMP, SVG).`,
-            details: `Files that couldn't be processed: ${fileList}. Note: Unsupported image formats (HEIC, TIFF, BMP, SVG) are automatically converted to PNG/JPEG. PDF conversion is not yet available - please convert PDFs to images first.`,
-            supportedFormats: ['png', 'jpeg', 'gif', 'webp', 'heic', 'tiff', 'bmp', 'svg'],
+            error: `Unable to process the uploaded files. Supported: images (PNG, JPEG, WEBP, GIF, HEIC, TIFF, BMP, SVG) and documents (PDF, DOCX, TXT, MD, CSV).`,
+            details: `Files that couldn't be processed: ${fileList}.`,
+            supportedFormats: ['png', 'jpeg', 'gif', 'webp', 'heic', 'tiff', 'bmp', 'svg', 'pdf', 'docx', 'txt', 'md', 'csv'],
             unsupportedFiles: conversionErrors
           }),
         };
@@ -482,21 +537,17 @@ exports.handler = async (event, context) => {
     // Don't log API key, even partially (security best practice)
     console.log("API key configured");
 
-    // Auto-detect if message is requesting image generation
+    // Auto-detect if message is explicitly requesting image generation.
+    // Requires an image-word ("image", "picture", "illustration"...) so
+    // ordinary questions like "make sense of this" never trigger DALL-E.
     function isImageRequest(msg) {
       const lowerMsg = msg.toLowerCase().trim();
       const imagePatterns = [
-        /^(generate|create|make|draw)\s+(an?\s+)?(image|picture|photo|visual|illustration|drawing)(\s+of)?\s+/i,
-        /^(show\s+me|i\s+want)\s+(an?\s+)?(image|picture|photo|visual|illustration|drawing)(\s+of)?\s+/i,
-        /^(can\s+you\s+)?(generate|create|make|draw)\s+(an?\s+)?(image|picture|photo|visual|illustration|drawing)(\s+of)?\s+/i,
+        /^(can\s+you\s+|could\s+you\s+|please\s+)?(generate|create|make|draw|render|design)\s+(me\s+)?(an?\s+|another\s+|some\s+)?(image|picture|photo|visual|illustration|drawing|graphic|logo|poster|artwork)/i,
+        /^(show\s+me|i\s+want|give\s+me|i\s+need)\s+(an?\s+)?(image|picture|photo|visual|illustration|drawing|graphic|logo|poster|artwork)(\s+of)?/i,
         /^(an?|the)\s+(image|picture|photo|visual|illustration|drawing)\s+of\s+/i,
-        /\b(picture|image|photo|visual|illustration|drawing)\s+of\s+/i,
-        /^(generate|create|make|draw)\s+/i,
-        // Catch simple requests like "now a dog", "a cat", "show me a dog"
-        /^(now\s+)?(an?\s+)?(dog|cat|bird|car|house|person|tree|flower|sun|moon|star|animal|object|thing)\s*$/i,
-        /^(show\s+me|give\s+me|i\s+want|i\s+need)\s+(an?\s+)?(dog|cat|bird|car|house|person|tree|flower|sun|moon|star|animal|object|thing)/i,
-        // Catch requests with "now" followed by object
-        /^now\s+(an?\s+)?[a-z]+/i
+        /\b(generate|create|make|draw)\s+(an?\s+)?(image|picture|photo|visual|illustration|drawing|graphic|logo|poster|artwork)\s+of\s+/i,
+        /^(draw|paint|sketch)\s+(me\s+)?(an?\s+)?\w+/i
       ];
       
       for (const pattern of imagePatterns) {
@@ -713,64 +764,118 @@ exports.handler = async (event, context) => {
       }
     }
 
-    // Fetch recent posts for AI context (current events)
+    // Fetch grounding data in parallel: recent posts, live stories, and the
+    // exact article / live story the reader currently has open (if the widget
+    // reported it via pageContext).
     let recentPosts = [];
+    let liveStories = [];
+    let currentArticle = null;
+    let currentLiveStory = null;
     try {
-      recentPosts = await fetchRecentPosts(event, 10); // Get 10 most recent posts
-      console.log(`[Noteworthy Chat] Fetched ${recentPosts.length} recent posts for context`);
+      ({ recentPosts, liveStories, currentArticle, currentLiveStory } =
+        await aiGrounding.loadGrounding({ pageContext, postsLimit: 12, storiesLimit: 5 }));
+      console.log(`[Noteworthy Chat] Grounding: ${recentPosts.length} posts, ${liveStories.length} live stories, article=${!!currentArticle}, liveStory=${!!currentLiveStory}`);
     } catch (error) {
-      console.error('[Noteworthy Chat] Error fetching recent posts:', error);
-      // Continue without posts - AI will still work
+      console.error('[Noteworthy Chat] Error fetching grounding data:', error);
+      // Continue without grounding - AI will still work
     }
 
     // Build messages array with chat history and current message
     let messages;
     let storedUploadedImages = [];
     
-    // Build current events context from recent posts
+    // Public base URL used to build citation links
+    const siteProto = event.headers['x-forwarded-proto'] || 'https';
+    const siteHost = event.headers.host || event.headers['x-forwarded-host'] || 'noteworthynews.co';
+    const siteBase = `${siteProto}://${siteHost}`;
+    
+    // Registry of every Noteworthy source offered to the model. After the
+    // reply comes back we check which URLs it actually cited and return those
+    // to the widget as structured source chips.
+    const groundingSources = [];
+    
+    // Verified recent articles (last 14 days)
     let currentEventsContext = '';
     if (recentPosts.length > 0) {
-      const today = new Date();
-      const weekAgo = new Date(today);
-      weekAgo.setDate(weekAgo.getDate() - 7); // Include posts from last 7 days
-      
+      const cutoff = Date.now() - 14 * 24 * 60 * 60 * 1000;
       const recentEvents = recentPosts
         .filter(post => {
           const postDate = post.timestamp || post.createdAt || 0;
           if (!postDate) return false;
-          const postDateObj = new Date(postDate);
-          // Include posts from the last 7 days (more inclusive for current events)
-          const weekAgo = new Date(today);
-          weekAgo.setDate(weekAgo.getDate() - 7);
-          return postDateObj >= weekAgo;
+          return new Date(postDate).getTime() >= cutoff;
         })
+        .slice(0, 8)
         .map(post => {
-          const title = post.title || post.story || post.text || 'Untitled';
+          const id = post.id || post.postId || '';
+          const title = String(post.title || post.story || post.text || 'Untitled').replace(/\s+/g, ' ').substring(0, 160);
           const date = post.timestamp || post.createdAt;
-          const dateStr = date ? new Date(date).toLocaleDateString() : 'Recent';
+          const dateStr = date ? new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recent';
           const category = post.category || 'News';
-          const summary = post.summary || post.text?.substring(0, 200) || '';
-          return `- ${dateStr}: ${title} (${category})${summary ? ` - ${summary}` : ''}`;
-        })
-        .slice(0, 5); // Limit to 5 most recent
+          const summary = String(post.summary || post.text || '').replace(/\s+/g, ' ').substring(0, 240);
+          const url = `${siteBase}/article.html?id=${encodeURIComponent(id)}`;
+          groundingSources.push({ title, url, type: 'article', label: 'Noteworthy reporting' });
+          return `- [${title}](${url}) - ${category}, ${dateStr}${summary ? `\n  ${summary}` : ''}`;
+        });
       
       if (recentEvents.length > 0) {
-        currentEventsContext = `\n\nCURRENT EVENTS FROM NOTEWORTHY NEWS (Verified Articles):
-The following are REAL, VERIFIED news articles published on Noteworthy News. Use this information when answering questions about current events:
-
-${recentEvents.join('\n')}
-
-CRITICAL INSTRUCTIONS:
-- You MUST use the information above when answering questions about current events
-- You CAN discuss these verified articles and provide details from them
-- If asked about events NOT listed above, you MUST say: "I don't have information about that specific event. For the latest verified news, please check Noteworthy News' articles or other trusted news sources."
-- NEVER make up or fabricate events that are not in the list above`;
+        currentEventsContext = `\n\nVERIFIED NOTEWORTHY NEWS ARTICLES (real, published reporting - cite these with their exact URLs):
+${recentEvents.join('\n')}`;
         console.log(`[Noteworthy Chat] ✅ Built current events context with ${recentEvents.length} events`);
-        console.log(`[Noteworthy Chat] 📰 Sample events:`, recentEvents.slice(0, 2));
       } else {
-        console.log('[Noteworthy Chat] ⚠️ No recent events found (all posts are older than 7 days)');
+        console.log('[Noteworthy Chat] ⚠️ No recent events found (all posts are older than 14 days)');
       }
     }
+    
+    // Active live stories
+    let liveStoriesContext = '';
+    if (liveStories.length > 0) {
+      const items = liveStories.map(s => {
+        const url = `${siteBase}/story/${s.slug}`;
+        const title = String(s.title || 'Live story').substring(0, 160);
+        groundingSources.push({ title, url, type: 'live', label: 'Live story' });
+        const summary = String(s.summary || '').replace(/\s+/g, ' ').substring(0, 200);
+        return `- [${title}](${url}) - status: ${s.status || 'developing'}${s.severity ? `, severity: ${s.severity}` : ''}${summary ? `\n  ${summary}` : ''}`;
+      });
+      liveStoriesContext = `\n\nLIVE STORIES WE ARE TRACKING RIGHT NOW (ongoing coverage - cite with their exact URLs):
+${items.join('\n')}`;
+    }
+    
+    // The exact page the reader is on
+    let pageContextBlock = '';
+    if (currentLiveStory && currentLiveStory.story) {
+      const s = currentLiveStory.story;
+      const url = `${siteBase}/story/${s.slug}`;
+      const title = String(s.title || 'Live story').substring(0, 160);
+      groundingSources.push({ title, url, type: 'live', label: 'Live story' });
+      const updates = (currentLiveStory.updates || [])
+        .map(u => `  - ${u.created_at ? new Date(u.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''}${u.source_label ? ` (${u.source_label})` : ''}: ${String(u.body || '').replace(/\s+/g, ' ').substring(0, 260)}`)
+        .join('\n');
+      pageContextBlock = `\n\nTHE READER IS CURRENTLY ON THIS LIVE STORY PAGE:
+[${title}](${url}) - status: ${s.status || 'developing'}
+Summary: ${String(s.summary || '').substring(0, 300)}
+Latest updates (newest first):
+${updates || '  (no updates yet)'}
+When the user says "this story", "this", or asks what's happening, they mean this live story.`;
+    } else if (currentArticle) {
+      const id = currentArticle.id || currentArticle.postId || pageContext.articleId;
+      const url = `${siteBase}/article.html?id=${encodeURIComponent(id)}`;
+      const title = String(currentArticle.title || currentArticle.story || currentArticle.text || 'Article').replace(/\s+/g, ' ').substring(0, 160);
+      groundingSources.push({ title, url, type: 'article', label: 'Noteworthy reporting' });
+      const bodyText = String(currentArticle.story || currentArticle.text || currentArticle.summary || '').substring(0, 1800);
+      const date = currentArticle.timestamp || currentArticle.createdAt;
+      pageContextBlock = `\n\nTHE READER IS CURRENTLY ON THIS ARTICLE PAGE:
+[${title}](${url})${date ? ` - published ${new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : ''}
+Full text:
+${bodyText}
+When the user says "this story", "this article", or "this", they mean the article above.`;
+    } else if (pageContext && (pageContext.title || pageContext.url)) {
+      pageContextBlock = `\n\nTHE READER IS CURRENTLY ON: ${pageContext.title || pageContext.url}`;
+    }
+    
+    // Get user email early (needed by personalization below); the full
+    // history lookup later still refreshes it.
+    let userEmail = null;
+    let recentChatHistory = [];
     
     // Get AI personalization context (non-blocking, with timeout)
     let personalizationContext = null;
@@ -800,69 +905,41 @@ CRITICAL INSTRUCTIONS:
     try {
       // Build system prompt with current events context and personalization
       const { buildPersonalizationSystemMessage } = require("./get-ai-personalization");
-      const baseSystemPrompt = `You are Noteworthy News AI, the intelligent assistant for Noteworthy News. You are designed to help users with fact-checking, media literacy, and staying informed with verified news.
+      const todayStr = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      const baseSystemPrompt = `You are Noteworthy News AI, the research assistant built into Noteworthy News (noteworthynews.co) - a fact-first breaking news site focused on verified reporting and media literacy. Motto: "Developing means developing. Confirmed means confirmed."
 
-ABOUT NOTEWORTHY NEWS:
-- Noteworthy News is committed to delivering accurate, fact-checked journalism in an era of information overload
-- Mission: Reliable news is the foundation of an informed democracy
-- Approach: Combines traditional journalistic standards with modern fact-checking tools
-- Focus Areas: Breaking news, in-depth analysis, media literacy education, fact-checking games
-- Tagline: "Trusted Journalism & Media Literacy"
-       - Values: Fast, factual, Truth-Seeking
+TODAY'S DATE: ${todayStr}
 
-WHAT NOTEWORTHY NEWS OFFERS:
-- Interactive fact-checking games to test media literacy skills
-- Verified, trustworthy journalism and news stories
-- Educational content on media literacy and digital literacy
-- Fact-checking tools and verification resources
-- Breaking news coverage with fact-checking
-- Critical thinking skills development
+WHAT YOU CAN DO:
+- Explain and add context to news stories, headlines, and claims
+- Fact-check claims, viral posts, and screenshots; walk users through verification steps
+- Ground answers in Noteworthy News reporting (verified articles and live stories listed below)
+${isSpotlightRequest ? '' : '- Research current events with the search_web tool when the verified articles below do not cover the question\n'}- Analyze uploaded images and screenshots (context, plausibility, what to verify - you cannot definitively "detect fakes", so describe evidence, not verdicts)
+- Read uploaded documents - PDF, Word, and text files are extracted and included in the conversation as text
+- Generate or edit images on request (DALL-E, handled automatically)
+- Send an email for the user via the send_email tool (the user always confirms before anything is sent)
+- Read responses aloud and hold live voice conversations (handled by the app around you)
 
-YOUR ROLE:
-- Help users understand current news stories and headlines
-- Provide fact-checking assistance and verification tips
-- Answer questions about media literacy and critical thinking
-- Explain Noteworthy News' mission and services
-- Generate images when users request them (you have access to DALL-E image generation)
-- Analyze images and documents when users upload them
-- Edit images when users upload an image and request modifications (e.g., "make this blue", "change the color", "edit this")
-       - Be concise, neutral, and always Truth-Seeking
-- When discussing news, emphasize the importance of multiple sources and verification
+CITATIONS - REQUIRED:
+- When you use a Noteworthy article or live story listed below, cite it inline as a markdown link using its EXACT title and EXACT URL from the list
+- When you use web search results, cite them the same way: [Source name](URL)
+- Only link URLs that literally appear in this prompt or in tool results - NEVER invent, guess, or make up a URL
+- If nothing here covers the question, say so plainly instead of forcing a citation${groundingSources.length === 0 ? `
+- IMPORTANT: No Noteworthy articles or live stories are loaded in your context right now. If asked what Noteworthy News is covering or tracking, say you cannot pull up the current coverage list and point the reader to the homepage feed - do NOT invent stories or links` : ''}
 
-CRITICAL: BREAKING NEWS AND CURRENT EVENTS
-${isSpotlightRequest ? 
-  // For spotlight requests, focus on knowledge base only - no web search
-  `${currentEventsContext ? '- You have access to REAL, VERIFIED current events from Noteworthy News articles (see below)' : '- You do NOT have access to real-time breaking news or current events'}
-- You can discuss and provide details about the verified articles listed below
-- For country spotlight requests, use your knowledge base to provide comprehensive cultural, geopolitical, and historical insights
-- Focus on depth, context, and profound analysis rather than breaking news
-- NEVER make up, invent, or fabricate information
-- Always prioritize accuracy and cite information when possible
-${currentEventsContext}` :
-  // For regular requests, include web search capabilities
-  `${currentEventsContext ? '- You have access to REAL, VERIFIED current events from Noteworthy News articles (see below)' : '- You do NOT have access to real-time breaking news or current events'}
-- You can discuss and provide details about the verified articles listed below
-- You have access to OpenAI's native web_search tool that provides REAL-TIME web research for breaking news and current events
-- This is OpenAI's built-in, top-tier web search - it automatically searches the web when you need current information
-- When asked about breaking news, recent events, or current developments NOT in the verified articles, the web_search tool will AUTOMATICALLY be used
-- The web_search tool searches across multiple sources and provides comprehensive, up-to-date information
-- After web search completes, provide accurate, detailed, factual information from the search results
-- Include specific details: dates, locations, names, sources, and context
-- NEVER make up, invent, or fabricate breaking news events
-- If web search doesn't find information, say: "I searched for current information but couldn't find verified details about that specific event. For the latest breaking news, please check direct news sources."
-- Always prioritize accuracy and cite information when possible
-${currentEventsContext}`
-}
-- When an image has been generated for the user, acknowledge it naturally in your response
-- When analyzing uploaded images or documents, provide detailed observations and insights
+ACCURACY RULES:
+- NEVER fabricate events, quotes, numbers, or details
+- Clearly separate what is confirmed from what is developing or unverified
+${isSpotlightRequest ? '- For country spotlight requests, use your knowledge base for cultural, geopolitical, and historical depth\n' : `- For breaking news or anything after your training data, call search_web with a specific query (location, event, date)
+- If search finds nothing, say: "I searched for current information but couldn't find verified details about that specific event."
+`}- If your answer relies on general knowledge that may be out of date, say so
 
 RESPONSE STYLE:
-- Keep responses concise but informative (target: 2-4 sentences per point)
-- Use clear, accessible language
-- Cite principles of fact-checking when relevant
-- Maintain a professional but approachable tone
-- Do NOT include any attribution text like "generated by Noteworthy News AI" or similar disclaimers in your responses
-- Do NOT add footers, signatures, or attribution statements to your answers${currentEventsContext}`;
+- Concise and information-dense: short paragraphs, plain language, no filler
+- Use markdown: **bold** for key facts, "- " bullets for lists, [links](url) for citations
+- Neutral, professional, calm - a newsroom voice, not a hype voice
+- When an image has been generated for the user, acknowledge it naturally
+- Do NOT add footers, signatures, or "as an AI" disclaimers${currentEventsContext}${liveStoriesContext}${pageContextBlock}`;
 
       // Add personalization to system message
       let systemPrompt = baseSystemPrompt;
@@ -1000,15 +1077,24 @@ RESPONSE STYLE:
         console.log(`[Noteworthy Chat] No files to process for storage`);
       }
       
+      // Fold extracted document text into the outgoing user message
+      let effectiveMessage = message || '';
+      if (documentTexts.length > 0) {
+        const docsBlock = documentTexts
+          .map(d => `--- Attached document: ${d.name} ---\n${d.text}`)
+          .join('\n\n');
+        effectiveMessage = `${effectiveMessage.trim() || 'Please analyze the attached document(s).'}\n\n${docsBlock}`;
+      }
+      
       // Build user message with files if provided
       if (files && files.length > 0) {
         const userContent = [];
         
         // Add text message if provided
-        if (message && message.trim()) {
+        if (effectiveMessage && effectiveMessage.trim()) {
           userContent.push({
             type: "text",
-            text: message,
+            text: effectiveMessage,
           });
         }
         
@@ -1034,7 +1120,7 @@ RESPONSE STYLE:
         
         messages.push({
           role: "user",
-          content: userContent.length > 0 ? userContent : [{ type: "text", text: message || "Please analyze the uploaded files." }],
+          content: userContent.length > 0 ? userContent : [{ type: "text", text: effectiveMessage || "Please analyze the uploaded files." }],
         });
       } else {
         // Regular text message
@@ -1044,7 +1130,7 @@ RESPONSE STYLE:
           messages.push(...chatHistory);
         }
         
-        messages.push({ role: "user", content: message });
+        messages.push({ role: "user", content: effectiveMessage });
       }
       
       // Validate messages array before sending
@@ -1199,8 +1285,20 @@ RESPONSE STYLE:
     let usage = null;
     let searchInProgress = false;
     let searchQuery = '';
+    // Web results that informed the answer (returned to the widget as sources)
+    let webSources = [];
     // Track email confirmation data for response (declared at function scope to avoid undefined errors)
     let emailConfirmationData = null;
+    
+    const collectWebSources = (results) => {
+      (results || []).slice(0, 5).forEach(r => {
+        if (r && r.url && /^https?:\/\//i.test(r.url) && !r.url.includes('duckduckgo.com/?q=')) {
+          let label = r.title || r.url;
+          try { label = r.title || new URL(r.url).hostname.replace(/^www\./, ''); } catch (_) {}
+          webSources.push({ title: String(label).substring(0, 120), url: r.url, type: 'web', label: 'Web source' });
+        }
+      });
+    };
     
     try {
       let data = await r.json();
@@ -1261,6 +1359,7 @@ RESPONSE STYLE:
                 if (searchResponse.ok) {
                   const searchData = await searchResponse.json();
                   const results = searchData.results || [];
+                  collectWebSources(results);
                   if (results.length > 0) {
                     let formattedResults = `Deep web research results for "${toolArgs.query}":\n\n`;
                     results.forEach((result, index) => {
@@ -1298,6 +1397,7 @@ RESPONSE STYLE:
               
               if (searchResult.statusCode === 200) {
                 const results = searchData.results || [];
+                collectWebSources(results);
                 
                 if (results.length > 0) {
                   // Format search results for the AI
@@ -1479,8 +1579,7 @@ RESPONSE STYLE:
     // Get user email and chat history from event (if available)
     // Note: This is done AFTER the OpenAI call to avoid timeout issues
     // We use a timeout to prevent this from blocking the response
-    let userEmail = null;
-    let recentChatHistory = [];
+    // (userEmail / recentChatHistory are declared earlier, before personalization)
     try {
       // Add timeout protection - don't wait more than 1.5 seconds for history
       const historyPromise = (async () => {
@@ -2036,6 +2135,30 @@ This is an automated notification from your website.`;
       reply, 
       usage,
     };
+    
+    // Structured sources for the widget: Noteworthy sources the reply actually
+    // cited, plus web results that informed a search-backed answer.
+    try {
+      const seen = new Set();
+      const sources = [];
+      const push = (s) => {
+        if (s && s.url && !seen.has(s.url) && sources.length < 6) {
+          seen.add(s.url);
+          sources.push(s);
+        }
+      };
+      groundingSources.forEach(s => { if (reply.includes(s.url)) push(s); });
+      webSources.forEach(s => { if (reply.includes(s.url)) push(s); });
+      // Search happened but the model didn't paste URLs - still surface the top results
+      if (searchQuery && sources.filter(s => s.type === 'web').length === 0) {
+        webSources.slice(0, 3).forEach(push);
+      }
+      if (sources.length > 0) {
+        responseBody.sources = sources;
+      }
+    } catch (sourceErr) {
+      console.error('[Noteworthy Chat] Error building sources:', sourceErr);
+    }
     
     // Include search status if search was performed
     if (searchInProgress || searchQuery) {

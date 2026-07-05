@@ -1,4 +1,4 @@
-# Motion Audit — Psyche Noir Editorial
+# Motion Audit - Psyche Noir Editorial
 
 ## Motion Levels
 

@@ -10,10 +10,10 @@
  * the orchestrator (ingest-all) calls notifyForEvent() after storage.
  *
  * Design constraints:
- *  - Never block on image generation — send text-fallback immediately.
+ *  - Never block on image generation - send text-fallback immediately.
  *  - Rate-limit per user per type per day.
- *  - Deduplicate by event ID — never notify twice for the same event.
- *  - Fail gracefully — one channel failure does not block others.
+ *  - Deduplicate by event ID - never notify twice for the same event.
+ *  - Fail gracefully - one channel failure does not block others.
  */
 
 const { getNotificationChannels, getPushType } = require('./alertEvent');
@@ -65,7 +65,7 @@ async function notifyForEvent(alertEvent, options = {}) {
     return result;
   }
 
-  // Run channels in parallel — failures in one channel don't block others
+  // Run channels in parallel - failures in one channel don't block others
   const promises = [];
 
   if (channels.email) {
@@ -166,7 +166,7 @@ async function sendEarthquakeEmail(alertEvent, logger) {
   const location = alertEvent.location.display || 'Unknown Location';
   const eventTime = formatTime(alertEvent.publishedAt);
 
-  const subject = `${severityLabel}: M${magnitude} Earthquake — ${location}`;
+  const subject = `${severityLabel}: M${magnitude} Earthquake - ${location}`;
   const imageUrl = alertEvent.assets?.imageUrl;
 
   const html = buildEarthquakeEmailHtml({
@@ -217,7 +217,7 @@ async function sendGenericEventEmail(alertEvent, logger) {
   const eventTime = formatTime(alertEvent.publishedAt);
   const sourceName = alertEvent.source.toUpperCase();
 
-  const subject = `${severityLabel}: ${capitalize(alertEvent.type)} — ${alertEvent.location.display || 'Alert'}`;
+  const subject = `${severityLabel}: ${capitalize(alertEvent.type)} - ${alertEvent.location.display || 'Alert'}`;
 
   const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">

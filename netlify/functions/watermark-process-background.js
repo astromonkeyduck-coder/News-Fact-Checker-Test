@@ -189,8 +189,8 @@ exports.handler = async (event) => {
     }
     return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ ok: false, code }) };
   } finally {
-    // Always remove the manually uploaded original from R2 — on success AND on
-    // failure — so failed jobs never leave large orphaned files. There is no
+    // Always remove the manually uploaded original from R2 - on success AND on
+    // failure - so failed jobs never leave large orphaned files. There is no
     // retry path that needs the original, and processed output is independent.
     if (job && job.source === "manual" && job.sourceKey) {
       await r2.deleteObject(job.sourceKey);

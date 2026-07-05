@@ -1354,7 +1354,7 @@ export class NoteworthyChat extends HTMLElement {
             <div class="logo" aria-hidden="true">NW</div>
             <div class="title-group">
               <div class="title">Noteworthy Assistant (GPT-5)</div>
-              <div class="sub">Fast • Factual • Truth-Seeking</div>
+              <div class="sub">Ask about the news</div>
             </div>
           </div>
           <div class="head-right">

@@ -338,8 +338,12 @@
         }
     }
 
+    function getArticleTemplates() {
+        return window.ArticlePageV4 || window.ArticlePageV3 || null;
+    }
+
     function getV3Helpers() {
-        const v3 = window.ArticlePageV3;
+        const v3 = getArticleTemplates();
         if (!v3) return null;
         return {
             escapeHtml,
@@ -357,14 +361,14 @@
     }
 
     /**
-     * Render article using V3 templates into #nn-article
+     * Render article using V4 templates into #nn-article
      */
     async function renderArticleV3(post, articleId, classification) {
-        const v3 = window.ArticlePageV3;
+        const v3 = getArticleTemplates();
         const nnArticle = document.getElementById('nn-article');
         const shell = document.getElementById('nn-article-shell');
         if (!v3 || !nnArticle) {
-            console.error('[ArticleLoader] ArticlePageV3 or #nn-article missing');
+            console.error('[ArticleLoader] Article templates or #nn-article missing');
             return null;
         }
 
@@ -395,15 +399,16 @@
                 : v3.buildLongformHTML(post, ctx);
 
         nnArticle.innerHTML = html;
+        nnArticle.setAttribute('aria-busy', 'false');
         if (shell) shell.dataset.template = classification.template;
 
-        const toolbarCat = document.getElementById('toolbar-category');
-        if (toolbarCat) {
-            toolbarCat.textContent = v3.getToolbarLabel
-                ? v3.getToolbarLabel(post, classification, presentation)
-                : isXPost
-                  ? 'News update'
-                  : category;
+        // Bind every media component: videos, images, galleries. One working
+        // player per item, lazy loading, viewport pause, broken-media fallback.
+        if (window.PostMedia && window.PostMedia.initPostMedia) {
+            window.PostMedia.initPostMedia(nnArticle);
+        }
+        if (typeof window.nnBindReveals === 'function') {
+            window.nnBindReveals(nnArticle);
         }
 
         const bodyElement = document.getElementById('article-body');
@@ -456,14 +461,6 @@
             window.initArticleTocScrollSpy();
         }
 
-        nnArticle.querySelectorAll('video.nn-video-el').forEach((videoEl) => {
-            videoEl.addEventListener('error', () => {
-                const parent = videoEl.parentElement;
-                const fallback = parent?.getAttribute('data-video-fallback');
-                if (parent && fallback) parent.innerHTML = fallback;
-            });
-        });
-
         if (typeof window.reinitArticlePageControls === 'function') {
             window.reinitArticlePageControls();
         }
@@ -472,21 +469,63 @@
     }
 
     /**
-     * Sidebar: only mount sections with real content
+     * Populate the "Source trail" rail card with real source data only.
+     * When the post carries no source information the honest default note
+     * in the shell stays in place.
+     */
+    function populateSourceTrail(post) {
+        const body = document.getElementById('rail-trail-body');
+        const templates = getArticleTemplates();
+        if (!body || !templates || !templates.buildSourceTrailHTML) return;
+        const helpers = getV3Helpers();
+        if (!helpers) return;
+        const html = templates.buildSourceTrailHTML(post, helpers);
+        if (html) {
+            body.innerHTML = html;
+        } else {
+            body.innerHTML = '<p class="rail-note">This update does not cite external links. It is published from our own reporting and monitoring.</p>' +
+                '<p class="rail-note"><a href="/how-we-verify.html">How we verify stories</a></p>';
+        }
+    }
+
+    /**
+     * Compact rail row for a related/latest story. Thumbnail comes from the
+     * post's real media; rows without media render text-only.
+     */
+    function buildRailStoryHTML(post) {
+        const id = post.id || post.postId || '';
+        const url = `/article.html?id=${encodeURIComponent(id)}`;
+        const title = cleanHeadline(post);
+        const shortTitle = title.length > 96 ? title.substring(0, 93).trim() + '\u2026' : title;
+        const when = formatRelativeTime(post.datePosted || post.createdAt || post.created_at);
+
+        const cn = window.ContentNormalize;
+        const media = cn && cn.getPrimaryMedia ? cn.getPrimaryMedia(post) : { type: null, url: null, poster: null };
+        const thumb = media.type === 'image' ? media.url : media.poster;
+
+        if (thumb) {
+            return `<a class="rail-story" href="${escapeHtml(url)}">
+                <span class="rail-story-thumb"><img src="${escapeHtml(thumb)}" alt="" loading="lazy" decoding="async"></span>
+                <span>
+                    <span class="rail-story-title">${escapeHtml(shortTitle)}</span>
+                    <span class="rail-story-time">${escapeHtml(when)}</span>
+                </span>
+            </a>`;
+        }
+        return `<a class="rail-story rail-story--noimg" href="${escapeHtml(url)}">
+            <span>
+                <span class="rail-story-title">${escapeHtml(shortTitle)}</span>
+                <span class="rail-story-time">${escapeHtml(when)}</span>
+            </span>
+        </a>`;
+    }
+
+    /**
+     * Rail: only mount sections with real content.
      */
     async function loadSidebarContentV3(allPosts, currentPost, currentId) {
-        const sidebar = document.getElementById('nn-sidebar');
-        if (!sidebar) return;
-
-        if (!window.NewsCard) {
-            const script = document.createElement('script');
-            script.src = '/src/components/news-card.js';
-            document.head.appendChild(script);
-            await new Promise((resolve) => {
-                script.onload = resolve;
-                setTimeout(resolve, 1000);
-            });
-        }
+        const rail = document.getElementById('nn-rail') || document.getElementById('nn-sidebar');
+        if (!rail) return;
 
         const latest = allPosts
             .filter((p) => {
@@ -500,46 +539,31 @@
             })
             .slice(0, 8);
 
-        const related = findRelatedArticles(allPosts, currentPost, currentId, 6);
-        const relatedList = related.length > 0 ? related : latest.slice(0, 6);
+        const related = findRelatedArticles(allPosts, currentPost, currentId, 4);
 
-        let hasContent = false;
+        const relatedWrap = document.getElementById('rail-related-wrap') || document.getElementById('sidebar-related-wrap');
+        const latestWrap = document.getElementById('rail-latest-wrap') || document.getElementById('sidebar-latest-wrap');
+        const relatedEl = document.getElementById('related-articles');
+        const latestEl = document.getElementById('latest-articles');
 
-        const latestWrap = document.getElementById('sidebar-latest-wrap');
-        const relatedWrap = document.getElementById('sidebar-related-wrap');
-        const newsletterWrap = document.getElementById('sidebar-newsletter-wrap');
-        const tocWrap = document.getElementById('article-toc-wrap');
-
-        if (tocWrap && tocWrap.style.display !== 'none') {
-            hasContent = true;
-        }
-
-        if (relatedWrap && relatedList.length >= 1 && window.NewsCard?.render) {
+        if (relatedWrap && relatedEl && related.length >= 1) {
+            relatedEl.innerHTML = related.map(buildRailStoryHTML).join('');
             relatedWrap.style.display = '';
-            window.NewsCard.render(relatedList, '#related-articles', { showThumbnail: false });
-            hasContent = true;
         } else if (relatedWrap) {
             relatedWrap.style.display = 'none';
         }
 
-        if (latestWrap && latest.length >= 3 && window.NewsCard?.render) {
+        // Skip stories already shown as related.
+        const relatedIds = new Set(related.map((p) => p.id));
+        const latestList = latest.filter((p) => !relatedIds.has(p.id)).slice(0, 4);
+        if (latestWrap && latestEl && latestList.length >= 2) {
+            latestEl.innerHTML = latestList.map(buildRailStoryHTML).join('');
             latestWrap.style.display = '';
-            window.NewsCard.render(latest.slice(0, 6), '#latest-articles', { showThumbnail: false });
-            hasContent = true;
         } else if (latestWrap) {
             latestWrap.style.display = 'none';
         }
 
-        if (newsletterWrap) {
-            newsletterWrap.style.display = '';
-            hasContent = true;
-        }
-
-        if (hasContent) {
-            sidebar.hidden = false;
-        } else {
-            sidebar.hidden = true;
-        }
+        rail.hidden = false;
     }
 
     /**
@@ -666,8 +690,16 @@
      */
     function cleanHeadline(post) {
         const cn = window.ContentNormalize;
-        if (cn && cn.cleanHeadline) return cn.cleanHeadline(post) || 'Breaking News Story';
-        return (post.title || post.story || post.text || 'Breaking News Story');
+        const raw = (cn && cn.cleanHeadline)
+            ? (cn.cleanHeadline(post) || 'Breaking News Story')
+            : (post.title || post.story || post.text || 'Breaking News Story');
+        // Volcano engine titles arrive as "WATCH - Great Sitkin"; present them
+        // as readable headlines, matching the homepage cards.
+        if (String(post.category || '').toLowerCase().includes('volcano')) {
+            const m = raw.match(/^(WATCH|WARNING|ADVISORY)\s*[-:|]\s*(.+)$/i);
+            if (m) return `Volcano ${m[1].toLowerCase()} in effect for ${m[2].trim()}`;
+        }
+        return raw;
     }
 
     function updatePostMetaTags(post, postId) {
@@ -906,7 +938,7 @@
                 <div class="earthquake-animation-section earthquake-section">
                     <h2 class="earthquake-section-heading">Animated Visualization</h2>
                     <div class="article-media earthquake-animation-media">
-                        <img src="${escapeHtml(absoluteVideoUrl)}" alt="Animated earthquake visualization near ${escapeHtml(locationDisplay)}" loading="lazy" style="width: 100%; max-width: 100%; height: auto; border-radius: 4px; border: 1px solid #e5e5e5;">
+                        <img src="${escapeHtml(absoluteVideoUrl)}" alt="Animated earthquake visualization near ${escapeHtml(locationDisplay)}" loading="lazy" style="width: 100%; max-width: 100%; height: auto; border-radius: 4px; border: 1px solid rgba(255,255,255,0.10);">
                     </div>
                 </div>
             `;
@@ -928,26 +960,26 @@
                 <div class="earthquake-details-grid">
                     <div class="detail-card">
                         <div class="earthquake-label">Magnitude</div>
-                        <div style="font-size: 1.25rem; font-weight: 700; color: #1a1a1a;">M${magnitudeFormatted}</div>
+                        <div style="font-size: 1.25rem; font-weight: 700; color: var(--color-text, #E8ECF3);">M${magnitudeFormatted}</div>
                     </div>
                     ${depthFormatted ? `
                     <div class="detail-card">
                         <div class="earthquake-label">Depth</div>
-                        <div style="font-size: 1.25rem; font-weight: 700; color: #1a1a1a;">${depthFormatted}</div>
+                        <div style="font-size: 1.25rem; font-weight: 700; color: var(--color-text, #E8ECF3);">${depthFormatted}</div>
                     </div>
                     ` : ''}
                     ${lat && lon ? `
                     <div class="detail-card">
                         <div class="earthquake-label">Coordinates</div>
-                        <div style="font-size: 0.875rem; font-weight: 600; color: #1a1a1a; font-family: 'Courier New', monospace;">${Math.abs(lat).toFixed(4)}°${lat >= 0 ? 'N' : 'S'}, ${Math.abs(lon).toFixed(4)}°${lon >= 0 ? 'E' : 'W'}</div>
+                        <div style="font-size: 0.875rem; font-weight: 600; color: var(--color-text, #E8ECF3); font-family: 'Courier New', monospace;">${Math.abs(lat).toFixed(4)}°${lat >= 0 ? 'N' : 'S'}, ${Math.abs(lon).toFixed(4)}°${lon >= 0 ? 'E' : 'W'}</div>
                     </div>
                     ` : ''}
                     <div class="detail-card">
                         <div class="earthquake-label">Location</div>
-                        <div style="font-size: 0.9375rem; font-weight: 600; color: #1a1a1a;">
+                        <div style="font-size: 0.9375rem; font-weight: 600; color: var(--color-text, #E8ECF3);">
                             ${escapeHtml(locationDisplay)}
                             ${locationEnglishName && locationEnglishName !== locationDisplay ? `
-                                <div style="font-size: 0.75rem; color: #666; margin-top: 0.25rem; font-weight: 400;">
+                                <div style="font-size: 0.75rem; color: var(--color-text-muted, #93A0B4); margin-top: 0.25rem; font-weight: 400;">
                                     ${escapeHtml(locationEnglishName)}
                                 </div>
                             ` : ''}
@@ -976,30 +1008,30 @@
                         <div class="earthquake-metric-card">
                             <div class="earthquake-label">Risk Score</div>
                             <div style="font-size: 1.5rem; font-weight: 700; line-height: 1.2;" class="${severityClass}">${impactAssessment.riskScore || 0}/100</div>
-                            <div style="font-size: 0.875rem; color: #666; margin-top: 0.25rem;">${impactAssessment.severity || 'UNKNOWN'}</div>
+                            <div style="font-size: 0.875rem; color: var(--color-text-muted, #93A0B4); margin-top: 0.25rem;">${impactAssessment.severity || 'UNKNOWN'}</div>
                         </div>
                         ${impactAssessment.affectedPopulation ? `
                         <div class="earthquake-metric-card">
                             <div class="earthquake-label">Affected Population</div>
-                            <div style="font-size: 1.25rem; font-weight: 700; color: #1a1a1a; line-height: 1.2;">
+                            <div style="font-size: 1.25rem; font-weight: 700; color: var(--color-text, #E8ECF3); line-height: 1.2;">
                                 ${impactAssessment.affectedPopulation >= 1000000 ? (impactAssessment.affectedPopulation / 1000000).toFixed(2) + 'M' : 
                                   impactAssessment.affectedPopulation >= 1000 ? (impactAssessment.affectedPopulation / 1000).toFixed(1) + 'K' : 
                                   impactAssessment.affectedPopulation.toLocaleString()}
                             </div>
-                            <div style="font-size: 0.75rem; color: #666; margin-top: 0.25rem;">people potentially affected</div>
+                            <div style="font-size: 0.75rem; color: var(--color-text-muted, #93A0B4); margin-top: 0.25rem;">people potentially affected</div>
                         </div>
                         ` : ''}
                         ${impactAssessment.populationDensity ? `
                         <div class="earthquake-metric-card">
                             <div class="earthquake-label">Population Density</div>
-                            <div style="font-size: 1.25rem; font-weight: 700; color: #1a1a1a;">${impactAssessment.populationDensity.toFixed(0)}</div>
-                            <div style="font-size: 0.75rem; color: #666; margin-top: 0.25rem;">people per km²</div>
+                            <div style="font-size: 1.25rem; font-weight: 700; color: var(--color-text, #E8ECF3);">${impactAssessment.populationDensity.toFixed(0)}</div>
+                            <div style="font-size: 0.75rem; color: var(--color-text-muted, #93A0B4); margin-top: 0.25rem;">people per km²</div>
                         </div>
                         ` : ''}
                         ${impactAssessment.affectedRadius ? `
                         <div class="earthquake-metric-card">
                             <div class="earthquake-label">Affected Radius</div>
-                            <div style="font-size: 1.25rem; font-weight: 700; color: #1a1a1a;">${impactAssessment.affectedRadius.toFixed(1)} km</div>
+                            <div style="font-size: 1.25rem; font-weight: 700; color: var(--color-text, #E8ECF3);">${impactAssessment.affectedRadius.toFixed(1)} km</div>
                         </div>
                         ` : ''}
                     </div>
@@ -1009,8 +1041,8 @@
                         <h3 class="earthquake-subsection-heading">Nearby Cities & Population</h3>
                         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.5rem;">
                             ${impactAssessment.nearbyCities.slice(0, 8).map(city => `
-                                <div style="padding: 0.5em 0; border-bottom: 1px solid #e5e5e5;">
-                                    <div style="font-weight: 600; color: #1a1a1a; font-size: 0.9375rem;">${escapeHtml(city.name || 'Unknown')}</div>
+                                <div style="padding: 0.5em 0; border-bottom: 1px solid rgba(255,255,255,0.08);">
+                                    <div style="font-weight: 600; color: var(--color-text, #E8ECF3); font-size: 0.9375rem;">${escapeHtml(city.name || 'Unknown')}</div>
                                     <div class="earthquake-label" style="margin-bottom: 0;">${city.population ? city.population.toLocaleString() + ' people' : 'Population data unavailable'}</div>
                                 </div>
                             `).join('')}
@@ -1022,14 +1054,14 @@
                     <div class="earthquake-subsection">
                         <h3 class="earthquake-subsection-heading">Critical Infrastructure at Risk</h3>
                         <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
-                            <div><span style="font-weight: 700; color: #1a1a1a;">${impactAssessment.criticalInfrastructure.hospitals || 0}</span> <span class="earthquake-label" style="margin: 0;">Hospitals</span></div>
-                            <div><span style="font-weight: 700; color: #1a1a1a;">${impactAssessment.criticalInfrastructure.schools || 0}</span> <span class="earthquake-label" style="margin: 0;">Schools</span></div>
-                            <div><span style="font-weight: 700; color: #1a1a1a;">${impactAssessment.criticalInfrastructure.airports || 0}</span> <span class="earthquake-label" style="margin: 0;">Airports</span></div>
-                            <div><span style="font-weight: 700; color: #1a1a1a;">${impactAssessment.criticalInfrastructure.powerPlants || 0}</span> <span class="earthquake-label" style="margin: 0;">Power Plants</span></div>
-                            ${impactAssessment.criticalInfrastructure.dams ? `<div><span style="font-weight: 700; color: #1a1a1a;">${impactAssessment.criticalInfrastructure.dams || 0}</span> <span class="earthquake-label" style="margin: 0;">Dams</span></div>` : ''}
+                            <div><span style="font-weight: 700; color: var(--color-text, #E8ECF3);">${impactAssessment.criticalInfrastructure.hospitals || 0}</span> <span class="earthquake-label" style="margin: 0;">Hospitals</span></div>
+                            <div><span style="font-weight: 700; color: var(--color-text, #E8ECF3);">${impactAssessment.criticalInfrastructure.schools || 0}</span> <span class="earthquake-label" style="margin: 0;">Schools</span></div>
+                            <div><span style="font-weight: 700; color: var(--color-text, #E8ECF3);">${impactAssessment.criticalInfrastructure.airports || 0}</span> <span class="earthquake-label" style="margin: 0;">Airports</span></div>
+                            <div><span style="font-weight: 700; color: var(--color-text, #E8ECF3);">${impactAssessment.criticalInfrastructure.powerPlants || 0}</span> <span class="earthquake-label" style="margin: 0;">Power Plants</span></div>
+                            ${impactAssessment.criticalInfrastructure.dams ? `<div><span style="font-weight: 700; color: var(--color-text, #E8ECF3);">${impactAssessment.criticalInfrastructure.dams || 0}</span> <span class="earthquake-label" style="margin: 0;">Dams</span></div>` : ''}
                         </div>
                         ${impactAssessment.criticalInfrastructure.details && (impactAssessment.criticalInfrastructure.details.hospitals?.length > 0 || impactAssessment.criticalInfrastructure.details.schools?.length > 0) ? `
-                        <p style="margin: 0.75em 0 0; font-size: 0.8125rem; color: #666;"><strong>Note:</strong> Infrastructure data is based on OpenStreetMap and may not be complete. Always follow official emergency guidance.</p>
+                        <p style="margin: 0.75em 0 0; font-size: 0.8125rem; color: var(--color-text-muted, #93A0B4);"><strong>Note:</strong> Infrastructure data is based on OpenStreetMap and may not be complete. Always follow official emergency guidance.</p>
                         ` : ''}
                     </div>
                     ` : ''}
@@ -1039,7 +1071,7 @@
             html += `
                 <div id="impact-assessment" class="impact-assessment-section earthquake-section">
                     <h2 class="earthquake-section-heading">AI Impact Assessment</h2>
-                    <p style="font-size: 0.9375rem; color: #666; margin: 0;">Assessment data will appear here when available.</p>
+                    <p style="font-size: 0.9375rem; color: var(--color-text-muted, #93A0B4); margin: 0;">Assessment data will appear here when available.</p>
                 </div>
             `;
         }
@@ -1051,11 +1083,11 @@
                 <div class="tsunami-risk-section earthquake-section">
                     <h2 class="earthquake-section-heading">Tsunami Risk Assessment</h2>
                     <div style="font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.5rem;" class="${riskClass}">${tsunamiAssessment.riskLevel} RISK</div>
-                    <p style="font-size: 0.9375rem; color: #1a1a1a; line-height: 1.6; margin: 0 0 0.5em 0;">
+                    <p style="font-size: 0.9375rem; color: var(--color-text, #E8ECF3); line-height: 1.6; margin: 0 0 0.5em 0;">
                         ${tsunamiAssessment.assessment || 'Monitor official tsunami warnings.'}
                     </p>
                     ${tsunamiAssessment.travelTime ? `
-                    <p style="font-size: 0.875rem; color: #666; margin: 0.5em 0 0;">
+                    <p style="font-size: 0.875rem; color: var(--color-text-muted, #93A0B4); margin: 0.5em 0 0;">
                         Estimated travel time to coast: <strong>${tsunamiAssessment.travelTime.hours}h ${tsunamiAssessment.travelTime.minutes}m</strong>
                     </p>
                     ` : ''}
@@ -1075,33 +1107,33 @@
                         <div class="earthquake-metric-card">
                             <div class="earthquake-label">24 Hour Probability</div>
                             <div style="font-size: 1.25rem; font-weight: 700; line-height: 1.2;" class="${probClass}">${aftershockForecast.probability24h || 0}%</div>
-                            <div style="font-size: 0.75rem; color: #666;">chance of aftershocks</div>
+                            <div style="font-size: 0.75rem; color: var(--color-text-muted, #93A0B4);">chance of aftershocks</div>
                         </div>
                         <div class="earthquake-metric-card">
                             <div class="earthquake-label">Expected Largest</div>
-                            <div style="font-size: 1.25rem; font-weight: 700; color: #1a1a1a;">M${(aftershockForecast.expectedLargestAftershock || 0).toFixed(1)}</div>
-                            <div style="font-size: 0.75rem; color: #666;">magnitude estimate</div>
+                            <div style="font-size: 1.25rem; font-weight: 700; color: var(--color-text, #E8ECF3);">M${(aftershockForecast.expectedLargestAftershock || 0).toFixed(1)}</div>
+                            <div style="font-size: 0.75rem; color: var(--color-text-muted, #93A0B4);">magnitude estimate</div>
                         </div>
                         ${aftershockForecast.probability48h !== undefined ? `
                         <div class="earthquake-metric-card">
                             <div class="earthquake-label">48 Hour Probability</div>
-                            <div style="font-size: 1.25rem; font-weight: 700; color: #1a1a1a;">${aftershockForecast.probability48h}%</div>
+                            <div style="font-size: 1.25rem; font-weight: 700; color: var(--color-text, #E8ECF3);">${aftershockForecast.probability48h}%</div>
                         </div>
                         ` : ''}
                         ${aftershockForecast.probability7d !== undefined ? `
                         <div class="earthquake-metric-card">
                             <div class="earthquake-label">7 Day Probability</div>
-                            <div style="font-size: 1.25rem; font-weight: 700; color: #1a1a1a;">${aftershockForecast.probability7d}%</div>
+                            <div style="font-size: 1.25rem; font-weight: 700; color: var(--color-text, #E8ECF3);">${aftershockForecast.probability7d}%</div>
                         </div>
                         ` : ''}
                     </div>
                     ${aftershockForecast.forecast ? `
-                    <p style="font-size: 0.9375rem; color: #1a1a1a; line-height: 1.6; margin: 0.75em 0 0;">
+                    <p style="font-size: 0.9375rem; color: var(--color-text, #E8ECF3); line-height: 1.6; margin: 0.75em 0 0;">
                         ${aftershockForecast.forecast}
                     </p>
                     ` : ''}
                     ${aftershockForecast.recommendation ? `
-                    <p style="font-size: 0.875rem; color: #1a1a1a; margin: 0.75em 0 0; padding-left: 1em; border-left: 3px solid #1a1a1a;">
+                    <p style="font-size: 0.875rem; color: var(--color-text, #E8ECF3); margin: 0.75em 0 0; padding-left: 1em; border-left: 3px solid rgba(255,255,255,0.28);">
                         <strong>Recommendation:</strong> ${aftershockForecast.recommendation}
                     </p>
                     ` : ''}
@@ -1111,7 +1143,7 @@
             html += `
                 <div class="aftershock-forecast-section earthquake-section">
                     <h2 class="earthquake-section-heading">AI Aftershock Forecast</h2>
-                    <p style="font-size: 0.9375rem; color: #666; margin: 0;">Assessment data will appear here when available.</p>
+                    <p style="font-size: 0.9375rem; color: var(--color-text-muted, #93A0B4); margin: 0;">Assessment data will appear here when available.</p>
                 </div>
             `;
         }
@@ -1124,15 +1156,15 @@
                 <div class="anomaly-detection-section earthquake-section">
                     <h2 class="earthquake-section-heading">Anomaly Detection</h2>
                     <div style="font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.5rem;" class="${anomalyClass}">${anomalyDetection.anomalyLevel} ANOMALY LEVEL</div>
-                    <p style="font-size: 0.9375rem; color: #1a1a1a; line-height: 1.6; margin: 0 0 0.5em 0;">
+                    <p style="font-size: 0.9375rem; color: var(--color-text, #E8ECF3); line-height: 1.6; margin: 0 0 0.5em 0;">
                         ${anomalyDetection.summary || 'Unusual earthquake patterns detected.'}
                     </p>
                     ${anomalyDetection.anomalies && anomalyDetection.anomalies.length > 0 ? `
                     <div style="margin-top: 0.75em;">
                         ${anomalyDetection.anomalies.map(anomaly => `
-                            <div style="padding: 0.5em 0; border-bottom: 1px solid #e5e5e5;">
+                            <div style="padding: 0.5em 0; border-bottom: 1px solid rgba(255,255,255,0.08);">
                                 <div class="earthquake-label">${anomaly.type}</div>
-                                <div style="font-size: 0.875rem; color: #1a1a1a;">${escapeHtml(anomaly.description)}</div>
+                                <div style="font-size: 0.875rem; color: var(--color-text, #E8ECF3);">${escapeHtml(anomaly.description)}</div>
                             </div>
                         `).join('')}
                     </div>
@@ -1143,7 +1175,7 @@
             html += `
                 <div class="anomaly-detection-section earthquake-section">
                     <h2 class="earthquake-section-heading">Anomaly Detection</h2>
-                    <p style="font-size: 0.9375rem; color: #666; margin: 0;">Assessment data will appear here when available.</p>
+                    <p style="font-size: 0.9375rem; color: var(--color-text-muted, #93A0B4); margin: 0;">Assessment data will appear here when available.</p>
                 </div>
             `;
         }
@@ -1160,17 +1192,17 @@
                         <div class="earthquake-metric-card">
                             <div class="earthquake-label">Overall Risk</div>
                             <div style="font-size: 1.25rem; font-weight: 700;" class="${t1Class}">${impactAssessment.severity || 'UNKNOWN'}</div>
-                            <div style="font-size: 0.75rem; color: #666;">Based on multiple factors</div>
+                            <div style="font-size: 0.75rem; color: var(--color-text-muted, #93A0B4);">Based on multiple factors</div>
                         </div>
                         <div class="earthquake-metric-card">
                             <div class="earthquake-label">Population Risk</div>
                             <div style="font-size: 1.25rem; font-weight: 700;" class="${t2Class}">${tierBreakdown.tier2}</div>
-                            <div style="font-size: 0.75rem; color: #666;">${impactAssessment.affectedPopulation ? (impactAssessment.affectedPopulation >= 1000000 ? (impactAssessment.affectedPopulation / 1000000).toFixed(2) + 'M' : (impactAssessment.affectedPopulation / 1000).toFixed(1) + 'K') : 'N/A'} people</div>
+                            <div style="font-size: 0.75rem; color: var(--color-text-muted, #93A0B4);">${impactAssessment.affectedPopulation ? (impactAssessment.affectedPopulation >= 1000000 ? (impactAssessment.affectedPopulation / 1000000).toFixed(2) + 'M' : (impactAssessment.affectedPopulation / 1000).toFixed(1) + 'K') : 'N/A'} people</div>
                         </div>
                         <div class="earthquake-metric-card">
                             <div class="earthquake-label">Density Risk</div>
                             <div style="font-size: 1.25rem; font-weight: 700;" class="${t3Class}">${tierBreakdown.tier3}</div>
-                            <div style="font-size: 0.75rem; color: #666;">${impactAssessment.populationDensity ? impactAssessment.populationDensity.toFixed(0) + '/km²' : 'N/A'}</div>
+                            <div style="font-size: 0.75rem; color: var(--color-text-muted, #93A0B4);">${impactAssessment.populationDensity ? impactAssessment.populationDensity.toFixed(0) + '/km²' : 'N/A'}</div>
                         </div>
                     </div>
                 </div>
@@ -1179,7 +1211,7 @@
             html += `
                 <div class="tier-breakdown-section earthquake-section">
                     <h2 class="earthquake-section-heading">Risk Tier Breakdown</h2>
-                    <p style="font-size: 0.9375rem; color: #666; margin: 0;">Assessment data will appear here when available.</p>
+                    <p style="font-size: 0.9375rem; color: var(--color-text-muted, #93A0B4); margin: 0;">Assessment data will appear here when available.</p>
                 </div>
             `;
         }
@@ -1190,14 +1222,14 @@
             html += `
                 <div class="historical-context-section earthquake-section">
                     <h2 class="earthquake-section-heading">Historical Context</h2>
-                    <p style="font-size: 0.9375rem; color: #1a1a1a; margin: 0 0 1rem 0; line-height: 1.6;">
+                    <p style="font-size: 0.9375rem; color: var(--color-text, #E8ECF3); margin: 0 0 1rem 0; line-height: 1.6;">
                         ${historical.count} similar earthquake${historical.count !== 1 ? 's' : ''} recorded in this region historically.
                     </p>
                     ${historical.largest ? `
                     <div class="earthquake-metric-card" style="margin-bottom: 0.5rem;">
                         <div class="earthquake-label">Largest Historical Event</div>
-                        <div style="font-size: 1.125rem; font-weight: 700; color: #1a1a1a;">M${historical.largest.magnitude?.toFixed(1) || 'N/A'}</div>
-                        <div style="font-size: 0.75rem; color: #666;">${historical.largest.date ? new Date(historical.largest.date).toLocaleDateString() : 'Date unknown'}</div>
+                        <div style="font-size: 1.125rem; font-weight: 700; color: var(--color-text, #E8ECF3);">M${historical.largest.magnitude?.toFixed(1) || 'N/A'}</div>
+                        <div style="font-size: 0.75rem; color: var(--color-text-muted, #93A0B4);">${historical.largest.date ? new Date(historical.largest.date).toLocaleDateString() : 'Date unknown'}</div>
                     </div>
                     ` : ''}
                     ${historical.similar && historical.similar.length > 0 ? `
@@ -1205,9 +1237,9 @@
                         <div class="earthquake-subsection-heading">Similar Events (within 0.5 magnitude)</div>
                         <div style="display: grid; gap: 0.5rem;">
                             ${historical.similar.slice(0, 3).map(eq => `
-                                <div style="padding: 0.5em 0; border-bottom: 1px solid #e5e5e5;">
-                                    <div style="font-size: 0.9375rem; font-weight: 600; color: #1a1a1a;">M${eq.magnitude?.toFixed(1) || 'N/A'}</div>
-                                    <div style="font-size: 0.75rem; color: #666;">${eq.date ? new Date(eq.date).toLocaleDateString() : 'Date unknown'}</div>
+                                <div style="padding: 0.5em 0; border-bottom: 1px solid rgba(255,255,255,0.08);">
+                                    <div style="font-size: 0.9375rem; font-weight: 600; color: var(--color-text, #E8ECF3);">M${eq.magnitude?.toFixed(1) || 'N/A'}</div>
+                                    <div style="font-size: 0.75rem; color: var(--color-text-muted, #93A0B4);">${eq.date ? new Date(eq.date).toLocaleDateString() : 'Date unknown'}</div>
                                 </div>
                             `).join('')}
                         </div>
@@ -1219,14 +1251,14 @@
             html += `
                 <div class="historical-context-section earthquake-section">
                     <h2 class="earthquake-section-heading">Historical Context</h2>
-                    <p style="font-size: 0.9375rem; color: #666; margin: 0;">Assessment data will appear here when available.</p>
+                    <p style="font-size: 0.9375rem; color: var(--color-text-muted, #93A0B4); margin: 0;">Assessment data will appear here when available.</p>
                 </div>
             `;
         }
         
         // Add 3D visualization container with enhanced features
         html += `
-            <div class="earthquake-3d-container" style="margin: 2rem 0; border-radius: 4px; overflow: hidden; border: 1px solid #e5e5e5;">
+            <div class="earthquake-3d-container" style="margin: 2rem 0; border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.10);">
                 <div class="earthquake-3d-header">
                     <h3 class="earthquake-3d-header-title">Interactive 3D Visualization</h3>
                     <div class="earthquake-3d-header-hint">Drag to rotate • Scroll to zoom</div>
@@ -1280,7 +1312,7 @@
             
             const THREE = window.THREE;
             
-            // Scene setup — deep space feel
+            // Scene setup - deep space feel
             const scene = new THREE.Scene();
             scene.background = new THREE.Color(0x050510);
             
@@ -1318,7 +1350,7 @@
             }
             container.appendChild(renderer.domElement);
             
-            // Professional lighting — no harsh single highlight
+            // Professional lighting - no harsh single highlight
             const hemi = new THREE.HemisphereLight(0x1a2a4a, 0x0a0a12, 0.5);
             scene.add(hemi);
             const keyLight = new THREE.DirectionalLight(0xe8f0ff, 0.5);
@@ -1328,7 +1360,7 @@
             fillLight.position.set(-6, 4, -4);
             scene.add(fillLight);
             
-            // Earth sphere — soft, realistic shading (no blown-out highlight)
+            // Earth sphere - soft, realistic shading (no blown-out highlight)
             const earthGeometry = new THREE.SphereGeometry(5, 72, 72);
             const earthMaterial = new THREE.MeshPhongMaterial({
                 color: 0x1e3a5f,
@@ -1372,7 +1404,7 @@
             epicenterLight.position.set(x, y, z);
             scene.add(epicenterLight);
             
-            // Epicenter marker — smooth sphere, no wireframe look
+            // Epicenter marker - smooth sphere, no wireframe look
             const epicenterSize = Math.min(0.2 + (magnitude / 20), 0.5);
             const epicenterGeometry = new THREE.SphereGeometry(epicenterSize, 36, 36);
             const epicenterMaterial = new THREE.MeshPhongMaterial({
@@ -1388,7 +1420,7 @@
             epicenter.position.set(x, y, z);
             scene.add(epicenter);
             
-            // Pulsing rings — smooth, no harsh edges
+            // Pulsing rings - smooth, no harsh edges
             for (let i = 0; i < 3; i++) {
                 const ringSize = epicenterSize * (1.6 + i * 0.6);
                 const ringGeometry = new THREE.RingGeometry(ringSize, ringSize + 0.08, 64);
@@ -1499,7 +1531,7 @@
                 targetDistance = Math.max(8, Math.min(55, targetDistance));
             });
             
-            // Animation loop — smooth motion, shockwaves, camera damping
+            // Animation loop - smooth motion, shockwaves, camera damping
             let pulseScale = 1.0;
             let time = 0;
             function animate() {
@@ -1690,7 +1722,7 @@
             epicenterMarker.bindPopup(`
                 <div style="text-align: center; padding: 0.5rem; min-width: 200px; white-space: normal;">
                     <h3 style="margin: 0 0 0.5rem 0; font-size: 1.25rem; font-weight: 700;">M${magnitude.toFixed(1)} Earthquake</h3>
-                    <p style="margin: 0; color: #666;">${escapeHtml(locationDisplay)}</p>
+                    <p style="margin: 0; color: var(--color-text-muted, #93A0B4);">${escapeHtml(locationDisplay)}</p>
                     <p style="margin: 0.5rem 0 0 0; font-size: 0.875rem; color: #999;">Epicenter</p>
                 </div>
             `).openPopup();
@@ -1866,25 +1898,32 @@
         console.log('[ArticleLoader] Article ID from URL:', articleId);
         
         const nnArticle = document.getElementById('nn-article');
+        // #article-body is created by the V4 templates at render time; only
+        // the article container must exist up front.
         const bodyElement = document.getElementById('article-body');
         const timestampElement = document.getElementById('article-timestamp');
-        
-        if (!nnArticle || !bodyElement) {
-            console.error('[ArticleLoader] Required elements not found', {
-                nnArticle: !!nnArticle,
-                bodyElement: !!bodyElement,
-            });
+
+        if (!nnArticle) {
+            console.error('[ArticleLoader] Required element #nn-article not found');
             return;
         }
         
         if (!articleId) {
             console.warn('[ArticleLoader] No article ID provided');
-            nnArticle.innerHTML = '<h1 class="nn-headline">Article Not Found</h1><p>No article ID provided. Please select an article from the <a href="/">homepage</a>.</p>';
+            nnArticle.setAttribute('aria-busy', 'false');
+            nnArticle.innerHTML = `<div class="nn-state">
+                <h1 class="nn-state-title">Story not found</h1>
+                <p class="nn-state-text">No story was specified. Head back to the front page or browse everything we have published.</p>
+                <div class="nn-state-actions">
+                    <a class="utility-btn utility-btn--primary" href="/">Front page</a>
+                    <a class="utility-btn" href="/archive.html">All stories</a>
+                </div>
+            </div>`;
             return;
         }
 
-        console.log('[ArticleLoader] Showing loading state');
-        nnArticle.innerHTML = '<div class="nn-skeleton" style="height:120px;margin-bottom:1.5rem;"></div><div class="nn-skeleton" style="height:280px;"></div>';
+        // The shell already renders a full skeleton article; leave it in
+        // place until real content or an error state replaces it.
 
         try {
             // Fetch post by ID directly (bypasses index - fixes "not found" after editing)
@@ -1946,9 +1985,15 @@
 
             if (!post) {
                 console.error('[ArticleLoader] Post not found. ArticleId:', articleId);
-                const debugPosts = Array.isArray(posts) ? posts : [];
-                console.log('[ArticleLoader] First 5 post IDs:', debugPosts.slice(0, 5).map(p => ({ id: p.id, postId: p.postId, title: (p.title || p.story || p.text || '').substring(0, 50) })));
-                nnArticle.innerHTML = `<h1 class="nn-headline">Article Not Found</h1><p>Article with ID "${escapeHtml(articleId)}" not found. Please return to the <a href="/">homepage</a>.</p>`;
+                nnArticle.setAttribute('aria-busy', 'false');
+                nnArticle.innerHTML = `<div class="nn-state">
+                    <h1 class="nn-state-title">This story is no longer available</h1>
+                    <p class="nn-state-text">It may have been removed or the link may be out of date. The latest coverage is on the front page.</p>
+                    <div class="nn-state-actions">
+                        <a class="utility-btn utility-btn--primary" href="/">Front page</a>
+                        <a class="utility-btn" href="/archive.html">All stories</a>
+                    </div>
+                </div>`;
                 return;
             }
             
@@ -2020,7 +2065,7 @@
                     "description": truncateDescription(story),
                     "image": ensureAbsoluteImageUrl(image),
                     "datePublished": datePosted,
-                    "dateModified": datePosted,
+                    "dateModified": post.updated_at || post.dateModified || datePosted,
                     "author": {
                         "@type": "Organization",
                         "name": "Noteworthy News"
@@ -2041,8 +2086,9 @@
                 structuredDataEl.textContent = JSON.stringify(structuredData, null, 2);
             }
             
-            const classification = window.ArticlePageV3
-                ? window.ArticlePageV3.classify(post)
+            const templates = getArticleTemplates();
+            const classification = templates
+                ? templates.classify(post)
                 : {
                     template: 'longform',
                     isXPost: false,
@@ -2074,6 +2120,7 @@
             }
 
             await renderArticleV3(post, articleId, classification);
+            populateSourceTrail(post);
 
             if (typeof window.updateShareMenu === 'function') {
                 window.updateShareMenu(shareText, shareUrl, isEarthquake, magnitude, location);
@@ -2159,12 +2206,7 @@
                 }
             }
 
-            const sidebar = document.getElementById('nn-sidebar');
-            if (isXPost) {
-                if (sidebar) sidebar.hidden = true;
-            } else {
-                await loadSidebarContentV3(allPosts, post, articleId);
-            }
+            await loadSidebarContentV3(allPosts, post, articleId);
 
             loadMoreCoverage(allPosts, articleId);
 
@@ -2175,189 +2217,89 @@
             const errorMessage = error.message || 'An unknown error occurred';
             const isNetworkError =
                 errorMessage.includes('Network') || errorMessage.includes('Failed to fetch');
-            const errHtml = `
-                <h1 class="nn-headline">Unable to Load Article</h1>
-                <div style="text-align:center;padding:2rem;border:1px solid #e8eaed;border-radius:12px;margin-top:1rem;">
-                    <p style="color:#5b6573;margin-bottom:1.25rem;">
-                        ${isNetworkError
-                            ? 'We\'re having trouble connecting to our servers. Please check your connection and try again.'
-                            : 'An error occurred while loading this article. Please try again later.'}
-                    </p>
-                    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
-                        <a href="/" style="padding:10px 20px;background:#0f234a;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">Return to Homepage</a>
-                        <button type="button" onclick="location.reload()" style="padding:10px 20px;background:#fff;color:#0b0d10;border:1px solid #d0d4da;border-radius:8px;cursor:pointer;font-weight:600;">Retry</button>
-                    </div>
-                </div>`;
-            if (nnArt) nnArt.innerHTML = errHtml;
-            else if (bodyElement) bodyElement.innerHTML = errHtml;
-        }
-    }
-
-    /**
-     * Load sidebar content (Latest and Related)
-     */
-    async function loadSidebarContent(allPosts, currentPost, currentId) {
-        // Load NewsCard component if available
-        if (!window.NewsCard) {
-            const script = document.createElement('script');
-            script.src = '/src/components/news-card.js';
-            document.head.appendChild(script);
-            await new Promise(resolve => {
-                script.onload = resolve;
-                setTimeout(resolve, 1000); // Fallback timeout
-            });
-        }
-        
-        // Latest articles (5-8 newest, excluding current)
-        const latest = allPosts
-            .filter(p => {
-                const id = p.id || '';
-                return id !== currentId && id !== `post-${currentId}` && (p.story || p.text || p.title);
-            })
-            .sort((a, b) => {
-                const dateA = new Date(a.datePosted || a.createdAt || a.created_at || 0).getTime();
-                const dateB = new Date(b.datePosted || b.createdAt || b.created_at || 0).getTime();
-                return dateB - dateA;
-            })
-            .slice(0, 8);
-        
-        if (window.NewsCard && window.NewsCard.render) {
-            window.NewsCard.render(latest, '#latest-articles', { showThumbnail: false });
-        }
-        
-        // Related articles using algorithm
-        const related = findRelatedArticles(allPosts, currentPost, currentId, 6);
-        
-        if (related.length === 0) {
-            // Fallback to latest if no related found
-            const fallback = latest.slice(0, 6);
-            if (window.NewsCard && window.NewsCard.render) {
-                window.NewsCard.render(fallback, '#related-articles', { showThumbnail: false });
-            }
-        } else {
-            if (window.NewsCard && window.NewsCard.render) {
-                window.NewsCard.render(related, '#related-articles', { showThumbnail: false });
+            const errHtml = `<div class="nn-state">
+                <h1 class="nn-state-title">Could not load this story</h1>
+                <p class="nn-state-text">
+                    ${isNetworkError
+                        ? 'We are having trouble reaching our servers. Check your connection and try again.'
+                        : 'Something went wrong while loading this story. Please try again in a moment.'}
+                </p>
+                <div class="nn-state-actions">
+                    <button type="button" class="utility-btn utility-btn--primary" onclick="location.reload()">Try again</button>
+                    <a class="utility-btn" href="/">Front page</a>
+                </div>
+            </div>`;
+            if (nnArt) {
+                nnArt.setAttribute('aria-busy', 'false');
+                nnArt.innerHTML = errHtml;
+            } else if (bodyElement) {
+                bodyElement.innerHTML = errHtml;
             }
         }
     }
 
     /**
-     * Load more coverage section - Show diverse, recent articles
+     * "Read next": premium cards with live media previews. Every card's
+     * media is its own component (video controls included) via PostMedia.
      */
     function loadMoreCoverage(allPosts, currentId) {
-        // Get articles excluding current
+        const grid = document.getElementById('more-coverage-grid');
+        if (!grid) return;
+
         const available = allPosts.filter(p => {
             const id = p.id || '';
             return id !== currentId && id !== `post-${currentId}` && (p.story || p.text || p.title);
         });
-        
+
         if (available.length === 0) {
-            const grid = document.getElementById('more-coverage-grid');
-            if (grid) {
-                grid.innerHTML = '<p style="color: #666; text-align: center; padding: 40px;">No additional articles available.</p>';
-            }
+            grid.innerHTML = `<div class="nn-state" style="grid-column:1/-1;">
+                <p class="nn-state-text" style="margin:0;">Nothing else to read yet. New stories land on the front page first.</p>
+            </div>`;
             return;
         }
-        
-        // Sort by date (newest first)
+
         const sorted = available.sort((a, b) => {
             const dateA = new Date(a.datePosted || a.createdAt || a.created_at || 0).getTime();
             const dateB = new Date(b.datePosted || b.createdAt || b.created_at || 0).getTime();
             return dateB - dateA;
         });
-        
-        // Select diverse articles: mix of recent and varied categories
-        const recent = sorted.slice(0, 12); // Get more recent articles
-        const more = recent.slice(0, 6); // Take top 6
-        
-        // Render with enhanced styling
-        if (window.NewsCard && window.NewsCard.render) {
-            window.NewsCard.render(more, '#more-coverage-grid', { 
-                showThumbnail: true, 
-                maxTitleLength: 80,
-                enhanced: true // Flag for enhanced styling
-            });
-        } else {
-            // Fallback rendering
-            const grid = document.getElementById('more-coverage-grid');
-            if (grid) {
-                grid.innerHTML = more.map(post => {
-                    const postId = post.id || `post-${Date.now()}`;
-                    const title = (window.ContentNormalize && window.ContentNormalize.cleanHeadline)
-                        ? window.ContentNormalize.cleanHeadline(post)
-                        : (post.title || post.story || post.text || 'Untitled');
-                    const shortTitle = title.length > 80 ? title.substring(0, 77) + '...' : title;
-                    const image = post.primary_image_url || post.image_url || post.image || post.images?.[0] || '';
-                    const datePosted = post.datePosted || post.createdAt || post.created_at || new Date().toISOString();
-                    const relativeTime = formatRelativeTime(datePosted);
-                    const category = post.category || 'Breaking News';
-                    const articleUrl = `/article.html?id=${encodeURIComponent(postId)}`;
-                    
-                    // Escape all user-generated content to prevent XSS
-                    const escapedTitle = escapeHtml(shortTitle);
-                    const escapedCategory = escapeHtml(category);
-                    // For image URLs, validate and sanitize to prevent XSS while preserving valid URLs
-                    // Only allow http://, https://, or relative paths starting with /
-                    let safeImageUrl = '';
-                    if (image) {
-                        const trimmedImage = image.trim();
-                        // Check if it's a valid URL format (http/https or relative path)
-                        if (trimmedImage.startsWith('http://') || 
-                            trimmedImage.startsWith('https://') || 
-                            trimmedImage.startsWith('/') ||
-                            trimmedImage.startsWith('./') ||
-                            trimmedImage.startsWith('../')) {
-                            // Escape only characters that could break out of the src attribute
-                            // Preserve & in URLs (it's valid), but escape quotes and angle brackets
-                            safeImageUrl = trimmedImage
-                                .replace(/"/g, '&quot;')  // Escape double quotes (we use double quotes in attribute)
-                                .replace(/'/g, '&#x27;')  // Escape single quotes
-                                .replace(/</g, '&lt;')    // Escape < to prevent script injection
-                                .replace(/>/g, '&gt;');   // Escape > to prevent script injection
-                        } else {
-                            // Invalid URL format - don't use it (prevents javascript: and data: URLs)
-                            safeImageUrl = '';
-                        }
-                    }
-                    
-                    // Detect image variant for smart cropping
-                    const isEarthquakeGraphic = safeImageUrl && (
-                        safeImageUrl.includes('earthquake-') || 
-                        safeImageUrl.includes('standard') || 
-                        category === 'Earthquake'
-                    );
-                    const variant = isEarthquakeGraphic ? 'earthquake' : 'photo';
-                    
-                    return `
-                        <a href="${articleUrl}" class="news-card">
-                            <div class="news-card-thumbnail-wrapper">
-                                ${image && safeImageUrl ? `
-                                    <img 
-                                        src="${safeImageUrl}" 
-                                        alt="${escapedTitle}" 
-                                        class="news-card-thumbnail" 
-                                        data-variant="${variant}"
-                                        loading="lazy"
-                                        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-                                    >
-                                ` : ''}
-                                <div class="news-card-thumbnail-placeholder" style="${image && safeImageUrl ? 'display: none;' : ''}">
-                                    <div class="news-card-thumbnail-placeholder-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 22h16a2 2 0 0 0 2-2V4a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v16a2 2 0 0 0 2 2Z"/><path d="M18 14h-8M15 18h-5M10 6h8v4h-8z"/><path d="M2 6h4v14"/></svg></div>
-                                    <div class="news-card-thumbnail-placeholder-text">${escapedCategory}</div>
-                                </div>
-                            </div>
-                            <div class="news-card-content">
-                                <h3 class="news-card-title">${escapedTitle}</h3>
-                                <div class="news-card-meta">
-                                    <span class="news-card-category">${escapedCategory}</span>
-                                    <span>${relativeTime}</span>
-                                </div>
-                            </div>
-                        </a>
-                    `;
-                }).join('');
+        const more = sorted.slice(0, 6);
+
+        const cn = window.ContentNormalize;
+        const pm = window.PostMedia;
+
+        grid.innerHTML = more.map((post, i) => {
+            const postId = post.id || post.postId || '';
+            const title = cleanHeadline(post);
+            const shortTitle = title.length > 90 ? title.substring(0, 87).trim() + '\u2026' : title;
+            const articleUrl = `/article.html?id=${encodeURIComponent(postId)}`;
+            const when = formatRelativeTime(post.datePosted || post.createdAt || post.created_at);
+            const kicker = post.category || post.source || '';
+
+            let mediaBlock = '';
+            if (cn && pm && cn.getPrimaryMedia) {
+                const media = cn.getPrimaryMedia(post);
+                if (media.type === 'video') {
+                    mediaBlock = pm.mediaHtml({ videoSrc: media.url, image: media.poster, alt: shortTitle }, escapeHtml);
+                } else if (media.type === 'image') {
+                    mediaBlock = pm.mediaHtml({ image: media.url, alt: shortTitle, href: articleUrl }, escapeHtml);
+                }
             }
-        }
+
+            return `<article class="next-card reveal-item" style="--ri:${i}">
+                ${mediaBlock}
+                <div class="next-card-body">
+                    ${kicker ? `<span class="next-card-kicker">${escapeHtml(kicker)}</span>` : ''}
+                    <a class="next-card-link" href="${escapeHtml(articleUrl)}">
+                        <h3 class="next-card-title">${escapeHtml(shortTitle)}</h3>
+                    </a>
+                    ${when ? `<span class="next-card-time">${escapeHtml(when)}</span>` : ''}
+                </div>
+            </article>`;
+        }).join('');
+
+        if (pm && pm.initPostMedia) pm.initPostMedia(grid);
+        if (typeof window.nnBindReveals === 'function') window.nnBindReveals(grid);
     }
     
     /**

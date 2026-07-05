@@ -1,5 +1,5 @@
 /**
- * Admin Live Stories — editorial control API (admin-authenticated)
+ * Admin Live Stories - editorial control API (admin-authenticated)
  *
  * GET  ?action=list                 → all stories (incl. archived) for the editor
  * GET  ?slug=<slug>                 → story + timeline + recent send log
@@ -254,7 +254,7 @@ async function addUpdate(body, actor) {
 /* ── Live Activity diagnostics + test (admin-only) ──── */
 
 /**
- * Secret-safe APNs config readout. Never returns the .p8 key or a signed JWT —
+ * Secret-safe APNs config readout. Never returns the .p8 key or a signed JWT -
  * only whether each var is present and the derived topic/environment. Lets an
  * admin confirm the Netlify APNS_* vars are set without exposing secrets.
  */
@@ -290,7 +290,7 @@ async function testLiveActivity(body, actor) {
   const isFinal = body.final === true;
   const status = STATUSES.includes(body.status) ? body.status : story.status;
   const update = {
-    id: null, // synthetic — not persisted
+    id: null, // synthetic - not persisted
     body: (body.headline || "Test update from the newsroom.").trim(),
     status_at_time: status,
     alert_level: isFinal ? "final" : "normal",
@@ -322,7 +322,7 @@ async function testStandardPush(body, actor) {
   const level = ["normal", "urgent", "final"].includes(body.alert_level) ? body.alert_level : "normal";
   const status = STATUSES.includes(body.status) ? body.status : story.status;
   const update = {
-    id: null, // synthetic — not persisted, dedupe skipped
+    id: null, // synthetic - not persisted, dedupe skipped
     body: (body.headline || "Test alert from the newsroom.").trim(),
     status_at_time: status,
     alert_level: level,

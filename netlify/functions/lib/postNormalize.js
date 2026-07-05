@@ -1,5 +1,5 @@
 /**
- * Post normalization — single source of truth for turning the loosely-typed
+ * Post normalization - single source of truth for turning the loosely-typed
  * x-posts blob objects into a stable, public, mobile-friendly contract.
  *
  * The web feed (v2/js/feed.js) normalizes the same messy fields in the browser

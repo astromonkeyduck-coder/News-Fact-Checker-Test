@@ -6,7 +6,7 @@
  * storage for original uploads and finished watermarked videos.
  *
  * All callers must treat R2 as optional and fail-closed when it isn't
- * configured — there is no client-visible fallback that leaks credentials.
+ * configured - there is no client-visible fallback that leaks credentials.
  */
 
 const fs = require("fs");

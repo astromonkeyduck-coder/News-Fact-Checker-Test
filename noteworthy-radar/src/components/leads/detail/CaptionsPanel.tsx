@@ -78,7 +78,7 @@ export function CaptionsPanel({
               </span>
               <CopyButton text={caption.credit_line} />
             </div>
-            <p className="text-xs text-ink-muted">{caption.credit_line || "—"}</p>
+            <p className="text-xs text-ink-muted">{caption.credit_line || "-"}</p>
           </div>
         </div>
       )}

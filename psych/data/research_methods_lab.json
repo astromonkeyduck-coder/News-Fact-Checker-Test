@@ -9,19 +9,19 @@
     "scientificMethod": {
       "name": "Scientific Method",
       "description": "The process of developing and testing ideas: observation → theory (explanation based on observations) → hypothesis (testable prediction) → operational definition (how variables are measured) → testing → replication.",
-      "key": "A good hypothesis must be falsifiable — it must be possible to disprove it through observation or experiment."
+      "key": "A good hypothesis must be falsifiable - it must be possible to disprove it through observation or experiment."
     },
     "peerReview": {
       "name": "Peer Review",
       "description": "Scientific experts evaluate a research article's theory, originality, methods, and accuracy before publication. This helps ensure findings are credible and valid."
     },
     "thinkingTraps": [
-      { "name": "Hindsight Bias", "description": "The tendency to believe, after an outcome is known, that we 'knew it all along.' No matter the outcome, we convince ourselves it was predictable.", "example": "After a breakup: 'I knew long distance wouldn't work — out of sight, out of mind.' But if they stayed together: 'I knew they'd make it — absence makes the heart grow fonder.'" },
+      { "name": "Hindsight Bias", "description": "The tendency to believe, after an outcome is known, that we 'knew it all along.' No matter the outcome, we convince ourselves it was predictable.", "example": "After a breakup: 'I knew long distance wouldn't work - out of sight, out of mind.' But if they stayed together: 'I knew they'd make it - absence makes the heart grow fonder.'" },
       { "name": "Overconfidence", "description": "The tendency to overestimate the accuracy of our knowledge and judgments. Combined with hindsight bias, leads us to overestimate our intuition.", "example": "82% of US drivers believe they are in the top 30% in driving safety." }
     ],
     "validityAndReliability": {
       "validity": { "name": "Validity", "description": "The extent to which a test or experiment measures or predicts what it is supposed to. A valid study actually tests what it claims to test.", "types": ["Construct validity: does it measure the concept it claims to?", "Predictive validity: does it predict future outcomes?"] },
-      "reliability": { "name": "Reliability", "description": "The consistency of results — a reliable test yields similar results each time it is administered. Achieved through replication and clear operational definitions.", "note": "Larger sample size = more reliable results." }
+      "reliability": { "name": "Reliability", "description": "The consistency of results - a reliable test yields similar results each time it is administered. Achieved through replication and clear operational definitions.", "note": "Larger sample size = more reliable results." }
     }
   },
   "experimentalDesign": {
@@ -41,7 +41,7 @@
       { "name": "Single-Blind Study", "description": "Participants don't know which group they're in, but the researcher does." },
       { "name": "Double-Blind Study", "description": "Neither participants NOR researchers interacting with them know group assignment. Controls for experimenter bias." },
       { "name": "Placebo", "description": "Fake treatment given to control group that looks like the real one." },
-      { "name": "Nocebo", "description": "The opposite of placebo — when belief that a treatment will cause harm actually produces negative side effects, even though the treatment is inactive." }
+      { "name": "Nocebo", "description": "The opposite of placebo - when belief that a treatment will cause harm actually produces negative side effects, even though the treatment is inactive." }
     ],
     "measures": [
       { "name": "Quantitative", "description": "Numerical data, such as Likert scales (rate on numerical scale)." },
@@ -103,7 +103,7 @@
         "name": "Illusory Correlation",
         "description": "Perceiving a relationship between two variables when no actual relationship exists. A random coincidence is mistaken for a meaningful connection.",
         "example": "Believing that starting an adoption process causes pregnancy. To test this, you'd also need to look at cases where people started adoption and did NOT become pregnant.",
-        "relatedTo": "Confirmation bias — we notice confirming cases and ignore disconfirming ones."
+        "relatedTo": "Confirmation bias - we notice confirming cases and ignore disconfirming ones."
       }
     ],
     "correlationDetails": {
@@ -150,7 +150,7 @@
     "guidelines": [
       { "name": "Institutional Review", "description": "Ethics board reviews study before it's conducted to ensure it meets ethical standards. Required for research involving humans and non-human animals." },
       { "name": "Informed Consent", "description": "Participants must be told about the study and agree to participate." },
-      { "name": "Informed Assent", "description": "Required when working with minors. Different from informed consent — do not mix them up." },
+      { "name": "Informed Assent", "description": "Required when working with minors. Different from informed consent - do not mix them up." },
       { "name": "Protection from Harm", "description": "Researchers must take steps to protect participants from physical and psychological harm." },
       { "name": "Confidentiality", "description": "Participant information must be kept confidential and in some cases anonymous." },
       { "name": "Debriefing", "description": "If deception is used, researchers must explain the true purpose and address concerns afterward." }
@@ -159,7 +159,7 @@
     "scientificProcess": "Experiments and research that can be replicated and go through peer review ensure findings are reliable and valid."
   },
   "biases": [
-    { "name": "Hindsight Bias", "description": "The 'I-knew-it-all-along' phenomenon — the tendency to believe, after learning an outcome, that we would have predicted it. Makes us overconfident in our ability to predict events." },
+    { "name": "Hindsight Bias", "description": "The 'I-knew-it-all-along' phenomenon - the tendency to believe, after learning an outcome, that we would have predicted it. Makes us overconfident in our ability to predict events." },
     { "name": "Overconfidence", "description": "The tendency to overestimate the accuracy of our knowledge and judgments. Combined with hindsight bias, leads us to overestimate our intuition." },
     { "name": "Experimenter Bias", "description": "When researcher expectations influence the results." },
     { "name": "Confirmation Bias", "description": "Tendency to seek information confirming existing beliefs while ignoring contradicting evidence." },

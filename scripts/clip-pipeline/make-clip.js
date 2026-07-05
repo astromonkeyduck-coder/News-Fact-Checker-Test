@@ -2,7 +2,7 @@
 'use strict';
 
 /**
- * Clip/transcode worker — cuts from rights-cleared local or recorded files.
+ * Clip/transcode worker - cuts from rights-cleared local or recorded files.
  * RIGHTS-CLEARED SOURCES ONLY. Do not use YouTube watch pages as input.
  */
 

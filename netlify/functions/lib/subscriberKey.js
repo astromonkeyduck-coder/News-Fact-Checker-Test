@@ -2,7 +2,7 @@
  * Shared subscriber-key helper.
  *
  * A push subscription is identified across the system by a stable key derived
- * from its endpoint URL. This is the single source of truth for that mapping —
+ * from its endpoint URL. This is the single source of truth for that mapping -
  * push-subscribe.js, notification-preferences.js, follow-live-story.js and the
  * live-story notifier all import it so a follower row in Supabase can always be
  * resolved back to its subscription blob in Netlify Blobs.

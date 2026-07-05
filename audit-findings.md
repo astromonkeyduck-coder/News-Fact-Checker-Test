@@ -1,4 +1,4 @@
-# Audit Findings — Noteworthy News
+# Audit Findings - Noteworthy News
 
 *Generated 2026-03-22. Read-only inspection of `/Users/richarda/breaking-news-game`.*
 
@@ -8,15 +8,15 @@
 
 ### Root directory
 
-The repo root contains **59 HTML files**, ~30 JS files, config/tooling, media assets, and several sub-projects — all served as a flat static site via Netlify with `publish = "."`.
+The repo root contains **59 HTML files**, ~30 JS files, config/tooling, media assets, and several sub-projects - all served as a flat static site via Netlify with `publish = "."`.
 
 ```
 breaking-news-game/
-├── index.html                  # Homepage — 21,006 lines / 858 KB
+├── index.html                  # Homepage - 21,006 lines / 858 KB
 ├── admin-*.html (5)            # Admin surfaces (analytics, newsletter, posts, tweets, remove)
 ├── situation-monitor.html      # Specialty dashboard
 ├── game.html                   # Fact-checker multiplayer game
-├── geography-game.html         # Geography game — 3,762 lines
+├── geography-game.html         # Geography game - 3,762 lines
 ├── article.html                # Article template
 ├── profile.html                # User profile (Auth0)
 ├── my-reading-list.html        # User reading list
@@ -36,8 +36,8 @@ breaking-news-game/
 ├── category/                   # Category listing pages
 ├── [12 legal/resource/guide pages]
 ├── [5 test/dev pages]          # test-earthquake, test-hero-media, video-preview-test, etc.
-├── photo-page.html             # Captured X/Twitter HTML — 235 KB
-├── tweet-page-html.html        # Captured X/Twitter HTML — 235 KB
+├── photo-page.html             # Captured X/Twitter HTML - 235 KB
+├── tweet-page-html.html        # Captured X/Twitter HTML - 235 KB
 │
 ├── src/                        # Frontend modules, components, styles, auth, widgets
 │   ├── auth/                   # Auth0 SPA client (auth0.js, auth0-integration.js)
@@ -143,7 +143,7 @@ All admin functionality is now consolidated at `/admin/` with Auth0 JWT authenti
 | `/admin/#analytics` | Same | Log query, stats, user profile lookup |
 | `/admin/#system` | Same | Index rebuild, cleanup, breaking news alerts |
 
-### Legacy admin HTML pages (DEPRECATED — redirected to new admin)
+### Legacy admin HTML pages (DEPRECATED - redirected to new admin)
 
 | Page | Status | Redirect |
 |------|--------|----------|
@@ -183,7 +183,7 @@ These Netlify Functions accept writes with **no server-side authentication**:
 | `delete-large-images.js` | Deletes blob objects (including `deleteAll`) | Anyone can wipe media storage |
 | `remove-long-posts.js` | Prunes post index | Anyone can trigger index pruning |
 | `moderate-comment.js` | OpenAI moderation proxy | Cost/abuse vector |
-| `comments-api.js` (DELETE) | Deletes comments by client-supplied `authorId` | Spoofable — no server identity verification |
+| `comments-api.js` (DELETE) | Deletes comments by client-supplied `authorId` | Spoofable - no server identity verification |
 
 ### 4.2 Fail-open secret checks
 
@@ -191,12 +191,12 @@ These functions check a shared secret, but **skip the check entirely when the en
 
 | Function | Env var | Pattern |
 |----------|---------|---------|
-| `newsletter-templates.js` | `NEWSLETTER_KEY` | `if (newsletterKey)` — no key = no check |
+| `newsletter-templates.js` | `NEWSLETTER_KEY` | `if (newsletterKey)` - no key = no check |
 | `send-newsletter.js` | `NEWSLETTER_KEY` | Same |
-| `log-data.js` (GET) | `ADMIN_ANALYTICS_TOKEN` | `if (adminToken && ...)` — no token = open reads |
+| `log-data.js` (GET) | `ADMIN_ANALYTICS_TOKEN` | `if (adminToken && ...)` - no token = open reads |
 | `stream-logs.js` | `ADMIN_ANALYTICS_TOKEN` | Same |
 | `get-user-profile.js` | `ADMIN_ANALYTICS_TOKEN` | Same |
-| `create-job.js`, `process-job.js`, `trigger-job.js`, `trigger-all-queued-jobs.js` | `CLEMS_TOKEN` | `if (!requiredToken) return true` — no token = open |
+| `create-job.js`, `process-job.js`, `trigger-job.js`, `trigger-all-queued-jobs.js` | `CLEMS_TOKEN` | `if (!requiredToken) return true` - no token = open |
 | `send-custom-email.js` | `ADMIN_TOKEN` / `NEWSLETTER_TOKEN` | When both unset, comparison is skipped |
 | `send-website-update.js` | `PUSH_API_KEY` / `ADMIN_API_KEY` | May proceed without auth if keys unset |
 
@@ -228,24 +228,24 @@ These functions check a shared secret, but **skip the check entirely when the en
 | **Cloudflare KV** (`FEED`) | X/Twitter feed (parallel to `x-posts`) | Cloudflare Worker reads/writes |
 | **Cloudflare R2** (S3 API) | Large audio files for transcription | `get-upload-url`, `process-job`, `transcribe-from-url`, `job-status` |
 
-### 5.2 Post ingestion — ✅ RESOLVED: centralized via postStore
+### 5.2 Post ingestion - ✅ RESOLVED: centralized via postStore
 
 > **Status update (2026-03-22):** All `x-posts` writers now go through `lib/postStore.js`. See `migration-notes.md` for details.
 
 The `x-posts` blob store previously had 11 independent write paths with different ID schemes, different field shapes, and inconsistent index formats (`{ ids }` vs `{ ids, urls }`). This has been consolidated:
 
 - All writes use `postStore.writePost()` + `postStore.addToIndex()` or `postStore.writeIndex()`
-- Index shape is standardized to `{ ids }` — the `urls` field is retired
+- Index shape is standardized to `{ ids }` - the `urls` field is retired
 - Earthquake posts now use a unified `usgs-` prefix (was `eq-` in earthquake-poller)
 - `posts-read.js` retains a temporary fallback for legacy `eq-` posts in direct ID lookups
 
-### 5.3 Duplicate RSS ingestion — ✅ RESOLVED
+### 5.3 Duplicate RSS ingestion - ✅ RESOLVED
 
 > **Status update (2026-03-22):** The inline `parseRSSBasic` regex parser was removed from `ingest-all.js`. RSS ingestion is now solely the responsibility of `ingest-live-events.js`, which uses the shared `src/rss/parser.js`.
 
-### 5.4 Cloudflare Worker vs Netlify feed — UNRESOLVED
+### 5.4 Cloudflare Worker vs Netlify feed - UNRESOLVED
 
-The Cloudflare Worker (`cloudflare-worker/src/index.ts`) maintains its own KV-backed feed store with oEmbed posts, separate from Netlify Blobs `x-posts`. A `migrate-posts.js` script exists to pull from Netlify → Worker, confirming these are parallel stores. **Decision deferred — product decision needed on canonical feed architecture.**
+The Cloudflare Worker (`cloudflare-worker/src/index.ts`) maintains its own KV-backed feed store with oEmbed posts, separate from Netlify Blobs `x-posts`. A `migrate-posts.js` script exists to pull from Netlify → Worker, confirming these are parallel stores. **Decision deferred - product decision needed on canonical feed architecture.**
 
 ---
 
@@ -260,14 +260,14 @@ The Cloudflare Worker (`cloudflare-worker/src/index.ts`) maintains its own KV-ba
 | **Two feed renderers**: `post-feed-v2.js` (2,813 lines) AND `post-feed-enhanced.js` (2,066 lines) both loaded with `defer` | ~4,879 lines of duplicated/overlapping feed logic parsed on every page load |
 | **Globe on homepage**: `CiaMissionGlobe-cdn.js` loads Three.js (~700KB) from CDN | Heavy 3D library on a news homepage, even with `defer` |
 | **Music system**: `music-system.js` (1,385 lines) loaded on homepage | Audio infrastructure for an optional feature |
-| **`script.js`** (10,762 lines) | Monolithic — welcome animations, game logic, header behavior, interactions all bundled |
+| **`script.js`** (10,762 lines) | Monolithic - welcome animations, game logic, header behavior, interactions all bundled |
 | **15+ `setInterval` timers** | Music sync, devtools detection, feed readiness polling, newsletter autofill (5s), image retry (30s), countdowns |
 | **Canvas fingerprinting** in `analytics-tracker.js` | Non-trivial main-thread work on init |
 | **Inline `fetch` in `<head>`** for 50 posts + `prefetch` for 100 posts | Aggressive but reasonable; duplicated with feed scripts that fetch again |
 | **Duplicate `preconnect`** to Google Fonts (lines 47–48 and 138–139) | Minor waste |
 | **Service worker** precaches aggressively (homepage, CSS, script.js, game pages, images) | Cache warmth vs bandwidth tradeoff |
 
-### 6.2 Situation Monitor — ✅ V2 REBUILT (2026-03-22)
+### 6.2 Situation Monitor - ✅ V2 REBUILT (2026-03-22)
 
 > **Status update:** V2 rebuilt at `v2/situation-monitor.html`. V1 issues documented below for reference.
 
@@ -312,7 +312,7 @@ The Cloudflare Worker (`cloudflare-worker/src/index.ts`) maintains its own KV-ba
 
 ---
 
-## 7. Security Risks — Ranked
+## 7. Security Risks - Ranked
 
 > **Status update (2026-03-22):** Items marked ✅ have been addressed in the Security Foundation session. See `migration-notes.md` for details.
 
@@ -330,7 +330,7 @@ The Cloudflare Worker (`cloudflare-worker/src/index.ts`) maintains its own KV-ba
 
 5. ✅ **Query-string token transport.** New admin UI uses `Authorization: Bearer` headers exclusively. Legacy admin pages still use query params but are deprecated and redirected. Legacy secret paths preserved for backward compatibility via `requireAdminAuthOrSecret`.
 
-6. **Public AI endpoints without rate limiting.** `chatgpt.js`, `chatgpt-stream.js`, `game-ai.js`, `ai-answer.js`, `moderate-comment` — still unprotected. `process-post-screenshot` and `generate-newsletter-html` now require admin auth.
+6. **Public AI endpoints without rate limiting.** `chatgpt.js`, `chatgpt-stream.js`, `game-ai.js`, `ai-answer.js`, `moderate-comment` - still unprotected. `process-post-screenshot` and `generate-newsletter-html` now require admin auth.
 
 ### Medium
 
@@ -340,7 +340,7 @@ The Cloudflare Worker (`cloudflare-worker/src/index.ts`) maintains its own KV-ba
 
 9. **Bookmarklet with hardcoded production URL.** Now broken (fetch-tweets-simple returns 401 without admin JWT). Marked for removal.
 
-10. **Websocket server trusts client identity.** Unchanged — deferred (acceptable for casual games).
+10. **Websocket server trusts client identity.** Unchanged - deferred (acceptable for casual games).
 
 ---
 
@@ -389,18 +389,18 @@ Webpack only bundles `script.js` and `music-system.js` into `dist/`. Every other
 
 ### Delete
 
-- `photo-page.html` and `tweet-page-html.html` — captured third-party HTML, 235 KB each, not site pages
-- `test-earthquake.html`, `test-hero-media.html`, `video-preview-test.html` — dev/test pages in production
-- `test-resend.js`, `test-generate.js` — test functions exposed as live endpoints
-- `src/loader/intel-loader-OLD.css` — superseded by `intel-loader.css`
-- `posts-read.ts.backup` — backup file in functions directory
+- `photo-page.html` and `tweet-page-html.html` - captured third-party HTML, 235 KB each, not site pages
+- `test-earthquake.html`, `test-hero-media.html`, `video-preview-test.html` - dev/test pages in production
+- `test-resend.js`, `test-generate.js` - test functions exposed as live endpoints
+- `src/loader/intel-loader-OLD.css` - superseded by `intel-loader.css`
+- `posts-read.ts.backup` - backup file in functions directory
 - Duplicate `preconnect` tags in `index.html`
 
 ### Consolidate
 
 - **Feed renderers**: `post-feed-v2.js` + `post-feed-enhanced.js` → one canonical feed component
 - **Earthquake ingestion**: ✅ `earthquake-poller.js` deprecated; `engines/usgs.js` is the single USGS pipeline
-- **Alert notification**: ✅ Unified alert pipeline (`lib/alertEvent.js` + `lib/notifyForEvent.js`) — engines return `notifiableEvents`, orchestrator dispatches
+- **Alert notification**: ✅ Unified alert pipeline (`lib/alertEvent.js` + `lib/notifyForEvent.js`) - engines return `notifiableEvents`, orchestrator dispatches
 - **RSS ingestion**: `ingest-live-events.js` + `ingest-all.js` RSS block → one RSS ingestion path using `src/rss/parser.js`
 - **Geocode proxies**: `geocode-proxy.js` + `geocodeProxy.js` (two files, same purpose) → one
 - **Auth middleware**: Repeated admin token checking patterns across 15+ functions → shared `requireAdminAuth` middleware
@@ -428,12 +428,12 @@ Webpack only bundles `script.js` and `music-system.js` into `dist/`. Every other
 
 ### Rebuild
 
-- Homepage (`index.html`) — decompose into composable sections
-- Admin UI — server-authenticated, not public HTML
-- CSS architecture — consolidate around design tokens
-- Build pipeline — extend webpack or replace with Vite for proper code splitting
-- ~~Server auth middleware — fail-closed shared auth for all mutation endpoints~~ ✅ Done
-- Post feed — single, maintainable feed component
+- Homepage (`index.html`) - decompose into composable sections
+- Admin UI - server-authenticated, not public HTML
+- CSS architecture - consolidate around design tokens
+- Build pipeline - extend webpack or replace with Vite for proper code splitting
+- ~~Server auth middleware - fail-closed shared auth for all mutation endpoints~~ ✅ Done
+- Post feed - single, maintainable feed component
 
 ---
 
@@ -445,28 +445,28 @@ Webpack only bundles `script.js` and `music-system.js` into `dist/`. Every other
 
 | Phase | Status | Key deliverable |
 |-------|--------|----------------|
-| Phase 0 — Security Hardening | ✅ Complete | `requireAuth.js` middleware, 20+ endpoints hardened, fail-closed everywhere |
-| Phase 3 — Data Consolidation | ✅ Complete | `postStore.js`, 11 writers migrated, index shape standardized |
+| Phase 0 - Security Hardening | ✅ Complete | `requireAuth.js` middleware, 20+ endpoints hardened, fail-closed everywhere |
+| Phase 3 - Data Consolidation | ✅ Complete | `postStore.js`, 11 writers migrated, index shape standardized |
 | Unified Alert System | ✅ Complete (opt-in) | `alertEvent.js`, `notifyForEvent.js`, `alertRateLimit.js`, 6 engines return `notifiableEvents` |
 | V2 Situation Monitor | ✅ Complete (dev) | `v2/situation-monitor.html`, 265-line shell (down from 2,085), token-based CSS |
 | V2 Homepage Shell | ✅ Complete (dev) | `v2/index.html`, 241 lines (down from 21,006), V2 design system |
 
 ### 10.2 New issues identified
 
-1. **Dual notification pipeline risk** — Unified alerts run alongside engine-internal notifications. Enabling `USE_UNIFIED_ALERTS` without removing engine-internal code will cause duplicate notifications.
-2. **Unified alerts fire on failed engine runs** — `ingest-all.js` dispatches `notifiableEvents` even when `result.success === false`.
-3. **Seven functions still bypass postStore** for `x-posts` blob access — `re-extract-media.js` (writes), plus 6 read-only consumers.
-4. **Two design token systems** — `v2/styles/tokens.css` and `src/styles/premium-tokens.css` define overlapping concepts with different names.
-5. **V2 CSS still contains raw values** — hex colors, rgba, and px values that should be tokens.
-6. **Test/dev pages still deployed** — `test-earthquake.html`, `test-hero-media.html`, `video-preview-test.html` still in production.
-7. **Old admin pages still exist** — functionally broken (401) but still served.
+1. **Dual notification pipeline risk** - Unified alerts run alongside engine-internal notifications. Enabling `USE_UNIFIED_ALERTS` without removing engine-internal code will cause duplicate notifications.
+2. **Unified alerts fire on failed engine runs** - `ingest-all.js` dispatches `notifiableEvents` even when `result.success === false`.
+3. **Seven functions still bypass postStore** for `x-posts` blob access - `re-extract-media.js` (writes), plus 6 read-only consumers.
+4. **Two design token systems** - `v2/styles/tokens.css` and `src/styles/premium-tokens.css` define overlapping concepts with different names.
+5. **V2 CSS still contains raw values** - hex colors, rgba, and px values that should be tokens.
+6. **Test/dev pages still deployed** - `test-earthquake.html`, `test-hero-media.html`, `video-preview-test.html` still in production.
+7. **Old admin pages still exist** - functionally broken (401) but still served.
 8. **CORS headers duplicated** across 20+ functions instead of using shared utility.
-9. ✅ **V2 homepage feed, auth, newsletter wiring** — completed (2026-03-23). Feed renders real posts from `posts-read`. Auth0 integration with login/logout/profile nav. Newsletter form wired. All loading/empty/error states handled.
-10. ✅ **Admin UI rebuild** — completed. `/admin/` with Auth0 JWT auth, 5 sections, all admin operations accessible.
+9. ✅ **V2 homepage feed, auth, newsletter wiring** - completed (2026-03-23). Feed renders real posts from `posts-read`. Auth0 integration with login/logout/profile nav. Newsletter form wired. All loading/empty/error states handled.
+10. ✅ **Admin UI rebuild** - completed. `/admin/` with Auth0 JWT auth, 5 sections, all admin operations accessible.
 
 ### 10.3 Assessment
 
-The V2 rebuild is **on the right track**. New modules are clean, focused, and well-designed. Security posture is dramatically improved. The primary risk is not engineering quality — it is **convergence timing**. The repo now carries two parallel systems (V1 and V2) for homepage, situation monitor, CSS, and tokens. This parallelism must converge within 3–5 sessions before it becomes a maintenance burden.
+The V2 rebuild is **on the right track**. New modules are clean, focused, and well-designed. Security posture is dramatically improved. The primary risk is not engineering quality - it is **convergence timing**. The repo now carries two parallel systems (V1 and V2) for homepage, situation monitor, CSS, and tokens. This parallelism must converge within 3–5 sessions before it becomes a maintenance burden.
 
 See `stability-checkpoint.md` for full details, correction requirements, and recommended next session.
 

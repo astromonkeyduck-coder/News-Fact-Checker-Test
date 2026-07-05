@@ -491,7 +491,7 @@ exports.handler = async (event, context) => {
                     if (file.includes('BreakingNews')) {
                       sampleData = {
                         headline: 'Breaking: Major News Event',
-                        dateline: dateStr + ' — Location',
+                        dateline: dateStr + ' - Location',
                         shortSummary: 'This is a sample breaking news story summary.',
                         bodyBlocks: ['First paragraph of the breaking news story.', 'Second paragraph with more details.'],
                         ctaLabel: 'Read Full Story',

@@ -1,5 +1,5 @@
 /**
- * Posts View — Admin
+ * Posts View - Admin
  *
  * List, search, delete, and edit basic fields on posts.
  */

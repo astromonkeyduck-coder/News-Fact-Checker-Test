@@ -151,7 +151,7 @@ server.on('error', async (err) => {
   if (err.code === 'EADDRINUSE') {
     if (await checkExistingServer()) {
       console.log(`[clip:convert-server] Already running at http://${HOST}:${PORT}`);
-      console.log('[clip:convert-server] No need to start another copy — use the extension now.');
+      console.log('[clip:convert-server] No need to start another copy - use the extension now.');
       process.exit(0);
     }
     console.error(`[clip:convert-server] Port ${PORT} is in use by another process.`);

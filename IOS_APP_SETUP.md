@@ -2,7 +2,7 @@
 
 The native SwiftUI reader app lives in [`ios/NoteworthyLive/`](ios/NoteworthyLive/). It is a full Noteworthy News app, Home, Live stories, Story Detail, Saved, Explore, Notifications, Profile/Pairing, plus the signature Live Activities / Dynamic Island. The website remains the production content engine and newsroom.
 
-This is **Milestone 1**: the complete app on **real public endpoints** (verified live — see [Real content status](#15-real-content-status--test-commands)), an openable Xcode project, and the new backend content API. Standard-APNs push notifications, the Notification Service Extension dispatch, and backend hardening are **Milestone 2** (see [`IOS_M2_BACKLOG.md`](IOS_M2_BACKLOG.md)). Future design/polish ideas are tracked in [`IOS_FUTURE_DESIGN_BACKLOG.md`](IOS_FUTURE_DESIGN_BACKLOG.md). The first internal TestFlight runbook is [`IOS_TESTFLIGHT_PREP.md`](IOS_TESTFLIGHT_PREP.md).
+This is **Milestone 1**: the complete app on **real public endpoints** (verified live - see [Real content status](#15-real-content-status--test-commands)), an openable Xcode project, and the new backend content API. Standard-APNs push notifications, the Notification Service Extension dispatch, and backend hardening are **Milestone 2** (see [`IOS_M2_BACKLOG.md`](IOS_M2_BACKLOG.md)). Future design/polish ideas are tracked in [`IOS_FUTURE_DESIGN_BACKLOG.md`](IOS_FUTURE_DESIGN_BACKLOG.md). The first internal TestFlight runbook is [`IOS_TESTFLIGHT_PREP.md`](IOS_TESTFLIGHT_PREP.md).
 
 ---
 
@@ -21,7 +21,7 @@ Then in Xcode: select the **NoteworthyLive** scheme and a simulator or device, a
 
 ### Data source modes
 - **Default**: the app hits the real endpoints at `https://noteworthynews.co`. In **DEBUG** only, if a call fails or returns empty it falls back to mock so the screen is never blank.
-- `-UseLiveData` (Scheme ▸ Run ▸ Arguments): **strict live** — disables the mock fallback so you see real data or a real empty/error state. Use this to confirm the live path.
+- `-UseLiveData` (Scheme ▸ Run ▸ Arguments): **strict live** - disables the mock fallback so you see real data or a real empty/error state. Use this to confirm the live path.
 - `-UseMockData`: force mock everywhere (offline demos / UI work).
 - Mock never silently masquerades as live: in DEBUG a fallback logs a loud `⚠️ [DataMode] FALLBACK` console warning, and **Profile ▸ Developer (DEBUG)** shows the current source (Live / Mock / Fallback), the base URL, and the last API error. None of this ships in Release.
 - SwiftUI previews work per-file (many views ship `#Preview`s).
@@ -45,11 +45,11 @@ Verified live in production (Jun 2026):
 
 | Surface | Endpoint | Real? |
 |---------|----------|-------|
-| Home feed (Latest, breaking, alerts) | `mobile-feed` / `/api/mobile/feed` | **Real** — NWS alerts, breaking news, video posts |
-| Story Detail (posts) | `mobile-story?id=<postId>` | **Real** — includes `bodyText` |
-| Live stories + timeline | `live-stories` (+ `?slug=`) | **Real** — Supabase-backed |
+| Home feed (Latest, breaking, alerts) | `mobile-feed` / `/api/mobile/feed` | **Real** - NWS alerts, breaking news, video posts |
+| Story Detail (posts) | `mobile-story?id=<postId>` | **Real** - includes `bodyText` |
+| Live stories + timeline | `live-stories` (+ `?slug=`) | **Real** - Supabase-backed |
 | Feed/story images | `imageUrl` | **Real where available** (e.g. twimg thumbnails); null images render a clean fallback, no ugly gaps |
-| Video posts | `videoUrl` + `imageUrl` + `isVideo` | **Real metadata** — thumbnail + video badge shown; inline playback is a future-backlog item (video opens via the source/web) |
+| Video posts | `videoUrl` + `imageUrl` + `isVideo` | **Real metadata** - thumbnail + video badge shown; inline playback is a future-backlog item (video opens via the source/web) |
 
 Still mock-only: nothing on the happy path. Mock appears only in `-UseMockData`, SwiftUI previews, or a DEBUG fallback when the network/endpoint is down.
 
@@ -57,7 +57,7 @@ Test the backend directly:
 ```bash
 # Feed (grab a real id from the output):
 curl -s "https://noteworthynews.co/.netlify/functions/mobile-feed?limit=3" | head
-# Single story detail — NOTE: mobile-story takes ?id=<postId>, NOT ?slug=
+# Single story detail - NOTE: mobile-story takes ?id=<postId>, NOT ?slug=
 curl -s "https://noteworthynews.co/.netlify/functions/mobile-story?id=<postId-from-feed>" | head
 # Live stories:
 curl -s "https://noteworthynews.co/.netlify/functions/live-stories" | head
@@ -108,7 +108,7 @@ Already applied in production: `005_create_live_stories.sql`, `006_create_ios_de
    xcrun simctl openurl booted "noteworthylive://story/election-night"
    ```
    It should open the Live tab and push native Story Detail for that slug.
-   > If you just ran `xcrun simctl uninstall booted co.noteworthynews.live`, `openurl` will fail with `LSApplicationWorkspaceErrorDomain error 115` — there's no app to handle the scheme. Reinstall/run first, then deep-link.
+   > If you just ran `xcrun simctl uninstall booted co.noteworthynews.live`, `openurl` will fail with `LSApplicationWorkspaceErrorDomain error 115` - there's no app to handle the scheme. Reinstall/run first, then deep-link.
 3. **Pairing** (unlocks following + Live Activities from the phone):
    - On noteworthynews.co ▸ Notification settings ▸ generate a pairing code.
    - In the app ▸ Profile ▸ Enter pairing code.

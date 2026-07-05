@@ -5,7 +5,7 @@
  * presigned download URL for the finished MP4.
  *
  * Auth: admin-only (requireAdminAuth). Server file paths and the FB source URL
- * are never exposed — only a presigned download link.
+ * are never exposed - only a presigned download link.
  *
  * Opportunistic cleanup: expired jobs (older than TEMP_VIDEO_TTL_MINUTES) have
  * their output deleted from R2 and their record removed.

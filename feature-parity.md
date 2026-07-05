@@ -1,4 +1,4 @@
-# Feature Parity — Noteworthy News V2
+# Feature Parity - Noteworthy News V2
 
 *Generated 2026-03-22. Each subsystem listed with business purpose, current implementation, disposition, V2 destination, migration dependencies, and validation notes.*
 
@@ -134,7 +134,7 @@
 
 ---
 
-## 10. Admin — Post Management
+## 10. Admin - Post Management
 
 | Field | Value |
 |-------|-------|
@@ -143,24 +143,24 @@
 | **Disposition** | **Rebuild** |
 | **V2 destination** | Server-authenticated admin interface. All mutation endpoints require verified admin identity (JWT or server session). No public HTML admin pages. Consolidate into one admin post management surface. |
 | **Migration dependencies** | Auth middleware; admin auth strategy decision (Auth0 roles vs shared secret with fail-closed) |
-| **Validation** | All CRUD operations work; CSV import works; screenshot extraction works; media upload works — all behind auth |
+| **Validation** | All CRUD operations work; CSV import works; screenshot extraction works; media upload works - all behind auth |
 
 ---
 
-## 11. Admin — Newsletter
+## 11. Admin - Newsletter
 
 | Field | Value |
 |-------|-------|
 | **Business purpose** | Create newsletter templates, generate HTML via AI, send newsletters to subscribers, manage images. |
-| **Current source** | `admin-newsletter.html` (5,050 lines), `newsletter-templates.js` (822 lines), `generate-newsletter-html.js` (720 lines), `send-newsletter.js` (1,566 lines), `upload-newsletter-image.js` (167 lines), `send-email.js` (931 lines — signup/audience), `house-style-template.js` |
+| **Current source** | `admin-newsletter.html` (5,050 lines), `newsletter-templates.js` (822 lines), `generate-newsletter-html.js` (720 lines), `send-newsletter.js` (1,566 lines), `upload-newsletter-image.js` (167 lines), `send-email.js` (931 lines - signup/audience), `house-style-template.js` |
 | **Disposition** | **Rebuild** (auth and UI) |
 | **V2 destination** | Same functionality behind server-enforced auth. `NEWSLETTER_KEY` check must fail closed. Template CRUD, AI generation, and send operations preserved. Consolidate with post admin into unified admin surface. |
 | **Migration dependencies** | Auth middleware; admin UI framework decision |
-| **Validation** | Template CRUD; AI HTML generation; send to audience; image upload — all work and all require auth |
+| **Validation** | Template CRUD; AI HTML generation; send to audience; image upload - all work and all require auth |
 
 ---
 
-## 12. Admin — Analytics
+## 12. Admin - Analytics
 
 | Field | Value |
 |-------|-------|
@@ -169,7 +169,7 @@
 | **Disposition** | **Rebuild** (auth and UI) |
 | **V2 destination** | Analytics dashboard behind server-enforced auth. `ADMIN_ANALYTICS_TOKEN` check must fail closed. Logging endpoint (`log-data` POST) rate-limited. Consolidate into unified admin surface. |
 | **Migration dependencies** | Auth middleware; admin UI framework decision |
-| **Validation** | Log data queryable; CSV export works; user profile lookup works; email alerts fire — all behind auth |
+| **Validation** | Log data queryable; CSV export works; user profile lookup works; email alerts fire - all behind auth |
 
 ---
 
@@ -230,7 +230,7 @@
 | Field | Value |
 |-------|-------|
 | **Business purpose** | Visual coherence across all public pages. |
-| **Current source** | `src/styles/premium-tokens.css` (145 lines — design tokens), `src/styles/premium-components.css` (442 lines), `styles.css` (4,672 lines — global), `styles/responsive.css` (5,591 lines), `styles/animations.css` (552 lines), `styles/interactive-components.css` (700 lines), `styles/resource-pages.css`, `styles/legal-pages.css`, `styles/legal-resource-advanced.css`, `christmas-theme.css`, `src/styles/light-theme.css`, `mobile.css`, `src/styles/mobile-fixes.css`, `src/styles/print.css` |
+| **Current source** | `src/styles/premium-tokens.css` (145 lines - design tokens), `src/styles/premium-components.css` (442 lines), `styles.css` (4,672 lines - global), `styles/responsive.css` (5,591 lines), `styles/animations.css` (552 lines), `styles/interactive-components.css` (700 lines), `styles/resource-pages.css`, `styles/legal-pages.css`, `styles/legal-resource-advanced.css`, `christmas-theme.css`, `src/styles/light-theme.css`, `mobile.css`, `src/styles/mobile-fixes.css`, `src/styles/print.css` |
 | **Disposition** | **Consolidate + Rebuild** |
 | **V2 destination** | `premium-tokens.css` as the canonical token layer. Consolidate global styles into a structured system: tokens → base → layout → components → pages. Eliminate duplicate responsive rules. Scope feature CSS (situation monitor, games, admin) to their subsystems. |
 | **Migration dependencies** | None (can begin independently) |
@@ -245,7 +245,7 @@
 | **Business purpose** | Alternative X/Twitter feed ingestion via oEmbed + KV storage, with bookmarklet for quick post addition. |
 | **Current source** | `cloudflare-worker/src/index.ts`, `src/utils.ts`, `src/types.ts`, `bookmarklet.js`, `bookmarklet-minified.js`, `migrate-posts.js` |
 | **Disposition** | **Defer** (decision needed) |
-| **V2 destination** | Decide whether this is the canonical X feed path or Netlify `x-posts` is. If both are needed, define clear ownership. If not, retire one. The worker has its own KV store and admin Bearer token — it is a parallel system to the Netlify post pipeline. |
+| **V2 destination** | Decide whether this is the canonical X feed path or Netlify `x-posts` is. If both are needed, define clear ownership. If not, retire one. The worker has its own KV store and admin Bearer token - it is a parallel system to the Netlify post pipeline. |
 | **Migration dependencies** | Product decision on canonical feed architecture |
 | **Validation** | If kept: bookmarklet adds posts; feed endpoint returns posts; sync works |
 
@@ -255,7 +255,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Business purpose** | Production asset preparation — minification, auth injection, timestamp updates. |
+| **Business purpose** | Production asset preparation - minification, auth injection, timestamp updates. |
 | **Current source** | `webpack.config.js` (bundles only `script.js` + `music-system.js`), `scripts/inject-auth0.js`, `scripts/update-last-modified.js`, `netlify.toml` build command: `npm run build` |
 | **Disposition** | **Rebuild** |
 | **V2 destination** | Extend build pipeline to cover all JS entry points. Options: expand webpack config, or migrate to Vite for faster builds + native ES module support + code splitting. Pre-compile JSX (kill Babel-in-browser). Bundle and tree-shake vendor dependencies. |
@@ -284,7 +284,7 @@
 | **Business purpose** | Aggregate and proxy external RSS feeds for display in Situation Monitor and other widgets. |
 | **Current source** | `rss-feed.js` (174 lines), `rss-aggregate.js` (288 lines), `rssProxy.js` (302 lines), `src/rss/parser.js`, `src/rss/feeds.js`, `rss-feeds-config.js` |
 | **Disposition** | **Consolidate** |
-| **V2 destination** | One RSS proxy function with feed allowlisting. `rss-feed.js`, `rss-aggregate.js`, and `rssProxy.js` have overlapping functionality — merge into one with mode parameter. The inline `parseRSSBasic` in `ingest-all.js` should use the shared parser. |
+| **V2 destination** | One RSS proxy function with feed allowlisting. `rss-feed.js`, `rss-aggregate.js`, and `rssProxy.js` have overlapping functionality - merge into one with mode parameter. The inline `parseRSSBasic` in `ingest-all.js` should use the shared parser. |
 | **Migration dependencies** | None |
 | **Validation** | Situation Monitor panels receive RSS data; feeds render correctly |
 
@@ -323,7 +323,7 @@
 | **Business purpose** | Interactive 3D globe showing global news coverage. Premium visual feature. |
 | **Current source** | `src/components/CiaMissionGlobe.js` (ES module, globe.gl), `src/components/CiaMissionGlobe-cdn.js` (CDN loader variant), `src/components/CiaMissionGlobe.jsx` (React variant), `src/styles/ciaGlobe.css`, `styles/command-center.css`, `mission-control.html`, `mission-globe.html`, `src/data/coveragePoints.json` |
 | **Disposition** | **Isolate** |
-| **V2 destination** | Keep as lazy-loaded specialty visualization. Remove from default homepage load — make it opt-in or behind a "View Globe" interaction. Three.js (~700KB) should not be in the critical path of a news homepage. |
+| **V2 destination** | Keep as lazy-loaded specialty visualization. Remove from default homepage load - make it opt-in or behind a "View Globe" interaction. Three.js (~700KB) should not be in the critical path of a news homepage. |
 | **Migration dependencies** | Homepage rebuild |
 | **Validation** | Globe renders; coverage points display; search works; full-page mission-control still works |
 
@@ -373,7 +373,7 @@
 | Field | Value |
 |-------|-------|
 | **Business purpose** | Human verification gate before certain pages (game, situation monitor). |
-| **Current source** | `security-check.html` (254 lines — React + Babel in browser), `src/components/SecurityCheck.jsx`, `src/components/security-check.css`, `lib/security/routeProtection.js`, `lib/security/routeProtection-browser.js`, `lib/security/securityConfig.js` |
+| **Current source** | `security-check.html` (254 lines - React + Babel in browser), `src/components/SecurityCheck.jsx`, `src/components/security-check.css`, `lib/security/routeProtection.js`, `lib/security/routeProtection-browser.js`, `lib/security/securityConfig.js` |
 | **Disposition** | **Rebuild** |
 | **V2 destination** | Pre-compile JSX (no Babel-in-browser). If this is a bot-protection gate, consider whether it should be server-side. If it protects premium content, move to server-enforced auth. |
 | **Migration dependencies** | Build pipeline; auth strategy |
@@ -440,7 +440,7 @@
 | **Business purpose** | Session tracking, scroll depth, click tracking, fingerprinting, server-side log storage. |
 | **Current source** | `src/utils/analytics-tracker.js`, `log-data.js` (1,851 lines), `stream-logs.js`, `admin-analytics.html` |
 | **Disposition** | **Preserve + Fix** |
-| **V2 destination** | Keep analytics pipeline. Fix: `log-data` GET must require auth (fail closed). Consider whether canvas fingerprinting is justified — it has privacy implications and main-thread cost. |
+| **V2 destination** | Keep analytics pipeline. Fix: `log-data` GET must require auth (fail closed). Consider whether canvas fingerprinting is justified - it has privacy implications and main-thread cost. |
 | **Migration dependencies** | Auth middleware |
 | **Validation** | Events logged; admin dashboard displays data; CSV export works |
 

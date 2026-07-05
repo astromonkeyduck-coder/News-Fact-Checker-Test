@@ -33,7 +33,7 @@ function SubscriberMilestoneEmail({
   if (stories.length > 0) {
     content += EmailSection({ title: 'Recent Impact' });
     const storyItems = stories.map(story => ({
-      text: `<strong>${story.headline}</strong> — ${story.summary} <a href="${story.url}" style="color:#3b82f6!important;text-decoration:underline">Read more</a>`
+      text: `<strong>${story.headline}</strong> - ${story.summary} <a href="${story.url}" style="color:#3b82f6!important;text-decoration:underline">Read more</a>`
     }));
     content += EmailBulletList({ items: storyItems });
   }

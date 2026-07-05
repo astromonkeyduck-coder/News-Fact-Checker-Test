@@ -117,7 +117,7 @@ export const handler: Handler = async (event) => {
     return { statusCode: 204, headers, body: "" };
   }
 
-  // POST writes new tweets — require admin auth
+  // POST writes new tweets - require admin auth
   if (event.httpMethod === "POST") {
     const auth = await requireAdminAuth(event);
     if (auth.statusCode) return auth;

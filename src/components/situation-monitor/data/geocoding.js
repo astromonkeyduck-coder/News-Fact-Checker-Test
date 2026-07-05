@@ -184,8 +184,8 @@ export function extractLocationCandidates(headline) {
   const text = `${headline.title || ''} ${headline.description || ''}`.toLowerCase();
   const originalText = `${headline.title || ''} ${headline.description || ''}`;
   
-  // 1. DATELINE extraction: "CITY —" or "CITY, Country —"
-  const datelinePattern = /^([A-Z][A-Za-z.\- ]{2,40})(, ([A-Z][A-Za-z.\- ]{2,40}))? —/;
+  // 1. DATELINE extraction: "CITY -" or "CITY, Country -"
+  const datelinePattern = /^([A-Z][A-Za-z.\- ]{2,40})(, ([A-Z][A-Za-z.\- ]{2,40}))? \u2014/;
   const datelineMatch = originalText.match(datelinePattern);
   if (datelineMatch) {
     const city = datelineMatch[1].trim();

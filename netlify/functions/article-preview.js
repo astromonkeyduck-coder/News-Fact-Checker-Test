@@ -39,148 +39,119 @@ function getArticlePageShell() {
 <html lang="en" class="article-page-active">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="app-version" content="Apr 3, 2026">
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="app-version" content="Jul 5, 2026">
+
     <!-- Dynamic Meta Tags - Updated by article-loader.js -->
-    <title id="article-title">Article - Noteworthy News</title>
+    <title id="article-title">Story - Noteworthy News</title>
     <meta name="description" id="article-description" content="Breaking news story from Noteworthy News">
     <meta name="robots" content="index, follow">
-    
-    <!-- Canonical URL -->
+
     <link rel="canonical" id="article-canonical" href="https://noteworthynews.co/article.html">
-    
-    <!-- Open Graph -->
+
     <meta property="og:type" content="article">
     <meta property="og:url" id="og-url" content="https://noteworthynews.co/article.html">
-    <meta property="og:title" id="og-title" content="Article - Noteworthy News">
+    <meta property="og:title" id="og-title" content="Story - Noteworthy News">
     <meta property="og:description" id="og-description" content="Breaking news story">
     <meta property="og:image" id="og-image" content="https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg">
     <meta property="og:site_name" content="Noteworthy News">
-    
-    <!-- Twitter Card -->
+
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:url" id="twitter-url" content="https://noteworthynews.co/article.html">
-    <meta name="twitter:title" id="twitter-title" content="Article - Noteworthy News">
+    <meta name="twitter:title" id="twitter-title" content="Story - Noteworthy News">
     <meta name="twitter:description" id="twitter-description" content="Breaking news story">
     <meta name="twitter:image" id="twitter-image" content="https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg">
     <meta name="twitter:site" content="@NoteworthyNews">
-    
-    <!-- Favicon -->
+
     <link rel="icon" type="image/png" href="/IMG_5794.PNG">
     <link rel="apple-touch-icon" href="/IMG_5794.PNG">
-    <meta name="theme-color" content="#ffffff">
-    
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Georgia&display=swap" rel="stylesheet">
-    
-    <link rel="stylesheet" href="/styles.css">
+    <meta name="theme-color" content="#04060B">
+
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+
     <link rel="stylesheet" href="/v2/styles/tokens.css">
-    <link rel="stylesheet" href="/css/article-v3.css">
-    
-    <!-- Critical: Ensure white background even if external CSS fails -->
-    <style>
-        html.article-page-active, html.article-page-active body, body.article-page {
-            background: #ffffff !important;
-            background-color: #ffffff !important;
-            background-image: none !important;
-        }
-        .starfield { display: none !important; }
-    </style>
+    <link rel="stylesheet" href="/v2/styles/base.css">
+    <link rel="stylesheet" href="/css/article-v4.css">
 </head>
-<body class="article-page">
-    <!-- Professional News Header -->
-    <header class="main-header">
-        <div style="max-width: 1400px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between;">
-            <a href="/index.html" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
-                <img src="/IMG_5992.PNG" alt="Noteworthy News Logo" style="height: 28px; width: auto;">
-                <span style="font-weight: 700; color: #1a1a1a; font-family: 'Inter', sans-serif; font-size: 1.125rem;">Noteworthy News</span>
-            </a>
-            <a href="/index.html" style="color: #1a1a1a; text-decoration: none; font-weight: 500; font-family: 'Inter', sans-serif; font-size: 0.875rem;">← Back to Home</a>
+<body class="nn-article article-page">
+    <div class="reading-progress" id="reading-progress" role="progressbar" aria-label="Reading progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="reading-progress-bar" id="reading-progress-bar"></div>
+    </div>
+
+    <header class="nn-topbar" id="nn-topbar">
+      <nav class="nn-topbar-row" aria-label="Primary">
+        <a class="brand" href="/">
+          <img class="brand-mark" src="/IMG_5794.PNG" alt="" width="24" height="24">
+          <span class="brand-name">Noteworthy News</span>
+        </a>
+        <div class="nn-topbar-nav">
+          <a class="nn-topbar-link nn-topbar-link--em" href="/archive.html">All stories</a>
         </div>
+      </nav>
     </header>
-    
-    <!-- Main Article Content -->
-    <main class="article-container">
-        <article class="article-main">
-            <header class="article-header-panel">
-                <div class="article-header">
-                    <h1 id="article-heading" tabindex="-1">Loading article...</h1>
-                    <div class="article-header-meta">
-                        <div><span style="font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px;">By:</span> <span>Noteworthy News</span></div>
-                        <div><span style="font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px;">Published:</span> <span id="article-date">Loading...</span></div>
-                        <div><span style="font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px;">Read Time:</span> <span id="article-read-time">Loading...</span></div>
+
+    <main class="article-shell" data-template="loading" id="nn-article-shell">
+        <div class="article-layout">
+            <article class="article-main" id="nn-article" aria-busy="true">
+                <div class="sk sk-chip" aria-hidden="true"></div>
+                <div class="sk sk-headline" aria-hidden="true"></div>
+                <div class="sk sk-media" aria-hidden="true"></div>
+                <div class="sk sk-line" aria-hidden="true"></div>
+                <div class="sk sk-line" aria-hidden="true" style="width:88%"></div>
+                <div class="sk sk-line" aria-hidden="true" style="width:60%"></div>
+            </article>
+            <aside class="article-rail" id="nn-rail" aria-label="Story context">
+                <section class="rail-card rail-card--trail" id="rail-trail">
+                    <h2 class="rail-card__title">Source trail</h2>
+                    <div id="rail-trail-body">
+                        <p class="rail-note">Every source this story cites appears here, next to the claims it supports.</p>
                     </div>
-                    <div class="article-header-utility" style="display: flex; gap: 12px; margin-top: 20px;">
-                        <button class="utility-btn" id="copy-link-btn"><span>🔗</span><span>Copy Link</span></button>
-                        <button class="utility-btn" id="share-menu-btn"><span>📤</span><span>Share</span></button>
-                        <div class="share-menu" id="share-menu" style="display: none; position: absolute; background: #fff; border: 1px solid #d5d5d5; padding: 4px; min-width: 180px; z-index: 10001;">
-                            <a href="#" class="share-option" id="share-twitter" style="display: block; padding: 10px 14px; color: #1a1a1a; text-decoration: none;">𝕏 X (Twitter)</a>
-                            <a href="#" class="share-option" id="share-facebook" style="display: block; padding: 10px 14px; color: #1a1a1a; text-decoration: none;">Facebook</a>
-                            <a href="#" class="share-option" id="share-linkedin" style="display: block; padding: 10px 14px; color: #1a1a1a; text-decoration: none;">LinkedIn</a>
-                            <a href="#" class="share-option" id="share-email" style="display: block; padding: 10px 14px; color: #1a1a1a; text-decoration: none;">Email</a>
-                            <a href="#" class="share-option" id="share-reddit" style="display: block; padding: 10px 14px; color: #1a1a1a; text-decoration: none;">Reddit</a>
-                        </div>
-                    </div>
-                </div>
-            </header>
-            <div class="article-body-panel">
-                <div class="article-body" id="article-body">
-                    <div class="skeleton" style="height: 300px; margin-bottom: 20px;"></div>
-                    <div class="skeleton" style="height: 20px; margin-bottom: 12px; width: 100%;"></div>
-                    <div class="skeleton" style="height: 20px; margin-bottom: 12px; width: 95%;"></div>
-                    <div class="skeleton" style="height: 20px; margin-bottom: 12px; width: 90%;"></div>
-                    <div class="skeleton" style="height: 20px; width: 60%;"></div>
-                </div>
-                <div class="comments-section" style="margin-top: 64px; padding-top: 40px; border-top: 1px solid #e5e5e5;">
-                    <h3 style="font-size: 0.875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 24px; font-family: 'Inter', sans-serif;">Comments</h3>
-                    <div class="comment-section" data-article-id="" id="article-comments"></div>
-                </div>
-            </div>
-        </article>
-        
-        <aside class="article-sidebar">
-            <section class="sidebar-card">
-                <h2>Latest</h2>
-                <div id="latest-articles">
-                    <div class="skeleton" style="height: 60px; margin-bottom: 12px;"></div>
-                    <div class="skeleton" style="height: 60px; margin-bottom: 12px;"></div>
-                    <div class="skeleton" style="height: 60px;"></div>
-                </div>
-            </section>
-            <section class="sidebar-card">
-                <h2>Related Coverage</h2>
-                <div id="related-articles">
-                    <div class="skeleton" style="height: 60px; margin-bottom: 12px;"></div>
-                    <div class="skeleton" style="height: 60px; margin-bottom: 12px;"></div>
-                    <div class="skeleton" style="height: 60px;"></div>
-                </div>
-            </section>
-        </aside>
-        
-        <section class="more-coverage" style="grid-column: 1 / -1; margin-top: 80px; padding-top: 40px; border-top: 1px solid #e5e5e5;">
-            <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 32px; font-family: 'Inter', sans-serif;">More from Noteworthy News</h2>
-            <div id="more-coverage-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px;">
-                <div class="skeleton" style="height: 300px;"></div>
-                <div class="skeleton" style="height: 300px;"></div>
-                <div class="skeleton" style="height: 300px;"></div>
-            </div>
+                </section>
+                <section class="rail-card" id="article-toc-wrap" style="display:none;">
+                    <h2 class="rail-card__title">In this article</h2>
+                    <nav id="article-toc" aria-label="Article contents"></nav>
+                </section>
+                <section class="rail-card" id="rail-related-wrap" style="display:none;">
+                    <h2 class="rail-card__title">Related coverage</h2>
+                    <div id="related-articles"></div>
+                </section>
+                <section class="rail-card" id="rail-latest-wrap" style="display:none;">
+                    <h2 class="rail-card__title">Latest</h2>
+                    <div id="latest-articles"></div>
+                </section>
+            </aside>
+        </div>
+
+        <section class="read-next" aria-label="Read next">
+            <div class="read-next__head"><h2 class="read-next__title">Read next</h2></div>
+            <div class="read-next-grid" id="more-coverage-grid"></div>
+        </section>
+
+        <section class="nn-comments" id="nn-comments-wrap">
+            <h2 class="nn-comments__title">Comments</h2>
+            <div data-article-id="" id="article-comments"></div>
         </section>
     </main>
-    
-    <!-- Hidden elements for article-loader.js compatibility -->
-    <span id="category-chip" style="display: none;">BREAKING NEWS</span>
-    <span id="article-timestamp" style="display: none;"></span>
-    <span id="alert-pill" style="display: none;"></span>
-    <span id="article-timestamp-header" style="display: none;"></span>
-    <div id="article-tags" style="display: none;"></div>
-    
+
+    <span id="article-timestamp" class="sr-only"></span>
+    <span id="alert-pill" class="sr-only"></span>
+    <span id="article-timestamp-header" class="sr-only"></span>
+    <div id="article-tags" style="display:none;"></div>
+
+    <div class="lightbox" id="image-lightbox" role="dialog" aria-label="Image viewer" aria-hidden="true">
+        <div class="lightbox-content">
+            <button class="lightbox-close" id="lightbox-close" aria-label="Close image viewer">&times;</button>
+            <img id="lightbox-image" src="" alt="">
+            <p class="lightbox-caption" id="lightbox-caption" hidden></p>
+        </div>
+    </div>
+
     <!-- Article Page Scripts -->
-    <script src="/js/article-page.js"></script>
-    <script src="/src/components/news-card.js"></script>
+    <script type="module" src="/v2/js/post-media.js"></script>
+    <script src="/js/article-v4.js"></script>
     <script src="/src/components/comment-section.js"></script>
     <script src="/lib/contentNormalize.js"></script>
-    <script src="/src/components/article-page-v3.js"></script>
+    <script src="/src/components/article-page-v4.js"></script>
     <script src="/src/components/article-loader.js"></script>
 </body>
 </html>`;
@@ -467,7 +438,24 @@ function generatePrerenderedHTML(post, articleId, userAgent, cardType = 'summary
     <meta name="twitter:description" content="${escapeHtml(description)}">
     <meta name="twitter:site" content="@NoteworthyNews">
     <meta name="twitter:creator" content="@NoteworthyNews">
-    
+
+    <script type="application/ld+json">${JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'NewsArticle',
+      headline: formattedTitle,
+      description: description,
+      image: [imageUrl],
+      datePublished: datePosted,
+      dateModified: post.updated_at || datePosted,
+      mainEntityOfPage: { '@type': 'WebPage', '@id': articleUrl },
+      author: { '@type': 'Organization', name: 'Noteworthy News' },
+      publisher: {
+        '@type': 'Organization',
+        name: 'Noteworthy News',
+        logo: { '@type': 'ImageObject', url: 'https://noteworthynews.co/IMG_5794.PNG' },
+      },
+    })}</script>
+
     <style>
         body { font-family: Georgia, 'Times New Roman', serif; padding: 2rem; max-width: 720px; margin: 0 auto; color: #0b0d10; line-height: 1.75; }
         h1 { font-family: system-ui, sans-serif; font-size: 1.75rem; margin: 0 0 1rem; line-height: 1.2; }
@@ -550,7 +538,7 @@ exports.handler = async (event) => {
 
     const store = getPostStore();
 
-    // Normalize article ID — strip leading "post-" and trailing ".json" so
+    // Normalize article ID - strip leading "post-" and trailing ".json" so
     // postStore.readPost builds the canonical key.
     let cleanId = articleId;
     if (cleanId.startsWith('post-')) cleanId = cleanId.slice(5);
@@ -580,7 +568,7 @@ exports.handler = async (event) => {
     if (!postData) {
       const blobError = lastError || new Error('Post not found');
       console.error('[article-preview] Blob storage error:', blobError.message);
-      console.error('[article-preview] Tried keys:', keysToTry.join(', '));
+      console.error('[article-preview] Tried keys:', idsToTry.join(', '));
       // Return prerendered HTML with default image
       return {
         statusCode: 200,

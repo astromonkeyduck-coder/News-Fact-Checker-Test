@@ -1,8 +1,8 @@
 /**
- * Admin Auth — Noteworthy News
+ * Admin Auth - Noteworthy News
  *
  * Initializes Auth0, enforces admin role, provides token for API calls.
- * The server is the authority for admin identity — the client probes
+ * The server is the authority for admin identity - the client probes
  * an admin endpoint to confirm access rather than relying on client-side
  * claim parsing alone.
  */

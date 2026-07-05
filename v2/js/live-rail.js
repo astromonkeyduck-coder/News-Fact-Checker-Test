@@ -68,18 +68,18 @@
     if (followers) metaBits.push(esc(String(followers)) + ' following');
 
     return (
-      '<a class="hero-card-link" href="/story/' + esc(story.slug) + '" aria-label="' + esc(story.title) + '">' +
-        '<div class="hero-card-top">' +
-          statusBadge(status) +
-          (metaBits.length ? '<span class="hero-card-meta">' + metaBits.join(' &middot; ') + '</span>' : '') +
+      '<a class="hero-story-link" href="/story/' + esc(story.slug) + '" aria-label="' + esc(story.title) + '">' +
+        '<div class="hero-story-body">' +
+          '<div class="hero-story-top">' +
+            statusBadge(status) +
+            (metaBits.length ? '<span class="hero-story-time">' + metaBits.join(' &middot; ') + '</span>' : '') +
+          '</div>' +
+          '<h2 class="hero-story-title">' + esc(story.title) + '</h2>' +
+          (story.summary ? '<p class="hero-story-summary">' + esc(story.summary) + '</p>' : '') +
+          '<span class="hero-story-cta">Follow live' +
+            '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>' +
+          '</span>' +
         '</div>' +
-        '<div class="hero-card-row">' +
-          '<h3 class="hero-card-title">' + esc(story.title) + '</h3>' +
-        '</div>' +
-        (story.summary ? '<p class="hero-card-summary">' + esc(story.summary) + '</p>' : '') +
-        '<span class="hero-card-cta">Follow live' +
-          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>' +
-        '</span>' +
       '</a>'
     );
   }
@@ -114,12 +114,13 @@
       if (flagshipIndex < 0) flagshipIndex = 0;
       var flagship = stories[flagshipIndex];
 
-      // 1. Hero card: live story takes the slot over regular posts.
+      // 1. Hero slot: a live story outranks regular posts.
       var slot = document.getElementById('hero-card');
       if (slot) {
         slot.innerHTML = heroCard(flagship);
         slot.dataset.heroSource = 'live';
         slot.dataset.status = flagship.status || 'developing';
+        slot.classList.add('hero-story-live');
       }
 
       // 2. Developing Now strip: all live stories, flagship first.

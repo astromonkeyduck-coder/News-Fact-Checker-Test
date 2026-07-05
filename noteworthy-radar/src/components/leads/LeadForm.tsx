@@ -89,7 +89,7 @@ export function LeadForm({ events, defaultEventId, prefill }: Props) {
             <div>
               <Label htmlFor="event_id">Event</Label>
               <Select id="event_id" {...register("event_id")}>
-                <option value="">— No event —</option>
+                <option value="">- No event -</option>
                 {events.map((e) => (
                   <option key={e.id} value={e.id}>
                     {e.event_name}

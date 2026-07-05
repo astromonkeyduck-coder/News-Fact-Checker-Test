@@ -360,7 +360,7 @@ async function sendStreakCelebrationEmail(userEmail, userName, streakDays) {
   }
 }
 
-// verifyAuthToken removed — replaced by requireAuth middleware
+// verifyAuthToken removed - replaced by requireAuth middleware
 
 /**
  * Main handler - can be called as a Netlify function or imported

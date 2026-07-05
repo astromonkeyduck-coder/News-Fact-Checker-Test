@@ -15,7 +15,7 @@ const supabase = require('./lib/supabaseClient');
 function checkToken(event) {
   const requiredToken = process.env.CLEMS_TOKEN;
   if (!requiredToken) {
-    console.error('[Security] CLEMS_TOKEN is not configured — denying access (fail-closed).');
+    console.error('[Security] CLEMS_TOKEN is not configured - denying access (fail-closed).');
     return false;
   }
 

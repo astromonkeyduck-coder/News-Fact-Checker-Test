@@ -1816,7 +1816,7 @@ class BreakingNewsGame {
                 category: "health"
             },
             {
-                headline: "Portland to ban cars entirely next month — official memo leaked",
+                headline: "Portland to ban cars entirely next month - official memo leaked",
                 source: "CityLeaks.net",
                 isFactual: false,
                 explanation: "This is misleading. The 'leaked memo' comes from an anonymous source and could be satire or forgery. Major city policy changes are announced through official channels, not leaks. The source is not credible.",
@@ -1897,7 +1897,7 @@ class BreakingNewsGame {
                 category: "health"
             },
             {
-                headline: "Charity steals donations — undercover footage surfaces",
+                headline: "Charity steals donations - undercover footage surfaces",
                 source: "CharityWatchExposed.com",
                 isFactual: false,
                 explanation: "This is misleading. Single undercover clips can be edited or staged. Charities are vulnerable to smear campaigns. Real investigations require audited financial statements and multiple-source verification. The source is not credible.",
@@ -1906,7 +1906,7 @@ class BreakingNewsGame {
                 category: "conspiracy"
             },
             {
-                headline: "Government quietly raises sales tax to 50% — leaked spreadsheet",
+                headline: "Government quietly raises sales tax to 50% - leaked spreadsheet",
                 source: "TaxLeaks.org",
                 isFactual: false,
                 explanation: "This is misleading. Spreadsheets without signatures could be mockups. Real tax changes are documented in official budget documents and legislative records. The source is not credible.",
@@ -1933,7 +1933,7 @@ class BreakingNewsGame {
                 category: "health"
             },
             {
-                headline: "Photo shows politician at foreign rally — proves treason",
+                headline: "Photo shows politician at foreign rally - proves treason",
                 source: "PoliticalExposed.com",
                 isFactual: false,
                 explanation: "This is misleading. Photos can be cropped, misattributed, or from old events. Real verification requires reverse image search and checking original context. The source is not credible.",
@@ -2014,7 +2014,7 @@ class BreakingNewsGame {
                 category: "politics"
             },
             {
-                headline: "Weather forecast screenshot shows city underwater next week — evacuation imminent",
+                headline: "Weather forecast screenshot shows city underwater next week - evacuation imminent",
                 source: "WeatherAlertNews.com",
                 isFactual: false,
                 explanation: "This is misleading. Weather model screenshots can be faked or edited. Real weather forecasts come from National Weather Service or official meteorological agencies. The source is not credible.",
@@ -2041,7 +2041,7 @@ class BreakingNewsGame {
                 category: "business"
             },
             {
-                headline: "Popular food brand recalls due to human hair contamination — video shows factory",
+                headline: "Popular food brand recalls due to human hair contamination - video shows factory",
                 source: "FoodSafetyAlert.net",
                 isFactual: false,
                 explanation: "This is misleading. Viral clips could be from different factories, countries, or old footage. Real food recalls are announced through company recall notices and inspection reports. The source is not credible.",
@@ -2068,7 +2068,7 @@ class BreakingNewsGame {
                 category: "scam"
             },
             {
-                headline: "Viral graph shows crime dropped 80% after policy X — but graph has truncated y-axis",
+                headline: "Viral graph shows crime dropped 80% after policy X - but graph has truncated y-axis",
                 source: "DataVisualizationNews.com",
                 isFactual: false,
                 explanation: "This is misleading. Truncated y-axes create misleading visualizations that exaggerate effects. Real data analysis requires checking raw numbers and data sources. The source is not credible.",
@@ -2131,7 +2131,7 @@ class BreakingNewsGame {
                 category: "health"
             },
             {
-                headline: "Map shows refugee camp relocated to wealthy suburb — proof of conspiracy",
+                headline: "Map shows refugee camp relocated to wealthy suburb - proof of conspiracy",
                 source: "GeographicTruthExposed.net",
                 isFactual: false,
                 explanation: "This is misleading. Maps can have mislabeled layers, old imagery, or geolocation errors. Real verification requires checking coordinates and official humanitarian sources. The source is not credible.",
@@ -2185,7 +2185,7 @@ class BreakingNewsGame {
                 category: "health"
             },
             {
-                headline: "New pipeline will siphon river to private resorts — environmentalists silenced",
+                headline: "New pipeline will siphon river to private resorts - environmentalists silenced",
                 source: "EnvironmentalTruthExposed.net",
                 isFactual: false,
                 explanation: "This is misleading. Activist language suggests bias. Real infrastructure projects require environmental impact assessments and permits that are publicly accessible. The source is not credible.",
@@ -2212,7 +2212,7 @@ class BreakingNewsGame {
                 category: "misinformation"
             },
             {
-                headline: "Alert: 5G towers cause localized heat waves — citizen footage",
+                headline: "Alert: 5G towers cause localized heat waves - citizen footage",
                 source: "5GTruthExposed.com",
                 isFactual: false,
                 explanation: "This is misleading. Scientific consensus rejects this claim. Footage is likely misattributed or shows thermal camera misreadings. Real science requires vetted sources. The source is not credible.",
@@ -2239,7 +2239,7 @@ class BreakingNewsGame {
                 category: "conspiracy"
             },
             {
-                headline: "Study: owning a pet doubles your income — correlation proves causation",
+                headline: "Study: owning a pet doubles your income - correlation proves causation",
                 source: "LifestyleResearchDaily.com",
                 isFactual: false,
                 explanation: "This is misleading. This confuses correlation with causation and likely has reverse causality (higher income people can afford pets). Real studies account for confounders and study design. The source is not credible.",
@@ -4269,7 +4269,7 @@ class BreakingNewsGame {
                     <div class="inline-leaderboard-rank">${medal}</div>
                     <div class="inline-leaderboard-user">
                         <div class="inline-leaderboard-name">${this.escapeHtml(score.userName)}</div>
-                        <div class="inline-leaderboard-meta">${metaText || '—'}</div>
+                        <div class="inline-leaderboard-meta">${metaText || '-'}</div>
                     </div>
                     <div class="inline-leaderboard-score">${score.score.toLocaleString()}</div>
                 </div>
@@ -4504,7 +4504,7 @@ class BreakingNewsGame {
                     <div class="inline-leaderboard-rank">${medal}</div>
                     <div class="inline-leaderboard-user">
                         <div class="inline-leaderboard-name">${this.escapeHtml(score.userName)}</div>
-                        <div class="inline-leaderboard-meta">${metaText || '—'}</div>
+                        <div class="inline-leaderboard-meta">${metaText || '-'}</div>
                     </div>
                     <div class="inline-leaderboard-score">${score.score.toLocaleString()}</div>
                 </div>
@@ -8246,10 +8246,10 @@ function initNewsletterSubscription() {
         '/9c606b8d-2cb4-4fbf-afab-9032102e2814.png'
     ];
     const FALLBACK_MESSAGES = [
-        'AI image failed — spinning up a fresh shot...',
-        'Still generating visuals — hang tight!',
-        'Our illustrator bot missed — trying again automatically.',
-        'Visual feed dropped — relaunching render...'
+        'AI image failed - spinning up a fresh shot...',
+        'Still generating visuals - hang tight!',
+        'Our illustrator bot missed - trying again automatically.',
+        'Visual feed dropped - relaunching render...'
     ];
     
     // Map country names to audio file names

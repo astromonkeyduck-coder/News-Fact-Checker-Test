@@ -63,7 +63,7 @@ async function main() {
   }
 
   if (args.dryRun) {
-    console.log('[create-job] DRY-RUN — would create job:');
+    console.log('[create-job] DRY-RUN - would create job:');
     console.log(JSON.stringify(args.fields, null, 2));
     process.exit(0);
   }

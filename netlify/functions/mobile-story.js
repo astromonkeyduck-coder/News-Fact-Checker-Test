@@ -1,5 +1,5 @@
 /**
- * Mobile Story — normalized single-item detail for the native iOS app.
+ * Mobile Story - normalized single-item detail for the native iOS app.
  *
  * GET /.netlify/functions/mobile-story   (alias: /api/mobile/story)
  *   ?id=<postId>     → { story: FeedItem (incl. bodyText) }

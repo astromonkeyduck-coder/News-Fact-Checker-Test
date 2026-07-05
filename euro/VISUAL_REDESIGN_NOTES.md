@@ -1,4 +1,4 @@
-# AP Euro Timeline — Visual Redesign Notes
+# AP Euro Timeline - Visual Redesign Notes
 
 ## V2 Upgrade (May 2, 2026)
 
@@ -48,6 +48,6 @@ Complete rebuild from a 10-tab dashboard into a scrollable all-in-one study syst
 
 ### Files
 
-- `index.html` — complete V2 rebuild
-- `index_old.html` — backup of V1
-- `timeline_data.json` — unchanged
+- `index.html` - complete V2 rebuild
+- `index_old.html` - backup of V1
+- `timeline_data.json` - unchanged

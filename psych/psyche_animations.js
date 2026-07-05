@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   PSYCHE ANIMATIONS — Central Animation Engine
+   PSYCHE ANIMATIONS - Central Animation Engine
    Single rAF loop, mouse parallax, signal pulses, particles,
    scroll reveals, motion intensity control
    ═══════════════════════════════════════════════════════════════ */

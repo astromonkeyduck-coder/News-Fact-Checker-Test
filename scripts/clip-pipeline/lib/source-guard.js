@@ -2,7 +2,7 @@
 
 /**
  * Source URL guardrails.
- * YouTube watch URLs must NOT be used as media sources — metadata only via youtube_video_id.
+ * YouTube watch URLs must NOT be used as media sources - metadata only via youtube_video_id.
  */
 
 const YOUTUBE_HOST_PATTERN = /(?:youtube\.com|youtu\.be|youtube-nocookie\.com)/i;

@@ -1,1037 +1,363 @@
 <!DOCTYPE html>
-<!-- 
-    Built with care by Richard, Co-Founder & Lead Developer of Noteworthy News
-    Tech Stack: HTML5, CSS3, JavaScript, Supabase, Netlify Functions
-    Questions? richard@noteworthynews.co
--->
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Language" content="en">
-    <meta name="language" content="English">
-    <title>Contact Us - Noteworthy News</title>
-    <!-- Shared design tokens and theme -->
-    <link rel="stylesheet" href="styles/responsive.css">
-    <!-- V2 Design System -->
-    <link rel="stylesheet" href="/v2/styles/tokens.css">
-    <link rel="stylesheet" href="/v2/styles/layout.css">
-    <link rel="stylesheet" href="/v2/styles/components.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap"></noscript>
-    <script src="christmas-config.js"></script>
-    <script>if (typeof CHRISTMAS_CONFIG !== 'undefined') { window.CHRISTMAS_CONFIG = CHRISTMAS_CONFIG; }</script>
-    <script src="christmas-theme-loader.js"></script>
-    <!-- Favicon and Theme -->
-    <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="32x32">
-    <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="192x192">
-    <link rel="shortcut icon" type="image/png" href="IMG_5794.PNG">
-    <link rel="apple-touch-icon" href="IMG_5794.PNG" sizes="180x180">
-    <link rel="mask-icon" href="IMG_5794.PNG" color="#0f234a">
-    <meta name="theme-color" content="#07152a">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        /* Ensure background covers entire document and prevents white overscroll */
-        html {
-            background: linear-gradient(135deg, var(--color-bg-dark, #07152a) 0%, var(--color-bg-darker, #0d1f3a) 50%, #1a2a4a 100%) !important;
-            min-height: 100vh;
-            overflow-x: hidden;
-            overscroll-behavior: none !important;
-            overscroll-behavior-x: none !important;
-            overscroll-behavior-y: none !important;
-            -webkit-overflow-scrolling: touch;
-        }
-        
-        /* Prevent white background on iOS Safari pull-to-refresh */
-        html::before {
-            content: '';
-            position: fixed;
-            top: -200vh;
-            left: 0;
-            right: 0;
-            bottom: -200vh;
-            background: linear-gradient(135deg, var(--color-bg-dark, #07152a) 0%, var(--color-bg-darker, #0d1f3a) 50%, #1a2a4a 100%) !important;
-            z-index: -3;
-            pointer-events: none;
-            width: 100vw;
-            height: 400vh;
-        }
-        
-        body {
-            font-family: 'Inter', 'Sora', system-ui, sans-serif;
-            background: linear-gradient(135deg, var(--color-bg-dark, #07152a) 0%, var(--color-bg-darker, #0d1f3a) 50%, #1a2a4a 100%);
-            color: var(--color-text-primary);
-            line-height: 1.6;
-            min-height: 100vh;
-            overflow-x: hidden;
-            position: relative;
-        }
-        
-        /* Animated background */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at 20% 80%, rgba(74, 144, 226, 0.1) 0%, transparent 50%),
-                        radial-gradient(circle at 80% 20%, rgba(6, 182, 212, 0.1) 0%, transparent 50%),
-                        radial-gradient(circle at 40% 80%, rgba(59, 130, 246, 0.08) 0%, transparent 50%);
-            animation: backgroundShift 20s ease-in-out infinite;
-            z-index: -2;
-        }
-        
-        @keyframes backgroundShift {
-            0%, 100% { transform: scale(1) rotate(0deg); }
-            50% { transform: scale(1.1) rotate(1deg); }
-        }
-        
-        /* Floating particles */
-        .particles {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: -1;
-            opacity: 0.1;
-        }
-        
-        .particle {
-            position: absolute;
-            width: 4px;
-            height: 4px;
-            background: rgba(74, 144, 226, 0.6);
-            border-radius: 50%;
-            animation: float 6s ease-in-out infinite;
-        }
-        
-        @keyframes float {
-            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
-            50% { transform: translateY(-20px) rotate(180deg); opacity: 1; }
-        }
-        
-        /* Matrix rain effect */
-        .matrix-rain {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: -1;
-            opacity: 0.05;
-        }
-        
-        .matrix-character {
-            position: absolute;
-            color: rgba(74, 144, 226, 0.3);
-            font-family: monospace;
-            font-size: 14px;
-            animation: matrixFall 3s linear infinite;
-        }
-        
-        @keyframes matrixFall {
-            0% { transform: translateY(-100px); opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { transform: translateY(100vh); opacity: 0; }
-        }
-        
-        /* CRT scanline overlay */
-        .crt-overlay {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 9999;
-        }
-        .crt-overlay::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: repeating-linear-gradient(
-                0deg,
-                transparent,
-                transparent 2px,
-                rgba(0, 0, 0, 0.03) 2px,
-                rgba(0, 0, 0, 0.03) 4px
-            );
-        }
-        .crt-overlay::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(
-                ellipse at center,
-                transparent 0%,
-                transparent 60%,
-                rgba(0, 0, 0, 0.4) 100%
-            );
-        }
-        
-        .header-logo-w {
-            font-size: 2rem;
-            font-weight: 900;
-            color: #000000 !important;
-            text-shadow: 0 0 3px rgba(255, 255, 255, 0.5), 0 0 6px rgba(255, 255, 255, 0.3);
-        }
-        
-        .brand-info h1 {
-            font-size: 1.2rem;
-            margin: 0;
-            color: white;
-        }
-        
-        .brand-info p {
-            font-size: 0.85rem;
-            color: rgba(255, 255, 255, 0.7);
-            margin: 0;
-        }
-        
-        .back-link {
-            color: var(--color-primary);
-            text-decoration: none;
-            font-weight: 600;
-            transition: color 0.3s ease;
-        }
-        
-        .back-link:hover {
-            color: var(--color-accent-success);
-        }
-        
-        /* Main Content */
-        .container {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 20px 20px 60px;
-        }
-        
-        .page-header {
-            text-align: center;
-            margin-bottom: 50px;
-        }
-        
-        .page-header h1 {
-            font-size: clamp(2rem, 5vw, 3rem);
-            margin-bottom: 15px;
-            font-family: 'Sora', sans-serif;
-            background: var(--accent-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        .page-header p {
-            font-size: var(--fs-base);
-            color: var(--color-text-secondary);
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        
-        /* Contact Section */
-        .contact-section {
-            background: var(--color-bg-card);
-            border: 1px solid var(--color-border);
-            border-radius: 16px;
-            padding: 40px;
-            margin-bottom: 30px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        }
-        
-        .contact-section h2 {
-            font-size: var(--fs-lg);
-            font-family: 'Sora', sans-serif;
-            margin-bottom: 25px;
-            color: var(--color-primary);
-        }
-        
-        .contact-section p {
-            font-size: var(--fs-base);
-            color: var(--color-text-secondary);
-            margin-bottom: 30px;
-            line-height: 1.8;
-        }
-        
-        /* Contact Button */
-        .contact-btn-container {
-            margin: 30px 0;
-        }
-        
-        .contact-btn {
-            background: var(--accent-gradient);
-            border: 2px solid var(--color-border-focus);
-            color: white;
-            padding: 16px 32px;
-            font-size: var(--fs-base);
-            font-weight: 700;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px var(--glow-cyan);
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            text-decoration: none;
-        }
-        
-        .contact-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px var(--glow-blue);
-        }
-        
-        .contact-btn:active {
-            transform: translateY(0);
-        }
-        
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        /* Social Links */
-        .social-links {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            margin-top: 40px;
-        }
-        
-        .social-link {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 20px;
-            background: var(--color-bg-card);
-            border: 2px solid var(--color-border);
-            border-radius: 12px;
-            text-decoration: none;
-            color: var(--color-text-primary);
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-        }
-        
-        .social-link:hover {
-            border-color: var(--color-primary);
-            background: rgba(74, 144, 226, 0.1);
-            transform: translateX(5px);
-            box-shadow: 0 4px 15px var(--glow-cyan);
-        }
-        
-        .social-icon {
-            font-size: 2rem;
-        }
-        
-        .social-info h3 {
-            font-size: var(--fs-base);
-            margin-bottom: 5px;
-            color: var(--color-primary);
-        }
-        
-        .social-info p {
-            font-size: var(--fs-sm);
-            color: var(--color-text-muted);
-            margin: 0;
-        }
-        
-        /* Footer */
-        .footer-link {
-            text-align: center;
-            margin-top: 50px;
-            padding-top: 30px;
-            border-top: 1px solid var(--color-border);
-        }
-        
-        .footer-link a {
-            color: var(--color-primary);
-            text-decoration: none;
-            margin: 0 10px;
-            transition: color 0.3s ease;
-        }
-        
-        .footer-link a:hover {
-            color: var(--color-accent-success);
-        }
-        
-        .contact-footer {
-            background: linear-gradient(135deg, rgba(7, 21, 42, 0.95) 0%, rgba(13, 31, 58, 0.95) 100%);
-            border-top: 1px solid var(--color-border);
-            text-align: center;
-            padding: 40px 20px;
-            margin-top: 80px;
-            color: var(--color-text-muted);
-            font-size: var(--fs-sm);
-            line-height: 1.8;
-            position: relative;
-            z-index: 1;
-        }
-        .contact-footer-inner {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        .contact-footer p {
-            margin: 0 0 12px 0;
-            color: var(--color-text-secondary);
-            font-size: var(--fs-sm);
-            font-weight: 500;
-        }
-        .contact-footer p:last-child {
-            margin-bottom: 0;
-            font-size: var(--fs-xs);
-            color: var(--color-text-subtle);
-        }
-        .contact-footer a {
-            color: var(--color-primary-light);
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
-        .contact-footer a:hover {
-            color: var(--color-primary);
-        }
-        
-        /* Accordion FAQ */
-        .faq-accordion {
-            display: flex;
-            flex-direction: column;
-            gap: 0;
-        }
-        .faq-item {
-            border-bottom: 1px solid var(--color-border);
-            overflow: hidden;
-        }
-        .faq-item:last-child {
-            border-bottom: none;
-        }
-        .faq-trigger {
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 18px 0;
-            background: none;
-            border: none;
-            color: var(--color-primary);
-            font-size: var(--fs-base);
-            font-weight: 600;
-            font-family: inherit;
-            text-align: left;
-            cursor: pointer;
-            transition: color 0.2s ease, background 0.2s ease;
-        }
-        .faq-trigger:hover {
-            color: var(--color-primary-light);
-        }
-        .faq-trigger[aria-expanded="true"] {
-            color: var(--color-primary-light);
-        }
-        .faq-trigger .faq-chevron {
-            flex-shrink: 0;
-            margin-left: 12px;
-            transition: transform 0.3s ease;
-        }
-        .faq-trigger[aria-expanded="true"] .faq-chevron {
-            transform: rotate(180deg);
-        }
-        .faq-content {
-            display: grid;
-            grid-template-rows: 0fr;
-            transition: grid-template-rows 0.3s ease;
-        }
-        .faq-item[data-open="true"] .faq-content {
-            grid-template-rows: 1fr;
-        }
-        .faq-content-inner {
-            overflow: hidden;
-        }
-        .faq-content p {
-            padding: 0 0 18px 0;
-            margin: 0;
-            color: var(--color-text-secondary);
-            line-height: 1.8;
-        }
-        
-        /* Form field styles */
-        .form-group {
-            margin-bottom: 20px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: var(--color-text-secondary);
-            font-weight: 600;
-            font-size: var(--fs-sm);
-        }
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 14px 16px;
-            border-radius: 10px;
-            border: 1px solid var(--color-border);
-            background: var(--color-bg-card);
-            color: var(--color-text-primary);
-            font-size: var(--fs-base);
-            font-family: inherit;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: var(--color-border-focus);
-            box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2);
-        }
-        .form-group input.error,
-        .form-group textarea.error {
-            border-color: var(--color-accent-error);
-        }
-        .form-group .field-error {
-            font-size: var(--fs-xs);
-            color: var(--color-accent-error);
-            margin-top: 6px;
-        }
-        .form-group textarea {
-            resize: vertical;
-            min-height: 120px;
-        }
-        
-        /* Contact grid layout */
-        .contact-grid {
-            display: grid;
-            gap: 30px;
-        }
-        @media (min-width: 64rem) {
-            .contact-grid {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
-        
-        /* Scroll reveal */
-        .reveal {
-            opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 0.5s ease, transform 0.5s ease;
-        }
-        .reveal.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        .reveal-delay-1 { transition-delay: 0.1s; }
-        .reveal-delay-2 { transition-delay: 0.2s; }
-        .reveal-delay-3 { transition-delay: 0.3s; }
-        .reveal-delay-4 { transition-delay: 0.4s; }
-        
-        /* Form message states */
-        #contactFormMessage {
-            margin-top: 20px;
-            padding: 16px;
-            border-radius: 10px;
-            display: none;
-            transition: opacity 0.3s ease;
-        }
-        #contactFormMessage.success {
-            background: rgba(74, 222, 128, 0.2);
-            border: 1px solid var(--color-accent-success);
-            color: var(--color-accent-success);
-        }
-        #contactFormMessage.error {
-            background: rgba(239, 68, 68, 0.2);
-            border: 1px solid var(--color-accent-error);
-            color: var(--color-accent-error);
-        }
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-6px); }
-            75% { transform: translateX(6px); }
-        }
-        .shake {
-            animation: shake 0.4s ease;
-        }
-        
-        @media (max-width: 768px) {
-            .page-header h1 {
-                font-size: 2rem;
-            }
-            
-            .contact-section {
-                padding: 25px;
-            }
-            
-            .contact-section h2 {
-                font-size: 1.5rem;
-            }
-            
-            .contact-btn {
-                padding: 14px 24px;
-                font-size: 1rem;
-            }
-            
-            .social-link {
-                padding: 15px;
-            }
-        }
-    </style>
-    <!-- Google AdSense -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5427142458403577"
-            crossorigin="anonymous"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Contact | Noteworthy News</title>
+  <meta name="description" content="Contact the Noteworthy News newsroom: send a tip, request a correction, or ask a question. Correction requests are read first.">
+  <link rel="canonical" href="https://noteworthynews.co/contact.html">
+  <meta name="theme-color" content="#04060B">
+  <link rel="icon" href="/IMG_5794.PNG" type="image/png">
+  <meta name="robots" content="index, follow">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Contact | Noteworthy News">
+  <meta property="og:description" content="Send a tip, request a correction, or ask the newsroom a question.">
+  <meta property="og:url" content="https://noteworthynews.co/contact.html">
+  <meta property="og:site_name" content="Noteworthy News">
+  <meta property="og:image" content="https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg?v=2">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,600&display=swap">
+
+  <!-- Design system -->
+  <link rel="stylesheet" href="/v2/styles/tokens.css">
+  <link rel="stylesheet" href="/v2/styles/base.css">
+  <link rel="stylesheet" href="/v2/styles/v4.css">
+  <link rel="stylesheet" href="/v2/styles/page.css">
 </head>
-<body>
-    <div class="top-rule" aria-hidden="true"></div>
-    <header class="site-header">
-      <nav class="site-nav container" aria-label="Primary">
-        <a class="site-logo" href="/">
-          <img class="site-logo-icon" src="/IMG_5794.PNG" alt="" width="28" height="28">
-          <span>Noteworthy News</span>
-        </a>
-        <button class="nav-toggle" aria-expanded="false" aria-controls="nav-menu">
-          <svg class="nav-toggle-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-          </svg>
-        </button>
-        <div class="nav-menu" id="nav-menu">
-          <a class="nav-link" href="/">Home</a>
-          <a class="nav-link" href="/archive.html">Archive</a>
-          <a class="nav-link active" href="/contact.html">Contact</a>
-          <a class="nav-link" href="/v2/situation-monitor.html">Monitor</a>
-        </div>
-      </nav>
-    </header>
-    
-    <!-- Main Content -->
-    <div class="container">
-        <div class="page-header reveal">
-            <h1>Get in Touch</h1>
-            <p>We'd love to hear from you! Reach out to us through any of the channels below.</p>
-        </div>
-        
-        <div class="contact-grid">
-            <div class="contact-section reveal reveal-delay-1">
-                <h2>📧 Email Us</h2>
-                <p>For inquiries, feedback, or general questions, please contact us via email. We aim to respond to all inquiries within 24-48 hours during business days (Monday-Friday). For urgent news tips, we may respond faster.</p>
-                
-                <div class="contact-btn-container">
-                    <a href="mailto:richard@noteworthynews.co" class="contact-btn">
-                        <span>📧</span>
-                        <span>Contact Us</span>
-                    </a>
-                </div>
-            </div>
-            
-            <div class="contact-section reveal reveal-delay-2">
-                <h2>📝 Contact Form</h2>
-                <p>Fill out the form below and we'll get back to you as soon as possible. All fields marked with an asterisk (*) are required.</p>
-                
-                <form id="contactForm" action="/.netlify/functions/send-contact-form" method="POST" style="margin-top: 20px;">
-                    <div class="form-group">
-                        <label for="contactName">Your Name *</label>
-                        <input type="text" id="contactName" name="name" required placeholder="Your name">
-                        <span class="field-error" id="nameError" aria-live="polite"></span>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="contactEmail">Your Email *</label>
-                        <input type="email" id="contactEmail" name="email" required placeholder="you@example.com">
-                        <span class="field-error" id="emailError" aria-live="polite"></span>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="contactSubject">Subject *</label>
-                        <select id="contactSubject" name="subject" required>
-                            <option value="">Select a subject...</option>
-                            <option value="general">General Inquiry</option>
-                            <option value="tip">News Tip</option>
-                            <option value="correction">Correction Request</option>
-                            <option value="partnership">Partnership Inquiry</option>
-                            <option value="media">Media Inquiry</option>
-                            <option value="other">Other</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="contactMessage">Message *</label>
-                        <textarea id="contactMessage" name="message" required placeholder="Your message..."></textarea>
-                        <span class="field-error" id="messageError" aria-live="polite"></span>
-                    </div>
-                    
-                    <button type="submit" class="contact-btn" style="width: 100%; margin-top: 10px;">
-                        <span>📧</span>
-                        <span>Send Message</span>
-                    </button>
-                </form>
-                
-                <div id="contactFormMessage"></div>
-            </div>
-        </div>
-        
-        <div class="contact-section reveal reveal-delay-3">
-            <h2>❓ Frequently Asked Questions</h2>
-            
-            <div class="faq-accordion" role="list">
-                <div class="faq-item" data-open="false" role="listitem">
-                    <button type="button" class="faq-trigger" aria-expanded="false" aria-controls="faq-1" id="faq-trigger-1">
-                        <span>How quickly do you respond to inquiries?</span>
-                        <span class="faq-chevron" aria-hidden="true">▼</span>
-                    </button>
-                    <div class="faq-content" id="faq-1" role="region" aria-labelledby="faq-trigger-1">
-                        <div class="faq-content-inner">
-                            <p>We aim to respond to all inquiries within 24-48 hours during business days (Monday-Friday). For urgent news tips, we may respond faster, often within a few hours. During major breaking news events, response times may be slightly longer as our team focuses on coverage.</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="faq-item" data-open="false" role="listitem">
-                    <button type="button" class="faq-trigger" aria-expanded="false" aria-controls="faq-2" id="faq-trigger-2">
-                        <span>Can I submit a news tip anonymously?</span>
-                        <span class="faq-chevron" aria-hidden="true">▼</span>
-                    </button>
-                    <div class="faq-content" id="faq-2" role="region" aria-labelledby="faq-trigger-2">
-                        <div class="faq-content-inner">
-                            <p>Yes, you can submit tips anonymously through our tip submission form on the homepage. We take source protection seriously and will not share your information without consent. However, providing contact information (even if anonymous) helps us follow up if we need clarification or additional details.</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="faq-item" data-open="false" role="listitem">
-                    <button type="button" class="faq-trigger" aria-expanded="false" aria-controls="faq-3" id="faq-trigger-3">
-                        <span>Do you accept guest articles or op-eds?</span>
-                        <span class="faq-chevron" aria-hidden="true">▼</span>
-                    </button>
-                    <div class="faq-content" id="faq-3" role="region" aria-labelledby="faq-trigger-3">
-                        <div class="faq-content-inner">
-                            <p>We occasionally accept guest contributions from verified experts, journalists, and subject matter specialists. Please contact us with your credentials, article pitch, and writing samples. We prioritize fact-checked, well-researched content that aligns with our editorial standards.</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="faq-item" data-open="false" role="listitem">
-                    <button type="button" class="faq-trigger" aria-expanded="false" aria-controls="faq-4" id="faq-trigger-4">
-                        <span>How can I report an error or request a correction?</span>
-                        <span class="faq-chevron" aria-hidden="true">▼</span>
-                    </button>
-                    <div class="faq-content" id="faq-4" role="region" aria-labelledby="faq-trigger-4">
-                        <div class="faq-content-inner">
-                            <p>Please use the contact form above and select "Correction Request" as the subject. Include the URL of the article, the specific error, and any supporting information. We take accuracy seriously and will investigate and correct verified errors promptly. Corrections are noted at the bottom of articles when made.</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="faq-item" data-open="false" role="listitem">
-                    <button type="button" class="faq-trigger" aria-expanded="false" aria-controls="faq-5" id="faq-trigger-5">
-                        <span>Do you offer media interviews or expert commentary?</span>
-                        <span class="faq-chevron" aria-hidden="true">▼</span>
-                    </button>
-                    <div class="faq-content" id="faq-5" role="region" aria-labelledby="faq-trigger-5">
-                        <div class="faq-content-inner">
-                            <p>Yes, our team is available for media interviews and expert commentary on fact-checking, media literacy, and news verification. Please select "Media Inquiry" in the contact form and provide details about your publication, topic, and deadline. We'll respond as quickly as possible.</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="faq-item" data-open="false" role="listitem">
-                    <button type="button" class="faq-trigger" aria-expanded="false" aria-controls="faq-6" id="faq-trigger-6">
-                        <span>Can I partner with Noteworthy News?</span>
-                        <span class="faq-chevron" aria-hidden="true">▼</span>
-                    </button>
-                    <div class="faq-content" id="faq-6" role="region" aria-labelledby="faq-trigger-6">
-                        <div class="faq-content-inner">
-                            <p>We're open to partnerships with educational institutions, media organizations, and fact-checking networks. Please select "Partnership Inquiry" in the contact form and describe your organization and proposed collaboration. We're particularly interested in partnerships that advance media literacy and fact-checking education.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="contact-section reveal reveal-delay-4">
-            <h2>🕒 Response Times</h2>
-            <p>Here's what you can expect for different types of inquiries:</p>
-            <ul style="margin-top: 15px; padding-left: 30px; line-height: 2;">
-                <li><strong>General Inquiries:</strong> 24-48 hours during business days</li>
-                <li><strong>News Tips:</strong> As soon as possible (often within hours)</li>
-                <li><strong>Correction Requests:</strong> 24-48 hours</li>
-                <li><strong>Partnership Inquiries:</strong> 2-3 business days</li>
-                <li><strong>Media Inquiries:</strong> 24-48 hours (urgent requests may be faster)</li>
-            </ul>
-            <p style="margin-top: 15px; font-style: italic; color: var(--color-text-muted);">Note: Response times may be longer during holidays or major news events when our team is focused on breaking news coverage. We appreciate your patience.</p>
-        </div>
-        
-        <div class="contact-section reveal">
-            <h2>🌐 Connect on Social Media</h2>
-            <p>Follow us and stay updated with the latest news and updates. We post breaking news, fact-checks, and media literacy content regularly.</p>
-            
-            <div class="social-links">
-                <a href="https://x.com/newsnoteworthy" target="_blank" rel="noopener noreferrer" class="social-link">
-                    <span class="social-icon">𝕏</span>
-                    <div class="social-info">
-                        <h3>Follow us on X (Twitter)</h3>
-                        <p>Get breaking news updates and fact-checks in real-time. We post multiple times daily with verified information and analysis.</p>
-                    </div>
-                </a>
-            </div>
-        </div>
-    </div>
-    
-    <script>
-        // Create particles
-        function createParticles() {
-            const particlesContainer = document.getElementById('particles');
-            const particleCount = 50;
-            
-            for (let i = 0; i < particleCount; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'particle';
-                particle.style.left = Math.random() * 100 + '%';
-                particle.style.top = Math.random() * 100 + '%';
-                particle.style.animationDelay = Math.random() * 6 + 's';
-                particle.style.animationDuration = (Math.random() * 3 + 3) + 's';
-                particlesContainer.appendChild(particle);
-            }
-        }
-        
-        // Create matrix rain
-        function createMatrixRain() {
-            const matrixContainer = document.getElementById('matrixRain');
-            const columns = Math.floor(window.innerWidth / 20);
-            
-            const asciiChars = '01';
-            for (let i = 0; i < columns; i++) {
-                const character = document.createElement('div');
-                character.className = 'matrix-character';
-                character.textContent = asciiChars[Math.floor(Math.random() * asciiChars.length)];
-                character.style.left = i * 20 + 'px';
-                character.style.animationDelay = Math.random() * 3 + 's';
-                matrixContainer.appendChild(character);
-            }
-        }
-        
-        // Accordion FAQ toggle
-        function initAccordion() {
-            document.querySelectorAll('.faq-trigger').forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    const item = this.closest('.faq-item');
-                    const isOpen = item.getAttribute('data-open') === 'true';
-                    item.setAttribute('data-open', !isOpen);
-                    this.setAttribute('aria-expanded', !isOpen);
-                });
-            });
-        }
-        
-        // Scroll reveal with Intersection Observer
-        function initScrollReveal() {
-            const reveals = document.querySelectorAll('.reveal');
-            const observer = new IntersectionObserver(function(entries) {
-                entries.forEach(function(entry) {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('visible');
-                    }
-                });
-            }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
-            reveals.forEach(function(el) { observer.observe(el); });
-        }
-        
-        // Email validation
-        function isValidEmail(email) {
-            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-        }
-        
-        // Form validation and submission
-        function initContactForm() {
-            const contactForm = document.getElementById('contactForm');
-            const formMessage = document.getElementById('contactFormMessage');
-            const emailInput = document.getElementById('contactEmail');
-            const emailError = document.getElementById('emailError');
-            
-            if (!contactForm) return;
-            
-            // Real-time email validation
-            if (emailInput) {
-                emailInput.addEventListener('blur', function() {
-                    const val = this.value.trim();
-                    if (val && !isValidEmail(val)) {
-                        emailError.textContent = 'Please enter a valid email address';
-                        this.classList.add('error');
-                    } else {
-                        emailError.textContent = '';
-                        this.classList.remove('error');
-                    }
-                });
-            }
-            
-            contactForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                // Clear previous errors
-                document.querySelectorAll('.field-error').forEach(function(el) { el.textContent = ''; });
-                document.querySelectorAll('.form-group input, .form-group textarea').forEach(function(el) { el.classList.remove('error'); });
-                formMessage.className = '';
-                formMessage.style.display = 'none';
-                
-                // Validate
-                const name = document.getElementById('contactName').value.trim();
-                const email = document.getElementById('contactEmail').value.trim();
-                const message = document.getElementById('contactMessage').value.trim();
-                let valid = true;
-                
-                if (!name) {
-                    document.getElementById('nameError').textContent = 'Name is required';
-                    document.getElementById('contactName').classList.add('error');
-                    valid = false;
-                }
-                if (!email) {
-                    document.getElementById('emailError').textContent = 'Email is required';
-                    document.getElementById('contactEmail').classList.add('error');
-                    valid = false;
-                } else if (!isValidEmail(email)) {
-                    document.getElementById('emailError').textContent = 'Please enter a valid email address';
-                    document.getElementById('contactEmail').classList.add('error');
-                    valid = false;
-                }
-                if (!message) {
-                    document.getElementById('messageError').textContent = 'Message is required';
-                    document.getElementById('contactMessage').classList.add('error');
-                    valid = false;
-                }
-                
-                if (!valid) {
-                    formMessage.classList.add('error', 'shake');
-                    formMessage.style.display = 'block';
-                    formMessage.textContent = 'Please fix the errors above.';
-                    formMessage.offsetHeight;
-                    formMessage.classList.remove('shake');
-                    return;
-                }
-                
-                const submitBtn = contactForm.querySelector('button[type="submit"]');
-                const originalText = submitBtn.innerHTML;
-                submitBtn.innerHTML = '<span>⏳</span> <span>Sending...</span>';
-                submitBtn.disabled = true;
-                
-                const formData = new FormData(contactForm);
-                const jsonData = {};
-                for (const [key, value] of formData.entries()) {
-                    jsonData[key] = value;
-                }
-                
-                try {
-                    const response = await fetch('/.netlify/functions/send-contact-form', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(jsonData)
-                    });
-                    
-                    const result = await response.json();
-                    
-                    if (response.ok) {
-                        formMessage.className = 'success';
-                        formMessage.style.display = 'block';
-                        formMessage.textContent = '✓ Message sent successfully! We\'ll get back to you soon.';
-                        contactForm.reset();
-                    } else {
-                        throw new Error(result.error || 'Failed to send message');
-                    }
-                } catch (error) {
-                    formMessage.className = 'error shake';
-                    formMessage.style.display = 'block';
-                    formMessage.textContent = '✗ Error sending message. Please try emailing us directly or try again later.';
-                    formMessage.offsetHeight;
-                    formMessage.classList.remove('shake');
-                } finally {
-                    submitBtn.innerHTML = originalText;
-                    submitBtn.disabled = false;
-                }
-            });
-        }
-        
-        // Initialize effects when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            createParticles();
-            createMatrixRain();
-            initAccordion();
-            initScrollReveal();
-            initContactForm();
-            
-            // Initial reveal for above-fold content
-            requestAnimationFrame(function() {
-                document.querySelector('.page-header')?.classList.add('visible');
-            });
-            
-            // Developer console message
-            console.log('%c👋 Hey there, developer!', 'color: #4A90E2; font-size: 20px; font-weight: bold;');
-            console.log('%cThis site was designed, developed, and maintained by Richard, Co-Founder of Noteworthy News.', 'color: #2ECC71; font-size: 14px;');
-            console.log('%cBuilt with: HTML5, CSS3, JavaScript, Supabase, Netlify Functions, and lots of ☕', 'color: rgba(255, 255, 255, 0.8); font-size: 12px;');
-            console.log('%cInterested in the codebase or want to collaborate? Reach out: richard@noteworthynews.co', 'color: #4A90E2; font-size: 12px; font-style: italic;');
-        });
-    </script>
-    
-    <script>
-    (function(){
-      var h=document.querySelector('.site-header'),t=document.querySelector('.nav-toggle'),m=document.querySelector('.nav-menu');
-      if(t&&m){
-        t.addEventListener('click',function(){var o=m.classList.toggle('open');t.setAttribute('aria-expanded',String(o));document.body.style.overflow=o?'hidden':'';});
-        m.addEventListener('click',function(e){if(e.target===m||e.target.closest('.nav-link')){m.classList.remove('open');t.setAttribute('aria-expanded','false');document.body.style.overflow='';}});
-        document.addEventListener('keydown',function(e){if(e.key==='Escape'&&m.classList.contains('open')){m.classList.remove('open');t.setAttribute('aria-expanded','false');document.body.style.overflow='';t.focus();}});
-      }
-      if(h)window.addEventListener('scroll',function(){h.classList.toggle('scrolled',window.scrollY>10);},{passive:true});
-    })();
-    </script>
-    
-    <!-- Cookie Consent Banner -->
-    <script src="src/components/cookie-banner.js"></script>
-    
-    <footer class="site-footer">
-      <div class="container">
-        <div class="footer-grid">
-          <div class="footer-brand">
-            <p class="footer-brand-name">Noteworthy News</p>
-            <p class="footer-brand-tagline">Fact-checked journalism and media literacy tools. Think critically about the world.</p>
-          </div>
-          <nav aria-label="Footer navigation">
-            <p class="footer-nav-title">Explore</p>
-            <ul class="footer-nav-list">
-              <li><a class="footer-nav-link" href="/archive.html">Stories</a></li>
-              <li><a class="footer-nav-link" href="/game.html">Fact-Checker Game</a></li>
-              <li><a class="footer-nav-link" href="/geography-game.html">Geography Game</a></li>
-              <li><a class="footer-nav-link" href="/v2/situation-monitor.html">Situation Monitor</a></li>
-              <li><a class="footer-nav-link" href="/contact.html">Contact</a></li>
-            </ul>
-          </nav>
-          <nav aria-label="Resources">
-            <p class="footer-nav-title">Resources</p>
-            <ul class="footer-nav-list">
-              <li><a class="footer-nav-link" href="/media-literacy-guide.html">Media Literacy Guide</a></li>
-              <li><a class="footer-nav-link" href="/how-we-verify.html">How We Verify</a></li>
-              <li><a class="footer-nav-link" href="/fact-checking-tips.html">Fact-Checking Tips</a></li>
-              <li><a class="footer-nav-link" href="/newsletter-preferences.html">Newsletter Prefs</a></li>
-            </ul>
-          </nav>
-          <nav aria-label="Legal">
-            <p class="footer-nav-title">Legal</p>
-            <ul class="footer-nav-list">
-              <li><a class="footer-nav-link" href="/privacy.html">Privacy Policy</a></li>
-              <li><a class="footer-nav-link" href="/terms.html">Terms of Service</a></li>
-              <li><a class="footer-nav-link" href="/editorial-policy.html">Editorial Policy</a></li>
-            </ul>
-          </nav>
-        </div>
-        <div class="footer-bottom">
-          <p class="footer-copyright">&copy; 2026 Noteworthy News. All rights reserved.</p>
+<body class="v4 pg">
+
+  <!-- Header -->
+  <header class="site-header" id="site-header">
+    <nav class="nav-row container-wide" aria-label="Primary">
+      <a class="brand" href="/">
+        <img class="brand-mark" src="/IMG_5794.PNG" alt="" width="26" height="26">
+        <span class="brand-name">Noteworthy News</span>
+      </a>
+
+      <div class="nav-menu" id="nav-menu">
+        <a class="nav-link" href="/">Home</a>
+        <a class="nav-link" href="/archive.html">All stories</a>
+        <a class="nav-link" href="/how-we-verify.html">How we verify</a>
+        <a class="nav-link" href="/our-mission.html">Mission</a>
+        <a class="nav-link active" href="/contact.html">Contact</a>
+
+        <div class="nav-tools">
+          <a class="nav-icon-btn" href="/archive.html" aria-label="Search all stories" title="Search stories">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+          </a>
         </div>
       </div>
-    </footer>
+
+      <div class="nav-right">
+        <button class="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-menu">
+          <span class="nav-toggle-bar" aria-hidden="true"></span>
+          <span class="nav-toggle-bar" aria-hidden="true"></span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="pg-main">
+
+    <!-- Hero -->
+    <section class="pg-hero">
+      <div class="container-wide">
+        <div class="pg-hero-inner">
+          <p class="pg-kicker"><span class="pg-kicker-rule" aria-hidden="true"></span>Contact</p>
+          <h1 class="pg-title">Talk to the newsroom.</h1>
+          <p class="pg-lede">
+            Tips, corrections, questions, partnerships - it all lands in front of a person.
+            Correction requests are read before anything else in the inbox.
+          </p>
+          <div class="pg-meta">
+            <span class="pg-meta-chip"><span class="pg-dot" aria-hidden="true"></span>Replies within 24-48h on business days</span>
+            <span class="pg-meta-chip">Tips often within hours</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Body -->
+    <div class="container-wide pg-layout">
+      <article class="pg-article">
+
+        <section id="channels">
+          <h2>Choose a channel</h2>
+          <div class="pg-channels">
+            <a class="pg-channel" href="mailto:richard@noteworthynews.co">
+              <span class="pg-channel-icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              </span>
+              <span class="pg-channel-name">Email</span>
+              <span class="pg-channel-text">Best for anything with attachments, detail, or sensitivity. Goes straight to the newsroom.</span>
+              <span class="pg-channel-value">richard@noteworthynews.co</span>
+            </a>
+            <a class="pg-channel" href="https://x.com/newsnoteworthy" rel="noopener noreferrer" target="_blank">
+              <span class="pg-channel-icon" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              </span>
+              <span class="pg-channel-name">X (Twitter)</span>
+              <span class="pg-channel-text">Where we post breaking updates and fact-checks. DMs are open for quick flags.</span>
+              <span class="pg-channel-value">@newsnoteworthy</span>
+            </a>
+          </div>
+        </section>
+
+        <section id="form">
+          <h2>Or use the form</h2>
+          <p>
+            Pick the subject that fits - it routes your message to the right queue.
+            Every field except name is required.
+          </p>
+
+          <form class="pg-form" id="contactForm" novalidate>
+            <div class="pg-form-row">
+              <div class="pg-field">
+                <label for="contactName">Name</label>
+                <input class="pg-input" type="text" id="contactName" name="name" autocomplete="name" placeholder="Your name (optional)">
+              </div>
+              <div class="pg-field">
+                <label for="contactEmail">Email <span class="req" aria-hidden="true">*</span></label>
+                <input class="pg-input" type="email" id="contactEmail" name="email" required autocomplete="email" placeholder="you@example.com">
+              </div>
+            </div>
+
+            <div class="pg-field">
+              <label for="contactSubject">Subject <span class="req" aria-hidden="true">*</span></label>
+              <select class="pg-input" id="contactSubject" name="subject" required>
+                <option value="general">General inquiry</option>
+                <option value="tip">News tip</option>
+                <option value="correction">Correction request</option>
+                <option value="partnership">Partnership</option>
+                <option value="media">Media inquiry</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <div class="pg-field">
+              <label for="contactMessage">Message <span class="req" aria-hidden="true">*</span></label>
+              <textarea class="pg-input" id="contactMessage" name="message" required placeholder="For corrections: include the story link and what you believe is inaccurate."></textarea>
+            </div>
+
+            <div>
+              <button type="submit" class="btn btn-primary" id="contactSubmit">Send message</button>
+            </div>
+            <p class="pg-form-status" id="contactStatus" role="status" aria-live="polite"></p>
+          </form>
+        </section>
+
+        <section id="tips">
+          <h2>Sending a tip</h2>
+          <p>Good tips share a shape. If you can, include:</p>
+          <ul>
+            <li><strong>What happened</strong> - specifically, with when and where.</li>
+            <li><strong>How you know</strong> - firsthand, secondhand, documents, footage.</li>
+            <li><strong>Anything we can verify against</strong> - photos, videos, links, records, names of others who can confirm.</li>
+            <li><strong>A way to reach you</strong>, even anonymously. Follow-up questions save stories.</li>
+          </ul>
+          <div class="pg-callout">
+            <span class="pg-callout-label">Source protection</span>
+            <p>If you ask for anonymity, you get it. We do not share source identities without consent, and a commitment to protect a source, once made, is kept. For sensitive material, request a secure channel by email first and we'll set one up.</p>
+          </div>
+        </section>
+
+        <section id="corrections">
+          <h2>Requesting a correction</h2>
+          <p>
+            Corrections are the fastest queue we have - they outrank everything else. Select
+            "Correction request" in the form, or email with the story link, the specific claim
+            you believe is wrong, and any supporting evidence. If you're right, the correction
+            is published visibly in the story's timeline, per
+            <a href="/how-we-verify.html#corrections">our standards</a>.
+          </p>
+        </section>
+
+        <section id="faq">
+          <h2>Common questions</h2>
+          <div class="pg-faq">
+            <details>
+              <summary>How fast will I hear back?</summary>
+              <div class="pg-faq-body">
+                <p>General inquiries: 24-48 hours on business days. News tips: usually within hours. Corrections: same day where possible. Partnerships and media inquiries: 2-3 business days. During major breaking events the newsroom prioritizes coverage, so non-urgent replies may lag slightly.</p>
+              </div>
+            </details>
+            <details>
+              <summary>Can I submit a tip anonymously?</summary>
+              <div class="pg-faq-body">
+                <p>Yes. Use any contact method without identifying yourself, or say you want anonymity and we'll honor it. Leaving some way to reach you - even a throwaway email - helps us ask follow-up questions, which is often the difference between a publishable story and a dead end.</p>
+              </div>
+            </details>
+            <details>
+              <summary>How do I report an error in a story?</summary>
+              <div class="pg-faq-body">
+                <p>Send the story link, the specific claim, and why you believe it's wrong. We trace every correction request against sources. Verified errors are corrected in the story's visible timeline - not silently rewritten.</p>
+              </div>
+            </details>
+            <details>
+              <summary>Do you accept guest articles or op-eds?</summary>
+              <div class="pg-faq-body">
+                <p>Occasionally, from people with verifiable expertise on a subject we cover. Pitch first - credentials, the argument, and why you're the right person to make it. Anything we publish goes through the same standards as our own work and is labeled per our <a href="/editorial-policy.html#opinion">editorial policy</a>.</p>
+              </div>
+            </details>
+            <details>
+              <summary>Can we partner with Noteworthy News?</summary>
+              <div class="pg-faq-body">
+                <p>We're open to partnerships with newsrooms, educators, and fact-checking organizations - especially work that advances media literacy. Describe your organization and the collaboration you have in mind. Note that no partnership buys influence over coverage.</p>
+              </div>
+            </details>
+            <details>
+              <summary>Are you available for interviews or commentary?</summary>
+              <div class="pg-faq-body">
+                <p>Yes, on fact-checking, verification, and live news coverage. Select "Media inquiry" and include your outlet, topic, and deadline.</p>
+              </div>
+            </details>
+          </div>
+        </section>
+      </article>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container-wide">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a class="brand" href="/">
+            <img class="brand-mark" src="/IMG_5794.PNG" alt="" width="24" height="24">
+            <span class="brand-name">Noteworthy News</span>
+          </a>
+          <p class="footer-tag">Independent newsroom. No paywall. Corrections in public.</p>
+        </div>
+
+        <nav aria-label="Explore">
+          <p class="footer-col-title">Explore</p>
+          <ul class="footer-list">
+            <li><a href="/archive.html">All stories</a></li>
+            <li><a href="/#developing">Developing now</a></li>
+            <li><a href="/#top-stories">Top stories</a></li>
+            <li><a href="/#lab">Media Literacy Lab</a></li>
+          </ul>
+        </nav>
+
+        <nav aria-label="Product">
+          <p class="footer-col-title">Product</p>
+          <ul class="footer-list">
+            <li><a href="/#app">iOS app</a></li>
+            <li><a href="/#ai">Noteworthy News AI</a></li>
+            <li><a href="/#brief">The Weekly Brief</a></li>
+            <li><a href="/notification-settings.html">Notification settings</a></li>
+          </ul>
+        </nav>
+
+        <nav aria-label="Resources">
+          <p class="footer-col-title">Resources</p>
+          <ul class="footer-list">
+            <li><a href="/how-we-verify.html">How we verify</a></li>
+            <li><a href="/editorial-policy.html">Editorial policy</a></li>
+            <li><a href="/media-literacy-guide.html">Media literacy guide</a></li>
+            <li><a href="/fact-checking-tips.html">Fact-checking tips</a></li>
+          </ul>
+        </nav>
+
+        <nav aria-label="Company">
+          <p class="footer-col-title">Company</p>
+          <ul class="footer-list">
+            <li><a href="/our-mission.html">Our mission</a></li>
+            <li><a href="/contact.html">Contact</a></li>
+            <li><a href="https://x.com/newsnoteworthy" rel="noopener" target="_blank">X</a></li>
+            <li><a href="/privacy.html">Privacy</a></li>
+            <li><a href="/terms.html">Terms</a></li>
+          </ul>
+        </nav>
+      </div>
+
+      <div class="footer-bottom">
+        <p>&copy; 2026 Noteworthy News. All rights reserved.</p>
+        <p class="footer-motto">Developing means developing. Confirmed means confirmed.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scroll to top -->
+  <button class="scroll-top" id="scrollTopBtn" type="button" aria-label="Scroll to top" hidden>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+  </button>
+
+  <script src="/v2/js/page.js" defer></script>
+  <script>
+  (function () {
+    'use strict';
+    var form = document.getElementById('contactForm');
+    var status = document.getElementById('contactStatus');
+    var submitBtn = document.getElementById('contactSubmit');
+    if (!form) return;
+
+    function setStatus(msg, kind) {
+      status.textContent = msg;
+      status.classList.remove('is-success', 'is-error');
+      if (kind) status.classList.add(kind);
+    }
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      var email = document.getElementById('contactEmail').value.trim();
+      var message = document.getElementById('contactMessage').value.trim();
+
+      if (!email || email.indexOf('@') === -1) {
+        setStatus('Please enter a valid email address so we can reply.', 'is-error');
+        document.getElementById('contactEmail').focus();
+        return;
+      }
+      if (!message) {
+        setStatus('Please write a message before sending.', 'is-error');
+        document.getElementById('contactMessage').focus();
+        return;
+      }
+
+      var payload = {
+        name: document.getElementById('contactName').value.trim(),
+        email: email,
+        subject: document.getElementById('contactSubject').value,
+        message: message
+      };
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Sending\u2026';
+      setStatus('');
+
+      fetch('/.netlify/functions/send-contact-form', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+        .then(function (res) {
+          return res.json().catch(function () { return {}; }).then(function (data) {
+            if (!res.ok) throw new Error(data.error || 'Something went wrong.');
+            return data;
+          });
+        })
+        .then(function () {
+          setStatus('Message sent. We\u2019ll get back to you soon.', 'is-success');
+          form.reset();
+        })
+        .catch(function (err) {
+          setStatus((err && err.message ? err.message : 'Could not send your message.') + ' You can also email richard@noteworthynews.co directly.', 'is-error');
+        })
+        .finally(function () {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Send message';
+        });
+    });
+  })();
+  </script>
+  <script src="/src/components/cookie-banner.js" defer></script>
+  <script src="/src/widgets/noteworthy-chat-loader.js" defer></script>
 </body>
 </html>
-

@@ -1,12 +1,12 @@
 /**
- * Noteworthy News — shared AdSense placement helper.
+ * Noteworthy News - shared AdSense placement helper.
  *
  * One mount point per ad: <div class="nn-ad" data-nn-ad="in_article"></div>
  * The helper lazy-loads each unit as it nears the viewport, labels it,
  * and collapses it if Google returns no ad (so there are never empty boxes).
  *
  * To go live: paste the numeric slot ID for each placement into AD_SLOTS
- * below. Any placement left as "" stays hidden — nothing renders for it.
+ * below. Any placement left as "" stays hidden - nothing renders for it.
  */
 (function () {
   'use strict';
@@ -14,15 +14,15 @@
   var AD_CLIENT = 'ca-pub-5427142458403577';
 
   // ─────────────────────────────────────────────────────────────
-  //  SLOT IDS — the only thing you need to edit to go live.
+  //  SLOT IDS - the only thing you need to edit to go live.
   //  Create each unit in AdSense (Ads → By ad unit) and paste its
   //  numeric "data-ad-slot" value here. Leave "" to keep it dormant.
   // ─────────────────────────────────────────────────────────────
   var AD_SLOTS = {
-    display: '1458252598',          // Display unit (responsive) — banners, top/bottom of lists
-    display_sidebar: '7417197842',  // Display unit (responsive) — article sidebar (sticky)
-    in_article: '3864965643',       // In-article unit (native) — inside long-form content
-    multiplex: '1210840580'         // Multiplex unit ("Matched content") — recommendation grid
+    display: '1458252598',          // Display unit (responsive) - banners, top/bottom of lists
+    display_sidebar: '7417197842',  // Display unit (responsive) - article sidebar (sticky)
+    in_article: '3864965643',       // In-article unit (native) - inside long-form content
+    multiplex: '1210840580'         // Multiplex unit ("Matched content") - recommendation grid
   };
 
   // How each placement type configures its <ins> element.
@@ -59,7 +59,7 @@
     }
 
     // Don't initialize into a zero-width container (e.g. hidden sidebar on
-    // mobile) — AdSense throws "No slot size for availableWidth=0".
+    // mobile) - AdSense throws "No slot size for availableWidth=0".
     if (!wrap.offsetWidth) {
       setState(wrap, 'disabled');
       return;

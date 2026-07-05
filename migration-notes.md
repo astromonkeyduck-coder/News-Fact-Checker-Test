@@ -1,4 +1,4 @@
-# Migration Notes — Noteworthy News
+# Migration Notes - Noteworthy News
 
 *Generated 2026-03-22. Documents changes made during the Security + Admin Foundation session, legacy paths marked for removal, and remaining work.*
 
@@ -10,11 +10,11 @@
 
 **File:** `netlify/functions/middleware/requireAuth.js`
 
-- `verifyToken(event)` — cryptographic JWT verification via Auth0 JWKS (using `jose`)
-- `requireAuth(event)` — require any authenticated user (returns 401 or `{ user }`)
-- `requireAdminAuth(event)` — require admin (returns 401/403 or `{ user }`)
-- `requireAdminAuthOrSecret(event, envVarName)` — accept JWT admin OR legacy shared secret
-- `isAdminSecretValid(event, envVarName)` — check legacy secret with timing-safe compare
+- `verifyToken(event)` - cryptographic JWT verification via Auth0 JWKS (using `jose`)
+- `requireAuth(event)` - require any authenticated user (returns 401 or `{ user }`)
+- `requireAdminAuth(event)` - require admin (returns 401/403 or `{ user }`)
+- `requireAdminAuthOrSecret(event, envVarName)` - accept JWT admin OR legacy shared secret
+- `isAdminSecretValid(event, envVarName)` - check legacy secret with timing-safe compare
 - **Fail-closed everywhere**: missing AUTH0_DOMAIN → 500, not bypass
 
 Admin identity resolved via:
@@ -66,7 +66,7 @@ These functions now use `requireAdminAuthOrSecret` (accept JWT or legacy secret)
 | `send-website-update.js` | `PUSH_API_KEY`/`ADMIN_API_KEY` | Skip check when unset | Return 500 when unset |
 | `send-custom-email.js` | `ADMIN_TOKEN`/`NEWSLETTER_TOKEN` | Any non-empty password works | Return 500 when unset |
 | `requireCamsToken.js` (shared) | `CAMS_TOKEN` | Allow in "dev mode" | Return 500 when unset |
-| `cams-token.js` | — | Public token distribution | Requires admin JWT |
+| `cams-token.js` | - | Public token distribution | Requires admin JWT |
 
 ### 4. User identity now verified server-side
 
@@ -105,12 +105,12 @@ These are NOT deleted yet. They will be removed when the new admin UI is built (
 
 | File | Current state | Replacement |
 |------|--------------|-------------|
-| `admin-posts-manager.html` | **Broken** — the API calls it makes will now return 401 | V2 admin UI with Auth0 login |
-| `admin-remove-post.html` | **Broken** — same | V2 admin UI |
-| `admin-add-tweets.html` | **Broken** — same | V2 admin UI |
+| `admin-posts-manager.html` | **Broken** - the API calls it makes will now return 401 | V2 admin UI with Auth0 login |
+| `admin-remove-post.html` | **Broken** - same | V2 admin UI |
+| `admin-add-tweets.html` | **Broken** - same | V2 admin UI |
 | `admin-newsletter.html` | Partially works (uses `NEWSLETTER_KEY` secret) | V2 admin UI with JWT |
 | `admin-analytics.html` | Partially works (uses `ADMIN_ANALYTICS_TOKEN`) | V2 admin UI with JWT |
-| `media.html` | **Broken** — post API calls return 401, auth probe still works | V2 admin UI |
+| `media.html` | **Broken** - post API calls return 401, auth probe still works | V2 admin UI |
 
 ### Test/dev pages deployed to production
 
@@ -131,7 +131,7 @@ These are NOT deleted yet. They will be removed when the new admin UI is built (
 
 | File | Issue | Action |
 |------|-------|--------|
-| `security-check.html` | sessionStorage-based "verification" — not real auth | Rebuild as server-side check or remove |
+| `security-check.html` | sessionStorage-based "verification" - not real auth | Rebuild as server-side check or remove |
 | `lib/security/routeProtection-browser.js` | Client-side route gating via sessionStorage | Remove once server auth covers protected routes |
 | `lib/security/routeProtection.js` | Same | Remove |
 | `lib/security/securityConfig.js` | Configuration for above | Remove |
@@ -154,7 +154,7 @@ These are NOT deleted yet. They will be removed when the new admin UI is built (
 
 ## Remaining Security Work (Future Sessions)
 
-### Near-term (Phase 1 — Admin UI)
+### Near-term (Phase 1 - Admin UI)
 
 1. **Build server-authenticated admin UI** with Auth0 login flow
 2. **Delete old admin HTML pages** once new admin UI is validated
@@ -165,7 +165,7 @@ These are NOT deleted yet. They will be removed when the new admin UI is built (
 ### Medium-term
 
 6. **CAMS architecture redesign**: The current pattern of distributing `CAMS_TOKEN` to browsers is wrong. CAMS requests should be proxied server-side so the token never leaves the server.
-7. **Rate limiting on public AI endpoints**: `chatgpt.js`, `chatgpt-stream.js`, `game-ai.js`, `ai-answer.js`, `elevenlabs-tts.js`, `noteworthy-chat.js`, `generate-image.js` — these call paid external APIs with no server-enforced rate limiting.
+7. **Rate limiting on public AI endpoints**: `chatgpt.js`, `chatgpt-stream.js`, `game-ai.js`, `ai-answer.js`, `elevenlabs-tts.js`, `noteworthy-chat.js`, `generate-image.js` - these call paid external APIs with no server-enforced rate limiting.
 8. **Webhook signature verification**: `x-webhook.ts` POST and `resend-webhook.js` do not verify request signatures, allowing spoofed webhook deliveries.
 9. **`x-netlify-deploy` header bypass** in `send-website-update.js`: This header is spoofable. Replace with a proper deploy hook secret.
 
@@ -173,8 +173,8 @@ These are NOT deleted yet. They will be removed when the new admin UI is built (
 
 10. **Websocket server identity**: `websocket-server/index.js` trusts client-supplied `userId`. Acceptable for casual games but not a trust boundary.
 11. **Leaderboard score validation**: No server-side reasonableness check on submitted scores.
-12. **`comments-api.js` POST**: Comment creation has no auth — this is by design (public comments) but should have rate limiting and abuse detection.
-13. **Email-based flows** (`unsubscribe`, `email-preferences-link`): Use base64-encoded email as identifier — should move to signed tokens.
+12. **`comments-api.js` POST**: Comment creation has no auth - this is by design (public comments) but should have rate limiting and abuse detection.
+13. **Email-based flows** (`unsubscribe`, `email-preferences-link`): Use base64-encoded email as identifier - should move to signed tokens.
 
 ---
 
@@ -207,7 +207,7 @@ curl -s "https://YOUR-SITE/.netlify/functions/posts-read?limit=1" | jq length
 - [ ] `track-visit-streak` requires a valid JWT
 - [ ] Public read endpoints (`posts-read`, `rss-aggregate`, `health`, etc.) still work without auth
 - [ ] `cams-token` requires admin JWT
-- [ ] Admin HTML pages no longer function (expected — they'll be rebuilt)
+- [ ] Admin HTML pages no longer function (expected - they'll be rebuilt)
 
 ---
 
@@ -221,7 +221,7 @@ curl -s "https://YOUR-SITE/.netlify/functions/posts-read?limit=1" | jq length
 
 All read/write operations to the `x-posts` Netlify Blob store now go through this module. It enforces:
 - Consistent key format (`post-{id}.json`)
-- Consistent index shape (`{ ids: string[] }`) — the unreliable `urls` field is permanently retired
+- Consistent index shape (`{ ids: string[] }`) - the unreliable `urls` field is permanently retired
 - Deduplication on index writes
 - Bounded index size (200 posts)
 
@@ -233,9 +233,9 @@ Exported functions: `getPostStore()`, `readPost()`, `writePost()`, `readIndex()`
 |------|--------|-------|
 | `lib/createPost.js` | Direct `getStore` + `store.set` + manual index | Uses `postStore.writePost` + `postStore.addToIndex` |
 | `x-webhook.ts` | Direct `getStore`, wrote `{ ids }` only index | Uses `postStore` read/write/index |
-| `fetch-tweets-simple.ts` | Direct `getStore`, wrote `{ ids, urls }` index | Uses `postStore` — `urls` field retired |
-| `fetch-profile-tweets.ts` | Direct `getStore`, wrote `{ ids, urls }` index | Uses `postStore` — `urls` field retired |
-| `update-post-data.js` | Direct `getStore`, wrote `{ ids, urls }` index | Uses `postStore` — `urls` field retired |
+| `fetch-tweets-simple.ts` | Direct `getStore`, wrote `{ ids, urls }` index | Uses `postStore` - `urls` field retired |
+| `fetch-profile-tweets.ts` | Direct `getStore`, wrote `{ ids, urls }` index | Uses `postStore` - `urls` field retired |
+| `update-post-data.js` | Direct `getStore`, wrote `{ ids, urls }` index | Uses `postStore` - `urls` field retired |
 | `remove-post.js` | Direct `getStore`, wrote `{ ids, urls }` index | Uses `postStore.deletePost` |
 | `remove-long-posts.js` | Direct `getStore`, wrote `{ ids }` only | Uses `postStore.writeIndex` |
 | `remove-old-alert-posts.js` | Direct `getStore`, wrote `{ ids }` only | Uses `postStore.writeIndex` |
@@ -256,11 +256,11 @@ Exported functions: `getPostStore()`, `readPost()`, `writePost()`, `readIndex()`
 #### 4. Index shape standardized
 
 **Before:** The `index.json` shape varied by writer:
-- Some wrote `{ ids, urls }` — e.g., `fetch-tweets-simple`, `update-post-data`, `remove-post`
-- Some wrote `{ ids }` only — e.g., `x-webhook`, `rebuild-index`, `remove-long-posts`, `createPost`
+- Some wrote `{ ids, urls }` - e.g., `fetch-tweets-simple`, `update-post-data`, `remove-post`
+- Some wrote `{ ids }` only - e.g., `x-webhook`, `rebuild-index`, `remove-long-posts`, `createPost`
 - Whichever writer ran last determined whether `urls` existed
 
-**After:** All writers go through `postStore`, which always writes `{ ids }`. The `urls` field is retired. `posts-read.js` never used it — it reads posts by ID and sorts by date.
+**After:** All writers go through `postStore`, which always writes `{ ids }`. The `urls` field is retired. `posts-read.js` never used it - it reads posts by ID and sorts by date.
 
 #### 5. Duplicate RSS ingestion removed from ingest-all.js
 
@@ -289,13 +289,13 @@ Decision: permanently retire `urls` from the index. All readers already work wit
 
 ### What did NOT change
 
-- Supabase tables (`verified_events`, `live_events`, `engine_runs`, `transcription_jobs`) — unchanged
-- Engine files (`engines/*.js`) — unchanged (they already used `createPost`)
-- All other Netlify Blob stores (20 stores besides `x-posts`) — unchanged
-- Cloudflare Worker — unchanged
-- Frontend — unchanged
-- Auth middleware — unchanged
-- All scheduled functions (`ingest-all`, `retry-usgs-images`) — schedules unchanged
+- Supabase tables (`verified_events`, `live_events`, `engine_runs`, `transcription_jobs`) - unchanged
+- Engine files (`engines/*.js`) - unchanged (they already used `createPost`)
+- All other Netlify Blob stores (20 stores besides `x-posts`) - unchanged
+- Cloudflare Worker - unchanged
+- Frontend - unchanged
+- Auth middleware - unchanged
+- All scheduled functions (`ingest-all`, `retry-usgs-images`) - schedules unchanged
 
 ### What should happen next
 
@@ -341,7 +341,7 @@ Uses a dedicated `alert-dedup` Netlify Blob store to track which events have bee
 
 All six engines (`usgs`, `nws`, `faa`, `uscg`, `volcano`, `embassy`) now return a `notifiableEvents[]` array in their `run()` result. This array contains raw event data in a consistent shape that `createAlertEvent()` can normalize.
 
-**Backward compatible**: Engines still run their own inline notification code. The new data is additional — nothing is removed.
+**Backward compatible**: Engines still run their own inline notification code. The new data is additional - nothing is removed.
 
 #### 5. Orchestrator dispatches unified alerts
 
@@ -394,18 +394,18 @@ Marked as deprecated with a clear header explaining the migration path. Set `EAR
 
 ### What did NOT change
 
-- `send-earthquake-alert.js` (2,001 lines) — preserved as-is; will be replaced by the unified pipeline
-- `send-push-notification.js` — called by the unified dispatcher as a module, no changes
-- `send-location-alert.js` — referenced by the dispatcher, no changes
-- Supabase `verified_events` schema — unchanged
-- Service worker push handling — unchanged
-- Situation Monitor V2 — unchanged (still polls APIs; future work: server-push)
-- All public read endpoints — unchanged
+- `send-earthquake-alert.js` (2,001 lines) - preserved as-is; will be replaced by the unified pipeline
+- `send-push-notification.js` - called by the unified dispatcher as a module, no changes
+- `send-location-alert.js` - referenced by the dispatcher, no changes
+- Supabase `verified_events` schema - unchanged
+- Service worker push handling - unchanged
+- Situation Monitor V2 - unchanged (still polls APIs; future work: server-push)
+- All public read endpoints - unchanged
 
 ### How to verify
 
 ```bash
-# 1. Deploy with USE_UNIFIED_ALERTS=false (default) — backward compatible, no behavior change
+# 1. Deploy with USE_UNIFIED_ALERTS=false (default) - backward compatible, no behavior change
 # 2. Check that engines still notify through their own code
 # 3. Enable USE_UNIFIED_ALERTS=true in staging
 # 4. Trigger an engine run and verify:
@@ -427,7 +427,7 @@ curl -X POST https://YOUR-SITE/.netlify/functions/send-breaking-news-alert \
 2. **Validate** that engine runs produce correct notifications via the unified path
 3. **Disable `earthquake-poller.js`** schedule in Netlify dashboard + set `EARTHQUAKE_POLLER_DISABLED=true`
 4. **Gradually remove** engine-internal notification code (sendEmailAlert, sendPushNotificationForEarthquake, sendEventAlert calls)
-5. **Make image generation async** — decouple from email delivery in USGS engine
+5. **Make image generation async** - decouple from email delivery in USGS engine
 6. **Wire location alerts fully** into the dispatcher (currently delegated to engine code)
 7. **Consolidate** `assess-earthquake-impact.js` into `lib/impactAssessment.js`
 
@@ -450,7 +450,7 @@ A full stability checkpoint was conducted after the Security Foundation, Data Co
 #### PostStore migration gaps
 
 Seven Netlify functions still access `x-posts` blobs directly (not through `postStore`):
-- **Write path:** `re-extract-media.js` — must be migrated before it's used again
+- **Write path:** `re-extract-media.js` - must be migrated before it's used again
 - **Read-only:** `noteworthy-chat.js`, `article-preview.js`, `twitter-share.js`, `check-earthquake-posts.js`, `realtime-voice.js`, `auto-sync-posts.ts`
 
 Several scripts also access `x-posts` directly: `find-high-view-post.js`, `re-extract-media-for-posts.js`, `add-post-to-index.js`, `remove-post-from-index.js`. These are CLI tools, not production paths, but should be migrated for consistency.
@@ -553,11 +553,11 @@ Newsletter signup form now POSTs to `/.netlify/functions/send-email` with `{ ema
 
 | File | Purpose |
 |------|---------|
-| `admin/index.html` | Admin shell — Auth0 guard, sidebar nav, section container |
+| `admin/index.html` | Admin shell - Auth0 guard, sidebar nav, section container |
 | `admin/css/admin.css` | Admin-specific styles consuming V2 design tokens |
 | `admin/js/admin-auth.js` | Auth0 initialization, login redirect, server-authoritative admin probe |
 | `admin/js/admin-app.js` | Hash-based section router, navigation binding |
-| `admin/js/lib/api.js` | Authenticated API client — every call uses `Authorization: Bearer <jwt>` |
+| `admin/js/lib/api.js` | Authenticated API client - every call uses `Authorization: Bearer <jwt>` |
 | `admin/js/views/posts.js` | Post management (list, search, edit fields, delete) |
 | `admin/js/views/ingestion.js` | Ingestion triggers (tweet URL, profile fetch, CSV import, screenshot extraction) |
 | `admin/js/views/newsletter.js` | Newsletter management (template list, AI generation, send) |
@@ -601,17 +601,17 @@ All six legacy admin HTML pages marked with deprecation comments and `noindex`. 
 ### What did NOT change
 
 - All existing API endpoints preserve backward compatibility (shared secrets still accepted)
-- Public site pages — unchanged
-- V2 homepage and situation monitor — unchanged
-- Data schema — unchanged
-- Engine system — unchanged
-- Auth0 tenant configuration — unchanged (admin identity still uses `ADMIN_EMAILS` fallback)
+- Public site pages - unchanged
+- V2 homepage and situation monitor - unchanged
+- Data schema - unchanged
+- Engine system - unchanged
+- Auth0 tenant configuration - unchanged (admin identity still uses `ADMIN_EMAILS` fallback)
 
 ### What should happen next
 
-1. **Validate in staging** — deploy and test the full admin flow
-2. **Configure Auth0 admin role claims** — add `admin` role to JWT claims for admin users
-3. **Delete old admin HTML pages** — once redirects are validated in production
-4. **Add newsletter template preview** — render HTML in an iframe within the newsletter view
-5. **Add CSV export to analytics** — expose the existing CSV export capability via admin UI
-6. **Consider adding ingest-all manual trigger** — for ad-hoc engine runs
+1. **Validate in staging** - deploy and test the full admin flow
+2. **Configure Auth0 admin role claims** - add `admin` role to JWT claims for admin users
+3. **Delete old admin HTML pages** - once redirects are validated in production
+4. **Add newsletter template preview** - render HTML in an iframe within the newsletter view
+5. **Add CSV export to analytics** - expose the existing CSV export capability via admin UI
+6. **Consider adding ingest-all manual trigger** - for ad-hoc engine runs

@@ -14,7 +14,7 @@ Full docs: [`extension/README.md`](extension/README.md)
 
 ## Userscript (alternative)
 
-This uses **browser capture** of the playing video — not yt-dlp, not server-side YouTube ripping.
+This uses **browser capture** of the playing video - not yt-dlp, not server-side YouTube ripping.
 
 ## Install (one time)
 
@@ -38,7 +38,7 @@ This uses **browser capture** of the playing video — not yt-dlp, not server-si
 
 ```bash
 npm run clip:convert-webm -- ~/Downloads/youtube-last-30s-....webm \
-  --rights-basis "Manual review required — browser capture from YouTube"
+  --rights-basis "Manual review required - browser capture from YouTube"
 ```
 
 Output goes to `data/clips/output/`.
@@ -47,7 +47,7 @@ Output goes to `data/clips/output/`.
 
 | Issue | What happens |
 |-------|----------------|
-| DRM / protected streams | `captureStream()` may fail — button shows an error |
+| DRM / protected streams | `captureStream()` may fail - button shows an error |
 | Just opened the page | Wait until buffer shows ~30s before saving |
 | YouTube navigation | Buffer resets when you change videos |
 | Audio/video sync | Usually fine; re-encode with `clip:convert-webm` if needed |
@@ -55,7 +55,7 @@ Output goes to `data/clips/output/`.
 ## Legal
 
 - You are responsible for **copyright, YouTube Terms of Service**, and whether reposting is allowed.
-- Prefer **official parallel feeds** (White House HLS, C-SPAN, pool) when available — use `clip:record:buffer` for those.
+- Prefer **official parallel feeds** (White House HLS, C-SPAN, pool) when available - use `clip:record:buffer` for those.
 - **Human review** before posting to X.
 
 ## Troubleshooting

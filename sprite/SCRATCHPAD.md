@@ -1,4 +1,4 @@
-# Geo-SPRITE Master System — Session Scratchpad
+# Geo-SPRITE Master System - Session Scratchpad
 
 ## Status
 - [x] Phase 1: Routing + sprite/ folder created
@@ -20,15 +20,15 @@
 ## Sources Used
 - **Viault**: Birdsall S. Viault, *Modern European History* (McGraw-Hill, 1990). Primary source.
 - **CED**: College Board AP European History Course and Exam Description. Framework knowledge.
-- **Existing timeline**: euro/timeline_data.json (112 entries) — transformed into Geo-SPRITE format.
+- **Existing timeline**: euro/timeline_data.json (112 entries) - transformed into Geo-SPRITE format.
 - **AP convention**: Standard AP-Euro teaching consensus.
 
 ## Unavailable Textbooks
-Same list as euro/SCRATCHPAD.md — 11 textbooks referenced in the original prompt are NOT accessed.
+Same list as euro/SCRATCHPAD.md - 11 textbooks referenced in the original prompt are NOT accessed.
 
 ## Key Design Decisions
 - 7-color lens system: G=emerald, S=amber, P=blue, R=purple, I=teal, T=steel, E=gold
-- Scoring: 0 (not central) to 3 (essential) — never force all lenses to be important
+- Scoring: 0 (not central) to 3 (essential) - never force all lenses to be important
 - Funny hooks: every entry has one; encodes historical fact in humor; appropriate for students
 - Progressive disclosure: landing page shows mode picker only, not data dump
 - Night-Before-Exam mode: rapid-fire funny hooks with tap-to-reveal
@@ -42,7 +42,7 @@ Same list as euro/SCRATCHPAD.md — 11 textbooks referenced in the original prom
 - All 7 lenses scored for every entry
 
 ## Known Gaps (documented in coverage_audit.md)
-1. Unit 6 (Industrialization) light — 4 entries
+1. Unit 6 (Industrialization) light - 4 entries
 2. Tier distribution skewed to Tier 1 (77%)
 3. Balkans/Scandinavia/Ottoman borderlands underrepresented
 4. Artistic/cultural entries light in later units

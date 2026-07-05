@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   AP PSYCHOLOGY MASTER REVIEW — Core Application
+   AP PSYCHOLOGY MASTER REVIEW - Core Application
    Neuro Scholar Theme
    ═══════════════════════════════════════════════════════════════ */
 (function () {
@@ -383,7 +383,7 @@
     el('vocabBackdrop').classList.remove('open');
   }
 
-  /* ── Visual Concept Atlas — Museum Exhibit Layout ─────────── */
+  /* ── Visual Concept Atlas - Museum Exhibit Layout ─────────── */
   let visualFilter = 'all';
 
   function renderVisuals() {
@@ -723,7 +723,7 @@
           <h3>Sources</h3>
           ${prompt.sources.map(s => `
             <div class="neuro-card mb-4" style="margin-bottom:12px">
-              <div style="font-size:11px;font-weight:700;color:var(--blue-primary);margin-bottom:4px">${h(s.id)} — ${h(s.type)}</div>
+              <div style="font-size:11px;font-weight:700;color:var(--blue-primary);margin-bottom:4px">${h(s.id)} - ${h(s.type)}</div>
               <p style="font-size:13px;color:var(--text-soft);line-height:1.7">${h(s.content)}</p>
             </div>
           `).join('')}
@@ -850,7 +850,7 @@
         <div class="mistake-card-wrong">
           <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></span>
           <div>
-            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--coral-primary);margin-bottom:4px">${h(item.topic)} — Unit ${item.unit || 'SP'}</div>
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--coral-primary);margin-bottom:4px">${h(item.topic)} - Unit ${item.unit || 'SP'}</div>
             <p style="font-size:13px;color:var(--coral-soft);line-height:1.6">${h(item.wrong)}</p>
           </div>
         </div>
@@ -975,7 +975,7 @@
     // ── LEARNING & MEMORY ──
     { section: 'learn', title: 'Classical vs Operant', badge: 'high-yield', content: 'Classical: two stimuli paired → involuntary response. Operant: behavior + consequence. Positive = add, Negative = remove, Reinforcement = increase behavior, Punishment = decrease behavior. Know the 2×2 grid cold.' },
     { section: 'learn', title: 'Conditioning Details', content: 'Classical = involuntary (Pavlov, Watson/Baby Albert). Operant = voluntary (Thorndike law of effect, Skinner box). Overjustification = rewards kill intrinsic motivation. Cons of punishment: suppresses not eliminates, teaches fear/aggression. Bandura Bobo doll = observational learning.' },
-    { section: 'learn', title: 'Spontaneous Recovery', badge: 'trap', content: 'Applies to BOTH classical AND operant conditioning. Extinguished response reappears after rest period. Students often forget operant. Extinction ≠ forgetting — the association is suppressed, not erased.' },
+    { section: 'learn', title: 'Spontaneous Recovery', badge: 'trap', content: 'Applies to BOTH classical AND operant conditioning. Extinguished response reappears after rest period. Students often forget operant. Extinction ≠ forgetting - the association is suppressed, not erased.' },
     { section: 'learn', title: 'Schedules of Reinforcement', badge: 'high-yield', content: 'Fixed-ratio = after set number (piecework). Variable-ratio = unpredictable number (gambling, most resistant to extinction). Fixed-interval = first response after set time (scalloped pattern). Variable-interval = unpredictable time (checking email).' },
     { section: 'learn', title: 'Memory Models', content: 'Multi-store: sensory → short-term → long-term. Working memory: central executive + phonological loop + visuospatial sketchpad. Levels of processing: structural → phonemic → semantic (deepest = best).' },
     { section: 'learn', title: 'Memory Encoding', content: 'Ebbinghaus curve: forgetting is rapid then levels off. Spacing > cramming. Testing effect: practice tests = best prep. Serial position: primacy (beginning) + recency (end) remembered, middle forgotten. Self-reference effect boosts encoding. Chunking: 7±2 items.' },
@@ -998,13 +998,13 @@
     { section: 'social', title: 'Intelligence & Testing', content: 'Spearman: g factor (general intelligence). Gardner: multiple intelligences (8 types). Sternberg: triarchic (analytical, creative, practical). IQ: mean 100, SD 15. Reliability = consistency. Validity = measures what it claims. Standardization = normed on population.' },
 
     // ── RESEARCH & FRQ SKILLS ──
-    { section: 'research', title: 'Experimental vs Non-Experimental', badge: 'high-yield', content: 'Only experiments establish cause and effect. Require: IV (manipulated), DV (measured), random assignment, control group. Non-experimental: correlation, case study, naturalistic observation, survey, meta-analysis — CANNOT establish causation.' },
+    { section: 'research', title: 'Experimental vs Non-Experimental', badge: 'high-yield', content: 'Only experiments establish cause and effect. Require: IV (manipulated), DV (measured), random assignment, control group. Non-experimental: correlation, case study, naturalistic observation, survey, meta-analysis - CANNOT establish causation.' },
     { section: 'research', title: 'Random Sampling vs Assignment', badge: 'trap', content: 'Sampling = how you SELECT participants (affects generalizability to population). Assignment = how you PLACE into groups (affects internal validity / causation). These are DIFFERENT concepts. Both use "random" but serve different purposes.' },
     { section: 'research', title: 'Correlation ≠ Causation', badge: 'high-yield', content: 'Third variable problem = another factor causes both. Coefficient: −1 to +1. Closer to extremes = stronger relationship. Direction: positive (same direction), negative (opposite). r = 0.8 and r = −0.8 are EQUALLY strong.' },
     { section: 'research', title: 'Effect Size vs Significance', badge: 'trap', content: 'Effect size = HOW BIG the difference (Cohen\'s d: small 0.2, medium 0.5, large 0.8). Significance = IS IT REAL (p < 0.05 = less than 5% chance due to chance). They are SEPARATE. Large sample can give significance with tiny effect.' },
     { section: 'research', title: 'Thinking Traps', content: 'Hindsight bias = "I knew it all along" (after outcome). Overconfidence = overestimating knowledge (before outcome). Illusory correlation = seeing patterns that don\'t exist. Confirmation bias = seeking info that confirms beliefs. Together they make us overestimate intuition.' },
     { section: 'research', title: 'Research Biases', badge: 'frq', content: 'Hawthorne effect = behavior changes when observed. Social desirability = answering to look good. Wording/anchoring effects = question phrasing skews results. Experimenter bias = expectations influence results. Fix: double-blind procedure.' },
-    { section: 'research', title: 'AAQ Checklist', badge: 'frq', content: 'A: Identify research method. B: Identify variables (IV/DV). C: Interpret a statistic. D: Ethical concern (be SPECIFIC — not just "ethics"). E: Generalizability issue. F: Make an argument with evidence and reasoning.' },
+    { section: 'research', title: 'AAQ Checklist', badge: 'frq', content: 'A: Identify research method. B: Identify variables (IV/DV). C: Interpret a statistic. D: Ethical concern (be SPECIFIC - not just "ethics"). E: Generalizability issue. F: Make an argument with evidence and reasoning.' },
     { section: 'research', title: 'EBQ Checklist', badge: 'frq', content: 'Make a defensible CLAIM (not a fact, not opinion). Select and USE evidence from provided sources (specific quotes/data). REASONING that connects evidence to claim. Apply a psychological CONCEPT. May need to address counterargument.' },
     { section: 'research', title: 'Argumentation', badge: 'frq', content: 'Defensible claim + scientifically derived evidence + reasoning. No personal opinions or anecdotes. "The evidence suggests…" not "I think…" May need to refute, modify, or defend claims. Always tie back to psychological concepts.' },
     { section: 'research', title: 'Ethics in Research', content: 'Informed consent. Right to withdraw. Debrief after deception. Minimize harm. Confidentiality. IRB approval. APA guidelines. Animal research: justify, minimize suffering. Tuskegee, Milgram, Zimbardo = historical ethical violations.' },

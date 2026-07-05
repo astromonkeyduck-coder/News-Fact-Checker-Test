@@ -1,5 +1,5 @@
 /**
- * Watermark text helpers — dependency-free.
+ * Watermark text helpers - dependency-free.
  *
  * Kept separate from watermark.js (the PNG renderer) so that lightweight,
  * esbuild-bundled functions like watermark-create-job can sanitize/compose

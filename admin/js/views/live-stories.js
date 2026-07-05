@@ -1,5 +1,5 @@
 /**
- * Live Stories View — Admin
+ * Live Stories View - Admin
  *
  * Editorial control center for the Follow Live Story feature:
  *   - create live stories
@@ -28,8 +28,8 @@ const KINDS = [
   ['final', 'Final update'],
 ];
 const ALERT_LEVELS = [
-  ['silent', 'Silent — timeline only (no push)'],
-  ['badge', 'Badge — quiet, bumps app badge'],
+  ['silent', 'Silent - timeline only (no push)'],
+  ['badge', 'Badge - quiet, bumps app badge'],
   ['normal', 'Normal push to followers'],
   ['urgent', 'Urgent push (requires confirm)'],
   ['final', 'Final alert (requires confirm)'],

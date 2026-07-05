@@ -29,8 +29,8 @@
     const detailTitle = detailPanel && detailPanel.classList.contains('open') ? document.getElementById('dpT')?.textContent : null;
     let ctx = `AP Euro Timeline`;
     if (view) ctx += ` (${view} view)`;
-    if (eraNames.length) ctx += ` — viewing eras: ${eraNames.join(', ')}`;
-    if (detailTitle) ctx += ` — detail open: ${detailTitle}`;
+    if (eraNames.length) ctx += ` - viewing eras: ${eraNames.join(', ')}`;
+    if (detailTitle) ctx += ` - detail open: ${detailTitle}`;
     return ctx;
   }
 

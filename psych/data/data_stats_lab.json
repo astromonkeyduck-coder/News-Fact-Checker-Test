@@ -4,7 +4,7 @@
     "description": "Describe the center of a data set.",
     "measures": [
       { "name": "Mean", "description": "The average: add all values and divide by number of values.", "formula": "Σx / n", "sensitivity": "Affected by outliers/extreme scores." },
-      { "name": "Median", "description": "The middle value after data is arranged from lowest to highest.", "sensitivity": "NOT affected by outliers — better for skewed data." },
+      { "name": "Median", "description": "The middle value after data is arranged from lowest to highest.", "sensitivity": "NOT affected by outliers - better for skewed data." },
       { "name": "Mode", "description": "The most frequently occurring value.", "sensitivity": "A dataset can have no mode, one mode, or multiple modes (bimodal)." }
     ]
   },

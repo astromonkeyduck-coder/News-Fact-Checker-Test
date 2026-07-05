@@ -2,7 +2,7 @@
 'use strict';
 
 /**
- * X (Twitter) media upload and post — OPTIONAL.
+ * X (Twitter) media upload and post - OPTIONAL.
  * Isolated from read-only import-x-posts cron (X_BEARER_TOKEN).
  * Requires human-approved job + rights_basis + X_USER_ACCESS_TOKEN.
  */
@@ -187,7 +187,7 @@ async function uploadClipToX(jobOrPath, postText, { dryRun = false } = {}) {
   }
 
   if (!text.trim()) {
-    throw new Error('Post text is required. Provide draft text — do not auto-generate sensational claims.');
+    throw new Error('Post text is required. Provide draft text - do not auto-generate sensational claims.');
   }
 
   if (!isXUploadConfigured()) {
@@ -196,7 +196,7 @@ async function uploadClipToX(jobOrPath, postText, { dryRun = false } = {}) {
   }
 
   if (dry) {
-    console.log('[x-upload] DRY-RUN — would upload:', filePath);
+    console.log('[x-upload] DRY-RUN - would upload:', filePath);
     console.log('[x-upload] Post text:', text);
     return { dryRun: true, filePath, postText: text };
   }
@@ -247,9 +247,9 @@ async function main() {
     console.log(JSON.stringify(result, null, 2));
   } catch (err) {
     if (err.status === 401 || err.status === 403) {
-      console.error('[x-upload] Auth error — check X_USER_ACCESS_TOKEN scopes (tweet.write, media.write).');
+      console.error('[x-upload] Auth error - check X_USER_ACCESS_TOKEN scopes (tweet.write, media.write).');
     } else if (err.status === 429) {
-      console.error('[x-upload] Rate limited — retry later.');
+      console.error('[x-upload] Rate limited - retry later.');
     }
     console.error(`[x-upload] ERROR: ${err.message}`);
     process.exit(1);

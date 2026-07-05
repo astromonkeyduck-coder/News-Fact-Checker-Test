@@ -64,7 +64,7 @@ async function xFetch(url, retries = 2) {
       const body = await res.text().catch(() => '');
       const msg = `X API ${res.status}: ${body.slice(0, 300)}`;
       if (attempt < retries && res.status >= 500) {
-        console.warn(`[xApiClient] ${msg} — retrying`);
+        console.warn(`[xApiClient] ${msg} - retrying`);
         await sleep((attempt + 1) * 2000);
         continue;
       }

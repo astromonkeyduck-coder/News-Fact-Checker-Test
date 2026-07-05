@@ -10,7 +10,7 @@
       { "letter": "D", "text": "Whether participants were in the exercise or control group" }
     ],
     "correct": "C",
-    "explanation": "The dependent variable is what the researcher measures — in this case, mood scores. The independent variable (D) is what the researcher manipulates (exercise vs no exercise).",
+    "explanation": "The dependent variable is what the researcher measures - in this case, mood scores. The independent variable (D) is what the researcher manipulates (exercise vs no exercise).",
     "relatedConcepts": ["Independent Variable", "Dependent Variable", "Random Assignment"]
   },
   {
@@ -24,7 +24,7 @@
       { "letter": "D", "text": "The results prove that the independent variable had a large impact on the dependent variable" }
     ],
     "correct": "B",
-    "explanation": "Statistical significance (p < 0.05) means the results are unlikely due to chance. Effect size (d = 0.18) measures the magnitude of the difference — small here. These are separate concepts: the result is real but small.",
+    "explanation": "Statistical significance (p < 0.05) means the results are unlikely due to chance. Effect size (d = 0.18) measures the magnitude of the difference - small here. These are separate concepts: the result is real but small.",
     "relatedConcepts": ["Statistical Significance", "Effect Size"]
   },
   {
@@ -38,7 +38,7 @@
       { "letter": "D", "text": "A neuron fires only when all neurotransmitters are present" }
     ],
     "correct": "B",
-    "explanation": "The all-or-none principle states that a neuron fires completely or not at all — there is no partial firing. The strength of the stimulus determines WHETHER the neuron fires (threshold), not HOW STRONGLY it fires.",
+    "explanation": "The all-or-none principle states that a neuron fires completely or not at all - there is no partial firing. The strength of the stimulus determines WHETHER the neuron fires (threshold), not HOW STRONGLY it fires.",
     "relatedConcepts": ["Action Potential", "Threshold", "All-or-None Principle"]
   },
   {
@@ -94,7 +94,7 @@
       { "letter": "D", "text": "Source amnesia" }
     ],
     "correct": "B",
-    "explanation": "Proactive interference occurs when OLD memories (Spanish) interfere with the ability to learn or recall NEW information (French). PRO = forward — the old memory is reaching forward to disrupt the new one.",
+    "explanation": "Proactive interference occurs when OLD memories (Spanish) interfere with the ability to learn or recall NEW information (French). PRO = forward - the old memory is reaching forward to disrupt the new one.",
     "relatedConcepts": ["Proactive Interference", "Retroactive Interference"]
   },
   {
@@ -164,7 +164,7 @@
       { "letter": "D", "text": "The central nervous system" }
     ],
     "correct": "C",
-    "explanation": "The parasympathetic nervous system is the body's 'brake pedal' — it calms you down after the threat has passed, slowing heart rate and returning the body to homeostasis. The sympathetic NS (B) activated the fight-or-flight response during the scare.",
+    "explanation": "The parasympathetic nervous system is the body's 'brake pedal' - it calms you down after the threat has passed, slowing heart rate and returning the body to homeostasis. The sympathetic NS (B) activated the fight-or-flight response during the scare.",
     "relatedConcepts": ["Parasympathetic Nervous System", "Sympathetic Nervous System", "Fight-or-Flight", "Homeostasis"]
   },
   {
@@ -192,7 +192,7 @@
       { "letter": "D", "text": "Connecting each term to a personal experience or real-world example" }
     ],
     "correct": "D",
-    "explanation": "The levels of processing model proposes three encoding levels: structural (shallow), phonemic (intermediate), and semantic (deepest). Connecting terms to personal experiences (D) is semantic processing — the deepest level — which produces the strongest memories.",
+    "explanation": "The levels of processing model proposes three encoding levels: structural (shallow), phonemic (intermediate), and semantic (deepest). Connecting terms to personal experiences (D) is semantic processing - the deepest level - which produces the strongest memories.",
     "relatedConcepts": ["Levels of Processing", "Semantic Encoding", "Elaborative Rehearsal"]
   },
   {
@@ -262,7 +262,7 @@
       { "letter": "D", "text": "Variable-interval" }
     ],
     "correct": "B",
-    "explanation": "Variable-ratio schedules provide reinforcement after an unpredictable number of responses. Slot machines are the classic example — you don't know which pull will pay off. This schedule produces the highest, most consistent rate of responding and is most resistant to extinction.",
+    "explanation": "Variable-ratio schedules provide reinforcement after an unpredictable number of responses. Slot machines are the classic example - you don't know which pull will pay off. This schedule produces the highest, most consistent rate of responding and is most resistant to extinction.",
     "relatedConcepts": ["Variable-Ratio Schedule", "Reinforcement Schedules", "Partial Reinforcement"]
   },
   {
@@ -332,7 +332,7 @@
       { "letter": "D", "text": "Symptoms of dissociative identity disorder" }
     ],
     "correct": "B",
-    "explanation": "Delusions and hallucinations are POSITIVE symptoms — things ADDED to a person's experience that shouldn't be there. Negative symptoms (A) are things ABSENT from typical behavior (flat affect, social withdrawal). 'Positive' and 'negative' do not mean good and bad.",
+    "explanation": "Delusions and hallucinations are POSITIVE symptoms - things ADDED to a person's experience that shouldn't be there. Negative symptoms (A) are things ABSENT from typical behavior (flat affect, social withdrawal). 'Positive' and 'negative' do not mean good and bad.",
     "relatedConcepts": ["Schizophrenia", "Positive Symptoms", "Negative Symptoms", "Delusions", "Hallucinations"]
   },
   {
@@ -346,12 +346,12 @@
       { "letter": "D", "text": "Applied behavior analysis" }
     ],
     "correct": "C",
-    "explanation": "Cognitive therapy focuses on the cognitive triad — negative thoughts about oneself, the world, and the future — and uses cognitive restructuring to challenge maladaptive thinking. Psychodynamic (A) uses free association. Humanistic (B) uses unconditional positive regard. ABA (D) applies conditioning principles.",
+    "explanation": "Cognitive therapy focuses on the cognitive triad - negative thoughts about oneself, the world, and the future - and uses cognitive restructuring to challenge maladaptive thinking. Psychodynamic (A) uses free association. Humanistic (B) uses unconditional positive regard. ABA (D) applies conditioning principles.",
     "relatedConcepts": ["Cognitive Therapy", "Cognitive Triad", "Cognitive Restructuring", "CBT"]
   },
   {
     "id": 26, "unit": 0, "topic": "Scientific Foundations", "difficulty": "Easy",
-    "stimulus": "After a football team loses a big game, a fan says, 'I knew they were going to lose — they haven't been playing well all season.'",
+    "stimulus": "After a football team loses a big game, a fan says, 'I knew they were going to lose - they haven't been playing well all season.'",
     "question": "This fan's statement best illustrates:",
     "options": [
       { "letter": "A", "text": "Overconfidence" },
@@ -360,7 +360,7 @@
       { "letter": "D", "text": "The illusory correlation" }
     ],
     "correct": "B",
-    "explanation": "Hindsight bias is the 'I-knew-it-all-along' phenomenon — after learning an outcome, we believe we would have predicted it. The fan didn't actually predict the loss beforehand but now feels they did. Overconfidence (A) is being too certain about future predictions. Confirmation bias (C) is seeking confirming evidence. Illusory correlation (D) is perceiving a pattern that doesn't exist.",
+    "explanation": "Hindsight bias is the 'I-knew-it-all-along' phenomenon - after learning an outcome, we believe we would have predicted it. The fan didn't actually predict the loss beforehand but now feels they did. Overconfidence (A) is being too certain about future predictions. Confirmation bias (C) is seeking confirming evidence. Illusory correlation (D) is perceiving a pattern that doesn't exist.",
     "relatedConcepts": ["Hindsight Bias", "Overconfidence", "Scientific Attitude"]
   },
   {
@@ -430,7 +430,7 @@
       { "letter": "D", "text": "The fundamental attribution error" }
     ],
     "correct": "C",
-    "explanation": "The bystander effect shows that the more people present in an emergency, the less likely any individual is to help due to diffusion of responsibility — each person assumes someone else will step in. Social loafing (A) is reduced effort in group tasks. Deindividuation (B) is loss of identity. FAE (D) is overattributing behavior to disposition.",
+    "explanation": "The bystander effect shows that the more people present in an emergency, the less likely any individual is to help due to diffusion of responsibility - each person assumes someone else will step in. Social loafing (A) is reduced effort in group tasks. Deindividuation (B) is loss of identity. FAE (D) is overattributing behavior to disposition.",
     "relatedConcepts": ["Bystander Effect", "Diffusion of Responsibility", "Altruism"]
   },
   {
@@ -500,7 +500,7 @@
       { "letter": "D", "text": "REM sleep" }
     ],
     "correct": "C",
-    "explanation": "Sleepwalking (somnambulism) occurs during NREM-3, the deepest stage of sleep with slow delta waves. It does NOT occur during REM sleep, when the body is in a state of muscle paralysis (atonia). REM sleep behavior disorder — physically acting out dreams — is a different condition.",
+    "explanation": "Sleepwalking (somnambulism) occurs during NREM-3, the deepest stage of sleep with slow delta waves. It does NOT occur during REM sleep, when the body is in a state of muscle paralysis (atonia). REM sleep behavior disorder - physically acting out dreams - is a different condition.",
     "relatedConcepts": ["NREM-3", "Delta Waves", "Somnambulism", "REM Sleep"]
   },
   {
@@ -528,7 +528,7 @@
       { "letter": "D", "text": "Addiction; dependence" }
     ],
     "correct": "B",
-    "explanation": "The headache from skipping coffee is a withdrawal symptom (physical dependence). Needing more coffee for the same effect is tolerance — the drug's impact lessens with repeated exposure. Note: the headache is a specific example of physical dependence/withdrawal, while needing more is specifically tolerance.",
+    "explanation": "The headache from skipping coffee is a withdrawal symptom (physical dependence). Needing more coffee for the same effect is tolerance - the drug's impact lessens with repeated exposure. Note: the headache is a specific example of physical dependence/withdrawal, while needing more is specifically tolerance.",
     "relatedConcepts": ["Tolerance", "Withdrawal", "Physical Dependence", "Stimulants"]
   },
   {
@@ -556,7 +556,7 @@
       { "letter": "D", "text": "Show no change in behavior because they were not directly reinforced" }
     ],
     "correct": "B",
-    "explanation": "Bandura's Bobo doll experiment demonstrated observational learning — children imitated the aggressive behavior they observed in the adult model, even without being directly reinforced. This showed that learning can occur through observation alone, challenging the idea that direct reinforcement is necessary (D).",
+    "explanation": "Bandura's Bobo doll experiment demonstrated observational learning - children imitated the aggressive behavior they observed in the adult model, even without being directly reinforced. This showed that learning can occur through observation alone, challenging the idea that direct reinforcement is necessary (D).",
     "relatedConcepts": ["Observational Learning", "Bandura", "Modeling", "Prosocial and Antisocial Effects"]
   },
   {
@@ -570,7 +570,7 @@
       { "letter": "D", "text": "Focused on shallow processing of the words" }
     ],
     "correct": "B",
-    "explanation": "Context-dependent memory shows that recall improves when the learning and testing environments match. Studying in the kitchen and testing in the kitchen would provide contextual cues to aid retrieval. This combines context-dependent (same place) and state-dependent (same physical state — caffeine) memory effects.",
+    "explanation": "Context-dependent memory shows that recall improves when the learning and testing environments match. Studying in the kitchen and testing in the kitchen would provide contextual cues to aid retrieval. This combines context-dependent (same place) and state-dependent (same physical state - caffeine) memory effects.",
     "relatedConcepts": ["Context-Dependent Memory", "State-Dependent Memory", "Retrieval Cues"]
   },
   {
@@ -584,7 +584,7 @@
       { "letter": "D", "text": "The serial position effect" }
     ],
     "correct": "B",
-    "explanation": "Sperling's partial-report experiment demonstrated that sensory (iconic) memory briefly stores more information than we can report. The full set of letters was available in iconic memory for a very brief moment, but faded before all could be reported — unless participants were immediately cued to report a specific row.",
+    "explanation": "Sperling's partial-report experiment demonstrated that sensory (iconic) memory briefly stores more information than we can report. The full set of letters was available in iconic memory for a very brief moment, but faded before all could be reported - unless participants were immediately cued to report a specific row.",
     "relatedConcepts": ["Iconic Memory", "Sensory Memory", "Sperling Experiment", "Echoic Memory"]
   }
 ]

@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   NEURO SCHOLAR THEME — AP Psychology Master Review System
+   NEURO SCHOLAR THEME - AP Psychology Master Review System
    Design System: Color tokens, typography, spacing, components
    ═══════════════════════════════════════════════════════════════ */
 
@@ -461,7 +461,7 @@ button:focus-visible, a:focus-visible {
 .nav-group-dropdown .nav-tab:last-child { margin-bottom: 0; }
 
 /* ═══════════════════════════════════════════════════════════════
-   HERO SECTION — Split Composition
+   HERO SECTION - Split Composition
    ═══════════════════════════════════════════════════════════════ */
 .hero {
   position: relative;
@@ -936,7 +936,7 @@ button:focus-visible, a:focus-visible {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   MODULE GRID — Learning tools with visual previews
+   MODULE GRID - Learning tools with visual previews
    ═══════════════════════════════════════════════════════════════ */
 .module-section {
   padding: var(--sp-10) var(--sp-6) var(--sp-16);
@@ -1155,7 +1155,7 @@ button:focus-visible, a:focus-visible {
 .btn-sm { padding: 6px 12px; font-size: 11px; }
 .btn-lg { padding: 14px 28px; font-size: 15px; border-radius: var(--radius-lg); }
 
-/* Synapse Button — primary CTA with pulse */
+/* Synapse Button - primary CTA with pulse */
 .synapse-button {
   position: relative;
   padding: 14px 32px;
@@ -1840,7 +1840,7 @@ button:focus-visible, a:focus-visible {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   VISUAL CONCEPT ATLAS — Museum Exhibit Layout
+   VISUAL CONCEPT ATLAS - Museum Exhibit Layout
    ═══════════════════════════════════════════════════════════════ */
 .visual-atlas {
   max-width: var(--max-content);
@@ -1874,7 +1874,7 @@ button:focus-visible, a:focus-visible {
   border-color: var(--border-neuron);
 }
 
-/* Exhibit Panel — full-width split layout */
+/* Exhibit Panel - full-width split layout */
 .exhibit-panel {
   display: grid;
   grid-template-columns: 1.4fr 1fr;
@@ -2513,7 +2513,7 @@ button:focus-visible, a:focus-visible {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   NIGHT BEFORE MODE — Full Interactive Cram Session
+   NIGHT BEFORE MODE - Full Interactive Cram Session
    ═══════════════════════════════════════════════════════════════ */
 .night-before {
   padding: var(--sp-4) var(--sp-6) var(--sp-12);

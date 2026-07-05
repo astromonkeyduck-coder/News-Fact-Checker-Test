@@ -1,5 +1,5 @@
 /**
- * System View — Admin
+ * System View - Admin
  *
  * Maintenance operations: rebuild index, cleanup, breaking news alerts.
  */

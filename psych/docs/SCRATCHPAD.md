@@ -1,4 +1,4 @@
-# AP Psychology Master Review — Scratchpad
+# AP Psychology Master Review - Scratchpad
 
 ## Phase 1 Complete
 - [x] File architecture

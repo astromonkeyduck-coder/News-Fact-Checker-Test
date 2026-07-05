@@ -2,7 +2,7 @@
 'use strict';
 
 /**
- * YouTube Data API metadata resolver — METADATA ONLY.
+ * YouTube Data API metadata resolver - METADATA ONLY.
  * Do NOT use this module to download or rip YouTube video media.
  */
 
@@ -49,8 +49,8 @@ async function fetchYouTubeMetadata(videoId, { dryRun = false } = {}) {
   const cleanId = videoId.trim();
 
   if (dryRun || isDryRun()) {
-    console.log('[youtube-metadata] DRY-RUN — would request videos.list for id:', cleanId);
-    console.log('[youtube-metadata] METADATA ONLY — no video media download.');
+    console.log('[youtube-metadata] DRY-RUN - would request videos.list for id:', cleanId);
+    console.log('[youtube-metadata] METADATA ONLY - no video media download.');
     if (!process.env.YT_API_KEY) {
       console.warn('[youtube-metadata] YT_API_KEY is not set (required for live lookup).');
     }
@@ -84,7 +84,7 @@ async function main() {
 
   if (!videoId || videoId.startsWith('--')) {
     console.error('Usage: node youtube-metadata.js VIDEO_ID [--dry-run]');
-    console.error('METADATA ONLY — does not download video media.');
+    console.error('METADATA ONLY - does not download video media.');
     process.exit(1);
   }
 

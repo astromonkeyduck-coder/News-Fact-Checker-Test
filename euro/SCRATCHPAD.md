@@ -1,4 +1,4 @@
-# AP Euro Master Timeline — Session Scratchpad
+# AP Euro Master Timeline - Session Scratchpad
 
 ## Status
 - [x] Phase 1: Routing + HTML scaffold
@@ -7,10 +7,10 @@
 - [x] Phase 2c: Units 7-9 data (11 + 10 + 10 = 31 entries)
 - [x] Phase 2d: CSV export (112 rows)
 - [x] Phase 3: Interactive JS (built into index.html)
-- [x] Phase 4a: Study guide (AP_Euro_Master_Study_Guide.md — ~37KB)
+- [x] Phase 4a: Study guide (AP_Euro_Master_Study_Guide.md - ~37KB)
 - [x] Phase 4b: Coverage matrix (coverage_matrix.md)
-- [x] Phase 4c: Exam strategy (exam_strategy.md — ~22KB)
-- [x] Phase 4d: Quick review (quick_review.md — ~31KB)
+- [x] Phase 4c: Exam strategy (exam_strategy.md - ~22KB)
+- [x] Phase 4d: Quick review (quick_review.md - ~31KB)
 - [x] Phase 4e: Final QC audit (see below)
 
 ## Final Audit Summary (Phase 4e)
@@ -37,7 +37,7 @@
 | **Total** | **112** | **77** | **31** | **4** |
 
 ### Known Gaps (documented in coverage_matrix.md)
-1. Tier 2/3 entries underweight — dataset is heavily Tier 1 (must-know)
+1. Tier 2/3 entries underweight - dataset is heavily Tier 1 (must-know)
 2. Artistic/cultural entries light in Units 5-9 (Romanticism, Realism, Modernism, etc.)
 3. Scandinavia and Balkans regions underrepresented
 4. Religion category absent from Units 7-9 (secularization, Kulturkampf)

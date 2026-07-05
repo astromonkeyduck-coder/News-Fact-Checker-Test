@@ -172,6 +172,56 @@ export const UISounds = {
     });
   },
 
+  /** Mechanical switch click with a low thump - lock-screen flashlight */
+  flashlight(isOn) {
+    play(async () => {
+      const ctx = await getCtx();
+      if (!ctx) return;
+      const t0 = ctx.currentTime;
+
+      // Noise transient through a bandpass: the crisp "click"
+      const clickDur = 0.05;
+      const buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * clickDur), ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) {
+        data[i] = (Math.random() * 2 - 1) * (1 - i / data.length) ** 2;
+      }
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = isOn ? 2600 : 1700;
+      bp.Q.value = 1.6;
+      const ng = ctx.createGain();
+      ng.gain.setValueAtTime(isOn ? 0.4 : 0.32, t0);
+      src.connect(bp);
+      bp.connect(ng);
+      ng.connect(ctx.destination);
+      src.start(t0);
+      src.stop(t0 + clickDur);
+      src.onended = () => {
+        try {
+          src.disconnect();
+          bp.disconnect();
+          ng.disconnect();
+        } catch {
+          /* ignore */
+        }
+      };
+
+      // Low body "thump" - drops in pitch when switching off
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(isOn ? 340 : 240, t0);
+      osc.frequency.exponentialRampToValueAtTime(isOn ? 190 : 130, t0 + 0.045);
+      g.gain.setValueAtTime(0, t0);
+      g.gain.linearRampToValueAtTime(0.14, t0 + 0.004);
+      g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.07);
+      startScheduledTone(ctx, osc, g, t0, t0 + 0.08);
+    });
+  },
+
   /** Pitched click - ambient on/off */
   toggle(isOn) {
     play(async () => {

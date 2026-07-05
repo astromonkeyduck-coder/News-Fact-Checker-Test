@@ -1,5 +1,5 @@
 /**
- * Live Stories — public read API
+ * Live Stories - public read API
  *
  * GET /.netlify/functions/live-stories
  *   → { stories: [...] }   active (non-archived) stories, pinned first

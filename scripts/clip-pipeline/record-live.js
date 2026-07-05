@@ -3,7 +3,7 @@
 
 /**
  * Record rights-cleared HLS/RTMP streams to MKV.
- * Do NOT pass YouTube watch URLs — use authorized direct feeds only.
+ * Do NOT pass YouTube watch URLs - use authorized direct feeds only.
  */
 
 const fs = require('fs');

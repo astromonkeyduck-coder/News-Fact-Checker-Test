@@ -10,13 +10,13 @@
       "Resting potential: neuron at -70mV baseline",
       "Stimulus received at dendrites",
       "Threshold reached at -55mV",
-      "Sodium channels open — rapid depolarization",
+      "Sodium channels open - rapid depolarization",
       "Action potential travels down axon (saltatory conduction at nodes of Ranvier)",
       "Signal reaches axon terminals",
       "Refractory period: neuron resets"
     ],
     "keyPrinciple": "All-or-none principle: neuron fires completely or not at all.",
-    "frqRelevance": "High — explain neural transmission in biological bases of behavior.",
+    "frqRelevance": "High - explain neural transmission in biological bases of behavior.",
     "tags": ["Biology", "FRQ"]
   },
   {
@@ -35,7 +35,7 @@
       "Reuptake: excess neurotransmitters reabsorbed by presynaptic neuron"
     ],
     "keyPrinciple": "Agonists mimic neurotransmitters; antagonists block receptors; reuptake inhibitors prevent reabsorption.",
-    "frqRelevance": "High — drug mechanisms and neural communication.",
+    "frqRelevance": "High - drug mechanisms and neural communication.",
     "tags": ["Biology", "FRQ"]
   },
   {
@@ -52,10 +52,10 @@
       "Occipital lobe: visual processing",
       "Cerebellum: balance, coordination, procedural learning",
       "Brain stem (medulla & pons): breathing, heart rate, basic life functions",
-      "Limbic system: thalamus, hypothalamus, hippocampus, amygdala — emotion, memory, motivation"
+      "Limbic system: thalamus, hypothalamus, hippocampus, amygdala - emotion, memory, motivation"
     ],
     "keyPrinciple": "Damage to specific brain regions produces specific deficits. Broca's = speech production; Wernicke's = speech comprehension.",
-    "frqRelevance": "High — brain structure-function relationships appear frequently.",
+    "frqRelevance": "High - brain structure-function relationships appear frequently.",
     "tags": ["Biology", "FRQ"]
   },
   {
@@ -69,12 +69,12 @@
       "Stage 1 (NREM): light sleep, hypnagogic sensations, theta waves",
       "Stage 2 (NREM): sleep spindles and K-complexes, body temperature drops",
       "Stage 3 (NREM): deep/slow-wave sleep, delta waves, hard to wake",
-      "REM sleep: paradoxical sleep — brain active like wakefulness, body paralyzed, dreaming occurs",
+      "REM sleep: paradoxical sleep - brain active like wakefulness, body paralyzed, dreaming occurs",
       "Cycles repeat ~90 minutes each; REM periods get longer through the night",
       "REM rebound: body compensates for REM deprivation with more REM next sleep"
     ],
     "keyPrinciple": "REM frequency increases as the sleep cycle progresses. Sleep disruptions affect physical and cognitive performance.",
-    "frqRelevance": "Medium — EEG patterns and sleep stage identification.",
+    "frqRelevance": "Medium - EEG patterns and sleep stage identification.",
     "tags": ["Biology"]
   },
   {
@@ -85,13 +85,13 @@
     "diagramType": "operantQuadrant",
     "description": "The 2x2 matrix of positive/negative reinforcement and punishment with examples.",
     "steps": [
-      "Positive reinforcement: ADD desirable — behavior INCREASES",
-      "Negative reinforcement: REMOVE undesirable — behavior INCREASES",
-      "Positive punishment: ADD undesirable — behavior DECREASES",
-      "Negative punishment: REMOVE desirable — behavior DECREASES"
+      "Positive reinforcement: ADD desirable - behavior INCREASES",
+      "Negative reinforcement: REMOVE undesirable - behavior INCREASES",
+      "Positive punishment: ADD undesirable - behavior DECREASES",
+      "Negative punishment: REMOVE desirable - behavior DECREASES"
     ],
     "keyPrinciple": "Positive/negative = add/remove. Reinforcement/punishment = increase/decrease behavior.",
-    "frqRelevance": "Very high — commonly tested with scenario-based questions.",
+    "frqRelevance": "Very high - commonly tested with scenario-based questions.",
     "tags": ["Learning", "FRQ"]
   },
   {
@@ -109,7 +109,7 @@
       "Spontaneous recovery: After rest, CS → CR reappears (weaker)"
     ],
     "keyPrinciple": "CS must come BEFORE UCS for successful acquisition. Spontaneous recovery applies to both classical and operant conditioning.",
-    "frqRelevance": "Very high — scenario identification is a common exam question type.",
+    "frqRelevance": "Very high - scenario identification is a common exam question type.",
     "tags": ["Learning", "FRQ"]
   },
   {
@@ -130,7 +130,7 @@
       "Integrity vs Despair (late adult): Was my life meaningful?"
     ],
     "keyPrinciple": "Each stage involves a psychosocial conflict that must be resolved. AP exam loves scenario-based Erikson questions.",
-    "frqRelevance": "High — identify stage from behavior descriptions.",
+    "frqRelevance": "High - identify stage from behavior descriptions.",
     "tags": ["Social", "FRQ"]
   },
   {
@@ -147,7 +147,7 @@
       "99.7% of data within ±3 standard deviations"
     ],
     "keyPrinciple": "In a normal distribution, specific percentages of scores fall within each standard deviation from the mean.",
-    "frqRelevance": "High — data interpretation on AAQ and MCQ.",
+    "frqRelevance": "High - data interpretation on AAQ and MCQ.",
     "tags": ["Stats", "FRQ"]
   },
   {
@@ -167,7 +167,7 @@
       "Meta-Analysis: combine results from multiple studies"
     ],
     "keyPrinciple": "Only experiments establish cause and effect. Non-experimental methods cannot establish causation.",
-    "frqRelevance": "Very high — research method identification appears on every exam.",
+    "frqRelevance": "Very high - research method identification appears on every exam.",
     "tags": ["Research", "FRQ"]
   },
   {
@@ -178,7 +178,7 @@
     "diagramType": "memoryModel",
     "description": "The flow from sensory memory through short-term/working memory to long-term memory.",
     "steps": [
-      "Sensory memory: iconic (visual) and echoic (auditory) — very brief",
+      "Sensory memory: iconic (visual) and echoic (auditory) - very brief",
       "Attention filters information to short-term memory",
       "Short-term/working memory: limited capacity, temporary",
       "Encoding (rehearsal, elaboration) transfers to long-term memory",
@@ -186,7 +186,7 @@
       "Retrieval brings information back from long-term to working memory"
     ],
     "keyPrinciple": "Information must pass through each stage to be encoded correctly. Automatic processing happens without effort; effortful processing requires conscious attention.",
-    "frqRelevance": "High — encoding strategies and memory failures.",
+    "frqRelevance": "High - encoding strategies and memory failures.",
     "tags": ["Cognition", "FRQ"]
   }
 ]

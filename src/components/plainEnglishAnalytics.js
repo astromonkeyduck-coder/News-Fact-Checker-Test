@@ -87,9 +87,9 @@ export function generatePlainAnalyticsSummary(stats, logs, previousWeekLogs = nu
         // Add week-over-week trend
         if (weekChange !== null && Math.abs(weekChange) > 5) {
             if (weekChange > 0) {
-                sentence += ` — up roughly ${Math.abs(weekChange)}% from last week`;
+                sentence += ` - up roughly ${Math.abs(weekChange)}% from last week`;
             } else {
-                sentence += ` — down about ${Math.abs(weekChange)}% from last week`;
+                sentence += ` - down about ${Math.abs(weekChange)}% from last week`;
             }
         }
         

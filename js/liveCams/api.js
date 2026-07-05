@@ -17,7 +17,7 @@ let abortController = null;
 let camsToken = null;
 let useFallbackMode = null; // null = unknown, true = use fallback, false = use Netlify
 
-// Cache configuration — bump CACHE_VERSION to invalidate old cache (thumbnails + more cams fix)
+// Cache configuration - bump CACHE_VERSION to invalidate old cache (thumbnails + more cams fix)
 const CACHE_KEY = 'livecams_cache';
 const CACHE_VERSION_KEY = 'livecams_cache_version';
 const CACHE_VERSION = 4;

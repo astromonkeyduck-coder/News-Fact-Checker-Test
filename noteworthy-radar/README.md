@@ -124,7 +124,7 @@ npm run dev      # http://localhost:3100
 | `NEXT_PUBLIC_APP_URL`           | no       | Used by the capture bookmarklet                             |
 
 With `AI_PROVIDER=stub` (the default), AI triage and captions are produced by a
-deterministic, safety-first local engine — no API key needed.
+deterministic, safety-first local engine - no API key needed.
 
 ---
 
@@ -146,7 +146,7 @@ npm run test        # jest unit tests
 A worked example, e.g. after a **Knicks vs Spurs** game:
 
 1. **Create the event** (`Events -> New event`). Enter teams/entities, location,
-   and a keyword seed. Save — keywords are generated automatically. Open the
+   and a keyword seed. Save - keywords are generated automatically. Open the
    event to get **copyable manual-search strings** grouped by platform
    (Facebook / Telegram / X / Reddit / Google-news / official sources).
 2. **Find posts manually** on each platform using those search strings. When you

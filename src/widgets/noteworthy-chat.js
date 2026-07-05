@@ -52,7 +52,7 @@ class NoteworthyChat extends HTMLElement {
     // Declare voice-related variables early to avoid temporal dead zone errors
     // These are used in event handlers that are set up before the variables were previously declared
     let voiceModeActive = false;
-    let currentVoice = 'alloy';
+    let currentVoice = 'marin';
     let websocket = null;
     let audioContext = null;
     let voicePlaybackManager = null; // VoicePlaybackManager instance (legacy, being replaced)
@@ -939,7 +939,7 @@ class NoteworthyChat extends HTMLElement {
           border-color: rgba(255, 255, 255, 0.3);
         }
         
-        /* Premium Secure Briefing UI - Intel Dashboard Aesthetic */
+        /* Voice briefing panel */
         .voice-call-panel {
           position: fixed;
           right: 24px;
@@ -3040,7 +3040,514 @@ class NoteworthyChat extends HTMLElement {
           }
         }
       </style>
-      
+
+      <style>
+        /* ── V4 theme: match the homepage newsroom design system ──
+           Near-black panels, hairline borders, one blue accent, Inter type.
+           This layer intentionally overrides the legacy styles above. */
+
+        *, *::before, *::after {
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        }
+
+        .wrap {
+          background: rgba(7, 11, 20, 0.97);
+          backdrop-filter: blur(22px);
+          -webkit-backdrop-filter: blur(22px);
+          border: 1px solid rgba(255, 255, 255, 0.09);
+          border-radius: 14px;
+          box-shadow: 0 30px 70px rgba(0, 0, 0, 0.55);
+        }
+
+        .wrap.open { animation: nnPanelIn 0.32s cubic-bezier(0.16, 1, 0.3, 1); }
+
+        @keyframes nnPanelIn {
+          from { transform: translateY(14px) scale(0.98); opacity: 0; }
+          to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        .head {
+          background: rgba(255, 255, 255, 0.02);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.055);
+          box-shadow: none;
+          padding: 13px 16px;
+        }
+
+        .head::before { display: none; }
+
+        .logo {
+          width: 30px;
+          height: 30px;
+          border-radius: 7px;
+          background: transparent;
+          box-shadow: none;
+          border: none;
+        }
+
+        .title {
+          font-size: 14.5px;
+          font-weight: 700;
+          letter-spacing: -0.01em;
+          background: none;
+          -webkit-background-clip: initial;
+          background-clip: initial;
+          color: #F2F4F8;
+        }
+
+        .sub {
+          font-size: 10.5px;
+          font-weight: 600;
+          letter-spacing: 0.09em;
+          color: rgba(242, 244, 248, 0.45);
+          opacity: 1;
+        }
+
+        .close,
+        .audio-toggle,
+        .voice-input-toggle {
+          background: transparent;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 7px;
+          color: rgba(242, 244, 248, 0.55);
+          box-shadow: none;
+        }
+
+        .close:hover,
+        .audio-toggle:hover,
+        .voice-input-toggle:hover {
+          background: rgba(255, 255, 255, 0.06);
+          border-color: rgba(255, 255, 255, 0.16);
+          color: #F2F4F8;
+          transform: none;
+          box-shadow: none;
+        }
+
+        .body {
+          background: transparent;
+          font-size: 13.5px;
+          line-height: 1.6;
+          color: rgba(242, 244, 248, 0.85);
+        }
+
+        .tip {
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px dashed rgba(255, 255, 255, 0.14);
+          border-radius: 10px;
+          padding: 12px 14px;
+          color: rgba(242, 244, 248, 0.55);
+          font-size: 12.5px;
+          line-height: 1.55;
+          box-shadow: none;
+        }
+
+        .message-avatar,
+        .user-msg-group .message-avatar,
+        .ai-msg-group .message-avatar {
+          width: 30px;
+          height: 30px;
+          border-radius: 7px;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          box-shadow: none;
+          font-size: 11px;
+          color: rgba(242, 244, 248, 0.8);
+        }
+
+        .user-msg {
+          background: rgba(62, 141, 243, 0.14);
+          border: 1px solid rgba(62, 141, 243, 0.3);
+          border-radius: 11px 11px 4px 11px;
+          box-shadow: none;
+          font-size: 13.5px;
+          color: #E4EEFB;
+        }
+
+        .reply {
+          background: rgba(255, 255, 255, 0.045);
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          border-left: 2px solid rgba(62, 141, 243, 0.6);
+          border-radius: 4px 11px 11px 11px;
+          box-shadow: none;
+        }
+
+        .reply p {
+          font-size: 13.5px;
+          color: rgba(242, 244, 248, 0.82);
+        }
+
+        .input {
+          background: rgba(255, 255, 255, 0.02);
+          border-top: 1px solid rgba(255, 255, 255, 0.055);
+          box-shadow: none;
+          padding: 12px 14px;
+          gap: 8px;
+        }
+
+        .input input[type="text"] {
+          background: rgba(255, 255, 255, 0.04);
+          border: 1px solid rgba(255, 255, 255, 0.09);
+          border-radius: 9px;
+          font-size: 13.5px;
+          color: #F2F4F8;
+        }
+
+        .input input[type="text"]:focus {
+          background: rgba(255, 255, 255, 0.06);
+          border-color: rgba(62, 141, 243, 0.55);
+          box-shadow: 0 0 0 3px rgba(62, 141, 243, 0.16);
+        }
+
+        .input input[type="text"]::placeholder {
+          color: rgba(242, 244, 248, 0.35);
+        }
+
+        .input button {
+          background: #3E8DF3;
+          border: 1px solid transparent;
+          border-radius: 9px;
+          font-weight: 600;
+          font-size: 13.5px;
+          box-shadow: none;
+        }
+
+        .input button:hover:not(:disabled) {
+          background: #61A3F6;
+          transform: none;
+          box-shadow: none;
+        }
+
+        .file-upload-btn,
+        .voice-mode-toggle {
+          background: transparent !important;
+          border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          border-radius: 9px !important;
+          box-shadow: none !important;
+          transition: background 0.15s ease, border-color 0.15s ease;
+        }
+
+        .file-upload-btn:hover,
+        .voice-mode-toggle:hover {
+          background: rgba(255, 255, 255, 0.06) !important;
+          border-color: rgba(255, 255, 255, 0.2) !important;
+          transform: none !important;
+        }
+
+        .voice-mode-toggle.active {
+          background: rgba(62, 141, 243, 0.16) !important;
+          border-color: rgba(62, 141, 243, 0.5) !important;
+        }
+
+        /* Launcher: quiet dark pill, no infinite glow */
+        .launcher {
+          background: rgba(7, 11, 20, 0.92);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 12px;
+          padding: 12px 18px;
+          font-size: 13.5px;
+          font-weight: 600;
+          letter-spacing: -0.005em;
+          color: #F2F4F8;
+          box-shadow: 0 14px 36px rgba(0, 0, 0, 0.5);
+          animation: none;
+          gap: 9px;
+        }
+
+        .launcher::after {
+          content: '';
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #3E8DF3;
+        }
+
+        .launcher:hover {
+          transform: translateY(-2px);
+          background: rgba(12, 18, 30, 0.96);
+          border-color: rgba(62, 141, 243, 0.45);
+          box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55);
+        }
+
+        .launcher:focus {
+          outline: 2px solid rgba(62, 141, 243, 0.5);
+          outline-offset: 3px;
+        }
+
+        .launcher-icon { opacity: 1; }
+        .launcher-icon img { border-radius: 6px; }
+
+        .body::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.14);
+          border-radius: 4px;
+        }
+
+        .body::-webkit-scrollbar-track { background: transparent; }
+
+        .drag-drop-overlay {
+          background: rgba(4, 6, 11, 0.9);
+          border: 1px dashed rgba(62, 141, 243, 0.5);
+        }
+
+        @media (max-width: 768px) {
+          .wrap {
+            border-radius: 0;
+            border-left: none;
+            border-right: none;
+          }
+
+          .launcher {
+            padding: 11px 15px;
+            font-size: 13px;
+          }
+
+          .title { font-size: 13.5px; white-space: nowrap; }
+          .sub { font-size: 9.5px; letter-spacing: 0.07em; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .wrap.open { animation: none; }
+          .launcher:hover { transform: none; }
+        }
+
+        /* ── Quiet typing indicator ── */
+        .typing-dots {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 13px 15px;
+          background: rgba(255, 255, 255, 0.045);
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          border-left: 2px solid rgba(62, 141, 243, 0.6);
+          border-radius: 4px 11px 11px 11px;
+        }
+        .typing-dots span {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: rgba(242, 244, 248, 0.5);
+          animation: nnDotPulse 1.2s ease-in-out infinite;
+        }
+        .typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.3s; }
+        @keyframes nnDotPulse {
+          0%, 60%, 100% { opacity: 0.35; transform: translateY(0); }
+          30% { opacity: 1; transform: translateY(-3px); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .typing-dots span { animation: none; }
+        }
+
+        /* ── Markdown inside AI replies ── */
+        .reply a {
+          color: #7DB4F7;
+          text-decoration: none;
+          border-bottom: 1px solid rgba(125, 180, 247, 0.35);
+          transition: border-color 0.15s ease, color 0.15s ease;
+          word-break: break-word;
+        }
+        .reply a:hover { color: #A8CDFA; border-bottom-color: rgba(168, 205, 250, 0.7); }
+        .reply ul, .reply ol {
+          margin: 6px 0;
+          padding-left: 20px;
+          color: rgba(242, 244, 248, 0.82);
+          font-size: 13.5px;
+          line-height: 1.6;
+        }
+        .reply li { margin: 3px 0; }
+        .reply li::marker { color: rgba(62, 141, 243, 0.8); }
+        .reply code {
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 4px;
+          padding: 1px 5px;
+          font-family: 'SF Mono', ui-monospace, Menlo, monospace;
+          font-size: 12px;
+        }
+        .reply strong { color: #F2F4F8; font-weight: 650; }
+        .reply h1, .reply h2, .reply h3, .reply h4 {
+          font-size: 13.5px;
+          font-weight: 700;
+          color: #F2F4F8;
+          margin: 10px 0 4px;
+          letter-spacing: 0.01em;
+        }
+
+        /* ── Source chips under replies ── */
+        .sources-row {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 6px;
+          margin-top: 10px;
+          padding-top: 9px;
+          border-top: 1px solid rgba(255, 255, 255, 0.07);
+        }
+        .sources-label {
+          font-size: 9.5px;
+          font-weight: 700;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          color: rgba(242, 244, 248, 0.4);
+          margin-right: 2px;
+        }
+        .source-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          max-width: 100%;
+          padding: 3px 9px 3px 7px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.03);
+          color: rgba(242, 244, 248, 0.75);
+          font-size: 11px;
+          font-weight: 550;
+          line-height: 1.4;
+          text-decoration: none;
+          transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+        }
+        .source-chip:hover {
+          border-color: rgba(62, 141, 243, 0.5);
+          background: rgba(62, 141, 243, 0.1);
+          color: #E4EEFB;
+        }
+        .source-chip .chip-dot {
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          background: rgba(242, 244, 248, 0.35);
+          flex: none;
+        }
+        .source-chip.chip-live .chip-dot { background: #E5484D; }
+        .source-chip.chip-article .chip-dot { background: #3E8DF3; }
+        .source-chip.chip-web .chip-dot { background: rgba(242, 244, 248, 0.45); }
+        .source-chip .chip-text {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          max-width: 210px;
+        }
+
+        /* ── Suggestion chips (empty state) ── */
+        .suggest-row {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 7px;
+          margin-top: 10px;
+        }
+        .suggest-chip {
+          appearance: none;
+          border: 1px solid rgba(255, 255, 255, 0.11);
+          background: rgba(255, 255, 255, 0.025);
+          color: rgba(242, 244, 248, 0.7);
+          border-radius: 999px;
+          padding: 6px 12px;
+          font-size: 12px;
+          font-weight: 550;
+          line-height: 1.4;
+          cursor: pointer;
+          font-family: inherit;
+          transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+          text-align: left;
+        }
+        .suggest-chip:hover {
+          border-color: rgba(62, 141, 243, 0.5);
+          background: rgba(62, 141, 243, 0.1);
+          color: #E4EEFB;
+        }
+
+        /* ── Lowkey one-time intro notification ── */
+        .intro-toast {
+          position: fixed;
+          right: 24px;
+          bottom: 86px;
+          z-index: 2147482998;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          max-width: 300px;
+          padding: 11px 12px;
+          background: rgba(7, 11, 20, 0.96);
+          backdrop-filter: blur(18px);
+          -webkit-backdrop-filter: blur(18px);
+          border: 1px solid rgba(255, 255, 255, 0.11);
+          border-radius: 12px;
+          box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+          cursor: pointer;
+          opacity: 0;
+          transform: translateY(8px);
+          pointer-events: none;
+          transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .intro-toast.show {
+          opacity: 1;
+          transform: translateY(0);
+          pointer-events: auto;
+        }
+        .intro-toast img {
+          width: 26px;
+          height: 26px;
+          border-radius: 6px;
+          flex: none;
+        }
+        .intro-toast .intro-copy {
+          min-width: 0;
+        }
+        .intro-toast .intro-title {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 12px;
+          font-weight: 700;
+          color: #F2F4F8;
+          letter-spacing: -0.005em;
+        }
+        .intro-toast .intro-title::after {
+          content: '';
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          background: #3E8DF3;
+        }
+        .intro-toast .intro-sub {
+          margin-top: 2px;
+          font-size: 11px;
+          line-height: 1.45;
+          color: rgba(242, 244, 248, 0.55);
+        }
+        .intro-toast .intro-close {
+          appearance: none;
+          flex: none;
+          align-self: flex-start;
+          width: 18px;
+          height: 18px;
+          display: grid;
+          place-items: center;
+          margin: -2px -2px 0 0;
+          border: none;
+          border-radius: 5px;
+          background: transparent;
+          color: rgba(242, 244, 248, 0.4);
+          font-size: 13px;
+          line-height: 1;
+          cursor: pointer;
+          font-family: inherit;
+          transition: background 0.15s ease, color 0.15s ease;
+        }
+        .intro-toast .intro-close:hover {
+          background: rgba(255, 255, 255, 0.08);
+          color: #F2F4F8;
+        }
+        @media (max-width: 768px) {
+          .intro-toast { right: 12px; bottom: 68px; max-width: calc(100vw - 24px); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .intro-toast { transition: opacity 0.2s ease; transform: none; }
+          .intro-toast.show { transform: none; }
+        }
+      </style>
+
       <button class="launcher" aria-label="Open ${brandTitleAttr}">
         <span class="launcher-icon"><img src="${logoPath}" alt="Noteworthy News" /></span>
         ${brandTitleHtml}
@@ -3054,7 +3561,7 @@ class NoteworthyChat extends HTMLElement {
             </div>
             <div class="title-group">
               <div class="title">${brandTitleHtml}</div>
-              <div class="sub">Fast • Factual • Truth-Seeking</div>
+              <div class="sub">Ask about the news</div>
             </div>
           </div>
           <div class="head-right">
@@ -3071,7 +3578,8 @@ class NoteworthyChat extends HTMLElement {
         </div>
         
         <div class="body">
-          <p class="tip">Ask about headlines, context, or fact-checks. Upload images or documents for analysis. I'm here to help you stay informed!</p>
+          <p class="tip">Add a link, screenshot, or question. Get context, source checks, and plain explanations.</p>
+          <div class="suggest-row" id="suggestRow"></div>
         </div>
         
         <!-- Integrated Voice Control Panel - Scrollable & Seamless -->
@@ -3095,9 +3603,23 @@ class NoteworthyChat extends HTMLElement {
               <label for="voiceSelect" class="voice-label-integrated">Choose Voice</label>
               <div class="voice-list-container">
                 <div class="voice-list" id="voiceList">
+                  <div class="voice-option active" data-value="marin" data-selected="true">
+                    <span class="voice-name">Marin</span>
+                    <span class="voice-desc">Natural & Expressive</span>
+                    <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                  <div class="voice-option" data-value="cedar">
+                    <span class="voice-name">Cedar</span>
+                    <span class="voice-desc">Natural & Clear</span>
+                    <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
                   <div class="voice-option" data-value="alloy">
                     <span class="voice-name">Alloy</span>
-                    <span class="voice-desc">Balanced & Clear</span>
+                    <span class="voice-desc">Balanced & Versatile</span>
                     <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
@@ -3116,37 +3638,9 @@ class NoteworthyChat extends HTMLElement {
                       <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                   </div>
-                  <div class="voice-option" data-value="echo">
-                    <span class="voice-name">Echo</span>
-                    <span class="voice-desc">Clear & Direct</span>
-                    <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                  </div>
-                  <div class="voice-option" data-value="marin">
-                    <span class="voice-name">Marin</span>
-                    <span class="voice-desc">Natural & Expressive</span>
-                    <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                  </div>
-                  <div class="voice-option" data-value="cedar">
-                    <span class="voice-name">Cedar</span>
-                    <span class="voice-desc">Natural & Clear</span>
-                    <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                  </div>
                   <div class="voice-option" data-value="shimmer">
                     <span class="voice-name">Shimmer</span>
                     <span class="voice-desc">Soft & Gentle</span>
-                    <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                  </div>
-                  <div class="voice-option active" data-value="alloy" data-selected="true">
-                    <span class="voice-name">Alloy</span>
-                    <span class="voice-desc">Balanced & Versatile</span>
                     <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
@@ -3297,30 +3791,30 @@ class NoteworthyChat extends HTMLElement {
         </div>
         
         <div class="input">
-          <input type="file" id="fileInput" accept="image/*,application/pdf,.txt,.doc,.docx" multiple aria-label="Upload file" style="display: none;" />
-          <button type="button" class="file-upload-btn" id="fileUploadBtn" aria-label="Upload file" title="Upload file or image for analysis">
+          <input type="file" id="fileInput" accept="image/*,application/pdf,.txt,.md,.csv,.docx" multiple aria-label="Upload file" style="display: none;" />
+          <button type="button" class="file-upload-btn" id="fileUploadBtn" aria-label="Add file" title="Add file">
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
               <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
             </svg>
           </button>
-          <button type="button" class="voice-mode-toggle" id="voiceModeToggle" aria-label="Start voice conversation" title="Click to start voice conversation with AI">
+          <button type="button" class="voice-mode-toggle" id="voiceModeToggle" aria-label="Voice briefing" title="Voice briefing">
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
               <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" stroke="#4A90E2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="#4A90E2" fill-opacity="0.2"/>
               <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" stroke="#4A90E2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
             </svg>
           </button>
-          <input type="text" placeholder="Ask a question or describe an image to generate…" aria-label="Your question" id="chatInput" />
+          <input type="text" placeholder="Ask about a story, source, or claim..." aria-label="Your question" id="chatInput" />
           <button type="button" id="sendButton">Send</button>
         </div>
         
         <div class="resize-handle" aria-label="Resize chat" title="Drag to resize"></div>
       </div>
       
-      <!-- Premium Secure Briefing Panel - Intel Dashboard Aesthetic -->
-      <div class="voice-call-panel" id="voiceCallPanel" role="dialog" aria-label="Secure Briefing" aria-modal="true">
+      <!-- Voice briefing panel -->
+      <div class="voice-call-panel" id="voiceCallPanel" role="dialog" aria-label="Voice briefing" aria-modal="true">
         <div class="voice-call-header">
           <div class="voice-call-title-group">
-            <h2 class="voice-call-title">Secure Briefing</h2>
+            <h2 class="voice-call-title">Voice briefing</h2>
             <div class="voice-status-chip" id="voiceStatusChip" aria-live="polite">
               <span class="status-chip-dot"></span>
               <span class="status-chip-text">IDLE</span>
@@ -3470,14 +3964,14 @@ class NoteworthyChat extends HTMLElement {
           <div class="tutorial-header">
             <div class="tutorial-header-left">
               <h2>${brandTitleHtml}</h2>
-              <span class="tutorial-header-badge">GPT-5</span>
+              <span class="tutorial-header-badge">Guide</span>
             </div>
             <button class="tutorial-skip" id="tutorialSkip">Skip</button>
             <button class="tutorial-close" aria-label="Close tutorial">×</button>
           </div>
           <div class="tutorial-content">
             <div class="tutorial-intro">
-              <p>Your intelligent assistant for fact-checking, media literacy, and staying informed. Get instant answers, verify information, and explore news with AI-powered insights.</p>
+              <p>A research assistant grounded in our reporting. Ask for context on a story, check a claim, or have a screenshot reviewed.</p>
             </div>
             
             <div class="tutorial-steps">
@@ -3558,6 +4052,16 @@ class NoteworthyChat extends HTMLElement {
             <button class="tutorial-btn-primary" id="tutorialGotIt">Start Chatting!</button>
           </div>
         </div>
+      </div>
+      
+      <!-- One-time lowkey intro notification -->
+      <div class="intro-toast" id="introToast" role="status" aria-live="polite">
+        <img src="${logoPath}" alt="" aria-hidden="true" />
+        <div class="intro-copy">
+          <div class="intro-title">${brandTitleHtml}</div>
+          <div class="intro-sub">Context, fact-checks, and sources for any story. Ask anything.</div>
+        </div>
+        <button class="intro-close" type="button" aria-label="Dismiss">×</button>
       </div>
     `;
 
@@ -3761,12 +4265,12 @@ class NoteworthyChat extends HTMLElement {
         }
       });
       
-      // If no valid active voice, set alloy as default
+      // If no valid active voice, set marin as default
       if (!hasValidActive) {
-        const alloyOption = voiceList.querySelector('.voice-option[data-value="alloy"]');
-        if (alloyOption) {
-          alloyOption.classList.add('active');
-          currentVoice = 'alloy';
+        const marinOption = voiceList.querySelector('.voice-option[data-value="marin"]');
+        if (marinOption) {
+          marinOption.classList.add('active');
+          currentVoice = 'marin';
         }
       }
       
@@ -4091,7 +4595,7 @@ class NoteworthyChat extends HTMLElement {
       recognition.onend = () => {
         voiceInputToggle.classList.remove('active');
         voiceInputEnabled = false;
-        if (input) input.placeholder = 'Ask about a story or topic…';
+        if (input) input.placeholder = 'Ask about a story, source, or claim...';
       };
       
       voiceInputToggle.addEventListener('click', () => {
@@ -4162,8 +4666,12 @@ class NoteworthyChat extends HTMLElement {
         return;
       }
       
-      // Clean text (remove HTML tags, URLs, etc.)
+      // Clean text (remove HTML tags, markdown, URLs, etc.)
       let cleanText = text.replace(/<[^>]+>/g, '').replace(/\n+/g, ' ').trim();
+      // Markdown links → just the label
+      cleanText = cleanText.replace(/\[([^\]]+)\]\([^\)]*\)/g, '$1');
+      // Strip markdown formatting characters
+      cleanText = cleanText.replace(/[*_`#]+/g, '');
       // Remove URLs
       cleanText = cleanText.replace(/https?:\/\/[^\s]+/gi, '');
       // Clean up multiple spaces
@@ -4561,29 +5069,32 @@ class NoteworthyChat extends HTMLElement {
     
     // Add help button to header
     helpBtn.className = 'help-btn';
-    helpBtn.innerHTML = '❓';
-    helpBtn.setAttribute('aria-label', 'Show tutorial');
+    helpBtn.textContent = '?';
+    helpBtn.setAttribute('aria-label', 'Show guide');
     helpBtn.title = `How to use ${brandTitle}`;
     helpBtn.style.cssText = `
       background: transparent;
-      border: none;
-      color: rgba(255, 255, 255, 0.7);
-      font-size: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: rgba(242, 244, 248, 0.55);
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1;
       cursor: pointer;
-      padding: 4px 8px;
-      border-radius: 6px;
-      transition: all 0.2s ease;
-      margin-right: 8px;
+      width: 32px;
+      height: 32px;
+      border-radius: 7px;
+      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+      flex-shrink: 0;
     `;
     helpBtn.onmouseenter = () => {
-      helpBtn.style.background = 'rgba(74, 144, 226, 0.2)';
-      helpBtn.style.color = 'rgba(74, 144, 226, 0.9)';
-      helpBtn.style.transform = 'scale(1.1)';
+      helpBtn.style.background = 'rgba(255, 255, 255, 0.06)';
+      helpBtn.style.borderColor = 'rgba(255, 255, 255, 0.16)';
+      helpBtn.style.color = '#F2F4F8';
     };
     helpBtn.onmouseleave = () => {
       helpBtn.style.background = 'transparent';
-      helpBtn.style.color = 'rgba(255, 255, 255, 0.7)';
-      helpBtn.style.transform = 'scale(1)';
+      helpBtn.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+      helpBtn.style.color = 'rgba(242, 244, 248, 0.55)';
     };
     helpBtn.onclick = (e) => {
       e.stopPropagation();
@@ -4675,14 +5186,9 @@ class NoteworthyChat extends HTMLElement {
       if (wrap.classList.contains('open')) {
         launcher.setAttribute('aria-expanded', 'true');
         input.focus();
-        
-        // Show tutorial on first open if not dismissed
-        if (shouldShowTutorial()) {
-          // Small delay to let the chat open first
-          setTimeout(() => {
-            showTutorial();
-          }, 300);
-        }
+        // The tutorial no longer auto-opens on first use; it stays one
+        // click away behind the help button so the first impression is
+        // the conversation itself.
       } else {
         launcher.setAttribute('aria-expanded', 'false');
       }
@@ -4692,6 +5198,186 @@ class NoteworthyChat extends HTMLElement {
       wrap.classList.remove('open');
       launcher.setAttribute('aria-expanded', 'false');
     };
+
+    // ── Page context: which article / live story is the reader on? ──
+    // Sent with every request so the AI can answer "what's this story about".
+    const pageContext = (() => {
+      try {
+        const url = window.location.href.split('#')[0].substring(0, 300);
+        const title = (document.title || '').substring(0, 300);
+        let articleId = '';
+        let storySlug = '';
+        const path = window.location.pathname;
+        if (path === '/article.html' || path === '/article') {
+          articleId = new URLSearchParams(window.location.search).get('id') || '';
+        }
+        const storyMatch = path.match(/^\/story\/([^\/]+)/);
+        if (storyMatch) {
+          storySlug = decodeURIComponent(storyMatch[1]);
+        } else if (path === '/story.html') {
+          storySlug = new URLSearchParams(window.location.search).get('slug') || '';
+        }
+        return { url, title, articleId, storySlug };
+      } catch (e) {
+        return null;
+      }
+    })();
+    const onStoryPage = !!(pageContext && (pageContext.articleId || pageContext.storySlug));
+
+    // ── Minimal safe markdown renderer for AI replies ──
+    // Escapes all HTML first, then re-introduces a small whitelist:
+    // headings, bold/italic, inline code, links (http/https only), lists.
+    function renderMarkdown(rawText) {
+      const escapeHtml = (s) => s
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+
+      const inline = (s) => {
+        let out = escapeHtml(s);
+        // links: [label](https://url)
+        out = out.replace(/\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/g, (m, label, href) =>
+          `<a href="${href}" target="_blank" rel="noopener noreferrer">${label}</a>`);
+        // bold, italic, code
+        out = out.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        out = out.replace(/(^|[\s(])\*([^*\n]+)\*(?=[\s).,;:!?]|$)/g, '$1<em>$2</em>');
+        out = out.replace(/`([^`]+)`/g, '<code>$1</code>');
+        return out;
+      };
+
+      const lines = String(rawText || '').split('\n');
+      const blocks = [];
+      let listItems = null;
+      const flushList = () => {
+        if (listItems && listItems.length) {
+          blocks.push(`<ul>${listItems.map(li => `<li>${li}</li>`).join('')}</ul>`);
+        }
+        listItems = null;
+      };
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) { flushList(); continue; }
+        const heading = trimmed.match(/^#{1,4}\s+(.*)$/);
+        const bullet = trimmed.match(/^(?:[-*•]|\d+[.)])\s+(.*)$/);
+        if (heading) {
+          flushList();
+          blocks.push(`<h4>${inline(heading[1])}</h4>`);
+        } else if (bullet) {
+          if (!listItems) listItems = [];
+          listItems.push(inline(bullet[1]));
+        } else {
+          flushList();
+          blocks.push(`<p>${inline(trimmed)}</p>`);
+        }
+      }
+      flushList();
+      return blocks.join('') || `<p>${inline(String(rawText || ''))}</p>`;
+    }
+
+    // ── Source chips rendered under grounded replies ──
+    function renderSources(container, sources) {
+      if (!Array.isArray(sources) || sources.length === 0) return;
+      const row = document.createElement('div');
+      row.className = 'sources-row';
+      const label = document.createElement('span');
+      label.className = 'sources-label';
+      label.textContent = 'Sources';
+      row.appendChild(label);
+      sources.slice(0, 6).forEach(src => {
+        if (!src || !src.url || !/^https?:\/\//i.test(src.url)) return;
+        const chip = document.createElement('a');
+        chip.className = `source-chip chip-${src.type === 'live' ? 'live' : src.type === 'article' ? 'article' : 'web'}`;
+        chip.href = src.url;
+        chip.target = '_blank';
+        chip.rel = 'noopener noreferrer';
+        let host = '';
+        try { host = new URL(src.url).hostname.replace(/^www\./, ''); } catch (e) {}
+        chip.title = `${src.title || host}${host ? ` - ${host}` : ''}`;
+        chip.innerHTML = '<span class="chip-dot"></span>';
+        const text = document.createElement('span');
+        text.className = 'chip-text';
+        text.textContent = src.title || host || src.url;
+        chip.appendChild(text);
+        row.appendChild(chip);
+      });
+      if (row.children.length > 1) container.appendChild(row);
+    }
+
+    // ── Suggestion chips in the empty state ──
+    const suggestRow = root.querySelector('#suggestRow');
+    if (suggestRow) {
+      const suggestions = onStoryPage
+        ? [
+            'What is this story about?',
+            "What's the latest on this story?",
+            'What should I verify before sharing this?',
+          ]
+        : [
+            'What are the top stories right now?',
+            'Fact-check a claim for me',
+            'How do I spot a fake video?',
+          ];
+      suggestions.forEach(q => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'suggest-chip';
+        chip.textContent = q;
+        chip.addEventListener('click', () => {
+          input.value = q;
+          ask();
+        });
+        suggestRow.appendChild(chip);
+      });
+    }
+    const hideEmptyState = () => {
+      if (tip && tip.parentNode) tip.style.display = 'none';
+      if (suggestRow) suggestRow.style.display = 'none';
+    };
+
+    // ── One-time lowkey intro notification ──
+    // Replaces the old auto-opening tutorial: a small dismissible toast that
+    // appears once, opens the chat when clicked, and never comes back.
+    // Visibility is driven with inline styles (the class-only toggle proved
+    // unreliable inside this shadow root).
+    const INTRO_KEY = 'noteworthy-ai-intro-dismissed';
+    const introToast = root.querySelector('#introToast');
+    if (introToast && !localStorage.getItem(INTRO_KEY)) {
+      const setToastVisible = (visible) => {
+        introToast.classList.toggle('show', visible);
+        introToast.style.opacity = visible ? '1' : '0';
+        introToast.style.transform = visible ? 'translateY(0)' : 'translateY(8px)';
+        introToast.style.pointerEvents = visible ? 'auto' : 'none';
+      };
+      const dismissIntro = () => {
+        localStorage.setItem(INTRO_KEY, 'true');
+        setToastVisible(false);
+        window.clearTimeout(introToast._hideTimer);
+      };
+      introToast._showTimer = window.setTimeout(() => {
+        // Skip if the user already opened the chat on their own
+        if (wrap.classList.contains('open') || localStorage.getItem(INTRO_KEY)) return;
+        setToastVisible(true);
+        introToast._hideTimer = window.setTimeout(() => {
+          // Quietly hide after 12s and count it as seen - it never re-nags
+          setToastVisible(false);
+          localStorage.setItem(INTRO_KEY, 'true');
+        }, 12000);
+      }, 3500);
+      introToast.addEventListener('click', (e) => {
+        if (e.target.closest('.intro-close')) {
+          dismissIntro();
+          return;
+        }
+        dismissIntro();
+        if (!wrap.classList.contains('open')) launcher.click();
+      });
+      // Opening the chat any other way also counts as "seen"
+      launcher.addEventListener('click', () => {
+        if (wrap.classList.contains('open')) dismissIntro();
+      });
+    }
 
     // Image generation is now fully handled by the backend
     // The generateImage() function has been removed - all messages go through ask()
@@ -4939,10 +5625,8 @@ class NoteworthyChat extends HTMLElement {
       input.value = '';
       send.disabled = true;
 
-      // Remove tip
-      if (tip && tip.parentNode) {
-        tip.style.display = 'none';
-      }
+      // Remove tip + suggestion chips once the conversation starts
+      hideEmptyState();
 
       // Note: Image generation is now handled by the backend GPT chat function
       // The backend auto-detects image requests and generates images alongside GPT responses
@@ -4996,125 +5680,20 @@ class NoteworthyChat extends HTMLElement {
         previewContainer.remove();
       }
 
-      // Update header to show thinking mode
-      const subText = root.querySelector('.sub');
-      let originalSub = null;
-      if (subText) {
-        originalSub = subText.textContent;
-        subText.textContent = '💭 Thinking…';
-        subText.style.color = 'rgba(74, 144, 226, 0.9)';
-        subText.style.fontWeight = '700';
-      }
-      
-      // Show thinking indicator with NW logo - distinctive styling for chat
+      // Quiet typing indicator while waiting for the reply - no status text,
+      // no search banners, no sounds.
       const thinking = document.createElement('div');
-      
-      // Store original subtitle for restoration
-      if (originalSub) {
-        thinking._originalSub = originalSub;
-      }
       thinking.className = 'message-group ai-msg-group';
       thinking.innerHTML = `
         <div class="message-avatar">
           <img src="${logoPath}" alt="Noteworthy News" />
         </div>
         <div class="message-content">
-          <div class="thinking">
-            <span class="thinking-icon">💭</span>
-            <span class="spinner"></span>
-            <span><strong>Thinking…</strong> Processing your question</span>
-          </div>
+          <div class="typing-dots" role="status" aria-label="Noteworthy AI is responding"><span></span><span></span><span></span></div>
         </div>
       `;
       body.appendChild(thinking);
       body.scrollTop = body.scrollHeight;
-      
-      // Set a timeout to show search indicator if request takes longer than 2 seconds
-      // (this likely means a web search is happening)
-      let searchTimeout = null;
-      let searchIndicatorShown = false;
-      
-      // Function to show deep dive search indicator
-      const showSearchIndicator = (query) => {
-        if (searchIndicatorShown) return; // Don't show multiple times
-        searchIndicatorShown = true;
-        
-        // Play search sound effect
-        try {
-          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-          const oscillator = audioContext.createOscillator();
-          const gainNode = audioContext.createGain();
-          
-          oscillator.connect(gainNode);
-          gainNode.connect(audioContext.destination);
-          
-          // Create a "search" sound (two quick beeps)
-          oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-          oscillator.frequency.exponentialRampToValueAtTime(1000, audioContext.currentTime + 0.1);
-          gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
-          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
-          oscillator.start(audioContext.currentTime);
-          oscillator.stop(audioContext.currentTime + 0.1);
-          
-          // Second beep
-          setTimeout(() => {
-            const oscillator2 = audioContext.createOscillator();
-            const gainNode2 = audioContext.createGain();
-            oscillator2.connect(gainNode2);
-            gainNode2.connect(audioContext.destination);
-            oscillator2.frequency.setValueAtTime(1000, audioContext.currentTime);
-            oscillator2.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.1);
-            gainNode2.gain.setValueAtTime(0.2, audioContext.currentTime);
-            gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
-            oscillator2.start(audioContext.currentTime);
-            oscillator2.stop(audioContext.currentTime + 0.1);
-          }, 120);
-        } catch (error) {
-          console.warn('[Chat] Could not play search sound effect:', error);
-        }
-        
-        // Create a separate search indicator message group for better visibility
-        const searchGroup = document.createElement('div');
-        searchGroup.className = 'message-group ai-msg-group search-indicator-group';
-        searchGroup.innerHTML = `
-          <div class="message-avatar">
-            <img src="${logoPath}" alt="Noteworthy News" />
-          </div>
-          <div class="message-content">
-            <div class="thinking searching">
-              <span class="search-icon">🔍</span>
-              <span class="search-spinner"></span>
-              <span><strong>Deep Dive Research…</strong> Searching the web for: "${query || 'current information'}"</span>
-            </div>
-          </div>
-        `;
-        
-        // Insert search indicator before the thinking message
-        if (thinking && thinking.parentNode) {
-          thinking.parentNode.insertBefore(searchGroup, thinking);
-        } else {
-          body.appendChild(searchGroup);
-        }
-        body.scrollTop = body.scrollHeight;
-        
-        // Update thinking indicator to show search as well
-        const thinkingContent = thinking.querySelector('.thinking');
-        if (thinkingContent) {
-          thinkingContent.innerHTML = `
-            <span class="search-icon">🔍</span>
-            <span class="search-spinner"></span>
-            <span><strong>Deep Dive Research…</strong> Searching the web for: "${query || 'current information'}"</span>
-          `;
-          thinkingContent.classList.add('searching');
-        }
-        
-        // Update header subtitle
-        if (subText) {
-          subText.textContent = '🔍 Deep Research…';
-          subText.style.color = 'rgba(74, 144, 226, 0.9)';
-          subText.style.fontWeight = '700';
-        }
-      };
 
       try {
         // Regular chat response
@@ -5140,13 +5719,6 @@ class NoteworthyChat extends HTMLElement {
           isLocalhost: isLocalhost,
           hostname: window.location.hostname
         });
-        
-        // Set timeout to show search indicator if request takes longer than 2 seconds
-        searchTimeout = setTimeout(() => {
-          if (!searchIndicatorShown) {
-            showSearchIndicator('current information');
-          }
-        }, 2000);
 
         let res;
         let lastError = null;
@@ -5181,13 +5753,15 @@ class NoteworthyChat extends HTMLElement {
           requestBody = JSON.stringify({ 
             message: message || '',
             files: fileData,
-            chatHistory: chatHistory
+            chatHistory: chatHistory,
+            pageContext: pageContext
           });
         } else {
           // Regular JSON request with chat history
           requestBody = JSON.stringify({ 
             message: message,
-            chatHistory: chatHistory
+            chatHistory: chatHistory,
+            pageContext: pageContext
           });
         }
         
@@ -5200,11 +5774,6 @@ class NoteworthyChat extends HTMLElement {
           });
           console.log('Fetch response:', { ok: res.ok, status: res.status, statusText: res.statusText });
         } catch (fetchError) {
-          // Clear search timeout on error
-          if (searchTimeout) {
-            clearTimeout(searchTimeout);
-            searchTimeout = null;
-          }
           console.error('Fetch error:', fetchError);
           lastError = fetchError;
           
@@ -5243,12 +5812,6 @@ class NoteworthyChat extends HTMLElement {
           }
         }
 
-        // Clear search timeout once we get a response
-        if (searchTimeout) {
-          clearTimeout(searchTimeout);
-          searchTimeout = null;
-        }
-        
         if (!res.ok) {
           let errorText;
           let isRateLimit = false;
@@ -5310,51 +5873,16 @@ class NoteworthyChat extends HTMLElement {
           throw new Error('Invalid response from server. Please try again.');
         }
         
-        // Clear search timeout
-        if (searchTimeout) {
-          clearTimeout(searchTimeout);
-          searchTimeout = null;
-        }
+        console.log('API Success:', { reply: data.reply?.substring(0, 50) + '...', hasImage: !!(data.image && data.image.imageUrl) });
         
-        console.log('API Success:', { reply: data.reply?.substring(0, 50) + '...', hasImage: !!(data.image && data.image.imageUrl), searching: data.searching, searchQuery: data.searchQuery, fullData: data });
-        
-        // Check if search was performed (even if completed) - show indicator BEFORE removing thinking
-        if (data.searchQuery || data.searching) {
-          if (!searchIndicatorShown) {
-            showSearchIndicator(data.searchQuery || 'current information');
-          }
-          // Keep thinking visible for a moment to show the search animation (longer if still searching)
-          const delay = data.searching ? 3000 : 1500;
-          setTimeout(() => {
-            // Remove search indicator group if it exists
-            const searchGroup = body.querySelector('.search-indicator-group');
-            if (searchGroup && searchGroup.parentNode) {
-              searchGroup.remove();
-            }
-            if (thinking && thinking.parentNode) {
-              thinking.remove();
-            }
-          }, delay);
-        } else {
-          // Remove search indicator if it exists even if no search
-          const searchGroup = body.querySelector('.search-indicator-group');
-          if (searchGroup && searchGroup.parentNode) {
-            searchGroup.remove();
-          }
+        // Remove the typing indicator as soon as the reply arrives
+        if (thinking && thinking.parentNode) {
           thinking.remove();
         }
         
         if (!data || !data.reply) {
           console.error('API response missing reply field:', data);
           throw new Error('Server did not return a valid response. Please try again.');
-        }
-        
-        // Restore header subtitle
-        const subText = root.querySelector('.sub');
-        if (subText && thinking._originalSub) {
-          subText.textContent = thinking._originalSub;
-          subText.style.color = '';
-          subText.style.fontWeight = '';
         }
 
         // Show reply with NW logo
@@ -5363,7 +5891,7 @@ class NoteworthyChat extends HTMLElement {
         const text = data.reply || 'No response.';
         const replyContent = document.createElement('div');
         replyContent.className = 'reply';
-        replyContent.innerHTML = text.split('\n').filter(l => l.trim()).map(l => `<p>${l}</p>`).join('');
+        replyContent.innerHTML = renderMarkdown(text);
 
         // If image was generated, add it to the response
         if (data.image && data.image.imageUrl) {
@@ -5445,6 +5973,9 @@ class NoteworthyChat extends HTMLElement {
           <div class="message-content"></div>
         `;
         aiGroup.querySelector('.message-content').appendChild(replyContent);
+        
+        // Source chips (Noteworthy articles, live stories, web results)
+        renderSources(replyContent, data.sources);
         
         // Check if email confirmation is needed (text chat mode)
         if (data.emailConfirmation) {
@@ -5550,14 +6081,8 @@ class NoteworthyChat extends HTMLElement {
         console.error('Ask function error:', e);
         
         // Don't add to chat history on error
-        thinking.remove();
-        
-        // Restore header subtitle on error
-        const subText = root.querySelector('.sub');
-        if (subText && thinking && thinking._originalSub) {
-          subText.textContent = thinking._originalSub;
-          subText.style.color = '';
-          subText.style.fontWeight = '';
+        if (thinking && thinking.parentNode) {
+          thinking.remove();
         }
         
         const aiGroup = document.createElement('div');
@@ -6495,20 +7020,20 @@ class NoteworthyChat extends HTMLElement {
             if (SUPPORTED_VOICES.includes(selectedVoice)) {
               currentVoice = selectedVoice;
             } else {
-              console.warn(`[Voice Mode] Unsupported voice "${selectedVoice}" selected, using default "alloy"`);
-              currentVoice = 'alloy';
-              // Update the active option to alloy
+              console.warn(`[Voice Mode] Unsupported voice "${selectedVoice}" selected, using default "marin"`);
+              currentVoice = 'marin';
+              // Update the active option to marin
               activeOption.classList.remove('active');
-              const alloyOption = voiceList.querySelector('.voice-option[data-value="alloy"]');
-              if (alloyOption) {
-                alloyOption.classList.add('active');
+              const marinOption = voiceList.querySelector('.voice-option[data-value="marin"]');
+              if (marinOption) {
+                marinOption.classList.add('active');
               }
             }
           }
         }
         // Fallback to default
         if (!currentVoice || !SUPPORTED_VOICES.includes(currentVoice)) {
-          currentVoice = 'alloy';
+          currentVoice = 'marin';
         }
         
         // Run connectivity test first
@@ -6630,7 +7155,7 @@ class NoteworthyChat extends HTMLElement {
             const sessionRes = await fetch(realtimeEndpoint, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ voice: currentVoice }),
+              body: JSON.stringify({ voice: currentVoice, pageContext: pageContext }),
               signal: controller.signal
             });
             
@@ -8853,7 +9378,7 @@ class NoteworthyChat extends HTMLElement {
               console.log('[Voice Mode] 📧 Email confirmation UI shown, waiting for user confirmation');
               
             } else if (message.name === 'search_web') {
-              if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = '🔍 Searching the web...';
+              if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Checking the latest reports…';
               console.log('[Voice Mode] 🔍 Web search requested via function call, query:', functionArgs.query);
               
               // Execute the web search

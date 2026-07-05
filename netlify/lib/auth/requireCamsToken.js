@@ -17,7 +17,7 @@ function requireCamsToken(event) {
   const expectedToken = process.env.CAMS_TOKEN;
   
   if (!expectedToken) {
-    console.error('[Security] CAMS_TOKEN is not configured — denying access (fail-closed).');
+    console.error('[Security] CAMS_TOKEN is not configured - denying access (fail-closed).');
     return {
       statusCode: 500,
       headers: {

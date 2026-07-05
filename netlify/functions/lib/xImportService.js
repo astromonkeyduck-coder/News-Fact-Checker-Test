@@ -302,7 +302,7 @@ async function importLatestPosts(opts) {
           .maybeSingle();
 
         if (existing && !opts.force) {
-          // Post is in Supabase — verify the Blob projection also exists
+          // Post is in Supabase - verify the Blob projection also exists
           const store = getPostStore();
           const blob = await readPost(store, tweet.id);
           if (blob) {

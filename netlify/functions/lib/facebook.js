@@ -9,7 +9,7 @@
  *   - When Graph access is unavailable or the video isn't accessible, we return
  *     { retrievable: false } so the UI can offer a manual-upload fallback.
  *
- * This module never downloads media itself — it resolves a URL + username and
+ * This module never downloads media itself - it resolves a URL + username and
  * (when permitted) a Graph `source` URL that the background processor fetches
  * server-side. The access token is never returned to callers/clients.
  */
@@ -224,7 +224,7 @@ async function fetchGraphSource(videoId) {
   }
 
   if (!res.ok || data.error) {
-    // Token lacks permission, video private, or not owned — fall back gracefully.
+    // Token lacks permission, video private, or not owned - fall back gracefully.
     return { ok: false, reason: "GRAPH_NO_ACCESS" };
   }
 

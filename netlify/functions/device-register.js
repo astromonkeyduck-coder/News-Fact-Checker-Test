@@ -1,5 +1,5 @@
 /**
- * Device Register — iOS companion APNs token + Live Activity lifecycle
+ * Device Register - iOS companion APNs token + Live Activity lifecycle
  *
  * All requests authenticate with { deviceUuid, deviceSecret } (issued at pairing).
  *

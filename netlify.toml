@@ -324,6 +324,13 @@
 [functions."article-preview"]
   included_files = ["article.html"]
 
+# noteworthy-chat needs pdf-parse/mammoth kept external: pdf-parse (pdfjs)
+# dynamically imports its pdf.worker.mjs relative to the module file, which
+# breaks when esbuild inlines it into the bundle.
+[functions."noteworthy-chat"]
+  external_node_modules = ["pdf-parse", "mammoth"]
+  included_files = ["node_modules/pdf-parse/dist/**"]
+
 # Configure process-job as background function (longer timeout for ffmpeg processing)
 # Background functions can run up to 15 minutes (vs 26 seconds for regular functions)
 [functions."process-job"]

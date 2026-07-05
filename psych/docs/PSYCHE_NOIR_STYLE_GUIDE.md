@@ -1,4 +1,4 @@
-# Psyche Noir Editorial — Style Guide
+# Psyche Noir Editorial - Style Guide
 
 ## Visual Identity
 

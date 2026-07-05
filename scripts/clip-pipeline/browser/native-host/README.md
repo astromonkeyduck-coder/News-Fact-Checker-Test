@@ -1,6 +1,6 @@
 # Native MP4 converter (recommended)
 
-In-browser FFmpeg is unreliable in Chrome extensions. **Install the native host** once — it uses the same `ffmpeg-static` as `npm run clip:convert-webm` and makes MP4 saves work reliably.
+In-browser FFmpeg is unreliable in Chrome extensions. **Install the native host** once - it uses the same `ffmpeg-static` as `npm run clip:convert-webm` and makes MP4 saves work reliably.
 
 ## Install
 
@@ -20,7 +20,7 @@ npm run clip:install-native-host -- YOUR_EXTENSION_ID
 echo '{"type":"ping"}' | node scripts/clip-pipeline/browser/native-host/noteworthy-clip-host.js
 ```
 
-(Chrome wraps messages with a 4-byte length prefix — the extension handles that.)
+(Chrome wraps messages with a 4-byte length prefix - the extension handles that.)
 
 ## Uninstall
 

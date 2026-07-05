@@ -39,7 +39,7 @@ export function LeadTable({ leads, events }: Props) {
 
   const eventName = useMemo(() => {
     const map = new Map(events.map((e) => [e.id, e.event_name]));
-    return (id: string | null) => (id ? (map.get(id) ?? "—") : "—");
+    return (id: string | null) => (id ? (map.get(id) ?? "-") : "-");
   }, [events]);
 
   const filtered = useMemo(() => {
@@ -76,12 +76,12 @@ export function LeadTable({ leads, events }: Props) {
       {
         accessorKey: "source_handle",
         header: "Handle",
-        cell: ({ row }) => <span className="text-ink-muted">{row.original.source_handle || "—"}</span>,
+        cell: ({ row }) => <span className="text-ink-muted">{row.original.source_handle || "-"}</span>,
       },
       {
         accessorKey: "claimed_location",
         header: "Location",
-        cell: ({ row }) => <span className="text-ink-muted">{row.original.claimed_location || "—"}</span>,
+        cell: ({ row }) => <span className="text-ink-muted">{row.original.claimed_location || "-"}</span>,
       },
       {
         id: "newsworthiness",
@@ -107,7 +107,7 @@ export function LeadTable({ leads, events }: Props) {
           row.original.recommended_action ? (
             <Badge>{row.original.recommended_action.replace(/_/g, " ")}</Badge>
           ) : (
-            <span className="text-ink-faint">—</span>
+            <span className="text-ink-faint">-</span>
           ),
       },
       {

@@ -861,7 +861,7 @@ async function updatePostWithMedia(postId, mediaUrl, isVideo, emailMessage, appe
 
     if (messageSnippet) {
       const timestamp = new Date().toISOString().split('T')[0];
-      const addition = `\n\n— Reader update (${timestamp}): ${messageSnippet}`;
+      const addition = `\n\n- Reader update (${timestamp}): ${messageSnippet}`;
       updatedPost.story = (updatedPost.story || updatedPost.text || '') + addition;
       updatedPost.text = updatedPost.story;
     }

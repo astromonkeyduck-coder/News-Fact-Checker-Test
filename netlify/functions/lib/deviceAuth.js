@@ -3,7 +3,7 @@
  *
  * Devices authenticate with the opaque deviceUuid they generated plus the
  * deviceSecret issued (once) at pairing time. We store only sha256(secret).
- * This is a lightweight bearer for anonymous devices — not an account system.
+ * This is a lightweight bearer for anonymous devices - not an account system.
  */
 
 const crypto = require("crypto");

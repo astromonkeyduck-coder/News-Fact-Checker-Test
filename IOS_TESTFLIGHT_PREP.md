@@ -173,7 +173,7 @@ curl -X POST "…/.netlify/functions/admin-live-stories" -H "Authorization: Bear
 Standard alert notifications run over APNs (`apns-push-type: alert`, topic `co.noteworthynews.live`). Same `APNS_*` vars and `.p8` key as Live Activities; requires a **real device** (Simulator cannot receive remote APNs). Verify `apnsStatus` returns `configured:true` and note `alertTopic` = the plain bundle id.
 
 ### End-to-end test (real iPhone)
-1. Build/run on the device (Debug = sandbox). In onboarding (or **Notifications**), **grant notifications** — this registers the standard APNs token (`device-register {action:"apns-token"}`).
+1. Build/run on the device (Debug = sandbox). In onboarding (or **Notifications**), **grant notifications** - this registers the standard APNs token (`device-register {action:"apns-token"}`).
 2. Pair in **Profile** with a code from the website (the token is also carried through `redeem`). In **Notifications**, confirm **Device registered: Yes** and **Preferences: Synced**.
 3. **Follow** a live story (so the device has a follow row for it).
 4. In `/admin` ▸ Live Stories, **post an update** to that story → a banner arrives within seconds. Normal updates are quiet; urgent/final ring and (if enabled) arrive Time-Sensitive.

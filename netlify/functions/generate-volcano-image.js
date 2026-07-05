@@ -47,7 +47,7 @@ const LOCATION_FONT_SIZE = 50;
 const LOCATION_FONT_SIZE_MIN = 42;
 const TEXT_GAP = 12;
 
-// Colors — orange-red theme for volcanoes
+// Colors - orange-red theme for volcanoes
 const HEADLINE_COLOR = '#FFFFFF';
 const ALERT_COLOR = '#FF4500'; // orange-red for volcano alerts
 

@@ -127,7 +127,7 @@ export function ExportWorkspace({
             </Button>
           </div>
           <p className="mb-3 mt-1 text-2xs text-ink-faint">
-            Cover faces or license plates. Values are fractions of width/height (0–1). Manual only —
+            Cover faces or license plates. Values are fractions of width/height (0–1). Manual only -
             no automatic face detection.
           </p>
           {boxes.length === 0 ? (

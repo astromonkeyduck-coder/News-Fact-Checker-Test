@@ -42,7 +42,7 @@ function WeeklyRoundupEmail({
   if (topStories.length > 0) {
     content += EmailSection({ title: 'Top Stories' });
     const storyItems = topStories.map(story => ({
-      text: `<strong>${story.headline}</strong> — ${story.summary} <a href="${story.url}" style="color:#3b82f6!important;text-decoration:underline">Read more</a>`
+      text: `<strong>${story.headline}</strong> - ${story.summary} <a href="${story.url}" style="color:#3b82f6!important;text-decoration:underline">Read more</a>`
     }));
     content += EmailBulletList({ items: storyItems });
   }
@@ -50,7 +50,7 @@ function WeeklyRoundupEmail({
   if (missedStories.length > 0) {
     content += EmailSection({ title: 'Stories You Might Have Missed' });
     const storyItems = missedStories.map(story => ({
-      text: `<strong>${story.headline}</strong> — ${story.summary} <a href="${story.url}" style="color:#3b82f6!important;text-decoration:underline">Read more</a>`
+      text: `<strong>${story.headline}</strong> - ${story.summary} <a href="${story.url}" style="color:#3b82f6!important;text-decoration:underline">Read more</a>`
     }));
     content += EmailBulletList({ items: storyItems });
   }
@@ -58,7 +58,7 @@ function WeeklyRoundupEmail({
   if (deepDives.length > 0) {
     content += EmailSection({ title: 'Deep Dives & Explainers' });
     const storyItems = deepDives.map(story => ({
-      text: `<strong>${story.headline}</strong> — ${story.summary} <a href="${story.url}" style="color:#3b82f6!important;text-decoration:underline">Read more</a>`
+      text: `<strong>${story.headline}</strong> - ${story.summary} <a href="${story.url}" style="color:#3b82f6!important;text-decoration:underline">Read more</a>`
     }));
     content += EmailBulletList({ items: storyItems });
   }

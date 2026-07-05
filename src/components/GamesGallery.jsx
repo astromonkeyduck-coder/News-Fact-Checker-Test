@@ -336,7 +336,7 @@ const ModalPlayer = React.lazy(() => {
                 </button>
               </div>
               <div className="games-modal-warning" role="alert">
-                ⚠️ This game may collect input or require pointer lock — only play if you trust the source.
+                ⚠️ This game may collect input or require pointer lock - only play if you trust the source.
               </div>
               <div className="games-modal-player">
                 <iframe

@@ -1,5 +1,5 @@
 /**
- * Follow Live Story — public follow/unfollow API
+ * Follow Live Story - public follow/unfollow API
  *
  * POST  { action: "follow"|"unfollow", slug, subscription, userEmail? }
  *   follow   → upserts a live_story_follows row keyed by the push subscriber_key
@@ -194,7 +194,7 @@ async function ensureSubscription(subscriberKey, subscription, userEmail) {
       return;
     }
   } catch {
-    /* not found — fall through to create */
+    /* not found - fall through to create */
   }
 
   const record = {

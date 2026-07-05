@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Noteworthy — Save Last 30s (YouTube)
+// @name         Noteworthy - Save Last 30s (YouTube)
 // @namespace    noteworthy-news
 // @version      1.0.0
 // @description  Floating button on YouTube to download the last 30 seconds currently playing in your browser.
@@ -12,7 +12,7 @@
 //
 // LEGAL: You are responsible for rights, YouTube Terms of Service, and copyright
 // before republishing any clip. This records what is already playing in YOUR
-// browser — it does not bypass DRM or download from YouTube servers directly.
+// browser - it does not bypass DRM or download from YouTube servers directly.
 // Some streams (DRM) may block capture; use official feeds when possible.
 
 (function () {
@@ -112,7 +112,7 @@
     };
 
     recorder.onerror = () => {
-      setStatus('Recorder error — try refreshing.', true);
+      setStatus('Recorder error - try refreshing.', true);
     };
 
     recorder.start(SLICE_MS);

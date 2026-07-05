@@ -20,7 +20,7 @@ function getUserToken() {
 
 async function deleteXPost(xPostId, { dryRun = false } = {}) {
   if (dryRun || isDryRun()) {
-    console.log(`[x-retract] DRY-RUN — would delete X post ${xPostId}`);
+    console.log(`[x-retract] DRY-RUN - would delete X post ${xPostId}`);
     return { dryRun: true, xPostId };
   }
 
@@ -43,7 +43,7 @@ async function retractJob(jobId, { dryRun = false } = {}) {
   const job = await getJob(jobId);
 
   if (!job.x_post_id) {
-    throw new Error('Job has no x_post_id — nothing to retract on X');
+    throw new Error('Job has no x_post_id - nothing to retract on X');
   }
 
   const result = await deleteXPost(job.x_post_id, { dryRun });

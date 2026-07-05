@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   AUDIO REACTIVE — Web Audio API Music Player & Frequency Analyser
+   AUDIO REACTIVE - Web Audio API Music Player & Frequency Analyser
    Playlist, player controls, frequency band extraction,
    CSS custom property output for site-wide reactivity
    ═══════════════════════════════════════════════════════════════ */
@@ -256,8 +256,8 @@ const AudioReactive = (() => {
     { name: 'Featured', blurb: 'The real psychology is the friends we made along the way.', units: ['All Units'] }
   ];
   const QUOTE_ATTRS = [
-    '— Sigmund Freud', '— John B. Watson', '— Abraham Maslow',
-    '— Ivan Pavlov', '— B.F. Skinner', '— B.F. Skinner'
+    '- Sigmund Freud', '- John B. Watson', '- Abraham Maslow',
+    '- Ivan Pavlov', '- B.F. Skinner', '- B.F. Skinner'
   ];
 
   let portraitIdx = 0;

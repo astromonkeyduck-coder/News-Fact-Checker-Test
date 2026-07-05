@@ -1,4 +1,4 @@
-# AP Euro Master Timeline — Coverage Matrix
+# AP Euro Master Timeline - Coverage Matrix
 
 ## Summary
 
@@ -12,7 +12,7 @@
 
 ## Unit x AP Theme Matrix
 
-Counts of entries per unit per theme. Dashes indicate zero — flagged as gap.
+Counts of entries per unit per theme. Dashes indicate zero - flagged as gap.
 
 | Unit | States & Power | Economic | Cultural/Intellectual | Europe & World | Social Organization | National Identity | Tech/Scientific |
 |------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
@@ -57,7 +57,7 @@ All major AP Euro regions are represented:
 | Eastern Europe | 10 | Cold War, revolutions |
 | Belgium | 3 | Industrial Revolution, EU |
 | Balkans | 2 | WWI context |
-| Scandinavia | 1 | Lighter — potential gap |
+| Scandinavia | 1 | Lighter - potential gap |
 | Portugal | 3 | Exploration |
 | Switzerland | 2 | Reformation (Calvin) |
 
@@ -65,9 +65,9 @@ All major AP Euro regions are represented:
 
 | Tier | Count | Percentage | Target |
 |------|:-----:|:----------:|:------:|
-| 1 — Must know cold | 77 | 69% | ~30% |
-| 2 — Important context | 31 | 28% | ~40% |
-| 3 — Enrichment | 4 | 4% | ~30% |
+| 1 - Must know cold | 77 | 69% | ~30% |
+| 2 - Important context | 31 | 28% | ~40% |
+| 3 - Enrichment | 4 | 4% | ~30% |
 
 **Note**: The current dataset is heavily weighted toward Tier 1 (must-know) entries. This is appropriate for an initial build focused on core AP content. Future iterations should add more Tier 2 and Tier 3 entries for enrichment and complexity.
 
@@ -87,7 +87,7 @@ All six historical thinking skills are supported:
 ## Identified Gaps and Recommendations
 
 ### Theme Gaps
-- **NEI (National Identity)**: Missing from Units 1-4. Nationalism as a concept doesn't emerge until the French Revolution, so this is historically appropriate — but entries could note proto-national identity in earlier periods.
+- **NEI (National Identity)**: Missing from Units 1-4. Nationalism as a concept doesn't emerge until the French Revolution, so this is historically appropriate - but entries could note proto-national identity in earlier periods.
 - **TSI (Technology/Science)**: Missing from Units 2, 3, 5, 8, 9. Military technology (Units 2, 8) and industrial technology (Units 5, 9) could be added.
 - **INT (Europe & World)**: Missing from Units 3, 4. Colonial trade entries for the absolutism period and scientific contacts could be added.
 - **ECON**: Missing from Unit 5. Economic causes of the French Revolution (debt, taxes) could be tagged.

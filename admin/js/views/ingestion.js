@@ -1,5 +1,5 @@
 /**
- * Ingestion View — Admin
+ * Ingestion View - Admin
  *
  * Manual triggers: add tweet by URL, fetch profile tweets, CSV import.
  */
@@ -157,7 +157,7 @@ async function handleCSVImport() {
     let detail = `Updated: <strong>${updated}</strong>`;
     if (failed) detail += ` · Failed: <strong>${failed}</strong>`;
     if (skipped) detail += ` · Skipped: <strong>${skipped}</strong>`;
-    if (remaining) detail += ` · <strong>${remaining}</strong> left — import again for next batch.`;
+    if (remaining) detail += ` · <strong>${remaining}</strong> left - import again for next batch.`;
     result.innerHTML = `
       <div class="admin-notice admin-notice-success">${esc(msg || 'Import finished.')}</div>
       <p style="margin-top:var(--space-sm);font-size:var(--text-sm);color:var(--color-text-secondary)">${detail}</p>`;

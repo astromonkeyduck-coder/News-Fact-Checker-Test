@@ -1,5 +1,5 @@
 /**
- * Article Page V3 — Breaking Brief & Longform templates
+ * Article Page V3 - Breaking Brief & Longform templates
  * Used by article-loader.js (attach helpers to window.ArticlePageV3)
  */
 (function (global) {
@@ -243,7 +243,7 @@
       html += `<div class="nn-gallery ${galleryClass}">`;
       secondary.forEach((imgUrl, idx) => {
         const url = helpers.ensureAbsoluteImageUrl(imgUrl);
-        html += `<div class="nn-media article-media"><img src="${escapeHtml(url)}" alt="${escapeHtml(title)} — image ${idx + 2}" loading="lazy"></div>`;
+        html += `<div class="nn-media article-media"><img src="${escapeHtml(url)}" alt="${escapeHtml(title)} - image ${idx + 2}" loading="lazy"></div>`;
       });
       html += '</div>';
     }

@@ -38,7 +38,7 @@ exports.handler = async (event, context) => {
     const apiKey = process.env.PUSH_API_KEY || process.env.ADMIN_API_KEY;
 
     if (!apiKey) {
-      console.error('[Security] PUSH_API_KEY/ADMIN_API_KEY is not configured — denying access (fail-closed).');
+      console.error('[Security] PUSH_API_KEY/ADMIN_API_KEY is not configured - denying access (fail-closed).');
       return {
         statusCode: 500,
         headers,

@@ -1,5 +1,5 @@
 /**
- * Video Watermarker View — Admin
+ * Video Watermarker View - Admin
  *
  * Internal Noteworthy News creator tool: paste an authorized Facebook video
  * link (compliant Graph API retrieval) or upload a video manually, then export
@@ -166,7 +166,7 @@ export function render(container) {
       });
 
       if (res.fallback) {
-        // Graceful fallback — guide the user to manual upload.
+        // Graceful fallback - guide the user to manual upload.
         if (!els.credit.value.trim() && res.detectedUsername) {
           els.credit.value = res.detectedUsername;
           els.captionLine2.textContent = composeCreditLine(res.detectedUsername);

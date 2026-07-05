@@ -1,485 +1,406 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Our Mission - Noteworthy News</title>
-    <meta name="description" content="Learn about Noteworthy News' mission, editorial standards, story selection process, and commitment to fact-checked journalism and media literacy.">
-    <meta name="robots" content="index, follow">
-    
-    <!-- Favicon and Theme -->
-    <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="32x32">
-    <link rel="apple-touch-icon" href="IMG_5794.PNG" sizes="180x180">
-    <meta name="theme-color" content="#07152a">
-    
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
-    
-    <!-- Resource Pages Styles -->
-    <link rel="stylesheet" href="styles/resource-pages.css">
-    <link rel="stylesheet" href="styles/interactive-components.css">
-    
-    <!-- Styles -->
-    <link rel="stylesheet" href="styles.css">
-    
-    <!-- V2 Design System -->
-    <link rel="stylesheet" href="/v2/styles/tokens.css">
-    <link rel="stylesheet" href="/v2/styles/layout.css">
-    <link rel="stylesheet" href="/v2/styles/components.css">
-    
-    <!-- Google AdSense -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5427142458403577"
-            crossorigin="anonymous"></script>
-    
-    <style>
-        .pillar-page {
-            min-height: 100vh;
-            background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%);
-            color: white;
-            padding-top: 80px;
-        }
-        
-        .pillar-container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 40px 20px;
-        }
-        
-        .pillar-header {
-            text-align: center;
-            margin-bottom: 50px;
-            padding: 40px 20px;
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
-            border: 1px solid rgba(74, 144, 226, 0.2);
-        }
-        
-        .pillar-header h1 {
-            font-size: 3rem;
-            font-weight: 900;
-            margin-bottom: 20px;
-            background: linear-gradient(135deg, #ffffff 0%, #4A90E2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        .pillar-content {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
-            padding: 40px;
-            border: 1px solid rgba(74, 144, 226, 0.2);
-            line-height: 1.8;
-        }
-        
-        .pillar-content h2 {
-            font-size: 2rem;
-            font-weight: 700;
-            margin: 40px 0 20px;
-            color: #4A90E2;
-            border-bottom: 2px solid rgba(74, 144, 226, 0.3);
-            padding-bottom: 10px;
-        }
-        
-        .pillar-content h2:first-of-type {
-            margin-top: 0;
-        }
-        
-        .pillar-content h3 {
-            font-size: 1.4rem;
-            font-weight: 600;
-            margin: 30px 0 15px;
-            color: #2ECC71;
-        }
-        
-        .pillar-content p {
-            margin-bottom: 20px;
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 1.1rem;
-        }
-        
-        .pillar-content ul, .pillar-content ol {
-            margin: 20px 0;
-            padding-left: 30px;
-        }
-        
-        .pillar-content li {
-            margin-bottom: 12px;
-            color: rgba(255, 255, 255, 0.9);
-        }
-        
-        .mission-box {
-            background: rgba(74, 144, 226, 0.1);
-            border-left: 4px solid #4A90E2;
-            padding: 20px;
-            margin: 25px 0;
-            border-radius: 8px;
-        }
-        
-        .mission-box h4 {
-            color: #4A90E2;
-            margin-bottom: 10px;
-            font-size: 1.2rem;
-        }
-        
-        .breadcrumbs {
-            margin-bottom: 30px;
-            font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.7);
-        }
-        
-        .breadcrumbs a {
-            color: #4A90E2;
-            text-decoration: none;
-        }
-        
-        @media (max-width: 768px) {
-            .pillar-header h1 {
-                font-size: 2rem;
-            }
-            
-            .pillar-content {
-                padding: 25px;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Our Mission | Noteworthy News</title>
+  <meta name="description" content="Why Noteworthy News exists: an independent live newsroom built so readers can follow developing stories without losing the source trail. No paywall. Corrections in public.">
+  <link rel="canonical" href="https://noteworthynews.co/our-mission.html">
+  <meta name="theme-color" content="#04060B">
+  <link rel="icon" href="/IMG_5794.PNG" type="image/png">
+  <meta name="robots" content="index, follow">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Our Mission | Noteworthy News">
+  <meta property="og:description" content="An independent live newsroom built so readers can follow developing stories without losing the source trail.">
+  <meta property="og:url" content="https://noteworthynews.co/our-mission.html">
+  <meta property="og:site_name" content="Noteworthy News">
+  <meta property="og:image" content="https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg?v=2">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,600&display=swap">
+
+  <!-- Design system -->
+  <link rel="stylesheet" href="/v2/styles/tokens.css">
+  <link rel="stylesheet" href="/v2/styles/base.css">
+  <link rel="stylesheet" href="/v2/styles/v4.css">
+  <link rel="stylesheet" href="/v2/styles/page.css">
+
+  <style>
+    /* Mission-only touches */
+    .mission-figure {
+      margin: 2.2rem 0 0;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--color-border);
+      max-width: 70ch;
+    }
+    .mission-figure img { width: 100%; height: auto; display: block; }
+    .mission-figure figcaption {
+      font-family: var(--font-ui);
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+      padding: 0.7rem 1rem;
+      border-top: 1px solid var(--color-border-soft);
+      background: var(--color-bg-panel);
+    }
+    .mission-sign {
+      margin-top: 2.2rem;
+      font-family: var(--font-body);
+      font-style: italic;
+      font-size: 1.15rem;
+      color: var(--color-text);
+    }
+    .mission-sign span {
+      display: block;
+      margin-top: 0.3rem;
+      font-family: var(--font-ui);
+      font-style: normal;
+      font-size: 0.78rem;
+      letter-spacing: 0.02em;
+      color: var(--color-text-muted);
+    }
+    .mission-principles {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1.5rem 0;
+      max-width: 70ch;
+    }
+    @media (max-width: 719px) { .mission-principles { grid-template-columns: 1fr; } }
+    .mission-principle {
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      background: var(--color-bg-panel);
+      padding: 1.15rem 1.2rem 1.05rem;
+    }
+    .mission-principle-num {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      letter-spacing: 0.14em;
+      color: var(--color-gold-text);
+      margin-bottom: 0.5rem;
+    }
+    .mission-principle-name {
+      display: block;
+      font-family: var(--font-heading);
+      font-size: 0.98rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: var(--color-text);
+      margin-bottom: 0.4rem;
+    }
+    .mission-principle p {
+      font-family: var(--font-ui);
+      font-size: 0.845rem;
+      line-height: 1.6;
+      color: var(--color-text-secondary);
+      margin: 0;
+    }
+  </style>
 </head>
-<body class="pillar-page">
-    <!-- V2 Navigation -->
-    <div class="top-rule" aria-hidden="true"></div>
-    <header class="site-header">
-      <nav class="site-nav container" aria-label="Primary">
-        <a class="site-logo" href="/">
-          <img class="site-logo-icon" src="/IMG_5794.PNG" alt="" width="28" height="28">
-          <span>Noteworthy News</span>
-        </a>
-        <button class="nav-toggle" aria-expanded="false" aria-controls="nav-menu">
-          <svg class="nav-toggle-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-          </svg>
-        </button>
-        <div class="nav-menu" id="nav-menu">
-          <a class="nav-link" href="/">Home</a>
-          <a class="nav-link" href="/archive.html">Archive</a>
-          <a class="nav-link" href="/contact.html">Contact</a>
-          <a class="nav-link" href="/v2/situation-monitor.html">Monitor</a>
-        </div>
-      </nav>
-    </header>
+<body class="v4 pg">
 
-    <main class="pillar-container">
-        <nav class="breadcrumbs">
-            <a href="index.html">Home</a> / <span>Our Mission</span>
-        </nav>
-        
-        <div class="pillar-header">
-            <h1>What We Cover and Why: Our Editorial Mission</h1>
-            <p>Noteworthy News is committed to fact-checked journalism, media literacy education, and helping readers navigate an increasingly complex information landscape.</p>
-        </div>
-        
-        <article class="pillar-content">
-            <p>Noteworthy News was founded on a simple but essential principle: in an era of information overload, misinformation, and rapidly evolving news cycles, readers need a source they can trust. Our mission is to provide fact-checked journalism, comprehensive analysis, and media literacy education that helps readers make sense of the world around them.</p>
-            
-            <!-- Table of Contents -->
-            <div class="table-of-contents fade-in" id="table-of-contents" style="margin: 40px 0;"></div>
-            
-            <h2>Our Mission Statement</h2>
-            
-            <div class="mission-box">
-                <h4>Our Core Mission</h4>
-                <p>Noteworthy News delivers reliable, fact-checked journalism and media literacy education to help readers think critically about the news, verify information, and make informed decisions. We prioritize accuracy over speed, context over clickbait, and transparency over sensationalism.</p>
-            </div>
-            
-            <p>We believe that an informed public is essential to a functioning democracy and a healthy society. Our mission extends beyond simply reporting news—we aim to empower readers with the skills and knowledge needed to navigate today's complex media landscape.</p>
-            
-            <h2>What Stories We Cover</h2>
-            
-            <p>Noteworthy News covers a wide range of topics, but we focus on stories that matter:</p>
-            
-            <h3>Breaking News</h3>
-            <p>We cover breaking news events with comprehensive reporting that includes:</p>
-            <ul>
-                <li>Verified information from multiple sources</li>
-                <li>Historical context and background</li>
-                <li>Clear timelines of events</li>
-                <li>Analysis of significance and implications</li>
-                <li>Ongoing updates as new information becomes available</li>
-            </ul>
-            
-            <h3>Fact-Checking</h3>
-            <p>We investigate and verify claims, statements, and viral content:</p>
-            <ul>
-                <li>Public statements from officials and public figures</li>
-                <li>Viral social media claims and misinformation</li>
-                <li>Controversial or disputed information</li>
-                <li>Claims that affect public understanding of important issues</li>
-            </ul>
-            
-            <h3>Analysis and Context</h3>
-            <p>We provide in-depth analysis that goes beyond surface-level reporting:</p>
-            <ul>
-                <li>Explanations of complex issues and events</li>
-                <li>Historical context and background</li>
-                <li>Expert perspectives and insights</li>
-                <li>Long-term implications and trends</li>
-            </ul>
-            
-            <h3>Media Literacy Education</h3>
-            <p>We create educational content to help readers develop critical thinking skills:</p>
-            <ul>
-                <li>Guides on how to read news critically</li>
-                <li>Fact-checking tips and techniques</li>
-                <li>Explanations of media literacy concepts</li>
-                <li>Resources for further learning</li>
-            </ul>
-            
-            <h2>Our Editorial Standards</h2>
-            
-            <p>Every story we publish must meet our editorial standards:</p>
-            
-            <h3>Accuracy</h3>
-            <p>Accuracy is non-negotiable. We verify all information through multiple sources before publication. If we cannot verify information, we either wait until we can verify it or clearly state what is verified and what remains unverified.</p>
-            
-            <h3>Transparency</h3>
-            <p>We're transparent about our process:</p>
-            <ul>
-                <li>We identify our sources when possible and appropriate</li>
-                <li>We explain our verification process</li>
-                <li>We acknowledge limitations and uncertainties</li>
-                <li>We correct errors promptly and transparently</li>
-            </ul>
-            
-            <h3>Independence</h3>
-            <p>We maintain editorial independence:</p>
-            <ul>
-                <li>Our reporting is not influenced by advertisers, sponsors, or external interests</li>
-                <li>We don't accept payment for coverage</li>
-                <li>We clearly distinguish between news and sponsored content</li>
-                <li>We disclose any potential conflicts of interest</li>
-            </ul>
-            
-            <h3>Fairness</h3>
-            <p>We strive for fairness in our reporting:</p>
-            <ul>
-                <li>We give relevant parties opportunity to respond to claims</li>
-                <li>We represent multiple perspectives when appropriate</li>
-                <li>We avoid unfair characterizations or stereotypes</li>
-                <li>We correct errors and provide right of reply</li>
-            </ul>
-            
-            <h2>How We Choose Stories</h2>
-            
-            <p>We select stories based on several criteria:</p>
-            
-            <h3>Significance</h3>
-            <p>Does the story matter? We prioritize stories that:</p>
-            <ul>
-                <li>Affect large numbers of people</li>
-                <li>Have significant implications</li>
-                <li>Reveal important information</li>
-                <li>Address issues of public concern</li>
-            </ul>
-            
-            <h3>Verifiability</h3>
-            <p>Can we verify the information? We prioritize stories where:</p>
-            <ul>
-                <li>Information can be verified through credible sources</li>
-                <li>We have access to primary sources or documentation</li>
-                <li>Multiple independent sources confirm key facts</li>
-                <li>We can provide sufficient context</li>
-            </ul>
-            
-            <h3>Public Interest</h3>
-            <p>Does the story serve the public interest? We cover stories that:</p>
-            <ul>
-                <li>Help readers understand important issues</li>
-                <li>Hold power to account</li>
-                <li>Provide information needed for informed decision-making</li>
-                <li>Address misinformation or clarify confusion</li>
-            </ul>
-            
-            <h3>Educational Value</h3>
-            <p>Does the story help readers learn? We prioritize stories that:</p>
-            <ul>
-                <li>Explain complex issues clearly</li>
-                <li>Provide historical context</li>
-                <li>Demonstrate fact-checking or verification processes</li>
-                <li>Contribute to media literacy</li>
-            </ul>
-            
-            <h2>Our Commitment to Accuracy</h2>
-            
-            <p>Accuracy is our highest priority. We commit to:</p>
-            
-            <h3>Verification Before Publication</h3>
-            <p>We verify all information through multiple independent sources before publishing. We never publish unverified information as fact.</p>
-            
-            <h3>Ongoing Monitoring</h3>
-            <p>We continue to monitor stories after publication and update them as new information becomes available.</p>
-            
-            <h3>Corrections</h3>
-            <p>When we make errors, we correct them promptly and transparently. Corrections are clearly marked and explained.</p>
-            
-            <h3>Transparency About Uncertainty</h3>
-            <p>When information cannot be fully verified, we're transparent about what we know, what we don't know, and what remains uncertain.</p>
-            
-            <h2>How to Submit Tips</h2>
-            
-            <p>We welcome news tips from readers. If you have information about a story we should cover:</p>
-            
-            <h3>What to Include</h3>
-            <ul>
-                <li>Specific details about what happened, when, and where</li>
-                <li>Any documentation, photos, or videos you have</li>
-                <li>Contact information for sources or witnesses</li>
-                <li>Your contact information (unless you prefer to remain anonymous)</li>
-            </ul>
-            
-            <h3>How to Submit</h3>
-            <ul>
-                <li>Use our <a href="contact.html" style="color: #4A90E2;">contact form</a> and select "News Tip"</li>
-                <li>Use the tip submission button on our homepage</li>
-                <li>Email us directly (see our <a href="contact.html" style="color: #4A90E2;">contact page</a>)</li>
-            </ul>
-            
-            <h3>Source Protection</h3>
-            <p>We take source protection seriously. If you request anonymity, we will protect your identity. However, providing contact information (even if anonymous) helps us follow up if we need clarification.</p>
-            
-            <h2>Our Values</h2>
-            
-            <p>Noteworthy News is guided by these core values:</p>
-            
-            <ul>
-                <li><strong>Truth:</strong> We prioritize accuracy and truth over speed or sensationalism</li>
-                <li><strong>Transparency:</strong> We're open about our process, sources, and limitations</li>
-                <li><strong>Independence:</strong> We maintain editorial independence from external influences</li>
-                <li><strong>Education:</strong> We aim to educate and empower readers, not just inform them</li>
-                <li><strong>Accountability:</strong> We hold ourselves accountable for accuracy and correct errors promptly</li>
-                <li><strong>Public Service:</strong> We serve the public interest, not special interests</li>
-            </ul>
-            
-            <h2>Looking Forward</h2>
-            
-            <p>As the media landscape continues to evolve, Noteworthy News remains committed to our core mission: providing reliable, fact-checked journalism and media literacy education. We're constantly working to improve our processes, expand our coverage, and better serve our readers.</p>
-            
-            <p>We believe that informed citizens are essential to a healthy democracy and society. By providing accurate information, comprehensive context, and media literacy education, we aim to contribute to a more informed public.</p>
-            
-            <p>Thank you for trusting Noteworthy News. If you have questions, feedback, or suggestions, please <a href="contact.html" style="color: #4A90E2;">contact us</a>. We value your input and are committed to continuous improvement.</p>
-            
-            <!-- Share Buttons -->
-            <div class="share-buttons fade-in" style="margin: 50px 0; padding: 30px; background: rgba(74, 144, 226, 0.1); border-radius: 15px; border: 2px solid rgba(74, 144, 226, 0.3);">
-                <h3 style="margin-bottom: 20px; color: #4A90E2;">Share this Page</h3>
-                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                    <a href="https://twitter.com/intent/tweet?url=https://noteworthynews.co/our-mission.html&text=Noteworthy%20News%20Mission" target="_blank" rel="noopener noreferrer" class="share-btn" style="padding: 12px 24px; background: #1DA1F2; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; transition: all 0.3s ease;">
-                        Share on X
-                    </a>
-                    <a href="https://www.facebook.com/sharer/sharer.php?u=https://noteworthynews.co/our-mission.html" target="_blank" rel="noopener noreferrer" class="share-btn" style="padding: 12px 24px; background: #1877F2; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; transition: all 0.3s ease;">
-                        Share on Facebook
-                    </a>
-                    <a href="https://www.linkedin.com/sharing/share-offsite/?url=https://noteworthynews.co/our-mission.html" target="_blank" rel="noopener noreferrer" class="share-btn" style="padding: 12px 24px; background: #0A66C2; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; transition: all 0.3s ease;">
-                        Share on LinkedIn
-                    </a>
-                    <button onclick="navigator.clipboard.writeText(window.location.href); alert('Link copied to clipboard!');" class="share-btn" style="padding: 12px 24px; background: #4A90E2; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
-                        Copy Link
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Related Resources -->
-            <div class="related-resources fade-in" style="margin: 50px 0; padding: 30px; background: rgba(74, 144, 226, 0.1); border-radius: 15px; border: 2px solid rgba(74, 144, 226, 0.3);">
-                <h3 style="margin-bottom: 20px; color: #4A90E2;">Related Resources</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
-                    <a href="how-we-verify.html" style="display: block; padding: 20px; background: rgba(74, 144, 226, 0.15); border-radius: 10px; text-decoration: none; color: white; border: 2px solid rgba(74, 144, 226, 0.3); transition: all 0.3s ease;">
-                        <h4 style="color: #4A90E2; margin-bottom: 10px;">How We Verify</h4>
-                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">Learn about our verification process and editorial standards.</p>
-                    </a>
-                    <a href="editorial-policy.html" style="display: block; padding: 20px; background: rgba(74, 144, 226, 0.15); border-radius: 10px; text-decoration: none; color: white; border: 2px solid rgba(74, 144, 226, 0.3); transition: all 0.3s ease;">
-                        <h4 style="color: #4A90E2; margin-bottom: 10px;">Editorial Policy</h4>
-                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">Read our complete editorial policy and journalism standards.</p>
-                    </a>
-                    <a href="media-literacy-guide.html" style="display: block; padding: 20px; background: rgba(74, 144, 226, 0.15); border-radius: 10px; text-decoration: none; color: white; border: 2px solid rgba(74, 144, 226, 0.3); transition: all 0.3s ease;">
-                        <h4 style="color: #4A90E2; margin-bottom: 10px;">Media Literacy Guide</h4>
-                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">Build your media literacy skills and become a more informed news consumer.</p>
-                    </a>
-                    <a href="educational-resources.html" style="display: block; padding: 20px; background: rgba(74, 144, 226, 0.15); border-radius: 10px; text-decoration: none; color: white; border: 2px solid rgba(74, 144, 226, 0.3); transition: all 0.3s ease;">
-                        <h4 style="color: #4A90E2; margin-bottom: 10px;">Educational Resources</h4>
-                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">Explore our collection of educational resources and guides.</p>
-                    </a>
-                </div>
-            </div>
-        </article>
-    </main>
-    
-    <!-- V2 Nav Behavior -->
-    <script>
-    (function(){
-      var h=document.querySelector('.site-header'),t=document.querySelector('.nav-toggle'),m=document.querySelector('.nav-menu');
-      if(t&&m){
-        t.addEventListener('click',function(){var o=m.classList.toggle('open');t.setAttribute('aria-expanded',String(o));document.body.style.overflow=o?'hidden':'';});
-        m.addEventListener('click',function(e){if(e.target===m||e.target.closest('.nav-link')){m.classList.remove('open');t.setAttribute('aria-expanded','false');document.body.style.overflow='';}});
-        document.addEventListener('keydown',function(e){if(e.key==='Escape'&&m.classList.contains('open')){m.classList.remove('open');t.setAttribute('aria-expanded','false');document.body.style.overflow='';t.focus();}});
-      }
-      if(h)window.addEventListener('scroll',function(){h.classList.toggle('scrolled',window.scrollY>10);},{passive:true});
-    })();
-    </script>
+  <!-- Header -->
+  <header class="site-header" id="site-header">
+    <nav class="nav-row container-wide" aria-label="Primary">
+      <a class="brand" href="/">
+        <img class="brand-mark" src="/IMG_5794.PNG" alt="" width="26" height="26">
+        <span class="brand-name">Noteworthy News</span>
+      </a>
 
-    <!-- V2 Footer -->
-    <footer class="site-footer">
-      <div class="container">
-        <div class="footer-grid">
-          <div class="footer-brand">
-            <p class="footer-brand-name">Noteworthy News</p>
-            <p class="footer-brand-tagline">Fact-checked journalism and media literacy tools. Think critically about the world.</p>
-          </div>
-          <nav aria-label="Footer navigation">
-            <p class="footer-nav-title">Explore</p>
-            <ul class="footer-nav-list">
-              <li><a class="footer-nav-link" href="/archive.html">Stories</a></li>
-              <li><a class="footer-nav-link" href="/game.html">Fact-Checker Game</a></li>
-              <li><a class="footer-nav-link" href="/geography-game.html">Geography Game</a></li>
-              <li><a class="footer-nav-link" href="/v2/situation-monitor.html">Situation Monitor</a></li>
-              <li><a class="footer-nav-link" href="/contact.html">Contact</a></li>
-            </ul>
-          </nav>
-          <nav aria-label="Resources">
-            <p class="footer-nav-title">Resources</p>
-            <ul class="footer-nav-list">
-              <li><a class="footer-nav-link" href="/media-literacy-guide.html">Media Literacy Guide</a></li>
-              <li><a class="footer-nav-link" href="/how-we-verify.html">How We Verify</a></li>
-              <li><a class="footer-nav-link" href="/fact-checking-tips.html">Fact-Checking Tips</a></li>
-              <li><a class="footer-nav-link" href="/newsletter-preferences.html">Newsletter Prefs</a></li>
-            </ul>
-          </nav>
-          <nav aria-label="Legal">
-            <p class="footer-nav-title">Legal</p>
-            <ul class="footer-nav-list">
-              <li><a class="footer-nav-link" href="/privacy.html">Privacy Policy</a></li>
-              <li><a class="footer-nav-link" href="/terms.html">Terms of Service</a></li>
-              <li><a class="footer-nav-link" href="/editorial-policy.html">Editorial Policy</a></li>
-            </ul>
-          </nav>
-        </div>
-        <div class="footer-bottom">
-          <p class="footer-copyright">&copy; 2026 Noteworthy News. All rights reserved.</p>
+      <div class="nav-menu" id="nav-menu">
+        <a class="nav-link" href="/">Home</a>
+        <a class="nav-link" href="/archive.html">All stories</a>
+        <a class="nav-link" href="/how-we-verify.html">How we verify</a>
+        <a class="nav-link active" href="/our-mission.html">Mission</a>
+        <a class="nav-link" href="/contact.html">Contact</a>
+
+        <div class="nav-tools">
+          <a class="nav-icon-btn" href="/archive.html" aria-label="Search all stories" title="Search stories">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+          </a>
         </div>
       </div>
-    </footer>
-    
-    <!-- Resource Page Utilities -->
-    <script src="js/resource-page-utils.js"></script>
-    
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Initialize table of contents
-            new TableOfContents('table-of-contents');
-            new ReadingProgress();
-        });
-    </script>
-    
-    <!-- Cookie Consent Banner -->
-    <script src="src/components/cookie-banner.js"></script>
+
+      <div class="nav-right">
+        <button class="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-menu">
+          <span class="nav-toggle-bar" aria-hidden="true"></span>
+          <span class="nav-toggle-bar" aria-hidden="true"></span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="pg-main">
+
+    <!-- Hero -->
+    <section class="pg-hero">
+      <div class="container-wide">
+        <div class="pg-hero-inner">
+          <p class="pg-kicker pg-kicker--gold"><span class="pg-kicker-rule" aria-hidden="true"></span>Why we exist</p>
+          <h1 class="pg-title">Breaking news, followed through.</h1>
+          <p class="pg-lede">
+            Noteworthy News exists so you can follow a developing story without losing the
+            source trail. The source sits next to the claim. Timestamps stay on every update.
+            Corrections stay where readers can see them.
+          </p>
+          <div class="pg-meta">
+            <span class="pg-meta-chip pg-meta-chip--gold"><span class="pg-dot" aria-hidden="true"></span>Independent newsroom</span>
+            <span class="pg-meta-chip">No paywall</span>
+            <span class="pg-meta-chip">Corrections in public</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Body -->
+    <div class="container-wide pg-layout">
+      <article class="pg-article pg-article--gold">
+
+        <section id="problem">
+          <h2>The problem we're built against</h2>
+          <p>
+            Breaking news has a structural flaw: the moment you most need reliable information
+            is the moment reliable information is scarcest. Feeds fill with recycled footage
+            and unsourced claims. Headlines are written before facts settle. And when the early
+            version turns out wrong, it is quietly rewritten as if it had never been said.
+          </p>
+          <p>
+            Most coverage asks you to trust the outlet. We think trust should be checkable.
+            When you read an update here, you should be able to see where it came from, when it
+            was published, and how the story has changed - without taking our word for any
+            of it.
+          </p>
+          <figure class="mission-figure">
+            <img src="/v2/assets/mission-newsroom.webp" alt="A newsroom desk at night with a laptop, notes, and a city skyline outside the window" width="1280" height="853" loading="lazy" decoding="async">
+            <figcaption>Noteworthy News is a working newsroom, not an aggregator. Stories are tracked, sourced, and corrected by people.</figcaption>
+          </figure>
+        </section>
+
+        <section id="promises">
+          <h2>Four commitments</h2>
+          <p>Everything on this site is built around four commitments:</p>
+          <div class="mission-principles">
+            <div class="mission-principle">
+              <span class="mission-principle-num">01</span>
+              <span class="mission-principle-name">The source sits next to the claim</span>
+              <p>Every update carries a source note. "According to" names someone specific, and links go to the original wherever it exists.</p>
+            </div>
+            <div class="mission-principle">
+              <span class="mission-principle-num">02</span>
+              <span class="mission-principle-name">Developing never blends into confirmed</span>
+              <p>Updates are labeled by what the evidence supports, and they only move up when the evidence does. The rules are public.</p>
+            </div>
+            <div class="mission-principle">
+              <span class="mission-principle-num">03</span>
+              <span class="mission-principle-name">Corrections stay visible</span>
+              <p>When we're wrong, the correction is published where the error was. Nothing is silently rewritten after the fact.</p>
+            </div>
+            <div class="mission-principle">
+              <span class="mission-principle-num">04</span>
+              <span class="mission-principle-name">No paywall on the news</span>
+              <p>Reliable information about developing events shouldn't be a subscription perk. Coverage here is free to read.</p>
+            </div>
+          </div>
+          <p>
+            The operating rules behind these commitments are written down:
+            <a href="/how-we-verify.html">How we verify</a> covers the verification pipeline,
+            and the <a href="/editorial-policy.html">editorial policy</a> covers independence,
+            sourcing, AI use, and everything else that binds our coverage.
+          </p>
+        </section>
+
+        <section id="what-we-build">
+          <h2>What we build</h2>
+          <ul class="pg-defs">
+            <li>
+              <span class="pg-defs-term">Live stories</span>
+              <span class="pg-defs-desc">Developing events tracked as timestamped timelines. Follow a story once and every verified update reaches you until it closes.</span>
+            </li>
+            <li>
+              <span class="pg-defs-term">Alerts</span>
+              <span class="pg-defs-desc">Push notifications you control - breaking news, earthquakes read directly from USGS feeds, severe weather, and the stories you follow. Thresholds are yours to set.</span>
+            </li>
+            <li>
+              <span class="pg-defs-term">Noteworthy for iOS</span>
+              <span class="pg-defs-desc">A native app in development, built around Live Activities: stories you follow unfold on the Lock Screen and in the Dynamic Island.</span>
+            </li>
+            <li>
+              <span class="pg-defs-term">Noteworthy News AI</span>
+              <span class="pg-defs-desc">A research assistant grounded in our reporting. It cites sources, links back to coverage, and says plainly when something is not confirmed.</span>
+            </li>
+            <li>
+              <span class="pg-defs-term">Media Literacy Lab</span>
+              <span class="pg-defs-desc">Guides and games that teach the same checks our newsroom runs - because readers who can verify are the point, not the byproduct.</span>
+            </li>
+          </ul>
+        </section>
+
+        <section id="coverage">
+          <h2>What we cover, and why</h2>
+          <p>We are deliberately not a firehose. A story earns coverage here by passing three tests:</p>
+          <ul>
+            <li><strong>Significance.</strong> It affects real people at real scale - disasters, geopolitics, public safety, and the stories that shape them.</li>
+            <li><strong>Verifiability.</strong> We can trace it to primary sources and stand behind every update. If we can't verify it, we don't run it as fact.</li>
+            <li><strong>Follow-through.</strong> It benefits from being tracked over time, not just headlined once and abandoned. We stay on stories after the news cycle leaves.</li>
+          </ul>
+        </section>
+
+        <section id="funding">
+          <h2>How we're funded</h2>
+          <p>
+            Noteworthy News is independently operated and currently supported by advertising.
+            No advertiser, platform, or outside party has any influence over coverage - the
+            separation is spelled out in our
+            <a href="/editorial-policy.html#advertising">editorial policy</a>. There is no
+            paywall, and there are no plans for one.
+          </p>
+        </section>
+
+        <section id="who">
+          <h2>Who we are</h2>
+          <p>
+            We are a small, young newsroom with something to prove: that live coverage can be
+            fast without being reckless, and that a reader should never have to choose between
+            knowing quickly and knowing reliably. We'd rather publish one update you can check
+            than ten you have to take on faith.
+          </p>
+          <p>
+            If that standard slips - if an update is missing its source, or a correction is
+            buried - <a href="/contact.html">tell us</a>. Being held to our own rules is the
+            point of publishing them.
+          </p>
+          <p class="mission-sign">Richard<span>Co-Founder, Noteworthy News</span></p>
+        </section>
+
+        <div class="pg-cta">
+          <p class="pg-cta-title">Follow the work.</p>
+          <p>The Weekly Brief covers the stories that mattered, what changed since we first reported them, and what to watch next.</p>
+          <div class="pg-cta-actions">
+            <a class="btn btn-primary" href="/#brief">Get the Weekly Brief</a>
+            <a class="btn btn-outline" href="/archive.html">Read our coverage</a>
+            <a class="btn btn-ghost" href="https://x.com/newsnoteworthy" rel="noopener" target="_blank">Follow on X</a>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <!-- Related -->
+    <section class="pg-more">
+      <div class="container-wide">
+        <div class="pg-more-head">
+          <h2 class="pg-more-title">The standards behind the mission</h2>
+        </div>
+        <div class="lab-grid">
+          <a class="lab-card" href="/how-we-verify.html">
+            <span class="lab-card-icon" aria-hidden="true">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </span>
+            <span class="lab-card-name">How We Verify</span>
+            <span class="lab-card-text">The verification pipeline behind every update, from detection to correction.</span>
+            <span class="lab-card-go" aria-hidden="true">Read
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </span>
+          </a>
+          <a class="lab-card" href="/editorial-policy.html">
+            <span class="lab-card-icon" aria-hidden="true">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </span>
+            <span class="lab-card-name">Editorial Policy</span>
+            <span class="lab-card-text">Independence, sourcing, corrections, AI use, and the rules that bind our coverage.</span>
+            <span class="lab-card-go" aria-hidden="true">Read
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </span>
+          </a>
+          <a class="lab-card" href="/contact.html">
+            <span class="lab-card-icon" aria-hidden="true">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            </span>
+            <span class="lab-card-name">Contact</span>
+            <span class="lab-card-text">Tips, corrections, and questions. Correction requests are read first.</span>
+            <span class="lab-card-go" aria-hidden="true">Get in touch
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </span>
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container-wide">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a class="brand" href="/">
+            <img class="brand-mark" src="/IMG_5794.PNG" alt="" width="24" height="24">
+            <span class="brand-name">Noteworthy News</span>
+          </a>
+          <p class="footer-tag">Independent newsroom. No paywall. Corrections in public.</p>
+        </div>
+
+        <nav aria-label="Explore">
+          <p class="footer-col-title">Explore</p>
+          <ul class="footer-list">
+            <li><a href="/archive.html">All stories</a></li>
+            <li><a href="/#developing">Developing now</a></li>
+            <li><a href="/#top-stories">Top stories</a></li>
+            <li><a href="/#lab">Media Literacy Lab</a></li>
+          </ul>
+        </nav>
+
+        <nav aria-label="Product">
+          <p class="footer-col-title">Product</p>
+          <ul class="footer-list">
+            <li><a href="/#app">iOS app</a></li>
+            <li><a href="/#ai">Noteworthy News AI</a></li>
+            <li><a href="/#brief">The Weekly Brief</a></li>
+            <li><a href="/notification-settings.html">Notification settings</a></li>
+          </ul>
+        </nav>
+
+        <nav aria-label="Resources">
+          <p class="footer-col-title">Resources</p>
+          <ul class="footer-list">
+            <li><a href="/how-we-verify.html">How we verify</a></li>
+            <li><a href="/editorial-policy.html">Editorial policy</a></li>
+            <li><a href="/media-literacy-guide.html">Media literacy guide</a></li>
+            <li><a href="/fact-checking-tips.html">Fact-checking tips</a></li>
+          </ul>
+        </nav>
+
+        <nav aria-label="Company">
+          <p class="footer-col-title">Company</p>
+          <ul class="footer-list">
+            <li><a href="/our-mission.html">Our mission</a></li>
+            <li><a href="/contact.html">Contact</a></li>
+            <li><a href="https://x.com/newsnoteworthy" rel="noopener" target="_blank">X</a></li>
+            <li><a href="/privacy.html">Privacy</a></li>
+            <li><a href="/terms.html">Terms</a></li>
+          </ul>
+        </nav>
+      </div>
+
+      <div class="footer-bottom">
+        <p>&copy; 2026 Noteworthy News. All rights reserved.</p>
+        <p class="footer-motto">Developing means developing. Confirmed means confirmed.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scroll to top -->
+  <button class="scroll-top" id="scrollTopBtn" type="button" aria-label="Scroll to top" hidden>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+  </button>
+
+  <script src="/v2/js/page.js" defer></script>
+  <script src="/src/components/cookie-banner.js" defer></script>
+  <script src="/src/widgets/noteworthy-chat-loader.js" defer></script>
 </body>
 </html>
-

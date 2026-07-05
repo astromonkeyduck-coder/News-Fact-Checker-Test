@@ -5222,7 +5222,7 @@ class GeographyGame {
                     <div class="inline-leaderboard-rank">${medal}</div>
                     <div class="inline-leaderboard-user">
                         <div class="inline-leaderboard-name">${this.escapeHtml(score.userName)}${perfectBadge}</div>
-                        <div class="inline-leaderboard-meta">${metaText || '—'}</div>
+                        <div class="inline-leaderboard-meta">${metaText || '-'}</div>
                     </div>
                     <div class="inline-leaderboard-score">${score.score.toLocaleString()}</div>
                 </div>
@@ -5483,7 +5483,7 @@ class GeographyGame {
                     <div class="inline-leaderboard-rank">${medal}</div>
                     <div class="inline-leaderboard-user">
                         <div class="inline-leaderboard-name">${this.escapeHtml(score.userName)} ${perfectBadge}</div>
-                        <div class="inline-leaderboard-meta">${metaText || '—'}</div>
+                        <div class="inline-leaderboard-meta">${metaText || '-'}</div>
                     </div>
                     <div class="inline-leaderboard-score">${score.score.toLocaleString()}</div>
                 </div>

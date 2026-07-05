@@ -80,7 +80,7 @@ async function renderJobPage(job) {
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Clip Review — ${escHtml(job.title)}</title>
+  <title>Clip Review - ${escHtml(job.title)}</title>
   <style>
     body { font-family: system-ui, sans-serif; max-width: 960px; margin: 2rem auto; padding: 0 1rem; background: #0f1115; color: #e8eaed; }
     h1 { font-size: 1.4rem; }
@@ -104,7 +104,7 @@ async function renderJobPage(job) {
   <h1>${escHtml(job.title)}</h1>
   <p class="meta">Status: <strong>${escHtml(job.status)}</strong> · ID: <code>${escHtml(job.id)}</code></p>
 
-  ${!hasRightsBasis(job) ? '<div class="warn">rights_basis is missing — X upload blocked until documented.</div>' : ''}
+  ${!hasRightsBasis(job) ? '<div class="warn">rights_basis is missing - X upload blocked until documented.</div>' : ''}
 
   <div class="card">
     <p><strong>Attribution:</strong> ${escHtml(job.source_attribution || '(none)')}</p>
@@ -118,7 +118,7 @@ async function renderJobPage(job) {
   ${thumbSrc ? `<p><img src="${escHtml(thumbSrc)}" alt="Thumbnail"></p>` : ''}
 
   <div class="card">
-    <label for="postText"><strong>Draft X post text</strong> (edit before upload — no auto-generated claims)</label>
+    <label for="postText"><strong>Draft X post text</strong> (edit before upload - no auto-generated claims)</label>
     <textarea id="postText">${escHtml(job.draft_post_text || '')}</textarea>
   </div>
 
@@ -161,7 +161,7 @@ async function renderIndex() {
   const rows = jobs
     .map(
       (j) =>
-        `<li><a href="/job/${j.id}${REVIEW_TOKEN ? `?token=${encodeURIComponent(REVIEW_TOKEN)}` : ''}">${escHtml(j.title)}</a> — ${escHtml(j.status)}</li>`
+        `<li><a href="/job/${j.id}${REVIEW_TOKEN ? `?token=${encodeURIComponent(REVIEW_TOKEN)}` : ''}">${escHtml(j.title)}</a> - ${escHtml(j.status)}</li>`
     )
     .join('');
 
@@ -201,7 +201,7 @@ async function handleApi(action, jobId, body) {
       return { ok: false, message: 'rights_basis required' };
     }
     if (isDryRun()) {
-      return { ok: true, message: 'DRY-RUN — would upload to X' };
+      return { ok: true, message: 'DRY-RUN - would upload to X' };
     }
     const result = await uploadClipToX(job, body.postText || job.draft_post_text);
     return { ok: true, message: `Uploaded: ${result.xPostId}` };

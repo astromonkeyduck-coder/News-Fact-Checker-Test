@@ -57,7 +57,7 @@ export default async function handler(req, res) {
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #4a90e2;">Thanks for subscribing!</h2>
           <p>Hi there,</p>
-          <p>Thank you for subscribing to Noteworthy News! We're thrilled to have you join our community of fact-checkers and critical thinkers.</p>
+          <p>Thank you for subscribing to Noteworthy News! We're thrilled to have you join a newsroom community that checks the news carefully.</p>
           <p>You'll now receive:</p>
           <ul>
             <li>📰 Weekly fact-checked news stories</li>

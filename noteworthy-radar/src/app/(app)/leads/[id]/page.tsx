@@ -202,13 +202,13 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
                     {lead.source_url}
                   </a>
                 ) : (
-                  "—"
+                  "-"
                 )}
               </Fact>
-              <Fact label="Handle">{lead.source_handle || "—"}</Fact>
-              <Fact label="Claimed location">{lead.claimed_location || "—"}</Fact>
+              <Fact label="Handle">{lead.source_handle || "-"}</Fact>
+              <Fact label="Claimed location">{lead.claimed_location || "-"}</Fact>
               <Fact label="Claimed time">
-                {lead.claimed_time ? new Date(lead.claimed_time).toLocaleString() : "—"}
+                {lead.claimed_time ? new Date(lead.claimed_time).toLocaleString() : "-"}
               </Fact>
               <Fact label="Media type">{lead.media_type}</Fact>
             </dl>

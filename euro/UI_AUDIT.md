@@ -1,4 +1,4 @@
-# AP Euro Timeline — UI Audit / Acceptance Criteria (V2)
+# AP Euro Timeline - UI Audit / Acceptance Criteria (V2)
 
 ## Core Issues Addressed
 
@@ -12,21 +12,21 @@
 
 | # | Criterion | Status |
 |---|-----------|--------|
-| 1 | Tier 1 events identifiable without hover | PASS — event cards show date, title, tier badge |
-| 2 | Labels not cut off | PASS — normal text flow, no overflow:hidden on titles |
-| 3 | Overlaps visible | PASS — events appear in chronological era sections showing simultaneous developments |
-| 4 | Processes show context | PASS — each era has summary, thinkers, leaders, and works providing context |
-| 5 | Whole course viewable by scrolling | PASS — Study Guide page scrolls through all 8 eras |
-| 6 | Can study one period deeply | PASS — each era section is self-contained with all content types |
-| 7 | Causation chains visible | PASS — dedicated Exam Prep section with 12 visual chains |
-| 8 | DBQ/LEQ mode exists | PASS — Exam Prep page has 6 period guides with evidence, chains, comparisons, complexity |
-| 9 | Design is polished and readable | PASS — light academic theme, generous spacing, high contrast |
-| 10 | Content historically accurate | PASS — timeline_data.json unchanged; new content from user's verified study guide |
-| 11 | Laptop usable | PASS — responsive design with breakpoints at 768px |
-| 12 | Print poster | PASS — print CSS outputs landscape without controls |
-| 13 | Night-before cram view | PASS — dedicated mode with T1 events, chains, comparisons, CCOT |
-| 14 | No mystery dots | PASS — all items are labeled cards or text entries |
-| 15 | Teaches development | PASS — era summaries, thinker progressions, causation chains, CCOT patterns |
+| 1 | Tier 1 events identifiable without hover | PASS - event cards show date, title, tier badge |
+| 2 | Labels not cut off | PASS - normal text flow, no overflow:hidden on titles |
+| 3 | Overlaps visible | PASS - events appear in chronological era sections showing simultaneous developments |
+| 4 | Processes show context | PASS - each era has summary, thinkers, leaders, and works providing context |
+| 5 | Whole course viewable by scrolling | PASS - Study Guide page scrolls through all 8 eras |
+| 6 | Can study one period deeply | PASS - each era section is self-contained with all content types |
+| 7 | Causation chains visible | PASS - dedicated Exam Prep section with 12 visual chains |
+| 8 | DBQ/LEQ mode exists | PASS - Exam Prep page has 6 period guides with evidence, chains, comparisons, complexity |
+| 9 | Design is polished and readable | PASS - light academic theme, generous spacing, high contrast |
+| 10 | Content historically accurate | PASS - timeline_data.json unchanged; new content from user's verified study guide |
+| 11 | Laptop usable | PASS - responsive design with breakpoints at 768px |
+| 12 | Print poster | PASS - print CSS outputs landscape without controls |
+| 13 | Night-before cram view | PASS - dedicated mode with T1 events, chains, comparisons, CCOT |
+| 14 | No mystery dots | PASS - all items are labeled cards or text entries |
+| 15 | Teaches development | PASS - era summaries, thinker progressions, causation chains, CCOT patterns |
 
 ## Content Inventory
 

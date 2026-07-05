@@ -1,10 +1,10 @@
 /**
- * Post Store — canonical storage interface for x-posts Netlify Blobs
+ * Post Store - canonical storage interface for x-posts Netlify Blobs
  *
  * Every read/write to the x-posts blob store should go through this module.
  * This ensures:
  *   - Consistent key format (post-{id}.json)
- *   - Consistent index shape ({ ids: string[] }) — urls field is retired
+ *   - Consistent index shape ({ ids: string[] }) - urls field is retired
  *   - Single place to understand blob operations
  *   - Deduplication on index writes
  *   - Bounded index size (MAX_INDEX_SIZE)

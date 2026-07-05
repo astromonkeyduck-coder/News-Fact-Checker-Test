@@ -9,6 +9,8 @@ import { initFeed } from './feed.js';
 import { initAuth, login, signup, logout } from './auth.js';
 import { initAmbientAudio } from './ambient-audio.js';
 import { initScrollReveal } from './scroll-reveal.js';
+import { initPhoneStage } from './phone-stage.js';
+import { initStarfield } from './starfield.js';
 import { UISounds } from './ui-sounds.js';
 
 (function () {
@@ -51,31 +53,130 @@ import { UISounds } from './ui-sounds.js';
     });
   }
 
-  // ── Scroll motion: header states + hero parallax ─
-  const heroEarth = document.querySelector('.hero-earth');
-  let ticking = false;
+  // ── Scroll motion: header states + hero scroll progress ─
+  // --hp (0..1 through the hero) no longer tracks the wheel directly. A rAF
+  // loop eases it toward the live scroll position with a frame-rate
+  // independent exponential, so the planet, veil, and parallax glide through
+  // momentum scrolling instead of stepping with each wheel tick. --spin adds
+  // a slow ambient rotation so the planet is never frozen while the hero is
+  // on screen. Both feed compositor-only properties in v4.css.
+  const heroEl = document.querySelector('.hero');
+  const planetEl = document.querySelector('.hero-planet');
+  let heroSpan = 1;
+  let targetHp = 0;
+  let currentHp = -1; // -1: snap to target on the first frame (no intro sweep)
+  let spinDeg = 0;
+  let motionRaf = 0;
+  let lastT = 0;
+  let heroOnScreen = true;
 
-  function onScrollFrame() {
-    ticking = false;
+  function measureHero() {
+    if (!heroEl) return;
+    heroSpan = Math.max(heroEl.offsetHeight - window.innerHeight * 0.25, 320);
+  }
+
+  function motionFrame(t) {
+    // Clamp dt so a background-tab pause cannot produce a jump cut.
+    const dt = Math.min(Math.max((t - lastT) / 1000, 0), 0.05);
+    lastT = t;
+
+    // ~110ms time constant: fast enough to feel connected to the wheel,
+    // slow enough to swallow discrete scroll steps.
+    const k = 1 - Math.exp(-dt * 9);
+    currentHp = currentHp < 0 ? targetHp : currentHp + (targetHp - currentHp) * k;
+    if (Math.abs(targetHp - currentHp) < 0.0003) currentHp = targetHp;
+
+    // Ambient drift: 0.4deg/s, visible over seconds, never distracting.
+    spinDeg = (spinDeg + dt * 0.4) % 360;
+
+    heroEl.style.setProperty('--hp', currentHp.toFixed(4));
+    if (planetEl) planetEl.style.setProperty('--spin', spinDeg.toFixed(3) + 'deg');
+
+    if (heroOnScreen && !document.hidden) {
+      motionRaf = requestAnimationFrame(motionFrame);
+    } else {
+      motionRaf = 0;
+    }
+  }
+
+  function startMotion() {
+    if (motionRaf || prefersReducedMotion || !heroEl) return;
+    lastT = performance.now();
+    motionRaf = requestAnimationFrame(motionFrame);
+  }
+
+  function onScroll() {
     const y = window.scrollY;
-
     if (header) {
       header.classList.toggle('scrolled', y > 8);
       header.classList.toggle('condensed', y > 140);
     }
-
-    if (heroEarth && !prefersReducedMotion && y < window.innerHeight * 1.3) {
-      heroEarth.style.setProperty('--scroll-y', String(Math.round(y)));
+    if (heroEl && !prefersReducedMotion) {
+      targetHp = Math.min(Math.max(y / heroSpan, 0), 1);
+      startMotion();
     }
   }
 
-  window.addEventListener('scroll', () => {
-    if (!ticking) {
-      ticking = true;
-      requestAnimationFrame(onScrollFrame);
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', measureHero);
+
+  if (heroEl && !prefersReducedMotion) {
+    // Run the loop only while the planet can actually be seen.
+    const heroWatcher = new IntersectionObserver((entries) => {
+      heroOnScreen = entries[0].isIntersecting;
+      if (heroOnScreen) {
+        startMotion();
+      } else if (currentHp !== targetHp) {
+        // Offscreen: settle instantly, nobody is watching.
+        currentHp = targetHp;
+        heroEl.style.setProperty('--hp', currentHp.toFixed(4));
+      }
+    }, { rootMargin: '80px 0px 80px 0px' });
+    heroWatcher.observe(heroEl);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) startMotion();
+    });
+  }
+
+  measureHero();
+  onScroll();
+  startMotion();
+
+  // ── Hero pointer depth: planet/nebula drift + story-card glare ──
+  if (heroEl && !prefersReducedMotion && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    const heroCard = document.getElementById('hero-card');
+    let pointerEvt = null;
+    let pointerRaf = null;
+
+    function onPointerFrame() {
+      pointerRaf = null;
+      if (!pointerEvt) return;
+      const r = heroEl.getBoundingClientRect();
+      const mx = ((pointerEvt.clientX - r.left) / r.width - 0.5) * 2;
+      const my = ((pointerEvt.clientY - r.top) / r.height - 0.5) * 2;
+      heroEl.style.setProperty('--mx', mx.toFixed(3));
+      heroEl.style.setProperty('--my', my.toFixed(3));
+
+      if (heroCard) {
+        const cr = heroCard.getBoundingClientRect();
+        if (cr.width > 0) {
+          heroCard.style.setProperty('--cx', `${(((pointerEvt.clientX - cr.left) / cr.width) * 100).toFixed(1)}%`);
+          heroCard.style.setProperty('--cy', `${(((pointerEvt.clientY - cr.top) / cr.height) * 100).toFixed(1)}%`);
+        }
+      }
     }
-  }, { passive: true });
-  onScrollFrame();
+
+    heroEl.addEventListener('pointermove', (e) => {
+      pointerEvt = e;
+      if (!pointerRaf) pointerRaf = requestAnimationFrame(onPointerFrame);
+    }, { passive: true });
+
+    heroEl.addEventListener('pointerleave', () => {
+      pointerEvt = null;
+      heroEl.style.setProperty('--mx', '0');
+      heroEl.style.setProperty('--my', '0');
+    });
+  }
 
   // ── Developing Now strip: arrows + empty state ───
   const strip = document.getElementById('dev-strip');
@@ -276,5 +377,7 @@ import { UISounds } from './ui-sounds.js';
   initAuth(onAuthChange);
   initAmbientAudio();
   initScrollReveal();
+  initStarfield();
+  initPhoneStage();
 
 })();

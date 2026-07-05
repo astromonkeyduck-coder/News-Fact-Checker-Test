@@ -1188,7 +1188,7 @@ class NoteworthyChat extends HTMLElement {
             <div class="logo" aria-hidden="true">NW</div>
             <div class="title-group">
               <div class="title">Noteworthy Assistant (GPT-5)</div>
-              <div class="sub">Fast • Factual • Truth-Seeking</div>
+              <div class="sub">Ask about the news</div>
             </div>
           </div>
           <div class="head-right">
@@ -1254,7 +1254,7 @@ class NoteworthyChat extends HTMLElement {
           </div>
           <div class="tutorial-content">
             <div class="tutorial-intro">
-              <p>Your elite AI assistant for fact-checking, media literacy, and staying informed. Experience cutting-edge AI capabilities including real-time voice conversations, image generation, and web search.</p>
+              <p>A research assistant grounded in our reporting. Ask for context on a story, check a claim, or listen to a voice briefing.</p>
             </div>
             
             <div class="tutorial-steps">

@@ -1,4 +1,4 @@
-# Noteworthy YouTube Clip — Chrome Extension
+# Noteworthy YouTube Clip - Chrome Extension
 
 Save the last 30 seconds from YouTube as **MP4** with one click.
 
@@ -11,7 +11,7 @@ npm run clip:install-native-host -- YOUR_EXTENSION_ID   # recommended for MP4
 
 Get `YOUR_EXTENSION_ID` from `chrome://extensions` (under the extension name).
 
-Without the native host, MP4 conversion often fails in Chrome — you'll get WebM only.
+Without the native host, MP4 conversion often fails in Chrome - you'll get WebM only.
 
 ## Install (unpacked)
 
@@ -24,7 +24,7 @@ Without the native host, MP4 conversion often fails in Chrome — you'll get Web
    ```
    scripts/clip-pipeline/browser/extension
    ```
-5. Open any YouTube watch page — red **Save last 30s** button appears bottom-right.
+5. Open any YouTube watch page - red **Save last 30s** button appears bottom-right.
 
 ### Firefox
 
@@ -72,6 +72,6 @@ You are responsible for copyright and YouTube Terms of Service before republishi
 |---------|-----|
 | **failed to import ffmpeg-core.js** | Run `npm run extension:vendor`, then **Reload** extension (v1.1.1+ fix) |
 | No button on YouTube | Refresh page; check extension is enabled |
-| "Capture blocked" | DRM stream — use official feed instead |
+| "Capture blocked" | DRM stream - use official feed instead |
 | Empty clip | Let video play longer before saving |
 | Shortcut doesn't work | Click extension icon once on that tab first |

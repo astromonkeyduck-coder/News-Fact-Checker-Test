@@ -35,7 +35,7 @@ function base64ToBytes(b64) {
     }
     return bytes;
   } catch {
-    throw new Error('Upload data corrupted — refresh YouTube and try again');
+    throw new Error('Upload data corrupted - refresh YouTube and try again');
   }
 }
 
@@ -255,13 +255,13 @@ function bytesFromPayload(buffer, data, byteLength, index) {
 function clipUploadChunk(uploadId, index, buffer, data, byteLength, append = false) {
   const session = clipUploadSessions.get(uploadId);
   if (!session) {
-    throw new Error('Upload session expired — refresh YouTube and try again');
+    throw new Error('Upload session expired - refresh YouTube and try again');
   }
 
   if (typeof data === 'string' && data.length > 0) {
     if (append) {
       if (typeof session.parts[index] !== 'string') {
-        throw new Error(`Cannot append to missing chunk ${index + 1} — refresh YouTube and try again`);
+        throw new Error(`Cannot append to missing chunk ${index + 1} - refresh YouTube and try again`);
       }
       session.parts[index] += data;
     } else {
@@ -272,7 +272,7 @@ function clipUploadChunk(uploadId, index, buffer, data, byteLength, append = fal
 
   const bytes = bytesFromPayload(buffer, data, byteLength, index);
   if (bytes.byteLength === 0) {
-    throw new Error(`Chunk ${index + 1} is empty — refresh YouTube and try again`);
+    throw new Error(`Chunk ${index + 1} is empty - refresh YouTube and try again`);
   }
 
   if (append) {
@@ -285,7 +285,7 @@ function clipUploadChunk(uploadId, index, buffer, data, byteLength, append = fal
     } else if (typeof existing === 'string') {
       throw new Error(`Cannot append binary to text chunk ${index + 1}`);
     } else {
-      throw new Error(`Cannot append to missing chunk ${index + 1} — refresh YouTube and try again`);
+      throw new Error(`Cannot append to missing chunk ${index + 1} - refresh YouTube and try again`);
     }
   } else {
     session.parts[index] = bytes;
@@ -328,25 +328,25 @@ async function clipUploadFinish(uploadId) {
   const session = clipUploadSessions.get(uploadId);
   clipUploadSessions.delete(uploadId);
   if (!session) {
-    throw new Error('Upload session expired — refresh YouTube and try again');
+    throw new Error('Upload session expired - refresh YouTube and try again');
   }
 
   const expected = session.parts.length;
   const parts = session.parts.filter(Boolean);
   if (parts.length !== expected) {
-    throw new Error(`Missing chunks (${parts.length}/${expected}) — refresh YouTube and try again`);
+    throw new Error(`Missing chunks (${parts.length}/${expected}) - refresh YouTube and try again`);
   }
 
   const totalBytes = estimatePartsBytes(parts);
   if (totalBytes < 5000) {
     throw new Error(
-      `Input too small (${totalBytes} bytes) — let the video play until the buffer is full before saving`
+      `Input too small (${totalBytes} bytes) - let the video play until the buffer is full before saving`
     );
   }
 
   if (session.expectedBytes && totalBytes < Math.floor(session.expectedBytes * 0.9)) {
     throw new Error(
-      `Upload incomplete (${totalBytes} of ${session.expectedBytes} bytes) — refresh YouTube and try again`
+      `Upload incomplete (${totalBytes} of ${session.expectedBytes} bytes) - refresh YouTube and try again`
     );
   }
 
@@ -355,7 +355,7 @@ async function clipUploadFinish(uploadId) {
     : partsToWebmBase64(parts);
   const headerBytes = base64ToBytes(webmChunksBase64[0].slice(0, 16));
   if (!hasWebmHeader(headerBytes.buffer)) {
-    throw new Error('Invalid WebM capture — refresh YouTube, play the video, then save again.');
+    throw new Error('Invalid WebM capture - refresh YouTube, play the video, then save again.');
   }
 
   try {

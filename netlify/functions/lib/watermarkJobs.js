@@ -3,7 +3,7 @@
  *
  * Job state lives in the Netlify Blobs store `watermark-jobs` (self-contained,
  * no Supabase migration). ffmpeg/ffprobe are invoked with argument arrays via
- * spawn — never a shell string — so user input cannot inject shell commands.
+ * spawn - never a shell string - so user input cannot inject shell commands.
  */
 
 const { spawn, spawnSync } = require("child_process");
@@ -192,7 +192,7 @@ function runForStderr(binary, args) {
 /**
  * Probe a local media file using ffmpeg itself (no separate ffprobe binary).
  * ffprobe-static ships ~300MB of multi-platform binaries, which would push the
- * deployed function over Netlify's size limits — so we parse ffmpeg's banner
+ * deployed function over Netlify's size limits - so we parse ffmpeg's banner
  * instead and keep the bundle to the single ffmpeg binary.
  */
 async function probe(filePath) {
@@ -235,7 +235,7 @@ async function probe(filePath) {
  * Build the ffmpeg overlay position expression for a corner. Uses overlay's
  * W/H (main video) and w/h (watermark) so placement is correct regardless of
  * the exact probed dimensions (e.g. rotation metadata). Padding is 4% width /
- * 5% height per the design spec. Built from a fixed switch — no user input.
+ * 5% height per the design spec. Built from a fixed switch - no user input.
  */
 function overlayExpr(position) {
   const padX = "W*0.04";
@@ -275,7 +275,7 @@ async function watermarkVideo({ inputPath, watermarkPath, position = "lower-left
   args.push(
     "-c:v", "libx264",
     // 'fast' gives the same visual quality as 'medium' at a given CRF (preset
-    // only trades encode speed for file size), but encodes faster — important
+    // only trades encode speed for file size), but encodes faster - important
     // to stay within the ~15 min background-function budget on long videos.
     "-preset", "fast",
     "-crf", "18",

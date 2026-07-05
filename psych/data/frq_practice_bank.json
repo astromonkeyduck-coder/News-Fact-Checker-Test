@@ -13,8 +13,8 @@
     "commonWarnings": [
       "Do NOT use personal opinions as evidence.",
       "Do NOT confuse correlation with causation.",
-      "Do NOT give vague ethical concerns — be specific (e.g., lack of informed consent).",
-      "Do NOT skip reasoning — evidence alone is not enough."
+      "Do NOT give vague ethical concerns - be specific (e.g., lack of informed consent).",
+      "Do NOT skip reasoning - evidence alone is not enough."
     ],
     "practicePrompts": [
       {
@@ -63,7 +63,7 @@
     "description": "Read three sources related to a psychological topic, then construct an evidence-based argument using claims supported by evidence and reasoning.",
     "scoringChecklist": [
       { "part": "Claim", "task": "State a defensible claim about the topic.", "points": 1, "tip": "A claim is a specific statement that can be supported with evidence. Not a fact, not an opinion." },
-      { "part": "Evidence 1", "task": "Select and use evidence from Source 1.", "points": 1, "tip": "Per CED clarification: 'Select and use evidence' — must be specific, not vague." },
+      { "part": "Evidence 1", "task": "Select and use evidence from Source 1.", "points": 1, "tip": "Per CED clarification: 'Select and use evidence' - must be specific, not vague." },
       { "part": "Evidence 2", "task": "Select and use evidence from Source 2.", "points": 1, "tip": "Evidence must directly support your claim." },
       { "part": "Reasoning", "task": "Explain how the evidence supports your claim.", "points": 1, "tip": "Connect evidence to claim using psychological concepts, theories, or principles." },
       { "part": "Application", "task": "Apply a psychological concept or perspective.", "points": 1, "tip": "Use a specific concept from the course to strengthen your argument." }
@@ -72,7 +72,7 @@
       "Do NOT restate the source without connecting to your claim.",
       "Do NOT use personal opinion as evidence.",
       "Do NOT make a claim that is actually just a fact from a source.",
-      "Do NOT skip the reasoning step — evidence without reasoning does not score.",
+      "Do NOT skip the reasoning step - evidence without reasoning does not score.",
       "Do NOT confuse correlation with causation when drawing conclusions."
     ],
     "practicePrompts": [
@@ -92,7 +92,7 @@
         "sources": [
           { "id": "Source A", "type": "Research Summary", "content": "A longitudinal study followed 400 college students over four years, measuring cortisol levels and self-reported stress during final exam periods. Students who reported using problem-focused coping strategies (planning, seeking help, time management) had significantly lower cortisol levels (M = 12.3 μg/dL) than students using primarily emotion-focused strategies such as avoidance or denial (M = 18.7 μg/dL), p < 0.01. However, students who used emotion-focused strategies like meditation and deep breathing showed cortisol levels similar to the problem-focused group (M = 13.1 μg/dL)." },
           { "id": "Source B", "type": "Theoretical Model", "content": "Selye's General Adaptation Syndrome (GAS) describes three stages of the stress response. During the alarm stage, the sympathetic nervous system activates the fight-or-flight response. In the resistance stage, the body adapts and copes with the stressor. If stress persists, the body enters the exhaustion stage, where resources are depleted, the immune system weakens, and the individual becomes more susceptible to illness." },
-          { "id": "Source C", "type": "Clinical Data", "content": "A meta-analysis of 34 studies found that individuals experiencing chronic stress had a 40–60% increased risk of developing cardiovascular disease, weakened immune function, and higher rates of hypertension. The analysis also found that individuals who practiced positive psychology interventions — such as expressing gratitude, exercising signature strengths, and building social connections — showed measurable improvements in both psychological well-being and physical health markers." }
+          { "id": "Source C", "type": "Clinical Data", "content": "A meta-analysis of 34 studies found that individuals experiencing chronic stress had a 40–60% increased risk of developing cardiovascular disease, weakened immune function, and higher rates of hypertension. The analysis also found that individuals who practiced positive psychology interventions - such as expressing gratitude, exercising signature strengths, and building social connections - showed measurable improvements in both psychological well-being and physical health markers." }
         ],
         "task": "Using all three sources, construct an evidence-based argument about how stress affects physical health and how coping strategies can mitigate those effects."
       }

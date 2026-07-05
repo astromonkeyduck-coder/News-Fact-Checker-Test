@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Notification Settings — Noteworthy News</title>
+  <title>Notification Settings - Noteworthy News</title>
   <meta name="robots" content="noindex">
   <meta name="theme-color" content="#080E1A">
   <link rel="manifest" href="/site.webmanifest">
@@ -99,7 +99,7 @@
       <h2>Open in the iOS app</h2>
       <p class="ns-mini">Install Noteworthy Live on iPhone to get Lock Screen and Dynamic Island Live Activities for the stories you follow. Generate a code, then enter it in the app once.</p>
       <div class="ns-status-line" style="margin-top:var(--space-md)">
-        <div id="ns-pair-code" class="ns-pair-code">— — — — — —</div>
+        <div id="ns-pair-code" class="ns-pair-code">- - - - - -</div>
         <button class="ns-btn secondary" id="ns-pair-btn">Generate code</button>
       </div>
       <p class="ns-mini" id="ns-pair-hint"></p>
@@ -373,5 +373,7 @@
       if (typeof window.nsUpdatePairHint === 'function') window.nsUpdatePairHint();
     });
   </script>
+    <!-- Noteworthy News AI chat -->
+    <script src="/src/widgets/noteworthy-chat-loader.js" defer></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-# Stability Checkpoint — Noteworthy News V2 Rebuild
+# Stability Checkpoint - Noteworthy News V2 Rebuild
 
 *Audit date: 2026-03-22. Checkpoint after Security Foundation, Data Consolidation, Unified Alert System, and V2 Situation Monitor sessions.*
 
@@ -10,14 +10,14 @@
 - Well-designed, fail-closed, JWKS-verified JWT authentication.
 - `requireAdminAuth`, `requireAdminAuthOrSecret`, and `isAdminSecretValid` provide a clean, layered auth strategy.
 - Timing-safe secret comparison implemented.
-- Admin identity resolved via role claims OR email allowlist — pragmatic fallback when Auth0 roles aren't configured.
+- Admin identity resolved via role claims OR email allowlist - pragmatic fallback when Auth0 roles aren't configured.
 - **Applied consistently** to all critical mutation endpoints: `remove-post`, `update-post-data`, `upload-post-media`, `process-csv-posts`, `delete-large-images`, `remove-long-posts`, `remove-old-alert-posts`, `rebuild-index`, `re-extract-media`, `process-post-screenshot`, `fetch-tweets-simple` (POST only), `fetch-profile-tweets` (POST only), `cams-token`.
 - `jose` dependency pinned in `package.json` at `^6.2.2`.
 
 ### 1.2 Post storage consolidation (`postStore.js`)
 - Clean, focused module: 160 lines with clear responsibilities.
 - All 11 identified writers migrated to use postStore.
-- Index shape standardized (`{ ids }` — `urls` field retired).
+- Index shape standardized (`{ ids }` - `urls` field retired).
 - Earthquake ID scheme unified to `usgs-` prefix.
 - Deduplication, bounded size (200 posts), consistent key format.
 - `posts-read.js` migrated with temporary backward-compatible `eq-` fallback.
@@ -25,7 +25,7 @@
 ### 1.3 Unified alert system (`alertEvent.js`, `notifyForEvent.js`, `alertRateLimit.js`)
 - Clean separation of concerns: event normalization, channel routing, dedup, delivery.
 - Event schema is well-defined with validation.
-- Opt-in via `USE_UNIFIED_ALERTS=true` — safe rollout strategy.
+- Opt-in via `USE_UNIFIED_ALERTS=true` - safe rollout strategy.
 - All six engines return `notifiableEvents[]` in their `run()` result.
 - `send-breaking-news-alert.js` is a clean, admin-authed endpoint.
 - Alert dedup uses a dedicated blob store; prevents duplicate notifications.
@@ -42,10 +42,10 @@
 - Semantic HTML, proper ARIA labels, mobile nav toggle, skip-to-content implicit via structure.
 - Clean section architecture: header, hero, stories/feed, about/features, newsletter, footer.
 - Skeleton loading state for feed.
-- Single JS file (`main.js`, 69 lines) — scroll-aware header, active section tracking, mobile nav. No frameworks.
+- Single JS file (`main.js`, 69 lines) - scroll-aware header, active section tracking, mobile nav. No frameworks.
 - `noindex` meta tag correctly prevents indexing of development surface.
 - No inline JS (except newsletter form, which is just HTML).
-- No inline CSS (one exception: `style="margin-top: var(--space-xl)"` — uses tokens).
+- No inline CSS (one exception: `style="margin-top: var(--space-xl)"` - uses tokens).
 
 ### 1.6 V2 Situation Monitor shell (`SituationMonitorV2.js`)
 - 360 lines (down from 2,085). Clean orchestrator.
@@ -78,17 +78,17 @@ The unified alert pipeline (`USE_UNIFIED_ALERTS`) runs **alongside** each engine
 `notifyForEvent.js` → `sendLocationNotifications()` currently returns `{ sent: 0, skipped: 0, reason: 'delegated_to_engines' }`. The location alert channel is declared in the schema but **not actually implemented** in the unified dispatcher. It's a stub that always reports zero. Users who depend on location-based earthquake alerts are still served by the engine-internal code, creating a hidden dependency on the old path.
 
 ### 2.3 V1↔V2 coexistence without clear switch
-Both V1 and V2 versions of the homepage and Situation Monitor exist with no feature flag, route parameter, or environment variable to switch between them. The production nav still points to V1 Situation Monitor. V2 lives under `/v2/` but is not linked from anywhere in production. This is acceptable during development but becomes fragile if V2 work stalls — two codepaths drift with no merging strategy.
+Both V1 and V2 versions of the homepage and Situation Monitor exist with no feature flag, route parameter, or environment variable to switch between them. The production nav still points to V1 Situation Monitor. V2 lives under `/v2/` but is not linked from anywhere in production. This is acceptable during development but becomes fragile if V2 work stalls - two codepaths drift with no merging strategy.
 
 ### 2.4 Seven functions still bypass postStore
 The following Netlify functions access `x-posts` blobs directly (bypassing `postStore`):
-- `noteworthy-chat.js` — reads posts for AI context
-- `auto-sync-posts.ts` — dormant but still has direct blob access
-- `realtime-voice.js` — reads posts
-- `article-preview.js` — reads posts
-- `twitter-share.js` — reads posts
-- `check-earthquake-posts.js` — reads posts
-- `re-extract-media.js` — reads/writes posts
+- `noteworthy-chat.js` - reads posts for AI context
+- `auto-sync-posts.ts` - dormant but still has direct blob access
+- `realtime-voice.js` - reads posts
+- `article-preview.js` - reads posts
+- `twitter-share.js` - reads posts
+- `check-earthquake-posts.js` - reads posts
+- `re-extract-media.js` - reads/writes posts
 
 Most are **read-only** paths, which is less risky, but `re-extract-media.js` **writes** to `x-posts` outside postStore. This creates an inconsistency path.
 
@@ -105,18 +105,18 @@ This dilutes the purpose of the token system. The token layer exists but is not 
 ## 3. What Is Duplicated
 
 ### 3.1 Two design token systems
-- `v2/styles/tokens.css` — V2 tokens (Sora, Source Serif 4, dark navy palette, `--color-*`, `--text-*`)
-- `src/styles/premium-tokens.css` — V1 tokens (system-ui stack, different naming: `--font-family-base`, `--font-size-*`, `--color-bg-primary`)
+- `v2/styles/tokens.css` - V2 tokens (Sora, Source Serif 4, dark navy palette, `--color-*`, `--text-*`)
+- `src/styles/premium-tokens.css` - V1 tokens (system-ui stack, different naming: `--font-family-base`, `--font-size-*`, `--color-bg-primary`)
 
 Both exist, both are used. V1 tokens are consumed by V1 pages. V2 tokens are consumed by V2 pages. They define overlapping concepts with different names and different values. Neither one is deprecated or marked as canonical.
 
 ### 3.2 Two homepages
-- `index.html` (21,006 lines) — V1, live in production
-- `v2/index.html` (241 lines) — V2, development surface
+- `index.html` (21,006 lines) - V1, live in production
+- `v2/index.html` (241 lines) - V2, development surface
 
 ### 3.3 Two Situation Monitors
-- `situation-monitor.html` + `src/components/situation-monitor/` (27 files) — V1, live
-- `v2/situation-monitor.html` + `v2/js/situation-monitor/SituationMonitorV2.js` — V2, development
+- `situation-monitor.html` + `src/components/situation-monitor/` (27 files) - V1, live
+- `v2/situation-monitor.html` + `v2/js/situation-monitor/SituationMonitorV2.js` - V2, development
 
 ### 3.4 Two feed renderers (still)
 - `post-feed-v2.js` (2,813 lines)
@@ -165,14 +165,14 @@ Every function defines its own CORS headers object. `requireAuth.js` exports `AU
 - Engine files: CommonJS
 - V2 frontend: ES modules
 
-This is the expected split (Node = CJS, browser = ESM) but some TypeScript function files (`x-webhook.ts`, `fetch-tweets-simple.ts`) use `require` for `postStore` despite being `.ts` files — works due to Netlify's bundler but is technically mixing paradigms.
+This is the expected split (Node = CJS, browser = ESM) but some TypeScript function files (`x-webhook.ts`, `fetch-tweets-simple.ts`) use `require` for `postStore` despite being `.ts` files - works due to Netlify's bundler but is technically mixing paradigms.
 
 ---
 
 ## 5. What Is Incomplete
 
 ### 5.1 V2 homepage has no feed rendering
-`v2/index.html` has skeleton placeholders but no actual feed component. The `main.js` file handles nav/scroll only — no data fetching, no post rendering. The feed consolidation (merging `post-feed-v2.js` and `post-feed-enhanced.js`) has not started.
+`v2/index.html` has skeleton placeholders but no actual feed component. The `main.js` file handles nav/scroll only - no data fetching, no post rendering. The feed consolidation (merging `post-feed-v2.js` and `post-feed-enhanced.js`) has not started.
 
 ### 5.2 V2 homepage has no Auth0 integration
 No login/signup, no user state, no profile link. V1 homepage has full Auth0 integration.
@@ -181,7 +181,7 @@ No login/signup, no user state, no profile link. V1 homepage has full Auth0 inte
 These are intentionally deferred (lazy-loaded later) but represent a significant feature gap before V2 can replace V1.
 
 ### 5.4 V2 newsletter form has no backend wiring
-The newsletter signup form in `v2/index.html` is pure HTML — no JavaScript handles the form submission.
+The newsletter signup form in `v2/index.html` is pure HTML - no JavaScript handles the form submission.
 
 ### 5.5 Admin UI rebuild has not started
 Phase 1 (Admin UI Behind Auth) has not been implemented. The old admin HTML pages exist but are functionally broken (API calls return 401). This means admin operations currently require:
@@ -191,7 +191,7 @@ Phase 1 (Admin UI Behind Auth) has not been implemented. The old admin HTML page
 ### 5.6 Legacy cleanup not done
 - Test pages still deployed: `test-earthquake.html`, `test-hero-media.html`, `video-preview-test.html` (x2)
 - Old admin pages still exist: `admin-posts-manager.html`, `admin-remove-post.html`, `admin-add-tweets.html`
-- Test functions: `test-resend.js`, `test-generate.js` — not confirmed deleted
+- Test functions: `test-resend.js`, `test-generate.js` - not confirmed deleted
 - `posts-read.ts.backup` still present
 - `bookmarklet-add-post.html` still deployed (now broken but still accessible)
 - Legacy `eq-` earthquake posts not cleaned up
@@ -205,7 +205,7 @@ Phase 1 (Admin UI Behind Auth) has not been implemented. The old admin HTML page
 
 ---
 
-## 6. Correction Items — Status
+## 6. Correction Items - Status
 
 > **Correction session completed 2026-03-22.** All items resolved.
 
@@ -226,25 +226,25 @@ Phase 1 (Admin UI Behind Auth) has not been implemented. The old admin HTML page
 
 ## 7. What Can Safely Wait
 
-1. **Feed component consolidation** (merging `post-feed-v2.js` and `post-feed-enhanced.js`) — V1 homepage works. V2 needs this before launch but not before corrections.
+1. **Feed component consolidation** (merging `post-feed-v2.js` and `post-feed-enhanced.js`) - V1 homepage works. V2 needs this before launch but not before corrections.
 
-2. **Admin UI rebuild** — Broken admin pages are an inconvenience but not a security risk (APIs now return 401). Can be addressed now.
+2. **Admin UI rebuild** - Broken admin pages are an inconvenience but not a security risk (APIs now return 401). Can be addressed now.
 
-3. **Homepage decomposition** — The 21,006-line `index.html` is technical debt but is stable. V2 shell exists as the target. No urgency.
+3. **Homepage decomposition** - The 21,006-line `index.html` is technical debt but is stable. V2 shell exists as the target. No urgency.
 
-4. **`script.js` decomposition** — Same: stable, large, but not blocking anything.
+4. **`script.js` decomposition** - Same: stable, large, but not blocking anything.
 
-5. **Cloudflare Worker decision** — Parallel feed store. Not causing conflicts. Product decision needed.
+5. **Cloudflare Worker decision** - Parallel feed store. Not causing conflicts. Product decision needed.
 
-6. **WebSocket server build-out** — Stubs work. Low risk.
+6. **WebSocket server build-out** - Stubs work. Low risk.
 
-7. **CSS consolidation for V1 pages** — Will be addressed when V2 replaces V1.
+7. **CSS consolidation for V1 pages** - Will be addressed when V2 replaces V1.
 
-8. **Legacy `eq-` earthquake post cleanup** — Posts will age out naturally; `posts-read.js` fallback handles them.
+8. **Legacy `eq-` earthquake post cleanup** - Posts will age out naturally; `posts-read.js` fallback handles them.
 
-9. **RSS proxy consolidation** (`rss-feed.js`, `rss-aggregate.js`, `rssProxy.js`) — Three overlapping functions, but all work. Low urgency.
+9. **RSS proxy consolidation** (`rss-feed.js`, `rss-aggregate.js`, `rssProxy.js`) - Three overlapping functions, but all work. Low urgency.
 
-10. **Build pipeline upgrade** (webpack → Vite) — Needed for V2 launch but not for corrections.
+10. **Build pipeline upgrade** (webpack → Vite) - Needed for V2 launch but not for corrections.
 
 ---
 
@@ -257,7 +257,7 @@ Phase 1 (Admin UI Behind Auth) has not been implemented. The old admin HTML page
 **Remaining pre-production items** (not blocking roadmap continuation):
 - Remove engine-internal notification code before enabling `USE_UNIFIED_ALERTS=true`
 - Broader adoption of `corsHeaders.js` across remaining functions (opportunistic, not urgent)
-- CLI scripts in `scripts/` still access `x-posts` directly (low priority — not production paths)
+- CLI scripts in `scripts/` still access `x-posts` directly (low priority - not production paths)
 
 ---
 
@@ -280,4 +280,4 @@ Phase 1 (Admin UI Behind Auth) has not been implemented. The old admin HTML page
 
 ### Verdict
 
-**The rebuild is on the right path.** The V2 work is genuinely cleaner, safer, and more coherent than V1. The new modules are well-designed and the architectural decisions are sound. The primary risk is not bad engineering — it's **convergence timing**: the repo is carrying two parallel systems and needs to merge them before the parallel complexity becomes a maintenance burden. The correction items above are minor and can be addressed in one session.
+**The rebuild is on the right path.** The V2 work is genuinely cleaner, safer, and more coherent than V1. The new modules are well-designed and the architectural decisions are sound. The primary risk is not bad engineering - it's **convergence timing**: the repo is carrying two parallel systems and needs to merge them before the parallel complexity becomes a maintenance burden. The correction items above are minor and can be addressed in one session.

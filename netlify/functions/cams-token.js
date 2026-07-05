@@ -3,7 +3,7 @@
  * GET /.netlify/functions/cams-token
  * 
  * Returns CAMS_TOKEN to authenticated admin requests.
- * Requires admin JWT — the token should not be publicly accessible.
+ * Requires admin JWT - the token should not be publicly accessible.
  */
 
 const { requireAdminAuth } = require("./middleware/requireAuth");

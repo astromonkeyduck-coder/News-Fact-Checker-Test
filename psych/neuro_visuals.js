@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   NEURO VISUALS — SVG Neuron Backgrounds & Interactive Diagrams
+   NEURO VISUALS - SVG Neuron Backgrounds & Interactive Diagrams
    AP Psychology Master Review System
    ═══════════════════════════════════════════════════════════════ */
 
@@ -1113,7 +1113,7 @@ const NeuroVisuals = (() => {
   }
 
   /* ═══════════════════════════════════════════════════════════
-     HERO BRAIN VISUAL — 4-Layer Depth Parallax System
+     HERO BRAIN VISUAL - 4-Layer Depth Parallax System
      Layer 0: botanical/vine network (deepest)
      Layer 1: brain silhouette + region zones
      Layer 2: neurons + axons + dendrites (rich network)
@@ -1384,7 +1384,7 @@ const NeuroVisuals = (() => {
       { x: 280, y: 300, r: 5, c: '#22d3ee', region: 'temporal' },
     ];
 
-    // Connections (index pairs) — dense inter-region connectivity
+    // Connections (index pairs) - dense inter-region connectivity
     const connections = [
       // Frontal internal
       [0,1],[1,2],[0,3],[3,4],[4,5],[0,5],[1,25],
@@ -1615,7 +1615,7 @@ const NeuroVisuals = (() => {
   }
 
   /* ═══════════════════════════════════════════════════════════
-     UNIT PATHWAY — Five units as connected neural nodes
+     UNIT PATHWAY - Five units as connected neural nodes
      ═══════════════════════════════════════════════════════════ */
   function createUnitPathway(container, units) {
     if (!container || !units || !units.length) return;

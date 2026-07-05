@@ -29,7 +29,7 @@ const postsToUpdate = [
   {
     id: '1999965944400191648',
     url: 'https://x.com/newsnoteworthy/status/1999965944400191648',
-    text: 'BREAKING: No suspect in custody at Brown University, law enforcement still searching for the shooter. — BrownUAlert',
+    text: 'BREAKING: No suspect in custody at Brown University, law enforcement still searching for the shooter. - BrownUAlert',
     hoursAgo: 5 // Update to 5 hours ago
   },
   {

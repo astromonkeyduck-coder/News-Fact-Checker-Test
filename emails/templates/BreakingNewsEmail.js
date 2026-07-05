@@ -7,7 +7,7 @@
  * Props:
  * - headline: string (required) - Main headline
  * - subheadline?: string - Optional subheadline
- * - dateline: string (required) - Date and location (e.g., "Wednesday, November 26, 2025 — Washington, D.C.")
+ * - dateline: string (required) - Date and location (e.g., "Wednesday, November 26, 2025 - Washington, D.C.")
  * - location?: string - Location name
  * - shortSummary: string (required) - 1-3 sentence summary
  * - bodyBlocks: string[] (required) - Array of paragraph text
@@ -21,7 +21,7 @@
  * Example usage:
  * const html = BreakingNewsEmail({
  *   headline: "Major Earthquake Hits California",
- *   dateline: "Monday, January 15, 2025 — Los Angeles, CA",
+ *   dateline: "Monday, January 15, 2025 - Los Angeles, CA",
  *   shortSummary: "A magnitude 7.2 earthquake struck Southern California early this morning, causing widespread damage and power outages.",
  *   bodyBlocks: [
  *     "The quake occurred at 4:17 AM local time, with its epicenter located 10 miles northeast of Los Angeles.",

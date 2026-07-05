@@ -9,7 +9,7 @@
  *   return { statusCode: 200, headers: corsHeaders, body: '...' };
  *
  * If a handler needs a restricted method set (e.g. GET-only), it should
- * still use these headers — the method allowlist is permissive by design
+ * still use these headers - the method allowlist is permissive by design
  * because actual method enforcement happens inside each handler.
  */
 

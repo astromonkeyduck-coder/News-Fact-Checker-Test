@@ -135,7 +135,7 @@ async function notifyFollowers({ story, update, actor = "system", logger = conso
   if (!isUrgent) {
     const cooldownKey = `live-story:${story.id}`;
     if (await isInCooldown(cooldownKey, STORY_COOLDOWN_MS)) {
-      logger.log(`[liveStoryNotify] Story ${story.id} in cooldown — skipping push`);
+      logger.log(`[liveStoryNotify] Story ${story.id} in cooldown - skipping push`);
       await recordSendLog({ story, update, actor, result, detail: { reason: "cooldown" } });
       return { ...result, reason: "cooldown" };
     }

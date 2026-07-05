@@ -73,7 +73,7 @@ Audited against the official College Board CED (Fall 2023).
 | 4.3 | The Enlightenment | YES | All major philosophes, narrative, vocab | Solid |
 | 4.4 | 18th-C Society/Demographics | **MISSING** | Zero content | Population growth (potato, plague decline), proto-industrialization, changing childhood (Rousseau's Emile), consumer revolution, leisure/coffeehouses, marriage patterns |
 | 4.5 | 18th-C Culture/Arts | PARTIAL | Rococo/Neoclassical art movements | Missing: music (Bach, Handel, Mozart, Haydn), novel as form (Richardson, Fielding), theater |
-| 4.6 | Enlightened Approaches to Power | PARTIAL | Mentioned in narrative | Missing: Frederick's legal reforms, Catherine's Charter of Nobility, Joseph II's Toleration Patent and serf reforms — specific policies not findable |
+| 4.6 | Enlightened Approaches to Power | PARTIAL | Mentioned in narrative | Missing: Frederick's legal reforms, Catherine's Charter of Nobility, Joseph II's Toleration Patent and serf reforms - specific policies not findable |
 | 4.7 | Causation | YES | Causation chains | Solid |
 
 **Honest Unit 4: 3 YES, 3 PARTIAL, 1 MISSING**
@@ -175,7 +175,7 @@ Audited against the official College Board CED (Fall 2023).
 | 9.14 | 21st-C Culture/Demographics | **MISSING** | Barely mentioned | Demographic aging, declining birth rates, secularization trend, youth culture, consumer society evolution, multicultural identity |
 | 9.15 | CCOT 20th/21st-C | PARTIAL | CCOT patterns exist but don't cover contemporary | Missing: contemporary-specific continuity/change |
 
-**Honest Unit 9: 3 YES, 4 PARTIAL, 6 MISSING — THIS IS THE CRISIS UNIT**
+**Honest Unit 9: 3 YES, 4 PARTIAL, 6 MISSING - THIS IS THE CRISIS UNIT**
 
 ---
 
@@ -192,17 +192,17 @@ Audited against the official College Board CED (Fall 2023).
 
 ## The 11 Missing Topics (URGENT)
 
-1. **2.6** — 16th-C Society/Demographics (witch trials, family, popular culture)
-2. **3.4** — Challenges to Absolutism (Fronde, noble resistance, parlements)
-3. **4.4** — 18th-C Society/Demographics (population, childhood, consumer revolution)
-4. **6.8** — 19th-C Social Reform (Factory Acts, Poor Laws, public health)
-5. **7.5** — Age of Progress/Modernity (germ theory, urban renewal, tech optimism)
-6. **9.5** — Postwar Nationalism/Atrocities (Yugoslav Wars, Northern Ireland)
-7. **9.8** — 20th-C Feminism (second/third wave, reproductive rights)
-8. **9.11** — Migration/Immigration (guest workers, refugees, integration)
-9. **9.12** — Technology (nuclear, space, digital, medical)
-10. **9.13** — Globalization (WTO, anti-globalization, environment, inequality)
-11. **9.14** — 21st-C Culture/Demographics (aging, secularization, multiculturalism)
+1. **2.6** - 16th-C Society/Demographics (witch trials, family, popular culture)
+2. **3.4** - Challenges to Absolutism (Fronde, noble resistance, parlements)
+3. **4.4** - 18th-C Society/Demographics (population, childhood, consumer revolution)
+4. **6.8** - 19th-C Social Reform (Factory Acts, Poor Laws, public health)
+5. **7.5** - Age of Progress/Modernity (germ theory, urban renewal, tech optimism)
+6. **9.5** - Postwar Nationalism/Atrocities (Yugoslav Wars, Northern Ireland)
+7. **9.8** - 20th-C Feminism (second/third wave, reproductive rights)
+8. **9.11** - Migration/Immigration (guest workers, refugees, integration)
+9. **9.12** - Technology (nuclear, space, digital, medical)
+10. **9.13** - Globalization (WTO, anti-globalization, environment, inequality)
+11. **9.14** - 21st-C Culture/Demographics (aging, secularization, multiculturalism)
 
 ## Gap Categories
 

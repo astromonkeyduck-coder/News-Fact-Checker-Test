@@ -1,5 +1,5 @@
 /**
- * Offscreen MP4 converter — FFmpeg runs on main thread (no worker import issues).
+ * Offscreen MP4 converter - FFmpeg runs on main thread (no worker import issues).
  */
 import createFFmpegCore from './vendor/ffmpeg-core.js';
 

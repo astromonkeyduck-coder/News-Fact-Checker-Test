@@ -1,5 +1,5 @@
 /**
- * Mobile Feed — normalized, read-only content API for the native iOS app.
+ * Mobile Feed - normalized, read-only content API for the native iOS app.
  *
  * GET /.netlify/functions/mobile-feed   (alias: /api/mobile/feed)
  *   ?limit=        page size (default 30, max 100)
@@ -65,7 +65,7 @@ exports.handler = async (event) => {
       .map((p) => normalizePost(p))
       .filter(Boolean);
 
-    // Newest first (defensive — the index is already roughly ordered).
+    // Newest first (defensive - the index is already roughly ordered).
     items.sort((a, b) => new Date(getDate(b) || 0) - new Date(getDate(a) || 0));
 
     if (section === "breaking") items = items.filter((i) => i.isBreaking && !i.isAlert);

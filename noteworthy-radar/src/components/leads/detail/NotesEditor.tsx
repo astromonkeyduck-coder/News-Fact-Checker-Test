@@ -32,7 +32,7 @@ export function NotesEditor({
   }
 
   if (!canEdit) {
-    return <p className="whitespace-pre-wrap text-xs text-ink-muted">{initial || "—"}</p>;
+    return <p className="whitespace-pre-wrap text-xs text-ink-muted">{initial || "-"}</p>;
   }
 
   return (

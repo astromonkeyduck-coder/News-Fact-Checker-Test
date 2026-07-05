@@ -3,7 +3,7 @@
  * GET/POST /.netlify/functions/user-data
  * 
  * Allows authenticated users to get and update their own profile data.
- * Identity is verified server-side via Auth0 JWT — the email is extracted
+ * Identity is verified server-side via Auth0 JWT - the email is extracted
  * from the token claims, NOT from the request body/query.
  */
 

@@ -3,264 +3,142 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Live Story — Noteworthy News</title>
-  <meta name="description" content="Follow developing news live on Noteworthy News.">
-  <meta name="theme-color" content="#080E1A">
+  <title>Live Story - Noteworthy News</title>
+  <meta name="description" content="Follow this developing story live. Timestamped updates with source notes from Noteworthy News.">
+  <meta name="theme-color" content="#04060B">
   <link rel="manifest" href="/site.webmanifest">
+  <link rel="icon" type="image/png" href="/IMG_5794.PNG" sizes="32x32">
+  <link rel="apple-touch-icon" href="/IMG_5794.PNG" sizes="180x180">
+
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Noteworthy News">
+  <meta property="og:title" content="Live Story - Noteworthy News">
+  <meta property="og:description" content="Follow this developing story live. Timestamped updates with source notes.">
+  <meta property="og:image" content="https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@NoteworthyNews">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap">
 
   <link rel="stylesheet" href="/v2/styles/tokens.css">
   <link rel="stylesheet" href="/v2/styles/base.css">
+  <link rel="stylesheet" href="/css/article-v4.css?v=20260705">
+  <link rel="stylesheet" href="/v2/styles/live-story.css?v=20260705">
   <link rel="stylesheet" href="/css/ads.css">
 
-  <style>
-    body {
-      background: var(--color-bg);
-      color: var(--color-text);
-      font-family: var(--font-ui);
-      margin: 0;
-      -webkit-font-smoothing: antialiased;
-    }
-    .ls-wrap {
-      max-width: var(--container-narrow);
-      margin: 0 auto;
-      padding: max(env(safe-area-inset-top), var(--space-md)) var(--space-md) var(--space-4xl);
-    }
-    .ls-topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: var(--space-sm) 0 var(--space-lg);
-    }
-    .ls-back {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--space-xs);
-      color: var(--color-text-secondary);
-      text-decoration: none;
-      font-size: var(--text-sm);
-      font-weight: var(--weight-medium);
-    }
-    .ls-back:hover { color: var(--color-text); }
-    .ls-brand {
-      font-family: var(--font-heading);
-      font-weight: var(--weight-bold);
-      font-size: var(--text-sm);
-      letter-spacing: var(--tracking-tight);
-    }
-
-    /* ── Status pill ─────────────────────────────── */
-    .ls-status {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--space-xs);
-      padding: 4px 10px;
-      border-radius: var(--radius-full);
-      font-size: var(--text-2xs);
-      font-weight: var(--weight-bold);
-      letter-spacing: var(--tracking-wider);
-      text-transform: uppercase;
-      border: 1px solid transparent;
-    }
-    .ls-status .dot {
-      width: 7px; height: 7px; border-radius: var(--radius-full);
-      background: currentColor;
-    }
-    .ls-status[data-status="breaking"]    { color: var(--color-live); background: var(--color-live-muted); border-color: var(--color-error-border); }
-    .ls-status[data-status="developing"]  { color: var(--color-warning); background: var(--color-warning-muted); border-color: var(--color-warning-border); }
-    .ls-status[data-status="verified"]    { color: var(--color-success); background: var(--color-success-muted); border-color: var(--color-success-border); }
-    .ls-status[data-status="disputed"]    { color: var(--color-warning); background: var(--color-warning-muted); border-color: var(--color-warning-border); }
-    .ls-status[data-status="resolved"]    { color: var(--color-text-secondary); background: rgba(255,255,255,0.05); border-color: var(--color-border); }
-    .ls-status[data-status="false_report"]{ color: var(--color-error); background: var(--color-error-muted); border-color: var(--color-error-border); }
-
-    .ls-status[data-status="breaking"] .dot {
-      animation: ls-pulse 1.4s var(--ease-broadcast) infinite;
-    }
-    @keyframes ls-pulse {
-      0%   { box-shadow: 0 0 0 0 rgba(239,68,68,0.5); }
-      70%  { box-shadow: 0 0 0 6px rgba(239,68,68,0); }
-      100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
-    }
-
-    .ls-title {
-      font-family: var(--font-heading);
-      font-weight: var(--weight-black);
-      font-size: var(--text-3xl);
-      line-height: var(--leading-tight);
-      letter-spacing: var(--tracking-tight);
-      margin: var(--space-md) 0 var(--space-sm);
-    }
-    .ls-summary {
-      font-family: var(--font-body);
-      font-size: var(--text-lg);
-      line-height: var(--leading-normal);
-      color: var(--color-text-secondary);
-      margin: 0 0 var(--space-lg);
-    }
-    .ls-meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--space-md);
-      font-size: var(--text-xs);
-      color: var(--color-text-muted);
-      margin-bottom: var(--space-lg);
-    }
-    .ls-meta b { color: var(--color-text-secondary); font-weight: var(--weight-semibold); }
-
-    /* ── Follow button ───────────────────────────── */
-    .ls-follow {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--space-sm);
-      width: 100%;
-      justify-content: center;
-      padding: 14px 20px;
-      border-radius: var(--radius-xl);
-      border: 1px solid var(--color-accent-border);
-      background: var(--gradient-accent);
-      color: var(--color-white-pure);
-      font-family: var(--font-ui);
-      font-size: var(--text-base);
-      font-weight: var(--weight-semibold);
-      cursor: pointer;
-      transition: transform var(--duration-fast) var(--ease-out), filter var(--duration-fast) var(--ease-out);
-    }
-    .ls-follow:hover { filter: brightness(1.05); }
-    .ls-follow:active { transform: scale(0.985); }
-    .ls-follow[data-following="true"] {
-      background: var(--color-bg-card);
-      border-color: var(--color-success-border);
-      color: var(--color-success);
-    }
-    .ls-follow[disabled] { opacity: 0.55; cursor: default; }
-    .ls-follow .live-dot {
-      width: 8px; height: 8px; border-radius: var(--radius-full);
-      background: currentColor;
-    }
-    .ls-hint {
-      font-size: var(--text-xs);
-      color: var(--color-text-muted);
-      text-align: center;
-      margin: var(--space-sm) 0 0;
-      min-height: 1em;
-    }
-    .ls-hint a { color: var(--color-accent); }
-
-    /* ── Timeline ────────────────────────────────── */
-    .ls-timeline-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin: var(--space-2xl) 0 var(--space-md);
-    }
-    .ls-timeline-title {
-      font-family: var(--font-heading);
-      font-weight: var(--weight-bold);
-      font-size: var(--text-lg);
-    }
-    .ls-live-tag {
-      font-size: var(--text-2xs);
-      font-weight: var(--weight-bold);
-      letter-spacing: var(--tracking-wider);
-      text-transform: uppercase;
-      color: var(--color-live);
-      display: inline-flex; align-items: center; gap: var(--space-xs);
-    }
-    .ls-live-tag .dot {
-      width: 6px; height: 6px; border-radius: var(--radius-full); background: currentColor;
-      animation: ls-pulse 1.4s var(--ease-broadcast) infinite;
-    }
-
-    .ls-timeline { list-style: none; margin: 0; padding: 0; position: relative; }
-    .ls-timeline::before {
-      content: ""; position: absolute; left: 6px; top: 4px; bottom: 4px;
-      width: 2px; background: var(--color-border);
-    }
-    .ls-update {
-      position: relative;
-      padding: 0 0 var(--space-lg) var(--space-xl);
-    }
-    .ls-update::before {
-      content: ""; position: absolute; left: 0; top: 4px;
-      width: 14px; height: 14px; border-radius: var(--radius-full);
-      background: var(--color-bg); border: 2px solid var(--color-accent);
-    }
-    .ls-update[data-kind="major"]::before  { border-color: var(--color-live); }
-    .ls-update[data-kind="final"]::before   { border-color: var(--color-success); background: var(--color-success); }
-    .ls-update[data-kind="correction"]::before { border-color: var(--color-warning); }
-    .ls-update-meta {
-      display: flex; align-items: center; gap: var(--space-sm);
-      font-size: var(--text-2xs); color: var(--color-text-muted);
-      text-transform: uppercase; letter-spacing: var(--tracking-wide);
-      margin-bottom: var(--space-xs);
-    }
-    .ls-update-kind {
-      font-weight: var(--weight-bold);
-      color: var(--color-text-secondary);
-    }
-    .ls-update[data-kind="major"] .ls-update-kind { color: var(--color-live); }
-    .ls-update[data-kind="final"] .ls-update-kind { color: var(--color-success); }
-    .ls-update[data-kind="correction"] .ls-update-kind { color: var(--color-warning); }
-    .ls-update-body {
-      font-family: var(--font-body);
-      font-size: var(--text-base);
-      line-height: var(--leading-normal);
-      color: var(--color-text);
-    }
-    .ls-update-source {
-      display: inline-block; margin-top: var(--space-xs);
-      font-family: var(--font-ui); font-size: var(--text-xs);
-      color: var(--color-accent); text-decoration: none;
-    }
-    .ls-update-source:hover { text-decoration: underline; }
-
-    .ls-update.is-new { animation: ls-flash 1.6s var(--ease-out); }
-    @keyframes ls-flash {
-      0%   { background: var(--color-accent-muted); box-shadow: -8px 0 0 var(--color-accent-muted); }
-      100% { background: transparent; box-shadow: none; }
-    }
-
-    .ls-state {
-      text-align: center; padding: var(--space-3xl) var(--space-md);
-      color: var(--color-text-muted); font-size: var(--text-sm);
-    }
-    .ls-error { color: var(--color-error); }
-
-    .ls-toast {
-      position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + var(--space-lg));
-      transform: translateX(-50%) translateY(20px);
-      background: var(--color-bg-elevated); color: var(--color-text);
-      border: 1px solid var(--color-border-hover);
-      padding: 10px 16px; border-radius: var(--radius-full);
-      font-size: var(--text-sm); box-shadow: var(--shadow-lg);
-      opacity: 0; pointer-events: none; transition: all var(--duration-slow) var(--ease-spring);
-      z-index: var(--z-overlay);
-    }
-    .ls-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-  </style>
-    <!-- Google AdSense -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5427142458403577"
-            crossorigin="anonymous"></script>
+  <!-- Google AdSense -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5427142458403577"
+          crossorigin="anonymous"></script>
 </head>
-<body>
-  <div class="ls-wrap">
-    <div class="ls-topbar">
-      <a class="ls-back" href="/">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-        Back
+<body class="nn-article ls-page">
+  <a href="#article-heading" class="skip-to-content">Skip to story</a>
+
+  <div class="reading-progress" id="reading-progress" role="progressbar" aria-label="Reading progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+    <div class="reading-progress-bar" id="reading-progress-bar"></div>
+  </div>
+
+  <header class="nn-topbar" id="nn-topbar">
+    <nav class="nn-topbar-row" aria-label="Primary">
+      <a class="brand" href="/">
+        <img class="brand-mark" src="/IMG_5794.PNG" alt="" width="24" height="24">
+        <span class="brand-name">Noteworthy News</span>
       </a>
-      <span class="ls-brand">Noteworthy<span style="color:var(--color-accent)">.</span>Live</span>
+      <div class="nn-topbar-nav">
+        <a class="nn-topbar-link" href="/">Home</a>
+        <a class="nn-topbar-link" href="/how-we-verify.html">How we verify</a>
+        <a class="nn-topbar-link nn-topbar-link--em" href="/archive.html">All stories</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="article-shell" id="ls-shell">
+    <div class="article-layout">
+      <article class="article-main" id="ls-root" aria-busy="true">
+        <!-- Premium loading shell: believable live story structure -->
+        <div class="sk sk-chip" aria-hidden="true"></div>
+        <div class="sk sk-headline" aria-hidden="true"></div>
+        <div class="sk sk-headline" aria-hidden="true" style="width:55%"></div>
+        <div class="sk sk-line w40" aria-hidden="true" style="margin-bottom:1.6rem"></div>
+        <div class="sk" aria-hidden="true" style="height:42px;width:220px;border-radius:8px;margin-bottom:2.4rem"></div>
+        <div class="ls-skeleton-update" aria-hidden="true">
+          <div class="sk sk-line" style="width:30%"></div>
+          <div class="sk sk-line" style="width:92%"></div>
+          <div class="sk sk-line" style="width:70%"></div>
+        </div>
+        <div class="ls-skeleton-update" aria-hidden="true">
+          <div class="sk sk-line" style="width:24%"></div>
+          <div class="sk sk-line" style="width:88%"></div>
+          <div class="sk sk-line" style="width:52%"></div>
+        </div>
+        <div class="ls-skeleton-update" aria-hidden="true">
+          <div class="sk sk-line" style="width:28%"></div>
+          <div class="sk sk-line" style="width:80%"></div>
+        </div>
+        <span class="sr-only" role="status">Loading live story</span>
+      </article>
+
+      <aside class="article-rail" id="ls-rail" aria-label="Story context">
+        <section class="rail-card rail-card--trail" id="ls-rail-trail" aria-label="Source trail">
+          <h2 class="rail-card__title">Source trail</h2>
+          <div id="ls-rail-trail-body">
+            <p class="rail-note">Sources cited by updates in this story appear here as they are published.</p>
+          </div>
+        </section>
+
+        <section class="rail-card" id="ls-rail-status" aria-label="How we know">
+          <h2 class="rail-card__title">How we know</h2>
+          <div id="ls-rail-status-body">
+            <p class="rail-note">Developing means developing. Confirmed means confirmed. The two never blend.</p>
+          </div>
+          <p class="rail-note" style="margin-top:0.6rem"><a href="/how-we-verify.html">Read our standards</a></p>
+          <p class="rail-note">Corrections stay visible in the timeline.</p>
+        </section>
+
+        <section class="rail-card" id="ls-rail-more" style="display:none;" aria-label="More live stories">
+          <h2 class="rail-card__title">Also live now</h2>
+          <div id="ls-rail-more-body"></div>
+        </section>
+
+        <div class="nn-ad nn-ad--sidebar" data-nn-ad="display_sidebar"></div>
+      </aside>
     </div>
 
-    <main id="ls-root">
-      <div class="ls-state">Loading live story&hellip;</div>
-    </main>
+    <section class="read-next" id="ls-coverage" aria-label="More coverage" hidden>
+      <div class="read-next__head">
+        <h2 class="read-next__title">More coverage</h2>
+        <a class="read-next__all" href="/archive.html">All stories
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </a>
+      </div>
+      <div class="read-next-grid" id="ls-coverage-grid"></div>
+    </section>
 
     <div class="nn-ad" data-nn-ad="display"></div>
-  </div>
+  </main>
+
+  <footer class="nn-footer">
+    <div class="nn-footer-row">
+      <a class="nn-footer-brand" href="/">
+        <img src="/IMG_5794.PNG" alt="" width="22" height="22">
+        <span>Noteworthy News</span>
+      </a>
+      <nav class="nn-footer-nav" aria-label="Footer">
+        <a href="/archive.html">All stories</a>
+        <a href="/how-we-verify.html">How we verify</a>
+        <a href="/notification-settings.html">Notification settings</a>
+        <a href="/contact.html">Contact</a>
+        <a href="/privacy.html">Privacy</a>
+      </nav>
+      <p class="nn-footer-note">&copy; 2026 Noteworthy News. Independent newsroom. No paywall. Corrections in public.</p>
+    </div>
+  </footer>
+
+  <button class="ls-jump" id="ls-jump" type="button" hidden>
+    <span class="dot" aria-hidden="true"></span>
+    <span id="ls-jump-label">Jump to latest</span>
+  </button>
 
   <div class="ls-toast" id="ls-toast" role="status" aria-live="polite"></div>
 
@@ -272,8 +150,68 @@
       });
     }
   </script>
+  <script type="module" src="/v2/js/post-media.js?v=20260705"></script>
+  <script src="/lib/contentNormalize.js?v=20260705"></script>
+  <script src="/js/article-v4.js?v=20260705"></script>
   <script src="/src/utils/push-notifications.js"></script>
-  <script src="/v2/js/live-story.js"></script>
+  <script src="/v2/js/live-story.js?v=20260705"></script>
   <script src="/js/ads.js"></script>
+
+  <!-- Noteworthy News AI (same widget as the homepage) -->
+  <script src="/src/widgets/voice-audio-engine.js"></script>
+  <script src="/src/widgets/noteworthy-chat.js" defer></script>
+  <script>
+  (function () {
+    let initialized = false;
+    let initAttempts = 0;
+
+    function initChat() {
+      if (initialized) return;
+      initAttempts++;
+      if (!customElements.get('noteworthy-chat-widget')) {
+        if (initAttempts < 12) setTimeout(initChat, 250);
+        return;
+      }
+      try {
+        if (document.querySelector('noteworthy-chat-widget')) {
+          initialized = true;
+          return;
+        }
+        const el = document.createElement('noteworthy-chat-widget');
+        el.setAttribute('data-endpoint', '/.netlify/functions/noteworthy-chat');
+        el.setAttribute('data-open', 'false');
+        el.setAttribute('data-brand-title', 'Noteworthy News AI');
+        el.setAttribute('data-logo', '/IMG_5794.PNG');
+        document.body.appendChild(el);
+        initialized = true;
+      } catch (err) {
+        console.error('[Live Story Chat] Init error:', err);
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function () { setTimeout(initChat, 800); });
+    } else {
+      setTimeout(initChat, 800);
+    }
+
+    document.addEventListener('click', function (e) {
+      var trigger = e.target.closest('[data-open-chat]');
+      if (!trigger) return;
+      e.preventDefault();
+      if (!initialized) initChat();
+      var tryOpen = function (attempt) {
+        var widget = document.querySelector('noteworthy-chat-widget');
+        var launcher = widget && widget.shadowRoot && widget.shadowRoot.querySelector('.launcher');
+        if (launcher) {
+          if (launcher.getAttribute('aria-expanded') !== 'true') launcher.click();
+        } else if (attempt < 8) {
+          setTimeout(function () { tryOpen(attempt + 1); }, 250);
+        }
+      };
+      tryOpen(0);
+    });
+  })();
+  </script>
 </body>
 </html>

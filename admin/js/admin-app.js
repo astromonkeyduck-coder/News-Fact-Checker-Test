@@ -1,5 +1,5 @@
 /**
- * Admin App — Noteworthy News
+ * Admin App - Noteworthy News
  *
  * Section router, navigation binding, shell orchestration.
  */

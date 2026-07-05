@@ -3,7 +3,7 @@
  * Provides offline support, caching, and faster page loads
  */
 
-const CACHE_VERSION = 'v2.4.0-live-story';
+const CACHE_VERSION = 'v2.5.0-article-v4';
 const CACHE_NAME = `noteworthy-news-${CACHE_VERSION}`;
 
 // Helper function to check if a URL is cacheable
@@ -35,6 +35,10 @@ const STATIC_ASSETS = [
   '/geography-game.js',
   '/story.html',
   '/v2/js/live-story.js',
+  '/v2/js/post-media.js',
+  '/v2/styles/live-story.css',
+  '/css/article-v4.css',
+  '/js/article-v4.js',
   '/logo.svg',
   '/site.webmanifest',
   '/IMG_5794.PNG',
@@ -470,7 +474,7 @@ async function updateAppBadge() {
       await self.navigator.clearAppBadge();
     }
   } catch (e) {
-    // Badging API not available or rejected — non-fatal.
+    // Badging API not available or rejected - non-fatal.
   }
 }
 

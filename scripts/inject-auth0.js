@@ -65,6 +65,6 @@ if (injected === 0) {
   console.warn('⚠️  No HTML files found for Auth0 injection');
 }
 if (!auth0Domain || !auth0ClientId) {
-  console.warn('⚠️  AUTH0_DOMAIN or AUTH0_CLIENT_ID not set — null values injected');
+  console.warn('⚠️  AUTH0_DOMAIN or AUTH0_CLIENT_ID not set - null values injected');
 }
 

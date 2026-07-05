@@ -1,4 +1,4 @@
-# iOS Notifications — Real-Device Testing (Milestone 2C)
+# iOS Notifications - Real-Device Testing (Milestone 2C)
 
 How to test **standard APNs push notifications** for the native NoteworthyLive app end to end, and how to read/triage failures. Standard push is separate from Live Activities (covered in [`IOS_TESTFLIGHT_PREP.md`](IOS_TESTFLIGHT_PREP.md) §G); both ride the same `.p8` key.
 
@@ -19,8 +19,8 @@ Alert-level → behavior:
 
 | `alert_level` | Banner? | Sound | Interruption level | Preference gate |
 |---------------|---------|-------|--------------------|-----------------|
-| `silent` | no (timeline only) | — | — | — |
-| `badge` | no | — | — | — |
+| `silent` | no (timeline only) | - | - | - |
+| `badge` | no | - | - | - |
 | `normal` | yes (quiet) | none | `active` | Live story updates |
 | `urgent` | yes | default | `time-sensitive`\* | Breaking news |
 | `final` (or status `resolved`/`false_report`) | yes | default | `time-sensitive`\* | Final & corrections |
@@ -33,7 +33,7 @@ Quiet hours suppress **non-urgent** (normal) pushes only; urgent/final always al
 
 ## 2. One-time backend setup
 
-Same as Live Activities — set in Netlify ▸ Environment variables, then redeploy:
+Same as Live Activities - set in Netlify ▸ Environment variables, then redeploy:
 `APNS_KEY_P8_BASE64` (base64 of the `.p8`), `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_BUNDLE_ID=co.noteworthynews.live`, `APNS_DEFAULT_ENVIRONMENT` (`sandbox` for debug-device testing, `production` for TestFlight/App Store).
 
 Apply migrations through `008_ios_push.sql`.
@@ -98,9 +98,9 @@ curl -X POST "https://noteworthynews.co/.netlify/functions/admin-live-stories" \
   `[standardPushNotify] story=<slug> level=<level> sent=N failed=N skipped=N`.
   A `failed>0` line prints the APNs `status` + `reason`.
 - **Audit table** `live_story_send_log` (query by `story_id`): standard-push rows have `actor = "ios_standard_push"` and `detail.channel = "ios_standard_push"`, with `detail.reasons` counting why devices were skipped:
-  - `master_off` — device master switch off
-  - `category_off` — that alert category disabled
-  - `quiet_hours` — suppressed by quiet hours (non-urgent only)
+  - `master_off` - device master switch off
+  - `category_off` - that alert category disabled
+  - `quiet_hours` - suppressed by quiet hours (non-urgent only)
 
 ---
 
@@ -125,7 +125,7 @@ The `reason` comes straight from APNs (`results[].reason`). Common cases:
 ## 7. Device-side checks when nothing arrives
 
 - iOS Settings ▸ Noteworthy ▸ Notifications **On** (and not in a Focus that filters it).
-- **Notifications** screen shows **Device registered: Yes**. If **No**, notifications were never granted or the token POST failed — toggle notifications and check Netlify logs.
+- **Notifications** screen shows **Device registered: Yes**. If **No**, notifications were never granted or the token POST failed - toggle notifications and check Netlify logs.
 - The device actually **follows** the story (standard push only targets followers).
 - The build's environment matches `apnsStatus.environment` / the device's stored env.
 - Preferences/quiet hours aren't silently suppressing it (check the audit `reasons`).

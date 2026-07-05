@@ -1,5 +1,5 @@
 /**
- * Newsletter View — Admin
+ * Newsletter View - Admin
  *
  * List templates, load, AI generation, send.
  */

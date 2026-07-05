@@ -203,7 +203,7 @@ async function fetchTravelAdvisories(logger) {
               let level = 1;
               
               // Extract country name
-              const countryMatch = title.match(/^([^-:–—]+)/);
+              const countryMatch = title.match(/^([^-:–-]+)/);
               if (countryMatch) {
                 country = countryMatch[1].trim();
               }

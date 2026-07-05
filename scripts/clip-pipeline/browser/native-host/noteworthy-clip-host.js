@@ -2,7 +2,7 @@
 'use strict';
 
 /**
- * Chrome Native Messaging host — converts WebM → MP4 using bundled ffmpeg-static.
+ * Chrome Native Messaging host - converts WebM → MP4 using bundled ffmpeg-static.
  * Supports chunked upload (Chrome limits each native message to ~1MB).
  * Install: npm run clip:install-native-host
  */

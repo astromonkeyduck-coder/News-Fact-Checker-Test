@@ -81,7 +81,7 @@ function Holiday_NewYearEmail({
   if (keyStories.length > 0) {
     content += EmailSection({ title: `Major Stories of ${previousYear}` });
     const storyItems = keyStories.map(story => ({
-      text: `<strong>${story.headline}</strong> — ${story.summary} <a href="${story.url}" style="color:#3b82f6!important;text-decoration:underline">Read more</a>`
+      text: `<strong>${story.headline}</strong> - ${story.summary} <a href="${story.url}" style="color:#3b82f6!important;text-decoration:underline">Read more</a>`
     }));
     content += EmailBulletList({ items: storyItems });
   }

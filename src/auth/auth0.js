@@ -24,7 +24,7 @@
 // These will be injected at build time via scripts/inject-auth0.js
 // For local development: Create a .env.local file or set window.AUTH0_DOMAIN and window.AUTH0_CLIENT_ID
 
-/** Same CDN as v2/js/auth.js — 2.2 path is deprecated / may fail. */
+/** Same CDN as v2/js/auth.js - 2.2 path is deprecated / may fail. */
 const AUTH0_SDK_CDN =
   'https://cdn.auth0.com/js/auth0-spa-js/2.4/auth0-spa-js.production.js';
 
@@ -132,7 +132,7 @@ function getAuth0Config() {
     domain: domain,
     clientId: clientId,
     authorizationParams: {
-      // Canonical callback — matches Netlify / → V2 rewrite and one Auth0 allowlist entry
+      // Canonical callback - matches Netlify / → V2 rewrite and one Auth0 allowlist entry
       redirect_uri: `${window.location.origin}/`,
       // offline_access is required to receive a refresh token.
       scope: 'openid profile email offline_access',
@@ -156,7 +156,7 @@ let bindAuthButtonsAttempts = 0;
 const MAX_BIND_AUTH_BUTTON_ATTEMPTS = 24;
 
 /**
- * Initialize Auth0 (idempotent — concurrent calls await the same work)
+ * Initialize Auth0 (idempotent - concurrent calls await the same work)
  */
 async function initAuth0() {
   if (auth0Initialized) return;
@@ -346,7 +346,7 @@ async function bindAuthButtons() {
   if (!signinBtn || !signupBtn) {
     bindAuthButtonsAttempts += 1;
     if (bindAuthButtonsAttempts > MAX_BIND_AUTH_BUTTON_ATTEMPTS) {
-      console.log('[Auth0] No signinBtn/signupBtn on this page — stopping bind retries (e.g. profile.html)');
+      console.log('[Auth0] No signinBtn/signupBtn on this page - stopping bind retries (e.g. profile.html)');
       return;
     }
     console.warn('[Auth0] Buttons not found in DOM yet, retrying...');

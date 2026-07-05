@@ -1,7 +1,7 @@
 /**
  * Comments API - Store and retrieve article comments
  * Uses Netlify Blobs for persistent storage across devices.
- * DELETE requires a verified Auth0 JWT — ownership is checked
+ * DELETE requires a verified Auth0 JWT - ownership is checked
  * against the JWT's sub/email, not a client-supplied authorId.
  */
 
@@ -268,7 +268,7 @@ exports.handler = async (event, context) => {
         return {
           statusCode: 401,
           headers,
-          body: JSON.stringify({ error: "Unauthorized — valid Bearer token required to delete comments" }),
+          body: JSON.stringify({ error: "Unauthorized - valid Bearer token required to delete comments" }),
         };
       }
 

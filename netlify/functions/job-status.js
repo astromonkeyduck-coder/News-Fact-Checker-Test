@@ -17,7 +17,7 @@ const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 function checkToken(event) {
   const requiredToken = process.env.CLEMS_TOKEN;
   if (!requiredToken) {
-    console.error('[Security] CLEMS_TOKEN is not configured — denying access (fail-closed).');
+    console.error('[Security] CLEMS_TOKEN is not configured - denying access (fail-closed).');
     return false;
   }
 

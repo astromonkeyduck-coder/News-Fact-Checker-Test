@@ -1,5 +1,5 @@
 /**
- * DEPRECATED — Earthquake Pipeline - USGS Poller
+ * DEPRECATED - Earthquake Pipeline - USGS Poller
  *
  * This function is superseded by engines/usgs.js (run via ingest-all).
  * Both poll the same USGS feed, create the same posts, generate the same

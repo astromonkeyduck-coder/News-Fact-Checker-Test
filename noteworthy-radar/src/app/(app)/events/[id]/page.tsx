@@ -152,7 +152,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
               <li>Created: {new Date(event.created_at).toLocaleString()}</li>
               {leads.slice(0, 5).map((l) => (
                 <li key={l.id} className="border-l border-border pl-2">
-                  {new Date(l.created_at).toLocaleString()} — lead added ({l.platform})
+                  {new Date(l.created_at).toLocaleString()} - lead added ({l.platform})
                 </li>
               ))}
             </ul>

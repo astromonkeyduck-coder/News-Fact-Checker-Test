@@ -2,35 +2,22 @@
  * Noteworthy News V4 - Feed Module
  *
  * Fetches posts from posts-read and renders the homepage editorial surfaces:
- *   - hero flagship card (unless a live story already owns the slot)
+ *   - hero flagship story (unless a live story already owns the slot)
+ *   - Top Stories lead + secondary media cells + load-more grid
  *   - Developing Now strip (engine alert updates; live stories render
  *     separately via live-rail.js)
- *   - Top Stories lead + secondary rows
  *   - The Wire compact list
  * Every timestamp, source, and category shown comes from real post data.
+ * All media rendering goes through post-media.js: one component per card.
  */
 
 import { UISounds } from './ui-sounds.js';
-import {
-  cancelVideoFade,
-  ensureVideoPlaying,
-  ensureVideoSrc,
-  fadeVideoIn,
-  fadeVideoOut,
-  DEFAULT_FADE_IN_MS,
-  DEFAULT_FADE_OUT_MS,
-} from './video-audio.js';
-import {
-  buildVideoToolbarHTML,
-  initVideoToolbar,
-  updateToolbarState,
-  getPreferredVolume,
-} from './video-controls.js';
+import { initPostMedia, mediaHtml } from './post-media.js';
 
 const FEED_API = '/.netlify/functions/posts-read';
 const FETCH_LIMIT = 100;
-const SECONDARY_DISPLAY = 5;
-const SECONDARY_LOAD_MORE = 8;
+const SECONDARY_DISPLAY = 4;
+const MORE_LOAD_STEP = 8;
 const STRIP_DISPLAY = 8;
 const WIRE_DISPLAY = 12;
 
@@ -125,8 +112,48 @@ function getVolcanoAlertFallbackImage(post) {
   return null;
 }
 
+function isEarthquakePost(post) {
+  const cat = (post.category || '').toLowerCase();
+  const src = (post.source || '').toLowerCase();
+  const evt = (post.event_type || '').toLowerCase();
+  return cat === 'earthquake' || evt === 'earthquake' || src.includes('usgs');
+}
+
+function isGraphicMapImage(imageUrl, post) {
+  if (!imageUrl) return false;
+  const u = String(imageUrl).toLowerCase();
+  if (u.includes('/assets/alerts/')) return false;
+  if (u.includes('earthquake') || u.includes('get-uploaded-image') || u.includes('earthquake.usgs.gov')) {
+    return true;
+  }
+  return isEarthquakePost(post);
+}
+
 function getPostImage(post) {
-  return post.imageUrl || post.image_url || post.image || post.primary_image_url || post.mediaUrl || post.media_url || getVolcanoAlertFallbackImage(post) || null;
+  let primary =
+    post.imageUrl || post.image_url || post.image || post.primary_image_url ||
+    post.mediaUrl || post.media_url || null;
+
+  if (isEarthquakePost(post)) {
+    const fromAssets =
+      post.assets?.standard_image ||
+      post.assets?.image_url ||
+      post.assets?.generated_image;
+    if (fromAssets) primary = primary || fromAssets;
+    if (!primary && post.images?.length) {
+      const generated = post.images.find(
+        (u) => u && typeof u === 'string' && u.includes('get-uploaded-image') && u.includes('earthquake')
+      );
+      if (generated) primary = generated;
+    }
+    if (!primary) {
+      const usgsImages = post.assets?.usgs_images || post.usgs_images || [];
+      const first = usgsImages[0];
+      if (first) primary = typeof first === 'string' ? first : (first?.url || null);
+    }
+  }
+
+  return primary || getVolcanoAlertFallbackImage(post) || null;
 }
 
 function getPostDate(post) {
@@ -158,9 +185,39 @@ function isBreakingText(post) {
 }
 
 function normalizeTitle(post) {
-  let title = getPostTitle(post);
-  title = title.replace(/^(?:BREAKING|VIDEO|WATCH|UPDATE|DEVELOPING)\s*:?\s*/i, '').trim();
-  return title || getPostTitle(post);
+  const raw = getPostTitle(post);
+
+  // Volcano engine titles arrive as "WATCH - Great Sitkin" / "ADVISORY - Kilauea".
+  // Rewrite them into a readable headline instead of stripping the level away.
+  if (String(post.category || '').toLowerCase().includes('volcano')) {
+    const m = raw.match(/^(WATCH|WARNING|ADVISORY)\s*[-:|]\s*(.+)$/i);
+    if (m) {
+      const level = m[1].toLowerCase();
+      return `Volcano ${level} in effect for ${m[2].trim()}`;
+    }
+  }
+
+  const title = raw.replace(/^(?:BREAKING|VIDEO|WATCH|UPDATE|DEVELOPING|NEW|NOW)\s*:\s*/i, '').trim();
+  return title || raw;
+}
+
+/** Excerpt with the same label prefixes stripped, so cards never repeat
+ *  "VIDEO:" or "BREAKING:" ahead of body text. */
+function cleanExcerpt(post) {
+  const raw = stripUrls((post.text || post.content || '').replace(/<[^>]*>/g, ''));
+  return raw.replace(/^(?:BREAKING|VIDEO|WATCH|UPDATE|DEVELOPING|NEW|NOW)\s*:\s*/i, '').trim();
+}
+
+/** Engine feeds repeat standing advisories daily (volcano watches etc).
+ *  Keep only the most recent post per normalized headline. */
+function dedupeByTitle(posts) {
+  const seen = new Set();
+  return posts.filter(p => {
+    const key = normalizeTitle(p).toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function shouldShowExcerpt(title, excerpt) {
@@ -198,8 +255,6 @@ function getSmartLabel(post) {
   return null;
 }
 
-// ── Video handling (lead card) ───────────────────
-
 function isVideoPost(post) {
   return post.postType === 'video' || !!post.video_url || (post.videos && post.videos.length > 0);
 }
@@ -210,184 +265,17 @@ function getVideoUrl(post) {
   return raw.replace('https://video.twimg.com/', '/media/video/');
 }
 
-function isUserMuted(video) {
-  return video.dataset.userMuted === 'true';
+function hasMedia(post) {
+  return isVideoPost(post) || !!getPostImage(post);
 }
 
-function updateMuteButton(video) {
-  updateToolbarState(video);
-}
-
-function loadAndPlay(video) {
-  ensureVideoSrc(video);
-  if (video.readyState >= 2) {
-    return ensureVideoPlaying(video);
-  }
-  return new Promise((resolve) => {
-    video.addEventListener('canplay', () => {
-      ensureVideoPlaying(video).then(resolve).catch(resolve);
-    }, { once: true });
-  });
-}
-
-let _videoObserver = null;
-const _videoVisibility = new Map();
-let _audibleVideo = null;
-
-function setVideoAudible(video, { fadeInMs = DEFAULT_FADE_IN_MS } = {}) {
-  if (!video || isUserMuted(video)) return;
-  if (_audibleVideo && _audibleVideo !== video) {
-    fadeVideoOut(_audibleVideo, { pause: false, resetMuted: true, duration: DEFAULT_FADE_OUT_MS });
-  }
-  _audibleVideo = video;
-  loadAndPlay(video).then(() => {
-    fadeVideoIn(video, {
-      duration: fadeInMs,
-      targetVolume: getPreferredVolume(),
-      onComplete: () => updateMuteButton(video),
-    });
-  });
-}
-
-function silenceVideo(video, { pause = true } = {}) {
-  if (!video) return;
-  cancelVideoFade(video);
-  fadeVideoOut(video, {
-    duration: DEFAULT_FADE_OUT_MS,
-    pause,
-    resetMuted: true,
-    onComplete: () => {
-      if (_audibleVideo === video) _audibleVideo = null;
-      updateMuteButton(video);
-    },
-  });
-}
-
-function syncMobileAudible() {
-  const visible = [..._videoVisibility.entries()]
-    .filter(([, ratio]) => ratio > 0)
-    .sort((a, b) => b[1] - a[1]);
-
-  const winner = visible[0]?.[0];
-
-  for (const [video] of visible) {
-    if (video === winner) {
-      if (!isUserMuted(video)) setVideoAudible(video);
-    } else {
-      silenceVideo(video, { pause: false });
-    }
-  }
-
-  if (!winner && _audibleVideo) {
-    silenceVideo(_audibleVideo, { pause: false });
-  }
-}
-
-function handleVideoEnter(video, isMobile) {
-  loadAndPlay(video).then(() => {
-    video.volume = 0;
-    video.muted = true;
-    if (!isMobile) updateMuteButton(video);
-  });
-}
-
-function handleVideoLeave(video, isMobile) {
-  if (isMobile && _audibleVideo === video) _audibleVideo = null;
-  silenceVideo(video, { pause: true });
-}
-
-function bindVideoControls(video) {
-  if (video.dataset.videoBound === 'true') return;
-  video.dataset.videoBound = 'true';
-  video.volume = 0;
-  video.muted = true;
-
-  video.addEventListener('mouseenter', () => {
-    if (isUserMuted(video)) return;
-    if (_videoVisibility.get(video) <= 0) return;
-    loadAndPlay(video).then(() => {
-      fadeVideoIn(video, {
-        duration: DEFAULT_FADE_IN_MS,
-        targetVolume: getPreferredVolume(),
-        onComplete: () => updateMuteButton(video),
-      });
-    });
-  });
-  video.addEventListener('mouseleave', () => {
-    fadeVideoOut(video, {
-      duration: DEFAULT_FADE_OUT_MS,
-      pause: false,
-      resetMuted: true,
-      onComplete: () => updateMuteButton(video),
-    });
-  });
-
-  initVideoToolbar(video, {
-    isHero: false,
-    onMuteClick: (_e, v) => {
-      const willMute = !isUserMuted(v);
-      v.dataset.userMuted = willMute ? 'true' : 'false';
-      if (willMute) {
-        cancelVideoFade(v);
-        fadeVideoOut(v, {
-          pause: false,
-          resetMuted: true,
-          onComplete: () => updateMuteButton(v),
-        });
-        if (_audibleVideo === v) _audibleVideo = null;
-      } else {
-        loadAndPlay(v).then(() => {
-          fadeVideoIn(v, {
-            targetVolume: getPreferredVolume(),
-            onComplete: () => updateMuteButton(v),
-          });
-          _audibleVideo = v;
-        });
-      }
-    },
-  });
-}
-
-function playVisibleVideos() {
-  if (_videoObserver) {
-    _videoObserver.disconnect();
-    _videoObserver = null;
-  }
-  _videoVisibility.clear();
-  _audibleVideo = null;
-
-  const videos = document.querySelectorAll('.post-card-video video');
-  if (!videos.length) return;
-
-  _videoObserver = new IntersectionObserver((entries) => {
-    const isMobile = window.matchMedia('(max-width: 767px)').matches;
-    let needsMobileSync = false;
-
-    entries.forEach(entry => {
-      const video = entry.target;
-      const wasVisible = (_videoVisibility.get(video) || 0) > 0;
-      const ratio = entry.isIntersecting ? entry.intersectionRatio : 0;
-      _videoVisibility.set(video, ratio);
-
-      if (entry.isIntersecting && !wasVisible) {
-        handleVideoEnter(video, isMobile);
-        if (isMobile) needsMobileSync = true;
-      } else if (!entry.isIntersecting && wasVisible) {
-        handleVideoLeave(video, isMobile);
-        if (isMobile) needsMobileSync = true;
-      } else if (entry.isIntersecting && isMobile) {
-        needsMobileSync = true;
-      }
-    });
-
-    if (needsMobileSync) syncMobileAudible();
-  }, { threshold: [0, 0.25, 0.5, 0.75, 1] });
-
-  videos.forEach(video => {
-    _videoVisibility.set(video, 0);
-    bindVideoControls(video);
-    _videoObserver.observe(video);
-  });
+function postMedia(post) {
+  return mediaHtml({
+    videoSrc: isVideoPost(post) ? getVideoUrl(post) : null,
+    image: getPostImage(post),
+    alt: normalizeTitle(post),
+    href: articleUrl(post),
+  }, esc);
 }
 
 // ── Renderers ────────────────────────────────────
@@ -403,43 +291,52 @@ function metaHtml(post, { withSource = true } = {}) {
     : '';
 }
 
-function renderHeroCard(post) {
+function renderHeroStory(post) {
   const title = normalizeTitle(post);
-  const image = getPostImage(post);
   const date = formatDate(getPostDate(post));
   const smart = getSmartLabel(post);
-  const excerpt = stripUrls((post.text || post.content || '').replace(/<[^>]*>/g, ''));
+  const excerpt = cleanExcerpt(post);
   const short = excerpt.length > 150 ? excerpt.slice(0, 147) + '…' : excerpt;
   const showExcerpt = shouldShowExcerpt(title, short);
 
   return `
-    <a class="hero-card-link" href="${esc(articleUrl(post))}" aria-label="${esc(title)}">
-      <div class="hero-card-top">
-        <span class="badge ${smart ? smart.cls : 'badge-accent'}">${esc(smart ? smart.label : 'Latest')}</span>
-        ${date ? `<span class="hero-card-meta">${esc(date)}</span>` : ''}
+    ${postMedia(post)}
+    <a class="hero-story-link" href="${esc(articleUrl(post))}" aria-label="${esc(title)}">
+      <div class="hero-story-body">
+        <div class="hero-story-top">
+          <span class="badge ${smart ? smart.cls : 'badge-accent'}">${esc(smart ? smart.label : 'Latest')}</span>
+          ${date ? `<span class="hero-story-time">${esc(date)}</span>` : ''}
+        </div>
+        <h2 class="hero-story-title">${esc(title)}</h2>
+        ${showExcerpt ? `<p class="hero-story-summary">${esc(short)}</p>` : ''}
+        <span class="hero-story-cta">Read the story
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </span>
       </div>
-      <div class="hero-card-row">
-        <h3 class="hero-card-title">${esc(title)}</h3>
-        ${image ? `<img class="hero-card-thumb" src="${esc(image)}" alt="" loading="eager" decoding="async" onerror="this.remove()">` : ''}
-      </div>
-      ${showExcerpt ? `<p class="hero-card-summary">${esc(short)}</p>` : ''}
-      <span class="hero-card-cta">Read the story
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </span>
     </a>`;
 }
 
 function renderHeroFallback() {
   return `
-    <div class="hero-card-link" role="status">
-      <div class="hero-card-top">
+    <div class="hero-story-body" role="status" style="padding-top:1.2rem">
+      <div class="hero-story-top">
         <span class="badge badge-accent">Standby</span>
       </div>
-      <h3 class="hero-card-title">Live feed reconnecting</h3>
-      <p class="hero-card-summary">The latest stories are temporarily unavailable. Coverage continues in the archive.</p>
-      <a class="hero-card-cta" href="/archive.html">Browse the archive
+      <h2 class="hero-story-title">Live feed reconnecting</h2>
+      <p class="hero-story-summary">The latest stories are temporarily unavailable. Coverage continues in the archive.</p>
+      <a class="hero-story-cta" href="/archive.html">Browse the archive
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
       </a>
+    </div>`;
+}
+
+function stripCardThumb(post) {
+  const image = getPostImage(post);
+  if (!image) return '';
+  const graphic = isGraphicMapImage(image, post);
+  return `
+    <div class="dev-card-thumb${graphic ? ' dev-card-thumb--map' : ''}" aria-hidden="true">
+      <img src="${esc(image)}" alt="" loading="lazy" decoding="async">
     </div>`;
 }
 
@@ -447,68 +344,68 @@ function renderStripCard(post, i) {
   const title = normalizeTitle(post);
   const time = shortTime(getPostDate(post));
   const smart = getSmartLabel(post);
-  const source = post.source || getCategory(post) || '';
-  const magnitude = post.magnitude;
-  const foot = [magnitude ? `M${magnitude}` : '', post.location || post.location_display || source]
+  const source = post.source || '';
+  const magnitude = post.magnitude ?? post.mag ?? post.assets?.magnitude;
+  const location = post.location || post.location_display || '';
+  // Skip location when the headline already carries it.
+  const locBit = location && !title.toLowerCase().includes(location.toLowerCase()) ? location : '';
+  const foot = [magnitude ? `M${magnitude}` : '', locBit, source]
     .filter(Boolean).join(' · ');
+  const thumb = stripCardThumb(post);
+  const hasMedia = !!thumb;
 
   return `
-    <a class="dev-card" style="--i:${i}" href="${esc(articleUrl(post))}" aria-label="${esc(title)}">
-      <div class="dev-card-top">
-        ${smart ? `<span class="badge ${smart.cls}">${esc(smart.label)}</span>` : '<span class="badge badge-accent">Update</span>'}
-        ${time ? `<span class="dev-card-time">${esc(time)} ago</span>` : ''}
+    <a class="dev-card${hasMedia ? ' dev-card--has-media' : ''}" style="--i:${i}" href="${esc(articleUrl(post))}" aria-label="${esc(title)}">
+      ${thumb}
+      <div class="dev-card-body">
+        <div class="dev-card-top">
+          ${smart ? `<span class="badge ${smart.cls}">${esc(smart.label)}</span>` : '<span class="badge badge-accent">Update</span>'}
+          ${time ? `<span class="dev-card-time">${esc(time)} ago</span>` : ''}
+        </div>
+        <h3 class="dev-card-title">${esc(title)}</h3>
+        ${foot ? `<span class="dev-card-foot">${esc(foot)}</span>` : ''}
       </div>
-      <h3 class="dev-card-title">${esc(title)}</h3>
-      ${foot ? `<span class="dev-card-foot">${esc(foot)}</span>` : ''}
     </a>`;
 }
 
 function renderLead(post) {
   const title = normalizeTitle(post);
-  const image = getPostImage(post);
   const smart = getSmartLabel(post);
-  const excerpt = stripUrls((post.text || post.content || '').replace(/<[^>]*>/g, ''));
+  const excerpt = cleanExcerpt(post);
   const short = excerpt.length > 190 ? excerpt.slice(0, 187) + '…' : excerpt;
   const showExcerpt = shouldShowExcerpt(title, short);
-  const videoSrc = isVideoPost(post) ? getVideoUrl(post) : null;
-
-  let media = '';
-  if (videoSrc) {
-    media = `<div class="lead-media post-card-video"><video data-src="${esc(videoSrc)}" muted loop playsinline disablepictureinpicture preload="none" poster="${image ? esc(image) : ''}"></video>${buildVideoToolbarHTML()}</div>`;
-  } else if (image) {
-    media = `<div class="lead-media"><img src="${esc(image)}" alt="" loading="lazy" decoding="async" onerror="this.parentElement.classList.add('lead-media--broken')"></div>`;
-  }
 
   return `
-    <a href="${esc(articleUrl(post))}" class="lead-card feed-in" aria-label="${esc(title)}">
-      ${media}
-      <div class="lead-body">
-        <div class="lead-top">
-          ${smart ? `<span class="badge ${smart.cls}">${esc(smart.label)}</span>` : ''}
+    <article class="lead-card feed-in">
+      ${postMedia(post)}
+      <a class="lead-link" href="${esc(articleUrl(post))}" aria-label="${esc(title)}">
+        <div class="lead-body">
+          <div class="lead-top">
+            ${smart ? `<span class="badge ${smart.cls}">${esc(smart.label)}</span>` : ''}
+          </div>
+          <h3 class="lead-title">${esc(title)}</h3>
+          ${showExcerpt ? `<p class="lead-excerpt">${esc(short)}</p>` : ''}
+          ${metaHtml(post)}
         </div>
-        <h3 class="lead-title">${esc(title)}</h3>
-        ${showExcerpt ? `<p class="lead-excerpt">${esc(short)}</p>` : ''}
-        ${metaHtml(post)}
-      </div>
-    </a>`;
+      </a>
+    </article>`;
 }
 
-function renderRow(post, i) {
+function renderCell(post, i) {
   const title = normalizeTitle(post);
-  const image = getPostImage(post);
   const smart = getSmartLabel(post);
 
   return `
-    <a href="${esc(articleUrl(post))}" class="story-row feed-in" style="--i:${i}" aria-label="${esc(title)}">
-      <div class="story-row-body">
-        <div class="story-row-top">
+    <article class="story-cell feed-in" style="--i:${i}">
+      ${postMedia(post)}
+      <a class="story-cell-link" href="${esc(articleUrl(post))}" aria-label="${esc(title)}">
+        <div class="story-cell-top">
           ${smart ? `<span class="badge ${smart.cls}">${esc(smart.label)}</span>` : ''}
         </div>
-        <h3 class="story-row-title">${esc(title)}</h3>
-        ${metaHtml(post)}
-      </div>
-      ${image ? `<img class="story-row-thumb" src="${esc(image)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}
-    </a>`;
+        <h3 class="story-cell-title">${esc(title)}</h3>
+        ${metaHtml(post, { withSource: false })}
+      </a>
+    </article>`;
 }
 
 function renderWireItem(post, i) {
@@ -520,7 +417,7 @@ function renderWireItem(post, i) {
   if (smart && smart.cls === 'badge-warning') catCls += ' wire-cat--warning';
 
   return `
-    <a href="${esc(articleUrl(post))}" class="wire-item feed-in" style="--i:${i}" aria-label="${esc(title)}">
+    <a href="${esc(articleUrl(post))}" class="wire-item feed-in" style="--i:${Math.min(i, 10)}" aria-label="${esc(title)}">
       <span class="wire-time">${time ? esc(time) : '&middot;'}</span>
       <span class="wire-body">
         <span class="wire-headline">${esc(title)}</span>
@@ -544,6 +441,30 @@ function renderError() {
       <p class="feed-state-text">Something went wrong. Please try again in a moment.</p>
       <button class="btn btn-outline btn-sm feed-retry-btn" type="button">Retry</button>
     </div>`;
+}
+
+/** Hero wire ticker: latest headlines looping across the hero floor. */
+function renderHeroWire(posts) {
+  const wire = document.getElementById('hero-wire');
+  const track = document.getElementById('hero-wire-track');
+  if (!wire || !track) return;
+
+  const items = posts.slice(0, 10).map((p) => {
+    const t = shortTime(getPostDate(p));
+    return (
+      `<span class="hero-wire-item">` +
+        (t ? `<span class="hw-time">${esc(t)}</span>` : '') +
+        esc(normalizeTitle(p)) +
+      `</span><span class="hw-sep"></span>`
+    );
+  }).join('');
+  if (!items) return;
+
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Content is doubled so translateX(-50%) loops seamlessly.
+  track.innerHTML = reduced ? items : items + items;
+  track.style.setProperty('--wire-dur', `${Math.max(36, Math.min(posts.length, 10) * 7)}s`);
+  wire.hidden = false;
 }
 
 // ── Public API ───────────────────────────────────
@@ -577,13 +498,15 @@ function heroSlot() {
   return document.getElementById('hero-card');
 }
 
-/** Write the flagship post into the hero card unless a live story owns it. */
+/** Write the flagship post into the hero slot unless a live story owns it. */
 function fillHeroCard(html, status) {
   const slot = heroSlot();
   if (!slot || slot.dataset.heroSource === 'live') return;
   slot.innerHTML = html;
   slot.dataset.heroSource = 'post';
+  slot.classList.remove('hero-story-live');
   if (status) slot.dataset.status = status;
+  initPostMedia(slot);
 }
 
 function stripUpdated() {
@@ -593,6 +516,7 @@ function stripUpdated() {
 export async function initFeed() {
   const leadEl = document.getElementById('lead-story');
   const secondaryEl = document.getElementById('secondary-stories');
+  const moreEl = document.getElementById('stories-more');
   const wireEl = document.getElementById('wire-list');
   const stripPostsEl = document.getElementById('strip-posts');
 
@@ -602,45 +526,61 @@ export async function initFeed() {
     const breaking = visible.filter(p => !isAlertPost(p));
     const alerts = visible.filter(p => isAlertPost(p));
 
-    // Hero flagship: latest breaking post, else latest alert.
-    const heroPost = breaking[0] || alerts[0] || null;
+    // Hero flagship: latest breaking story that carries real media.
+    const heroPost = breaking.find(hasMedia) || breaking[0] || alerts[0] || null;
     if (heroPost) {
-      fillHeroCard(renderHeroCard(heroPost), isBreakingText(heroPost) ? 'breaking' : '');
+      fillHeroCard(renderHeroStory(heroPost), isBreakingText(heroPost) ? 'breaking' : '');
     } else {
       fillHeroCard(renderHeroFallback());
     }
 
     // Developing Now strip: engine alert updates (skip one used as hero).
+    const alertsDeduped = dedupeByTitle(alerts);
     if (stripPostsEl) {
-      const stripSource = breaking.length > 0 ? alerts : alerts.slice(1);
+      const stripSource = alertsDeduped.filter(p => p !== heroPost);
       const stripItems = stripSource.slice(0, STRIP_DISPLAY);
       stripPostsEl.innerHTML = stripItems.map((p, i) => renderStripCard(p, i)).join('');
+      stripPostsEl.querySelectorAll('.dev-card-thumb img').forEach((img) => {
+        img.addEventListener('error', () => {
+          const card = img.closest('.dev-card');
+          img.closest('.dev-card-thumb')?.remove();
+          card?.classList.remove('dev-card--has-media');
+        }, { once: true });
+      });
       stripUpdated();
     }
 
     // Top Stories: pool excludes the hero post.
-    _storyPool = breaking.length > 0 ? breaking.slice(1) : [];
+    _storyPool = breaking.filter(p => p !== heroPost);
     renderStoriesGrid();
     initFilters(_storyPool);
     initLoadMore();
 
-    // The Wire: everything after lead/secondary, plus alert depth, by recency.
+    // Hero ticker: everything visible, by recency.
+    renderHeroWire(
+      dedupeByTitle(visible)
+        .map(p => ({ p, t: new Date(getPostDate(p) || 0).getTime() }))
+        .sort((a, b) => b.t - a.t)
+        .map(x => x.p)
+    );
+
+    // The Wire: story depth plus alert depth, by recency.
     if (wireEl) {
       const wireBreaking = _storyPool.slice(1 + SECONDARY_DISPLAY);
-      const wireAlerts = alerts.slice(STRIP_DISPLAY);
-      const wirePool = [...wireBreaking, ...wireAlerts]
+      const wireAlerts = alertsDeduped.slice(STRIP_DISPLAY);
+      const wirePool = dedupeByTitle([...wireBreaking, ...wireAlerts])
         .map(p => ({ p, t: new Date(getPostDate(p) || 0).getTime() }))
         .sort((a, b) => b.t - a.t)
         .map(x => x.p)
         .slice(0, WIRE_DISPLAY);
       if (wirePool.length > 0) {
         wireEl.innerHTML = wirePool.map((p, i) => renderWireItem(p, i)).join('');
+        initPostMedia(wireEl);
       } else {
         wireEl.innerHTML = renderEmpty('No additional updates');
       }
     }
 
-    playVisibleVideos();
     UISounds.success();
   } catch (err) {
     console.error('[Feed] Failed to load:', err);
@@ -648,6 +588,7 @@ export async function initFeed() {
 
     if (leadEl) leadEl.innerHTML = renderError();
     if (secondaryEl) secondaryEl.innerHTML = '';
+    if (moreEl) moreEl.innerHTML = '';
     if (wireEl) wireEl.innerHTML = renderEmpty('Updates unavailable');
     if (stripPostsEl) {
       stripPostsEl.innerHTML = '';
@@ -671,11 +612,11 @@ export async function initFeed() {
   }
 }
 
-// ── Top Stories grid (lead + secondary rows) ─────
+// ── Top Stories grid (lead + cells + load more) ──
 
 let _storyPool = [];
 let _activeFilter = 'All';
-let _displayCount = SECONDARY_DISPLAY;
+let _moreCount = 0;
 
 function getFilterCategories(posts) {
   const counts = {};
@@ -692,6 +633,7 @@ function getFilterCategories(posts) {
 function renderStoriesGrid() {
   const leadEl = document.getElementById('lead-story');
   const secondaryEl = document.getElementById('secondary-stories');
+  const moreEl = document.getElementById('stories-more');
   if (!leadEl || !secondaryEl) return;
 
   const filtered = _activeFilter === 'All'
@@ -702,7 +644,8 @@ function renderStoriesGrid() {
       });
 
   const lead = filtered[0];
-  const rows = filtered.slice(1, 1 + _displayCount);
+  const cells = filtered.slice(1, 1 + SECONDARY_DISPLAY);
+  const more = filtered.slice(1 + SECONDARY_DISPLAY, 1 + SECONDARY_DISPLAY + _moreCount);
 
   if (lead) {
     leadEl.innerHTML = renderLead(lead);
@@ -710,15 +653,19 @@ function renderStoriesGrid() {
     leadEl.innerHTML = renderEmpty('No stories in this category');
   }
 
-  secondaryEl.innerHTML = rows.map((p, i) => renderRow(p, i)).join('');
+  secondaryEl.innerHTML = cells.map((p, i) => renderCell(p, i)).join('');
+  if (moreEl) moreEl.innerHTML = more.map((p, i) => renderCell(p, i % MORE_LOAD_STEP)).join('');
 
   const loadMoreBtn = document.getElementById('load-more-btn');
   if (loadMoreBtn) {
-    const remaining = filtered.length - 1 - _displayCount;
+    const remaining = filtered.length - 1 - SECONDARY_DISPLAY - _moreCount;
     loadMoreBtn.hidden = remaining <= 0;
     if (remaining > 0) loadMoreBtn.textContent = `Load more (${remaining})`;
   }
-  playVisibleVideos();
+
+  initPostMedia(leadEl);
+  initPostMedia(secondaryEl);
+  if (moreEl) initPostMedia(moreEl);
 }
 
 function initFilters(pool) {
@@ -737,7 +684,7 @@ function initFilters(pool) {
     if (!chip) return;
     UISounds.tap();
     _activeFilter = chip.dataset.filter;
-    _displayCount = SECONDARY_DISPLAY;
+    _moreCount = 0;
     container.querySelectorAll('.filter-chip').forEach(c =>
       c.classList.toggle('is-active', c.dataset.filter === _activeFilter)
     );
@@ -751,7 +698,7 @@ function initLoadMore() {
 
   btn.addEventListener('click', () => {
     UISounds.tap();
-    _displayCount += SECONDARY_LOAD_MORE;
+    _moreCount += MORE_LOAD_STEP;
     renderStoriesGrid();
   });
 }

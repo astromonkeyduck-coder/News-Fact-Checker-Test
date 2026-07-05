@@ -1,514 +1,381 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>How We Verify Breaking Events - Noteworthy News</title>
-    <meta name="description" content="Learn how Noteworthy News verifies breaking news events. Our comprehensive fact-checking process ensures accuracy and reliability in every story we publish.">
-    <meta name="robots" content="index, follow">
-    
-    <!-- Favicon and Theme -->
-    <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="32x32">
-    <link rel="apple-touch-icon" href="IMG_5794.PNG" sizes="180x180">
-    <meta name="theme-color" content="#07152a">
-    
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
-    
-    <!-- Resource Pages Styles -->
-    <link rel="stylesheet" href="styles/resource-pages.css">
-    <link rel="stylesheet" href="styles/interactive-components.css">
-    
-    <!-- Styles -->
-    <link rel="stylesheet" href="styles.css">
-    
-    <!-- V2 Design System -->
-    <link rel="stylesheet" href="/v2/styles/tokens.css">
-    <link rel="stylesheet" href="/v2/styles/layout.css">
-    <link rel="stylesheet" href="/v2/styles/components.css">
-    <link rel="stylesheet" href="/css/ads.css">
-    
-    <!-- Google AdSense -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5427142458403577"
-            crossorigin="anonymous"></script>
-    
-    <style>
-        .pillar-page {
-            min-height: 100vh;
-            background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%);
-            color: white;
-            padding-top: 80px;
-        }
-        
-        .pillar-container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 40px 20px;
-        }
-        
-        .pillar-header {
-            text-align: center;
-            margin-bottom: 50px;
-            padding: 40px 20px;
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
-            border: 1px solid rgba(74, 144, 226, 0.2);
-        }
-        
-        .pillar-header h1 {
-            font-size: 3rem;
-            font-weight: 900;
-            margin-bottom: 20px;
-            background: linear-gradient(135deg, #ffffff 0%, #4A90E2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        .pillar-header p {
-            font-size: 1.2rem;
-            color: rgba(255, 255, 255, 0.8);
-            line-height: 1.8;
-        }
-        
-        .pillar-content {
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-radius: 16px;
-            padding: 40px;
-            border: 1px solid rgba(74, 144, 226, 0.2);
-            line-height: 1.8;
-            position: relative;
-            z-index: 1;
-        }
-        
-        .pillar-content::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(7, 21, 42, 0.3);
-            border-radius: 16px;
-            z-index: -1;
-            pointer-events: none;
-        }
-        
-        .pillar-content h2 {
-            font-size: 2rem;
-            font-weight: 700;
-            margin: 40px 0 20px;
-            color: #4A90E2;
-            border-bottom: 2px solid rgba(74, 144, 226, 0.3);
-            padding-bottom: 10px;
-        }
-        
-        .pillar-content h2:first-of-type {
-            margin-top: 0;
-        }
-        
-        .pillar-content h3 {
-            font-size: 1.4rem;
-            font-weight: 600;
-            margin: 30px 0 15px;
-            color: #2ECC71;
-        }
-        
-        .pillar-content p {
-            margin-bottom: 20px;
-            color: rgba(255, 255, 255, 0.95);
-            font-size: 1.1rem;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-        }
-        
-        .pillar-content ul, .pillar-content ol {
-            margin: 20px 0;
-            padding-left: 30px;
-        }
-        
-        .pillar-content li {
-            margin-bottom: 12px;
-            color: rgba(255, 255, 255, 0.95);
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-        }
-        
-        .verification-step {
-            background: rgba(74, 144, 226, 0.1);
-            border-left: 4px solid #4A90E2;
-            padding: 20px;
-            margin: 25px 0;
-            border-radius: 8px;
-        }
-        
-        .verification-step h4 {
-            color: #4A90E2;
-            margin-bottom: 10px;
-            font-size: 1.2rem;
-        }
-        
-        .breadcrumbs {
-            margin-bottom: 30px;
-            font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.7);
-        }
-        
-        .breadcrumbs a {
-            color: #4A90E2;
-            text-decoration: none;
-        }
-        
-        .breadcrumbs a:hover {
-            color: #2ECC71;
-        }
-        
-        @media (max-width: 768px) {
-            .pillar-header h1 {
-                font-size: 2rem;
-            }
-            
-            .pillar-content {
-                padding: 25px;
-            }
-            
-            .pillar-content h2 {
-                font-size: 1.6rem;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>How We Verify | Noteworthy News</title>
+  <meta name="description" content="The verification standards behind every Noteworthy News update: source rules, media checks, what we do when we can't confirm something, and how corrections work.">
+  <link rel="canonical" href="https://noteworthynews.co/how-we-verify.html">
+  <meta name="theme-color" content="#04060B">
+  <link rel="icon" href="/IMG_5794.PNG" type="image/png">
+  <meta name="robots" content="index, follow">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="How We Verify | Noteworthy News">
+  <meta property="og:description" content="Developing means developing. Confirmed means confirmed. The standards behind every update we publish.">
+  <meta property="og:url" content="https://noteworthynews.co/how-we-verify.html">
+  <meta property="og:site_name" content="Noteworthy News">
+  <meta property="og:image" content="https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg?v=2">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,600&display=swap">
+
+  <!-- Design system -->
+  <link rel="stylesheet" href="/v2/styles/tokens.css">
+  <link rel="stylesheet" href="/v2/styles/base.css">
+  <link rel="stylesheet" href="/v2/styles/v4.css">
+  <link rel="stylesheet" href="/v2/styles/page.css">
+  <link rel="stylesheet" href="/css/ads.css">
+
+  <!-- Google AdSense -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5427142458403577" crossorigin="anonymous"></script>
 </head>
-<body class="pillar-page">
-    <!-- V2 Navigation -->
-    <div class="top-rule" aria-hidden="true"></div>
-    <header class="site-header">
-      <nav class="site-nav container" aria-label="Primary">
-        <a class="site-logo" href="/">
-          <img class="site-logo-icon" src="/IMG_5794.PNG" alt="" width="28" height="28">
-          <span>Noteworthy News</span>
-        </a>
-        <button class="nav-toggle" aria-expanded="false" aria-controls="nav-menu">
-          <svg class="nav-toggle-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-          </svg>
-        </button>
-        <div class="nav-menu" id="nav-menu">
-          <a class="nav-link" href="/">Home</a>
-          <a class="nav-link" href="/archive.html">Archive</a>
-          <a class="nav-link" href="/contact.html">Contact</a>
-          <a class="nav-link" href="/v2/situation-monitor.html">Monitor</a>
-        </div>
-      </nav>
-    </header>
+<body class="v4 pg">
 
-    <main class="pillar-container">
-        <nav class="breadcrumbs">
-            <a href="index.html">Home</a> / <span>How We Verify</span>
-        </nav>
-        
-        <div class="pillar-header">
-            <h1>How We Verify Breaking Events</h1>
-            <p>Transparency in our fact-checking process is essential. Here's how we ensure every story meets our standards for accuracy and reliability.</p>
-        </div>
-        
-        <article class="pillar-content">
-            <p>At Noteworthy News, verification isn't just a step in our process—it's the foundation of everything we do. In an era of information overload and rapid news cycles, we believe that accuracy must never be sacrificed for speed. This document outlines our comprehensive verification methodology, the standards we uphold, and how we handle situations where verification isn't immediately possible.</p>
-            
-            <!-- Table of Contents -->
-            <div class="table-of-contents fade-in" id="table-of-contents" style="margin: 40px 0;"></div>
-            
-            <h2>Our Verification Process</h2>
-            
-            <p>Every breaking news story that appears on Noteworthy News goes through a rigorous, multi-step verification process designed to ensure accuracy, context, and reliability. We don't publish first—we verify first.</p>
-            
-            <!-- Verification Process Flowchart -->
-            <div class="visualization-container fade-in" id="verification-flowchart" style="margin: 40px 0;">
-                <h3>Our Verification Workflow</h3>
-                <!-- Flowchart will be rendered here by VisualizationEngine -->
-            </div>
-            
-            <div class="verification-step">
-                <h4>Step 1: Source Identification and Assessment</h4>
-                <p>When a breaking news event is reported, our first step is to identify and assess all available sources. We evaluate sources based on several criteria:</p>
-                <ul>
-                    <li><strong>Primary Sources:</strong> We prioritize eyewitness accounts, official statements, and direct documentation (photos, videos, documents)</li>
-                    <li><strong>Source Credibility:</strong> We assess the track record and reliability of sources, checking their history of accuracy</li>
-                    <li><strong>Source Independence:</strong> We verify that sources aren't connected to parties with vested interests in the story</li>
-                    <li><strong>Multiple Confirmation:</strong> We require at least two independent sources before publishing breaking news</li>
-                </ul>
-            </div>
-            
-            <div class="verification-step">
-                <h4>Step 2: Cross-Reference and Corroboration</h4>
-                <p>No single source is sufficient. We cross-reference information across multiple sources to build a complete picture:</p>
-                <ul>
-                    <li>We compare information from official sources (government, law enforcement, institutions) with independent reporting</li>
-                    <li>We check against established news organizations with proven track records</li>
-                    <li>We verify details against publicly available records, databases, and official documents</li>
-                    <li>We consult subject matter experts when technical or specialized knowledge is required</li>
-                </ul>
-            </div>
-            
-            <div class="verification-step">
-                <h4>Step 3: Visual and Media Verification</h4>
-                <p>In the age of deepfakes and manipulated media, visual verification is crucial:</p>
-                <ul>
-                    <li><strong>Reverse Image Search:</strong> We use tools to verify that photos and videos haven't been recycled from other events</li>
-                    <li><strong>Metadata Analysis:</strong> We examine when and where media was created, when possible</li>
-                    <li><strong>Geolocation Verification:</strong> We verify locations using landmarks, architecture, and other identifying features</li>
-                    <li><strong>Expert Review:</strong> We consult with digital forensics experts when manipulation is suspected</li>
-                    <li><strong>Time Verification:</strong> We verify that timestamps and sequences of events are consistent</li>
-                </ul>
-            </div>
-            
-            <div class="verification-step">
-                <h4>Step 4: Context and Background Research</h4>
-                <p>Breaking news doesn't exist in a vacuum. We provide essential context:</p>
-                <ul>
-                    <li>We research the historical background and previous related events</li>
-                    <li>We identify key players, their roles, and their relationships to the story</li>
-                    <li>We explain relevant policies, laws, or regulations that apply</li>
-                    <li>We provide geographic, cultural, or political context when necessary</li>
-                </ul>
-            </div>
-            
-            <div class="verification-step">
-                <h4>Step 5: Expert Consultation</h4>
-                <p>For complex stories, we consult with subject matter experts:</p>
-                <ul>
-                    <li>Academic experts in relevant fields (politics, economics, science, etc.)</li>
-                    <li>Former officials or professionals with direct experience</li>
-                    <li>Legal experts for stories involving laws or regulations</li>
-                    <li>Technical experts for stories involving technology, science, or specialized knowledge</li>
-                </ul>
-            </div>
-            
-            <h2>Source Checking Methods</h2>
-            
-            <p>We employ multiple methods to verify the credibility and accuracy of our sources:</p>
-            
-            <h3>Official Source Verification</h3>
-            <p>When information comes from official sources (government agencies, law enforcement, institutions), we:</p>
-            <ul>
-                <li>Verify the authenticity of official statements and press releases</li>
-                <li>Confirm that spokespeople are authorized to speak for their organizations</li>
-                <li>Check official websites and verified social media accounts</li>
-                <li>Cross-reference official statements with independent reporting</li>
-            </ul>
-            
-            <h3>Eyewitness Verification</h3>
-            <p>Eyewitness accounts are valuable but must be carefully verified:</p>
-            <ul>
-                <li>We verify that eyewitnesses were actually present at the location</li>
-                <li>We check for consistency across multiple eyewitness accounts</li>
-                <li>We consider potential biases or perspectives that might affect accounts</li>
-                <li>We verify eyewitness identities when possible and appropriate</li>
-            </ul>
-            
-            <h3>Social Media Verification</h3>
-            <p>Social media can be a valuable source, but requires careful verification:</p>
-            <ul>
-                <li>We verify account authenticity and check for verification badges</li>
-                <li>We examine account history for consistency and credibility</li>
-                <li>We verify that posts haven't been manipulated or taken out of context</li>
-                <li>We cross-reference social media claims with other sources</li>
-                <li>We're cautious about viral content that may be misleading or false</li>
-            </ul>
-            
-            <h2>Fact-Checking Standards</h2>
-            
-            <p>Our fact-checking standards are based on established journalistic principles and fact-checking best practices:</p>
-            
-            <h3>Accuracy First</h3>
-            <p>We prioritize accuracy over speed. If we cannot verify information, we either wait until we can verify it, or we clearly state what is verified and what remains unverified. We never publish unverified information as fact.</p>
-            
-            <h3>Transparency</h3>
-            <p>We're transparent about our verification process. When we publish a story, we explain:</p>
-            <ul>
-                <li>What information we've verified and how</li>
-                <li>What information remains unverified or uncertain</li>
-                <li>What sources we used and why we trust them</li>
-                <li>Any limitations or uncertainties in our reporting</li>
-            </ul>
-            
-            <h3>Corrections Policy</h3>
-            <p>When we make errors, we correct them promptly and transparently:</p>
-            <ul>
-                <li>Corrections are clearly marked and dated</li>
-                <li>We explain what was incorrect and what the correct information is</li>
-                <li>We update articles with verified corrections</li>
-                <li>We maintain a public corrections log for transparency</li>
-            </ul>
-            
-            <h2>When We Can't Verify</h2>
-            
-            <p>Sometimes, despite our best efforts, we cannot immediately verify information. In these cases:</p>
-            
-            <h3>We Wait and Continue Investigating</h3>
-            <p>If breaking news cannot be verified within a reasonable timeframe, we continue investigating rather than publishing unverified information. We may publish a brief notice that we're aware of reports and are working to verify them.</p>
-            
-            <h3>We Clearly Label Unverified Information</h3>
-            <p>If we do report on unverified claims (for example, when they're widely circulating and need to be addressed), we:</p>
-            <ul>
-                <li>Clearly label them as "unverified" or "reported but not confirmed"</li>
-                <li>Explain what we know and what we don't know</li>
-                <li>Provide context about why the claims are circulating</li>
-                <li>Update the story as verification becomes available</li>
-            </ul>
-            
-            <h3>We Distinguish Between Facts and Analysis</h3>
-            <p>We clearly distinguish between verified facts and our analysis or interpretation. Facts are what we know to be true based on verification. Analysis is our interpretation of what those facts mean.</p>
-            
-            <h2>Ongoing Verification</h2>
-            
-            <p>Verification doesn't stop when we publish. We continue to monitor stories and update them as new information becomes available:</p>
-            <ul>
-                <li>We update articles when new verified information emerges</li>
-                <li>We correct errors promptly when discovered</li>
-                <li>We add context or clarification when needed</li>
-                <li>We mark updates clearly so readers know what's new</li>
-            </ul>
-            
-            <h2>Our Commitment</h2>
-            
-            <p>At Noteworthy News, verification is not optional—it's essential. We're committed to providing you with accurate, verified information you can trust. This process takes time and resources, but we believe it's the only way to maintain credibility and serve our readers effectively.</p>
-            
-            <p>If you have questions about our verification process, or if you believe we've made an error, please <a href="contact.html" style="color: #4A90E2;">contact us</a>. We take accuracy seriously and appreciate feedback that helps us improve.</p>
-            
-            <!-- Share Buttons -->
-            <div class="share-buttons fade-in" style="margin: 50px 0; padding: 30px; background: rgba(74, 144, 226, 0.1); border-radius: 15px; border: 2px solid rgba(74, 144, 226, 0.3);">
-                <h3 style="margin-bottom: 20px; color: #4A90E2;">Share this Page</h3>
-                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                    <a href="https://twitter.com/intent/tweet?url=https://noteworthynews.co/how-we-verify.html&text=How%20We%20Verify%20News" target="_blank" rel="noopener noreferrer" class="share-btn" style="padding: 12px 24px; background: #1DA1F2; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; transition: all 0.3s ease;">
-                        Share on X
-                    </a>
-                    <a href="https://www.facebook.com/sharer/sharer.php?u=https://noteworthynews.co/how-we-verify.html" target="_blank" rel="noopener noreferrer" class="share-btn" style="padding: 12px 24px; background: #1877F2; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; transition: all 0.3s ease;">
-                        Share on Facebook
-                    </a>
-                    <a href="https://www.linkedin.com/sharing/share-offsite/?url=https://noteworthynews.co/how-we-verify.html" target="_blank" rel="noopener noreferrer" class="share-btn" style="padding: 12px 24px; background: #0A66C2; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; transition: all 0.3s ease;">
-                        Share on LinkedIn
-                    </a>
-                    <button onclick="navigator.clipboard.writeText(window.location.href); alert('Link copied to clipboard!');" class="share-btn" style="padding: 12px 24px; background: #4A90E2; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
-                        Copy Link
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Related Resources -->
-            <div class="related-resources fade-in" style="margin: 50px 0; padding: 30px; background: rgba(74, 144, 226, 0.1); border-radius: 15px; border: 2px solid rgba(74, 144, 226, 0.3);">
-                <h3 style="margin-bottom: 20px; color: #4A90E2;">Related Resources</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
-                    <a href="fact-checking-tips.html" style="display: block; padding: 20px; background: rgba(74, 144, 226, 0.15); border-radius: 10px; text-decoration: none; color: white; border: 2px solid rgba(74, 144, 226, 0.3); transition: all 0.3s ease;">
-                        <h4 style="color: #4A90E2; margin-bottom: 10px;">Fact-Checking Tips</h4>
-                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">Learn practical techniques for verifying information yourself.</p>
-                    </a>
-                    <a href="editorial-policy.html" style="display: block; padding: 20px; background: rgba(74, 144, 226, 0.15); border-radius: 10px; text-decoration: none; color: white; border: 2px solid rgba(74, 144, 226, 0.3); transition: all 0.3s ease;">
-                        <h4 style="color: #4A90E2; margin-bottom: 10px;">Editorial Policy</h4>
-                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">Read our complete editorial policy and journalism standards.</p>
-                    </a>
-                    <a href="critical-reading-guide.html" style="display: block; padding: 20px; background: rgba(74, 144, 226, 0.15); border-radius: 10px; text-decoration: none; color: white; border: 2px solid rgba(74, 144, 226, 0.3); transition: all 0.3s ease;">
-                        <h4 style="color: #4A90E2; margin-bottom: 10px;">Critical Reading Guide</h4>
-                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">Learn how to read news critically and evaluate sources.</p>
-                    </a>
-                    <a href="our-mission.html" style="display: block; padding: 20px; background: rgba(74, 144, 226, 0.15); border-radius: 10px; text-decoration: none; color: white; border: 2px solid rgba(74, 144, 226, 0.3); transition: all 0.3s ease;">
-                        <h4 style="color: #4A90E2; margin-bottom: 10px;">Our Mission</h4>
-                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.9rem;">Learn about our mission and commitment to quality journalism.</p>
-                    </a>
-                </div>
-            </div>
-        </article>
-        <div class="nn-ad" data-nn-ad="in_article"></div>
-    </main>
-    
-    <!-- V2 Nav Behavior -->
-    <script>
-    (function(){
-      var h=document.querySelector('.site-header'),t=document.querySelector('.nav-toggle'),m=document.querySelector('.nav-menu');
-      if(t&&m){
-        t.addEventListener('click',function(){var o=m.classList.toggle('open');t.setAttribute('aria-expanded',String(o));document.body.style.overflow=o?'hidden':'';});
-        m.addEventListener('click',function(e){if(e.target===m||e.target.closest('.nav-link')){m.classList.remove('open');t.setAttribute('aria-expanded','false');document.body.style.overflow='';}});
-        document.addEventListener('keydown',function(e){if(e.key==='Escape'&&m.classList.contains('open')){m.classList.remove('open');t.setAttribute('aria-expanded','false');document.body.style.overflow='';t.focus();}});
-      }
-      if(h)window.addEventListener('scroll',function(){h.classList.toggle('scrolled',window.scrollY>10);},{passive:true});
-    })();
-    </script>
+  <!-- Header -->
+  <header class="site-header" id="site-header">
+    <nav class="nav-row container-wide" aria-label="Primary">
+      <a class="brand" href="/">
+        <img class="brand-mark" src="/IMG_5794.PNG" alt="" width="26" height="26">
+        <span class="brand-name">Noteworthy News</span>
+      </a>
 
-    <!-- V2 Footer -->
-    <footer class="site-footer">
-      <div class="container">
-        <div class="footer-grid">
-          <div class="footer-brand">
-            <p class="footer-brand-name">Noteworthy News</p>
-            <p class="footer-brand-tagline">Fact-checked journalism and media literacy tools. Think critically about the world.</p>
-          </div>
-          <nav aria-label="Footer navigation">
-            <p class="footer-nav-title">Explore</p>
-            <ul class="footer-nav-list">
-              <li><a class="footer-nav-link" href="/archive.html">Stories</a></li>
-              <li><a class="footer-nav-link" href="/game.html">Fact-Checker Game</a></li>
-              <li><a class="footer-nav-link" href="/geography-game.html">Geography Game</a></li>
-              <li><a class="footer-nav-link" href="/v2/situation-monitor.html">Situation Monitor</a></li>
-              <li><a class="footer-nav-link" href="/contact.html">Contact</a></li>
-            </ul>
-          </nav>
-          <nav aria-label="Resources">
-            <p class="footer-nav-title">Resources</p>
-            <ul class="footer-nav-list">
-              <li><a class="footer-nav-link" href="/media-literacy-guide.html">Media Literacy Guide</a></li>
-              <li><a class="footer-nav-link" href="/how-we-verify.html">How We Verify</a></li>
-              <li><a class="footer-nav-link" href="/fact-checking-tips.html">Fact-Checking Tips</a></li>
-              <li><a class="footer-nav-link" href="/newsletter-preferences.html">Newsletter Prefs</a></li>
-            </ul>
-          </nav>
-          <nav aria-label="Legal">
-            <p class="footer-nav-title">Legal</p>
-            <ul class="footer-nav-list">
-              <li><a class="footer-nav-link" href="/privacy.html">Privacy Policy</a></li>
-              <li><a class="footer-nav-link" href="/terms.html">Terms of Service</a></li>
-              <li><a class="footer-nav-link" href="/editorial-policy.html">Editorial Policy</a></li>
-            </ul>
-          </nav>
-        </div>
-        <div class="footer-bottom">
-          <p class="footer-copyright">&copy; 2026 Noteworthy News. All rights reserved.</p>
+      <div class="nav-menu" id="nav-menu">
+        <a class="nav-link" href="/">Home</a>
+        <a class="nav-link" href="/archive.html">All stories</a>
+        <a class="nav-link active" href="/how-we-verify.html">How we verify</a>
+        <a class="nav-link" href="/our-mission.html">Mission</a>
+        <a class="nav-link" href="/contact.html">Contact</a>
+
+        <div class="nav-tools">
+          <a class="nav-icon-btn" href="/archive.html" aria-label="Search all stories" title="Search stories">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+          </a>
         </div>
       </div>
-    </footer>
-    
-    <!-- Resource Page Utilities -->
-    <script src="js/resource-page-utils.js"></script>
-    <script src="js/visualization-engine.js"></script>
-    
-    <!-- Verification Process Visualization -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Initialize table of contents
-            new TableOfContents('table-of-contents');
-            new ReadingProgress();
-            
-            // Initialize verification process flowchart
-            const flowchartContainer = document.getElementById('verification-flowchart');
-            if (flowchartContainer) {
-                const steps = [
-                    { title: "Event Reported", description: "We receive reports of breaking events from multiple sources" },
-                    { title: "Initial Assessment", description: "Our team quickly assesses the credibility and urgency" },
-                    { title: "Source Verification", description: "We verify sources, check credentials, and cross-reference" },
-                    { title: "Multi-Source Confirmation", description: "We seek confirmation from independent, credible sources" },
-                    { title: "Fact-Checking", description: "We verify specific claims, dates, locations, and details" },
-                    { title: "Editorial Review", description: "Our editorial team reviews for accuracy and clarity" },
-                    { title: "Publication", description: "Verified information is published with source attribution" },
-                    { title: "Ongoing Updates", description: "We continue to monitor and update as new information emerges" }
-                ];
-                
-                flowchartContainer.dataset.steps = JSON.stringify(steps);
-            }
-        });
-    </script>
-    
-    <!-- Cookie Consent Banner -->
-    <script src="src/components/cookie-banner.js"></script>
-    <script src="/js/ads.js"></script>
+
+      <div class="nav-right">
+        <button class="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-menu">
+          <span class="nav-toggle-bar" aria-hidden="true"></span>
+          <span class="nav-toggle-bar" aria-hidden="true"></span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="pg-main">
+
+    <!-- Hero -->
+    <section class="pg-hero">
+      <div class="container-wide">
+        <div class="pg-hero-inner">
+          <p class="pg-kicker pg-kicker--gold"><span class="pg-kicker-rule" aria-hidden="true"></span>Our standards</p>
+          <h1 class="pg-title">How we know what we know.</h1>
+          <p class="pg-lede">
+            Every update we publish carries a timestamp and a source note. This page is the
+            standard behind that promise: where our information comes from, how we check it,
+            and what happens when we get something wrong.
+          </p>
+          <div class="pg-meta">
+            <span class="pg-meta-chip pg-meta-chip--gold"><span class="pg-dot" aria-hidden="true"></span>Applies to every story</span>
+            <span class="pg-meta-chip">Last updated July 2026</span>
+            <span class="pg-meta-chip">6 min read</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Body -->
+    <div class="container-wide pg-layout pg-layout--toc">
+      <nav class="pg-toc" aria-label="On this page">
+        <p class="pg-toc-title">On this page</p>
+        <ol>
+          <li><a href="#standard">The standard</a></li>
+          <li><a href="#pipeline">The pipeline</a></li>
+          <li><a href="#sources">Sources we accept</a></li>
+          <li><a href="#media">Verifying images and video</a></li>
+          <li><a href="#unverified">When we can't verify</a></li>
+          <li><a href="#corrections">Corrections in public</a></li>
+          <li><a href="#accountability">Holding us to it</a></li>
+        </ol>
+      </nav>
+
+      <article class="pg-article pg-article--numbered pg-article--gold">
+
+        <section id="standard">
+          <h2>The standard</h2>
+          <p>
+            Breaking news moves faster than certainty. Most of what goes wrong in live coverage
+            comes from blurring that line, so we hold every update to one rule:
+          </p>
+          <div class="pg-callout pg-callout--gold">
+            <span class="pg-callout-label">The house rule</span>
+            <p><strong>Developing means developing. Confirmed means confirmed.</strong> The two never blend. Every update tells you which one it is, and an update only moves from developing to confirmed when the evidence does.</p>
+          </div>
+          <p>Each label carries a specific meaning:</p>
+          <ul class="pg-defs">
+            <li>
+              <span class="badge badge-live">Developing</span>
+              <span class="pg-defs-desc">Reported by credible sources but not independently confirmed. We tell you who is saying it and what is still unknown.</span>
+            </li>
+            <li>
+              <span class="badge badge-success">Confirmed</span>
+              <span class="pg-defs-desc">Traced to an official source, primary documentation, or at least two independent sources. We link the evidence.</span>
+            </li>
+            <li>
+              <span class="badge badge-warning">Corrected</span>
+              <span class="pg-defs-desc">An earlier update was wrong. The correction states what we said, what was inaccurate, and what we know now.</span>
+            </li>
+          </ul>
+        </section>
+
+        <section id="pipeline">
+          <h2>The pipeline</h2>
+          <p>
+            Every story on Noteworthy News moves through the same five stages, whether it is a
+            one-line wire update or a live story running for days.
+          </p>
+          <ol class="pg-steps">
+            <li>
+              <span class="pg-step-num">01</span>
+              <span class="pg-step-name">Detect</span>
+              <p>Signals come from official feeds we monitor directly - USGS, the National Weather Service, government and agency alerts - plus primary accounts and local reporting we have vetted in advance.</p>
+            </li>
+            <li>
+              <span class="pg-step-num">02</span>
+              <span class="pg-step-name">Verify</span>
+              <p>Before a claim is published, it must trace to its original source. We check who said it first, whether they are in a position to know, and whether independent sources agree.</p>
+            </li>
+            <li>
+              <span class="pg-step-num">03</span>
+              <span class="pg-step-name">Context</span>
+              <p>We state plainly what is known, what is not, and who is doing the saying. If a number is preliminary or an account is disputed, the update says so in the same sentence.</p>
+            </li>
+            <li>
+              <span class="pg-step-num">04</span>
+              <span class="pg-step-name">Publish</span>
+              <p>Every update ships with a timestamp and a source note attached. Live stories keep a visible timeline, so you can see when each fact entered the record.</p>
+            </li>
+            <li>
+              <span class="pg-step-num">05</span>
+              <span class="pg-step-name">Correct</span>
+              <p>If we got it wrong, the correction is published in the same place readers saw the error. Nothing is silently rewritten after the fact.</p>
+            </li>
+          </ol>
+        </section>
+
+        <section id="sources">
+          <h2>Sources we accept</h2>
+          <p>Not all sources carry equal weight. In order of preference, we rely on:</p>
+          <ol>
+            <li><strong>Primary documentation.</strong> Official statements, court filings, agency data, and direct records of the event itself.</li>
+            <li><strong>Official channels.</strong> Verified government, emergency-service, and institutional accounts - checked against the organization's own site, not just a platform badge.</li>
+            <li><strong>Direct witnesses.</strong> People verifiably present at the scene, weighed against physical evidence and other accounts.</li>
+            <li><strong>Established reporting.</strong> Newsrooms with a track record on the specific beat, credited by name when we rely on their work.</li>
+          </ol>
+          <p>
+            A single anonymous claim is never enough. When a story rests on reporting we cannot
+            independently confirm, we attribute it explicitly - "according to" is a
+            load-bearing phrase in our updates, not filler.
+          </p>
+          <div class="pg-callout">
+            <span class="pg-callout-label">The two-source rule</span>
+            <p>Nothing is marked confirmed on the strength of one voice. We require an official source with direct knowledge, or two genuinely independent sources - not two accounts repeating the same original post.</p>
+          </div>
+        </section>
+
+        <section id="media">
+          <h2>Verifying images and video</h2>
+          <p>
+            Recycled and manipulated footage is the most common failure in breaking coverage.
+            Before any image or clip appears in our reporting, it goes through four checks:
+          </p>
+          <ul>
+            <li><strong>Reverse image search.</strong> Has this exact frame appeared online before, attached to a different event?</li>
+            <li><strong>Geolocation.</strong> Do landmarks, signage, terrain, and architecture match the claimed location?</li>
+            <li><strong>Time consistency.</strong> Do weather, shadows, and light match the claimed date and hour? Does available metadata agree?</li>
+            <li><strong>Provenance.</strong> Who posted it first, and were they plausibly in a position to capture it?</li>
+          </ul>
+          <p>
+            Media that fails any check is either excluded or published only with an explicit
+            warning about what we could not establish. When a viral clip is fake, we say so
+            directly rather than leaving it unaddressed.
+          </p>
+        </section>
+
+        <section id="unverified">
+          <h2>When we can't verify</h2>
+          <p>Sometimes a claim is everywhere and we still cannot stand it up. In that case we have three options, and publishing it as fact is not one of them:</p>
+          <ul>
+            <li><strong>Hold.</strong> If a claim is not yet load-bearing for the story, we keep working it and publish nothing.</li>
+            <li><strong>Publish with attribution.</strong> If a claim is significant and comes from a credible source, we publish it as developing, name the source, and state what remains unconfirmed.</li>
+            <li><strong>Address it head-on.</strong> If a false or unproven claim is spreading widely, we cover the claim itself - what is being said, where it started, and why it does not hold up.</li>
+          </ul>
+          <p>
+            Facts and analysis stay separated. When an update includes interpretation - why an
+            event matters, what may happen next - it is framed as such, never mixed into the
+            factual record.
+          </p>
+        </section>
+
+        <section id="corrections">
+          <h2>Corrections in public</h2>
+          <p>
+            We will get things wrong. Live coverage guarantees it. What we control is what
+            happens next:
+          </p>
+          <ul>
+            <li>Corrections are posted in the same timeline where the error appeared, clearly labeled and timestamped.</li>
+            <li>The original claim is not deleted or quietly edited; readers can see what changed and when.</li>
+            <li>Material corrections are noted at the top of the affected story, not buried at the bottom.</li>
+            <li>If an alert went out with an error, a corrected alert follows through the same channel.</li>
+          </ul>
+        </section>
+
+        <section id="accountability">
+          <h2>Holding us to it</h2>
+          <p>
+            This standard only means something if readers can enforce it. If an update is wrong,
+            missing a source note, or blends developing claims into confirmed fact, we want to
+            hear about it - and we respond to correction requests before anything else in the
+            inbox.
+          </p>
+          <p>
+            The full rules our newsroom operates under, including independence and funding, are
+            in our <a href="/editorial-policy.html">editorial policy</a>. The techniques we use
+            are public too: <a href="/fact-checking-tips.html">fact-checking tips</a> covers the
+            exact checks described above, so you can run them yourself.
+          </p>
+        </section>
+
+        <div class="pg-cta">
+          <p class="pg-cta-title">See something we got wrong?</p>
+          <p>Corrections are the fastest queue we have. Send the story link and what you believe is inaccurate, and we'll trace it.</p>
+          <div class="pg-cta-actions">
+            <a class="btn btn-primary" href="mailto:richard@noteworthynews.co?subject=Correction%20request">Request a correction</a>
+            <a class="btn btn-outline" href="/contact.html">Contact the newsroom</a>
+          </div>
+        </div>
+
+        <div class="nn-ad" data-nn-ad="in_article"></div>
+      </article>
+    </div>
+
+    <!-- Related -->
+    <section class="pg-more">
+      <div class="container-wide">
+        <div class="pg-more-head">
+          <h2 class="pg-more-title">Keep reading</h2>
+        </div>
+        <div class="lab-grid">
+          <a class="lab-card" href="/editorial-policy.html">
+            <span class="lab-card-icon" aria-hidden="true">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </span>
+            <span class="lab-card-name">Editorial Policy</span>
+            <span class="lab-card-text">The full rules our newsroom operates under: independence, sourcing, AI use, and enforcement.</span>
+            <span class="lab-card-go" aria-hidden="true">Read
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </span>
+          </a>
+          <a class="lab-card" href="/fact-checking-tips.html">
+            <span class="lab-card-icon" aria-hidden="true">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+            </span>
+            <span class="lab-card-name">Fact-Checking Tips</span>
+            <span class="lab-card-text">The exact techniques we use, written for readers. Reverse image search, source tracing, and more.</span>
+            <span class="lab-card-go" aria-hidden="true">Read
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </span>
+          </a>
+          <a class="lab-card" href="/media-literacy-guide.html">
+            <span class="lab-card-icon" aria-hidden="true">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+            </span>
+            <span class="lab-card-name">Media Literacy Guide</span>
+            <span class="lab-card-text">A field guide to sourcing, framing, and spotting manipulation in the news you read.</span>
+            <span class="lab-card-go" aria-hidden="true">Read
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </span>
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container-wide">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a class="brand" href="/">
+            <img class="brand-mark" src="/IMG_5794.PNG" alt="" width="24" height="24">
+            <span class="brand-name">Noteworthy News</span>
+          </a>
+          <p class="footer-tag">Independent newsroom. No paywall. Corrections in public.</p>
+        </div>
+
+        <nav aria-label="Explore">
+          <p class="footer-col-title">Explore</p>
+          <ul class="footer-list">
+            <li><a href="/archive.html">All stories</a></li>
+            <li><a href="/#developing">Developing now</a></li>
+            <li><a href="/#top-stories">Top stories</a></li>
+            <li><a href="/#lab">Media Literacy Lab</a></li>
+          </ul>
+        </nav>
+
+        <nav aria-label="Product">
+          <p class="footer-col-title">Product</p>
+          <ul class="footer-list">
+            <li><a href="/#app">iOS app</a></li>
+            <li><a href="/#ai">Noteworthy News AI</a></li>
+            <li><a href="/#brief">The Weekly Brief</a></li>
+            <li><a href="/notification-settings.html">Notification settings</a></li>
+          </ul>
+        </nav>
+
+        <nav aria-label="Resources">
+          <p class="footer-col-title">Resources</p>
+          <ul class="footer-list">
+            <li><a href="/how-we-verify.html">How we verify</a></li>
+            <li><a href="/editorial-policy.html">Editorial policy</a></li>
+            <li><a href="/media-literacy-guide.html">Media literacy guide</a></li>
+            <li><a href="/fact-checking-tips.html">Fact-checking tips</a></li>
+          </ul>
+        </nav>
+
+        <nav aria-label="Company">
+          <p class="footer-col-title">Company</p>
+          <ul class="footer-list">
+            <li><a href="/our-mission.html">Our mission</a></li>
+            <li><a href="/contact.html">Contact</a></li>
+            <li><a href="https://x.com/newsnoteworthy" rel="noopener" target="_blank">X</a></li>
+            <li><a href="/privacy.html">Privacy</a></li>
+            <li><a href="/terms.html">Terms</a></li>
+          </ul>
+        </nav>
+      </div>
+
+      <div class="footer-bottom">
+        <p>&copy; 2026 Noteworthy News. All rights reserved.</p>
+        <p class="footer-motto">Developing means developing. Confirmed means confirmed.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scroll to top -->
+  <button class="scroll-top" id="scrollTopBtn" type="button" aria-label="Scroll to top" hidden>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+  </button>
+
+  <script src="/v2/js/page.js" defer></script>
+  <script src="/js/ads.js" defer></script>
+  <script src="/src/components/cookie-banner.js" defer></script>
+  <script src="/src/widgets/noteworthy-chat-loader.js" defer></script>
 </body>
 </html>
-

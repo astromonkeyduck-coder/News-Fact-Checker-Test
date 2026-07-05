@@ -6,7 +6,7 @@
 
 - **Do not** use YouTube watch pages as clip sources. The YouTube Data API is **metadata-only** (event discovery).
 - **Do not** scrape, rip, or bypass platform restrictions on arbitrary streams.
-- Government/public-domain events may still contain third-party music, graphics, or broadcaster-owned coverage — **human review required**.
+- Government/public-domain events may still contain third-party music, graphics, or broadcaster-owned coverage - **human review required**.
 - Fair use is **not** a default automation strategy.
 - Every job must document `rights_basis` before clipping or uploading.
 - **Human approval is required** before posting to X.
@@ -63,10 +63,10 @@ Use `--segment` for hourly MKV segments. Recording logs go to `{output}.record.l
 3. When something clip-worthy happens, save the last 30 seconds instantly.
 
 ```bash
-# Terminal 1 — start rolling buffer (keeps ~90s of 5s segments)
+# Terminal 1 - start rolling buffer (keeps ~90s of 5s segments)
 npm run clip:record:buffer -- "https://RIGHTS_CLEARED_HLS_URL"
 
-# Terminal 2 — when you want the last 30 seconds
+# Terminal 2 - when you want the last 30 seconds
 npm run clip:save-last -- --seconds 30 --rights-basis "Official government feed"
 
 # Check buffer status
@@ -84,7 +84,7 @@ npm run clip:save-last -- --from /path/to/obs-recording.mkv --seconds 30 --right
 
 You are responsible for rights on any capture method.
 
-## YouTube — save last 30s with a button
+## YouTube - save last 30s with a button
 
 Server-side tools **cannot** record YouTube URLs. For a **click-to-save button on YouTube watch pages**, install the browser userscript:
 

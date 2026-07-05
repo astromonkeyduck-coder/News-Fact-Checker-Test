@@ -1,5 +1,5 @@
 /**
- * Import X Posts — Scheduled Netlify Function
+ * Import X Posts - Scheduled Netlify Function
  *
  * Runs every 3 minutes (configured in netlify.toml).
  * Polls the X API v2 for new posts from the Noteworthy News account,
@@ -33,7 +33,7 @@ exports.handler = async (event) => {
     'Cache-Control': 'no-store',
   };
 
-  // Auth model — this is a Netlify SCHEDULED function (see netlify.toml:
+  // Auth model - this is a Netlify SCHEDULED function (see netlify.toml:
   // [functions."import-x-posts"].schedule). Per Netlify, a function with a
   // `schedule` "does not accept incoming web requests": direct public HTTP
   // calls return 500 and never reach this code, so in production the cron
@@ -83,7 +83,7 @@ exports.handler = async (event) => {
     }
 
     const sinceId = await getLatestImportedId();
-    console.log(`[import-x-posts] Polling since_id=${sinceId || '(none — first run)'}`);
+    console.log(`[import-x-posts] Polling since_id=${sinceId || '(none - first run)'}`);
 
     const result = await importLatestPosts({
       userId,

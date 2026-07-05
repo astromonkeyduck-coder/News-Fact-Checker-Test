@@ -88,7 +88,7 @@ function convertWebmChunksToMp4Buffer(webmBase64, webmChunksBase64, options = {}
     }
 
     if (merged.length < 5000) {
-      throw new Error(`Input too small (${merged.length} bytes) — let the video play longer before saving`);
+      throw new Error(`Input too small (${merged.length} bytes) - let the video play longer before saving`);
     }
 
     fs.writeFileSync(inputPath, merged);

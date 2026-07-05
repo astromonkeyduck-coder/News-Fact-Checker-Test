@@ -1,5 +1,5 @@
 /**
- * Noteworthy News — Article Page V3
+ * Noteworthy News - Article Page V3
  * Breaking Brief + Longform templates
  */
 
@@ -1151,7 +1151,7 @@ body.article-page .nn-ad:not(:has(ins.adsbygoogle)) {
     font-size: var(--text-xs, 0.75rem);
   }
 
-  /* Print is the lowest-priority control on mobile — hide it */
+  /* Print is the lowest-priority control on mobile - hide it */
   .nn-toolbar #print-btn {
     display: none;
   }

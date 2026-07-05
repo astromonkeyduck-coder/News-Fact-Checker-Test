@@ -1,8 +1,8 @@
 /**
  * Unified Alert Event Model
  *
- * Every alert-worthy event in the system — earthquake, weather, airspace,
- * maritime, volcanic, embassy, or manual breaking news — is normalized
+ * Every alert-worthy event in the system - earthquake, weather, airspace,
+ * maritime, volcanic, embassy, or manual breaking news - is normalized
  * into this shape before storage or notification.
  *
  * Engines produce raw data.  This module turns it into a consistent
@@ -150,7 +150,7 @@ function getNotificationChannels(alertEvent) {
       channels.email = severity >= 4;
       break;
     default:
-      // FAA, USCG, Volcano, Embassy — internal email only for high severity
+      // FAA, USCG, Volcano, Embassy - internal email only for high severity
       channels.email = severity >= 3;
       break;
   }

@@ -3,8 +3,8 @@
  * Upload CSV file to process-csv-posts function to update breaking news cards
  *
  * Auth (one required):
- *   - ADMIN_ANALYTICS_TOKEN — same secret as Netlify env; sent as X-Admin-Token
- *   - NETLIFY_ADMIN_JWT — Auth0 access token (admin user), sent as Authorization: Bearer
+ *   - ADMIN_ANALYTICS_TOKEN - same secret as Netlify env; sent as X-Admin-Token
+ *   - NETLIFY_ADMIN_JWT - Auth0 access token (admin user), sent as Authorization: Bearer
  *
  * Loads .env from repo root when present (via dotenv).
  *

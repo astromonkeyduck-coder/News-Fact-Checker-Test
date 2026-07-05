@@ -15,7 +15,7 @@
 const { createRemoteJWKSet, jwtVerify } = require("jose");
 
 // ---------------------------------------------------------------------------
-// Configuration — all derived from env vars, fail-closed when missing
+// Configuration - all derived from env vars, fail-closed when missing
 // ---------------------------------------------------------------------------
 
 function getAuthConfig() {
@@ -63,7 +63,7 @@ function hasAdminRole(payload) {
 /**
  * Always treated as admin (merged with ADMIN_EMAILS from env).
  * Matched against the token email, the namespaced email claim, OR the Auth0
- * `sub` — so adding a `provider|id` value here grants that account admin even
+ * `sub` - so adding a `provider|id` value here grants that account admin even
  * when the access token carries no email claim.
  */
 const BUILTIN_ADMIN_EMAILS = [
@@ -197,7 +197,7 @@ async function verifyToken(event) {
 }
 
 // ---------------------------------------------------------------------------
-// requireAuth — any authenticated user
+// requireAuth - any authenticated user
 // ---------------------------------------------------------------------------
 
 /**
@@ -207,20 +207,20 @@ async function verifyToken(event) {
 async function requireAuth(event) {
   const config = getAuthConfig();
   if (!config) {
-    console.error("[requireAuth] AUTH0_DOMAIN is not configured — denying access (fail-closed).");
+    console.error("[requireAuth] AUTH0_DOMAIN is not configured - denying access (fail-closed).");
     return authResponse(500, "Authentication service not configured");
   }
 
   const result = await verifyToken(event);
   if (!result) {
-    return authResponse(401, "Unauthorized — valid Bearer token required");
+    return authResponse(401, "Unauthorized - valid Bearer token required");
   }
 
   return { user: result.payload };
 }
 
 // ---------------------------------------------------------------------------
-// requireAdminAuth — verified admin only
+// requireAdminAuth - verified admin only
 // ---------------------------------------------------------------------------
 
 /**
@@ -238,7 +238,7 @@ async function requireAdminAuth(event) {
       "[requireAuth] Non-admin access attempt:",
       authResult.user.sub || authResult.user.email || "unknown"
     );
-    return authResponse(403, "Forbidden — admin privileges required");
+    return authResponse(403, "Forbidden - admin privileges required");
   }
 
   return { user: resolved.payload };
@@ -314,7 +314,7 @@ async function requireAdminAuthOrSecret(event, secretEnvVarName) {
 
   // If JWT was valid but not admin, return 403
   if (jwtResult) {
-    return authResponse(403, "Forbidden — admin privileges required");
+    return authResponse(403, "Forbidden - admin privileges required");
   }
 
   // Check if auth infrastructure is configured at all
@@ -322,12 +322,12 @@ async function requireAdminAuthOrSecret(event, secretEnvVarName) {
   const secretExists = secretEnvVarName && process.env[secretEnvVarName];
   if (!config && !secretExists) {
     console.error(
-      `[requireAuth] Neither AUTH0_DOMAIN nor ${secretEnvVarName} is configured — denying access (fail-closed).`
+      `[requireAuth] Neither AUTH0_DOMAIN nor ${secretEnvVarName} is configured - denying access (fail-closed).`
     );
     return authResponse(500, "Security configuration error");
   }
 
-  return authResponse(401, "Unauthorized — admin authentication required");
+  return authResponse(401, "Unauthorized - admin authentication required");
 }
 
 // ---------------------------------------------------------------------------

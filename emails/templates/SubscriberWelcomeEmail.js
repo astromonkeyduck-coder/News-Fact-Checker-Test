@@ -34,7 +34,7 @@ function SubscriberWelcomeEmail({
   
   let content = `
     ${EmailParagraph({ text: greeting, marginTop: 0, marginBottom: 30, fontSize: 16 })}
-    ${EmailParagraph({ text: 'Thank you for subscribing to Noteworthy News! We\'re thrilled to have you join our community of fact-checkers and critical thinkers.', marginTop: 0, marginBottom: 50, fontSize: 16 })}
+    ${EmailParagraph({ text: 'Thank you for subscribing to Noteworthy News! We\'re thrilled to have you join a newsroom community that checks the news carefully.', marginTop: 0, marginBottom: 50, fontSize: 16 })}
   `;
   
   content += EmailSection({ title: 'What You\'ll Receive' });

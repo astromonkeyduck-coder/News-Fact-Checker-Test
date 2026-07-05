@@ -31,7 +31,7 @@ You don’t add these yourself unless you’re doing something custom.
 
 | Variable | Used for | Where to get it |
 |----------|----------|-----------------|
-| **YT_API_KEY** | YouTube Data API — **metadata only** (event discovery) | [Google Cloud Console](https://console.cloud.google.com/) → APIs → YouTube Data API v3 |
+| **YT_API_KEY** | YouTube Data API - **metadata only** (event discovery) | [Google Cloud Console](https://console.cloud.google.com/) → APIs → YouTube Data API v3 |
 | **X_USER_ACCESS_TOKEN** | Optional: upload approved clips to X (OAuth 2.0 user context) | X Developer Portal → user access token with `tweet.write` + media upload scopes |
 | **X_UPLOAD_ENABLED** | Set `true` to enable X upload from clip pipeline | Your choice (`true` / unset) |
 | **CLIP_DRY_RUN** | Print FFmpeg/API commands without executing | Set `true` for dry-run |
@@ -40,7 +40,7 @@ You don’t add these yourself unless you’re doing something custom.
 | **FFMPEG_PATH** / **FFPROBE_PATH** | Override bundled ffmpeg/ffprobe binaries | Optional |
 | **OPENAI_API_KEY** | Transcribe local MP4/audio via `npm run clip:transcribe` (Whisper) | [platform.openai.com](https://platform.openai.com/api-keys) |
 
-See `scripts/clip-pipeline/README.md` for full workflow. **Rights-cleared sources only** — do not use YouTube watch URLs as clip media sources.
+See `scripts/clip-pipeline/README.md` for full workflow. **Rights-cleared sources only** - do not use YouTube watch URLs as clip media sources.
 
 ---
 
@@ -48,7 +48,7 @@ See `scripts/clip-pipeline/README.md` for full workflow. **Rights-cleared source
 
 Lives in the admin app at `/admin/watermarker` (also reachable via `/admin/#watermarker`). It lets an authorized admin paste an authorized Facebook video link (compliant Meta Graph API retrieval) or upload a video manually, then exports a Noteworthy News watermarked MP4.
 
-**Authentication:** uses the existing Auth0 admin login + server-side `requireAdminAuth`. No new auth — admins are whoever passes `ADMIN_EMAILS` / the admin role (same as the rest of `/admin`).
+**Authentication:** uses the existing Auth0 admin login + server-side `requireAdminAuth`. No new auth - admins are whoever passes `ADMIN_EMAILS` / the admin role (same as the rest of `/admin`).
 
 **Storage:** uses the existing **Cloudflare R2** variables for temporary originals and finished videos, and **Netlify Blobs** (`watermark-jobs` store) for job state.
 
@@ -93,7 +93,7 @@ Replace the origins with your production domain(s) and dev origin. `content-type
 
 ### Known limitations
 
-- **Arbitrary Facebook links usually cannot be fetched.** The only compliant automated path is the Meta Graph API `source` field, which returns media only for videos the configured token may access (typically videos on Pages/accounts you administer). For most pasted links the tool will (correctly) show the manual-upload fallback — **manual upload is the reliable path.**
+- **Arbitrary Facebook links usually cannot be fetched.** The only compliant automated path is the Meta Graph API `source` field, which returns media only for videos the configured token may access (typically videos on Pages/accounts you administer). For most pasted links the tool will (correctly) show the manual-upload fallback - **manual upload is the reliable path.**
 - **Size/length caps exist for serverless reasons.** Defaults: 150 MB / 10 minutes. The processor runs as a Netlify background function (~15 min max) and Lambda gives ~512 MB of `/tmp` (must hold source + output). Very long/large videos are rejected with a clear message rather than timing out cryptically.
 - **`ffprobe-static` is not bundled.** It ships ~300 MB of multi-platform binaries that would exceed Netlify's function-size limits. Dimensions/duration are read from `ffmpeg` itself, so only the single `ffmpeg-static` binary (~44 MB) is bundled.
 - **No automatic background sweeper.** Expired outputs are cleaned opportunistically when a job is polled after its TTL, and manual originals are deleted right after processing. For a guaranteed backstop, add an R2 lifecycle rule (below).
@@ -145,11 +145,11 @@ Powers the "Follow Live" feature: editors create live stories in `/admin/#live-s
 | **VAPID_SUBJECT** | VAPID contact | Optional; defaults to `mailto:richard@noteworthynews.co` |
 | **SUPABASE_URL**, **SUPABASE_SERVICE_ROLE_KEY** | Story/follow/device tables | Already used elsewhere |
 
-### iOS Live Activities + standard push (Phase 2 / 2B / 2C — APNs)
+### iOS Live Activities + standard push (Phase 2 / 2B / 2C - APNs)
 
 Used by `netlify/functions/lib/apnsClient.js` with:
-- `lib/liveActivityNotify.js` — update/end/push-to-start Live Activities (2A/2B), push type `liveactivity`, topic `<bundle>.push-type.liveactivity`.
-- `lib/standardPushNotify.js` — standard alert notifications to the native app (2C), push type `alert`, topic `<bundle>`.
+- `lib/liveActivityNotify.js` - update/end/push-to-start Live Activities (2A/2B), push type `liveactivity`, topic `<bundle>.push-type.liveactivity`.
+- `lib/standardPushNotify.js` - standard alert notifications to the native app (2C), push type `alert`, topic `<bundle>`.
 
 APNs uses HTTP/2 (Node's built-in `http2`) with a token-based `.p8` key signed via `jose` (ES256). No new npm dependency. Both push types share the same `.p8` key and env vars below.
 
@@ -162,9 +162,9 @@ APNs uses HTTP/2 (Node's built-in `http2`) with a token-based `.p8` key signed v
 | **APNS_DEFAULT_ENVIRONMENT** | `sandbox` or `production` fallback | Per-device env is stored at pairing; this is the default. Use `sandbox` only for local **development/debug device builds**. **TestFlight and App Store builds use `production`** APNs. |
 | **APNS_KEY_STORE** | Optional: set to `blob` when the `.p8` is stored in Netlify Blobs instead of env | See **Netlify 4KB function env limit** below. Requires one-time `node scripts/upload-apns-key-to-blob.js`. |
 
-> **Var name note:** the code reads **`APNS_KEY_P8_BASE64`** (base64 of the `.p8`). `APNS_KEY_P8` is a legacy alias — **do not set both** (wastes ~600 bytes toward Netlify's 4KB function env cap). The key value may also be stored as raw PEM (not base64); the client tolerates both. With **`APNS_KEY_STORE=blob`**, delete both env key vars after uploading via `scripts/upload-apns-key-to-blob.js`.
+> **Var name note:** the code reads **`APNS_KEY_P8_BASE64`** (base64 of the `.p8`). `APNS_KEY_P8` is a legacy alias - **do not set both** (wastes ~600 bytes toward Netlify's 4KB function env cap). The key value may also be stored as raw PEM (not base64); the client tolerates both. With **`APNS_KEY_STORE=blob`**, delete both env key vars after uploading via `scripts/upload-apns-key-to-blob.js`.
 
-If the APNS_* vars are absent, **both** Live Activity and standard-push dispatch are a **no-op** — web push still works and the editorial write never fails. See `ios/NoteworthyLive/README.md` for the app/Xcode setup and `IOS_NOTIFICATIONS_TESTING.md` for real-device test steps.
+If the APNS_* vars are absent, **both** Live Activity and standard-push dispatch are a **no-op** - web push still works and the editorial write never fails. See `ios/NoteworthyLive/README.md` for the app/Xcode setup and `IOS_NOTIFICATIONS_TESTING.md` for real-device test steps.
 
 **Verify the config without exposing secrets** (Milestone 2B/2C): signed into `/admin`, call the admin-authenticated diagnostic:
 
@@ -174,16 +174,16 @@ curl -s "https://noteworthynews.co/.netlify/functions/admin-live-stories?action=
   -H "Authorization: Bearer <admin Auth0 token>"
 ```
 
-It never returns the `.p8` key or a signed JWT — only whether each var is present and the derived topics/environment. `configured:false` means at least one of `APNS_KEY_P8_BASE64 / APNS_KEY_ID / APNS_TEAM_ID / APNS_BUNDLE_ID` is missing. `liveActivityTopic` = `<bundle>.push-type.liveactivity`; `alertTopic` = `<bundle>`.
+It never returns the `.p8` key or a signed JWT - only whether each var is present and the derived topics/environment. `configured:false` means at least one of `APNS_KEY_P8_BASE64 / APNS_KEY_ID / APNS_TEAM_ID / APNS_BUNDLE_ID` is missing. `liveActivityTopic` = `<bundle>.push-type.liveactivity`; `alertTopic` = `<bundle>`.
 
-**Sandbox vs production:** APNs picks the host per device from `live_story_devices.apns_environment` (set at pairing). Debug builds run on a real device register as `sandbox`; **TestFlight/App Store builds register as `production`**. A token created by a sandbox build will 400/`BadDeviceToken` on the production host and vice-versa — if a device "won't update," confirm its build type matches the environment. `APNS_DEFAULT_ENVIRONMENT` is only the fallback when a device has no stored environment.
+**Sandbox vs production:** APNs picks the host per device from `live_story_devices.apns_environment` (set at pairing). Debug builds run on a real device register as `sandbox`; **TestFlight/App Store builds register as `production`**. A token created by a sandbox build will 400/`BadDeviceToken` on the production host and vice-versa - if a device "won't update," confirm its build type matches the environment. `APNS_DEFAULT_ENVIRONMENT` is only the fallback when a device has no stored environment.
 
 ### Native iOS app content API (no keys required)
 
 The native iOS reader app consumes two **read-only, public** endpoints that normalize the existing content into a stable mobile contract:
 
-- `mobile-feed` (alias `/api/mobile/feed`) — normalized post feed (`{ items, nextCursor, total }`)
-- `mobile-story` (alias `/api/mobile/story?id=`) — single normalized post (`{ story }`)
+- `mobile-feed` (alias `/api/mobile/feed`) - normalized post feed (`{ items, nextCursor, total }`)
+- `mobile-story` (alias `/api/mobile/story?id=`) - single normalized post (`{ story }`)
 
 These reuse the existing `x-posts` Netlify Blobs store (via `lib/postStore`) and the shared `lib/postNormalize` module. **No new environment variables are needed.** Live stories continue to use the existing `live-stories` endpoint. Full app setup: see `IOS_APP_SETUP.md`.
 
@@ -215,7 +215,7 @@ Netlify attaches **all function-scoped env vars** to every function upload. The 
 
 **Fastest fixes (do all that apply):**
 
-1. **Remove duplicate APNs key** — keep only `APNS_KEY_P8_BASE64`; delete legacy `APNS_KEY_P8` if both exist (~600 bytes saved).
+1. **Remove duplicate APNs key** - keep only `APNS_KEY_P8_BASE64`; delete legacy `APNS_KEY_P8` if both exist (~600 bytes saved).
 2. **Move APNs .p8 to Netlify Blobs** (recommended when still over limit):
    ```bash
    # With site creds from: netlify env:list --json
@@ -224,8 +224,8 @@ Netlify attaches **all function-scoped env vars** to every function upload. The 
      node scripts/upload-apns-key-to-blob.js
    ```
    Then in Netlify Dashboard: set **`APNS_KEY_STORE=blob`**, delete **`APNS_KEY_P8_BASE64`** and **`APNS_KEY_P8`**, redeploy (~600+ bytes saved).
-3. **Scope build-only vars** — in Netlify Dashboard → Environment variables → each var → **Scopes**: uncheck **Functions** for vars only used at build time or in local scripts (e.g. `CLIP_*`, `YT_API_KEY`, `FFMPEG_PATH`, `FFPROBE_PATH`, `CLIP_REVIEW_*`). Keep `AUTH0_*`, `SUPABASE_*`, `APNS_*` (except the moved .p8), `R2_*`, etc. on Functions.
-4. **Delete unused keys** — remove any obsolete or test secrets still listed in the site env.
+3. **Scope build-only vars** - in Netlify Dashboard → Environment variables → each var → **Scopes**: uncheck **Functions** for vars only used at build time or in local scripts (e.g. `CLIP_*`, `YT_API_KEY`, `FFMPEG_PATH`, `FFPROBE_PATH`, `CLIP_REVIEW_*`). Keep `AUTH0_*`, `SUPABASE_*`, `APNS_*` (except the moved .p8), `R2_*`, etc. on Functions.
+4. **Delete unused keys** - remove any obsolete or test secrets still listed in the site env.
 
 Verify after deploy: `admin-live-stories?action=apnsStatus` should show `configured:true` and `keyP8Source:"blob"` when using blob storage.
 

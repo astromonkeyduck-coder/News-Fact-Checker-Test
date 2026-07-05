@@ -1,5 +1,5 @@
 /**
- * Device Link — pair an iOS companion app to a web subscriber's follows
+ * Device Link - pair an iOS companion app to a web subscriber's follows
  *
  * POST { action: "create-code", subscription }
  *   (web/PWA) → returns a short, single-use pairing code tied to the caller's
@@ -58,7 +58,7 @@ exports.handler = pairingLimiter(async (event) => {
  *
  * Pairing codes carry short-lived PII captured at creation (verified Auth0
  * email/name/picture). Once a code is expired or redeemed it serves no purpose,
- * so we delete it to minimize retention. Failures are swallowed — cleanup must
+ * so we delete it to minimize retention. Failures are swallowed - cleanup must
  * never break the pairing flow.
  */
 async function cleanupPairingCodes() {
@@ -66,7 +66,7 @@ async function cleanupPairingCodes() {
     const nowIso = new Date().toISOString();
     // Expired codes (covers expired-and-redeemed too).
     await supabase.from("device_pairing_codes").delete().lt("expires_at", nowIso);
-    // Redeemed codes that have not yet expired — they are single-use and spent.
+    // Redeemed codes that have not yet expired - they are single-use and spent.
     await supabase.from("device_pairing_codes").delete().not("redeemed_at", "is", null);
   } catch (err) {
     console.warn("[device-link] pairing-code cleanup skipped:", err.message);
@@ -79,7 +79,7 @@ async function createCode(body, event) {
 
   // If the caller is a signed-in web user, capture their VERIFIED Auth0 profile
   // (sub/email/name/picture) from the ID token. Client-provided profile is never
-  // trusted — only claims from the server-verified token are stored.
+  // trusted - only claims from the server-verified token are stored.
   const profile = await verifiedProfile(event);
 
   // Try a few times in the unlikely event of a code collision.

@@ -265,7 +265,7 @@ async function main() {
     }
 
     if (needsSplit) {
-      console.log('[transcribe-clip] Audio exceeds upload limit — splitting into chunks…');
+      console.log('[transcribe-clip] Audio exceeds upload limit - splitting into chunks…');
       const segmentDir = path.join(workDir, 'chunks');
       await fsp.mkdir(segmentDir, { recursive: true });
       chunks = await splitAudio(audioPath, segmentDir, dryRun);
@@ -274,7 +274,7 @@ async function main() {
     }
 
     if (dryRun) {
-      console.log('[transcribe-clip] Dry run complete — no transcription performed.');
+      console.log('[transcribe-clip] Dry run complete - no transcription performed.');
       console.log(`[transcribe-clip] Would write transcript to: ${txtPath}`);
       return;
     }

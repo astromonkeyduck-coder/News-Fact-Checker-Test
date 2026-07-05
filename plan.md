@@ -1,4 +1,4 @@
-# V2 Migration Plan — Noteworthy News
+# V2 Migration Plan - Noteworthy News
 
 *Generated 2026-03-22. Based on audit-findings.md and feature-parity.md.*
 
@@ -11,7 +11,7 @@
 ```
 noteworthy-news/
 │
-├── public-site/                    # PUBLIC — what readers see
+├── public-site/                    # PUBLIC - what readers see
 │   ├── index.html                  # Composable homepage shell (< 500 lines)
 │   ├── article.html                # Article template
 │   ├── archive.html                # Post archive
@@ -22,13 +22,13 @@ noteworthy-news/
 │   ├── newsletter/                 # Preferences, unsubscribe, examples
 │   └── profile/                    # Auth0 user pages (profile, reading list)
 │
-├── experiences/                    # SPECIALTY — opt-in heavy features
+├── experiences/                    # SPECIALTY - opt-in heavy features
 │   ├── situation-monitor/          # Real-time dashboard (lazy-loaded)
 │   ├── games/                      # Game pages + gallery
 │   ├── globe/                      # Mission Control / 3D globe
 │   └── chat/                       # AI chat widget (custom element)
 │
-├── admin/                          # INTERNAL — server-authenticated
+├── admin/                          # INTERNAL - server-authenticated
 │   ├── posts/                      # Post CRUD, CSV import, media upload
 │   ├── newsletter/                 # Template editor, AI generation, send
 │   ├── analytics/                  # Dashboard, logs, CSV export
@@ -105,12 +105,12 @@ noteworthy-news/
 
 ## 2. Phased Migration Plan
 
-### Phase 0 — Security Hardening (Critical, do first)
+### Phase 0 - Security Hardening (Critical, do first)
 
 **Why this phase exists:** The repo has unauthenticated mutation endpoints in production. This is a live vulnerability that must be fixed before any architectural work.
 
 **Scope:**
-1. Create `netlify/functions/middleware/requireAuth.js` — shared middleware that:
+1. Create `netlify/functions/middleware/requireAuth.js` - shared middleware that:
    - Verifies Auth0 JWTs against JWKS endpoint (issuer, audience, expiry, signature)
    - Extracts role claims
    - Exports `requireAdminAuth(event)` that returns 401/403 or the verified user
@@ -131,13 +131,13 @@ noteworthy-news/
    - `remove-old-alert-posts.js`
 
 3. Fix fail-open patterns in existing secret-checked functions:
-   - `newsletter-templates.js` — `if (!newsletterKey) return 500`
-   - `send-newsletter.js` — same
-   - `log-data.js` (GET) — same for `ADMIN_ANALYTICS_TOKEN`
-   - `stream-logs.js`, `get-user-profile.js` — same
-   - `create-job.js`, `process-job.js`, `trigger-job.js`, `trigger-all-queued-jobs.js` — same for `CLEMS_TOKEN`
-   - `send-custom-email.js` — same for `ADMIN_TOKEN`
-   - `send-website-update.js` — same for `PUSH_API_KEY`
+   - `newsletter-templates.js` - `if (!newsletterKey) return 500`
+   - `send-newsletter.js` - same
+   - `log-data.js` (GET) - same for `ADMIN_ANALYTICS_TOKEN`
+   - `stream-logs.js`, `get-user-profile.js` - same
+   - `create-job.js`, `process-job.js`, `trigger-job.js`, `trigger-all-queued-jobs.js` - same for `CLEMS_TOKEN`
+   - `send-custom-email.js` - same for `ADMIN_TOKEN`
+   - `send-website-update.js` - same for `PUSH_API_KEY`
 
 4. Fix `user-data.js` to cryptographically verify Auth0 JWTs.
 
@@ -150,7 +150,7 @@ noteworthy-news/
 - Modified: ~20 Netlify function files (add auth check at top of handler)
 - Deleted: `netlify/functions/test-resend.js`, `netlify/functions/test-generate.js`
 
-**What will NOT change:** No HTML changes. No frontend changes. No data schema changes. No user-facing behavior changes. Admin HTML pages will stop working until they send proper auth headers — this is intentional and forces Phase 1.
+**What will NOT change:** No HTML changes. No frontend changes. No data schema changes. No user-facing behavior changes. Admin HTML pages will stop working until they send proper auth headers - this is intentional and forces Phase 1.
 
 **Validation:**
 - Every previously unauthenticated mutation endpoint returns 401 without a valid token
@@ -163,7 +163,7 @@ noteworthy-news/
 
 ---
 
-### Phase 1 — Admin UI Behind Auth (High priority)
+### Phase 1 - Admin UI Behind Auth (High priority)
 
 **Why this phase exists:** Phase 0 breaks the admin HTML pages (they don't send auth tokens). This phase rebuilds admin access with proper authentication.
 
@@ -206,7 +206,7 @@ noteworthy-news/
 
 ---
 
-### Phase 2 — Homepage Decomposition (High priority)
+### Phase 2 - Homepage Decomposition (High priority)
 
 **Why this phase exists:** The 21,006-line `index.html` is the biggest source of maintenance risk, performance problems, and developer friction. It must be broken into composable parts.
 
@@ -265,19 +265,19 @@ noteworthy-news/
 
 ---
 
-### Phase 3 — Data Path Consolidation ✅ COMPLETED (core scope)
+### Phase 3 - Data Path Consolidation ✅ COMPLETED (core scope)
 
 > **Completed 2026-03-22.** Core data consolidation implemented. See `migration-notes.md` for full details.
 
 **What was done:**
 
-1. ✅ **Created `lib/postStore.js`** — centralized post storage module. All `x-posts` blob operations go through it with consistent key format, index shape (`{ ids }` only — `urls` retired), deduplication, and bounded size.
+1. ✅ **Created `lib/postStore.js`** - centralized post storage module. All `x-posts` blob operations go through it with consistent key format, index shape (`{ ids }` only - `urls` retired), deduplication, and bounded size.
 
 2. ✅ **Migrated all 11 x-posts writers** to use postStore: `createPost.js`, `x-webhook.ts`, `fetch-tweets-simple.ts`, `fetch-profile-tweets.ts`, `update-post-data.js`, `remove-post.js`, `remove-long-posts.js`, `remove-old-alert-posts.js`, `rebuild-index.ts`, `inbound-email.js`, `earthquake-poller.js`.
 
-3. ✅ **Unified earthquake ID scheme** — `earthquake-poller.js` now uses `usgs-` prefix (matching `engines/usgs.js`). `posts-read.js` retains a temporary fallback for legacy `eq-` posts.
+3. ✅ **Unified earthquake ID scheme** - `earthquake-poller.js` now uses `usgs-` prefix (matching `engines/usgs.js`). `posts-read.js` retains a temporary fallback for legacy `eq-` posts.
 
-4. ✅ **Removed duplicate RSS parser** — inline `parseRSSBasic` removed from `ingest-all.js`. RSS ingestion is now solely `ingest-live-events.js` using the shared `src/rss/parser.js`.
+4. ✅ **Removed duplicate RSS parser** - inline `parseRSSBasic` removed from `ingest-all.js`. RSS ingestion is now solely `ingest-live-events.js` using the shared `src/rss/parser.js`.
 
 5. ✅ **Migrated `posts-read.js`** to use postStore.
 
@@ -291,12 +291,12 @@ noteworthy-news/
 - All post writes go through one module (`postStore`)
 - Index shape is deterministic (`{ ids }`)
 - Earthquake posts use one ID scheme (`usgs-`)
-- No frontend changes — same posts, same feed, same API
+- No frontend changes - same posts, same feed, same API
 - Rollback: revert the postStore imports in each file; each change is a small import swap
 
 ---
 
-### Phase 4 — Design System and CSS Consolidation
+### Phase 4 - Design System and CSS Consolidation
 
 **Why this phase exists:** 30 CSS files across 5 directories with no consistent organization makes visual coherence impossible and every style change risky.
 
@@ -322,7 +322,7 @@ noteworthy-news/
 
 2. Migrate `styles.css` (4,672 lines) into tokens + base + components.
 
-3. Migrate `styles/responsive.css` (5,591 lines) — responsive rules belong alongside their components, not in one monolith.
+3. Migrate `styles/responsive.css` (5,591 lines) - responsive rules belong alongside their components, not in one monolith.
 
 4. Scope specialty CSS:
    - `situation-monitor.css` stays as a specialty stylesheet loaded only on that page
@@ -356,7 +356,7 @@ noteworthy-news/
 
 ---
 
-### Phase 5 — Build Pipeline Upgrade
+### Phase 5 - Build Pipeline Upgrade
 
 **Why this phase exists:** Webpack currently only bundles 2 of 30+ JS files. There is no code splitting, no tree shaking, and Babel-in-browser is used for JSX on two pages. A modern build pipeline is required to support the composable architecture from Phases 2–4.
 
@@ -438,9 +438,9 @@ Each phase has specific validation criteria documented above. General approach:
 
 ### Automated checks
 
-- `npm run test:games` — Jest tests for GamesGallery (preserve and extend)
-- `npm run validate:games` — Game embed validation
-- `npx tsc --noEmit` — TypeScript type checking
+- `npm run test:games` - Jest tests for GamesGallery (preserve and extend)
+- `npm run validate:games` - Game embed validation
+- `npx tsc --noEmit` - TypeScript type checking
 - API endpoint smoke tests (recommend adding as a script in Phase 0)
 
 ### Manual checks
@@ -474,12 +474,12 @@ Each phase has specific validation criteria documented above. General approach:
 
 | Phase | Rollback mechanism |
 |-------|-------------------|
-| **0 — Security** | Remove `requireAdminAuth` calls from each function; revert middleware file |
-| **1 — Admin UI** | Restore old admin HTML files; revert netlify.toml redirects |
-| **2 — Homepage** | Restore `index.html.backup`; revert module extractions |
-| **3 — Data** | Restore original function files from git; no data migration needed |
-| **4 — CSS** | Restore old CSS files; revert HTML `<link>` tag changes |
-| **5 — Build** | Revert to raw script loading; restore old HTML `<script>` tags |
+| **0 - Security** | Remove `requireAdminAuth` calls from each function; revert middleware file |
+| **1 - Admin UI** | Restore old admin HTML files; revert netlify.toml redirects |
+| **2 - Homepage** | Restore `index.html.backup`; revert module extractions |
+| **3 - Data** | Restore original function files from git; no data migration needed |
+| **4 - CSS** | Restore old CSS files; revert HTML `<link>` tag changes |
+| **5 - Build** | Revert to raw script loading; restore old HTML `<script>` tags |
 
 ---
 
@@ -487,7 +487,7 @@ Each phase has specific validation criteria documented above. General approach:
 
 Each session should be a focused, completable unit of work with a clear deliverable.
 
-### Session 1 — Security hardening (Phase 0)
+### Session 1 - Security hardening (Phase 0)
 - Create `requireAuth.js` middleware
 - Apply to all mutation endpoints
 - Fix fail-open patterns
@@ -495,26 +495,26 @@ Each session should be a focused, completable unit of work with a clear delivera
 - Remove test functions
 - Duration: 1 session (focused, high-value)
 
-### Session 2 — Admin UI rebuild (Phase 1, part 1)
+### Session 2 - Admin UI rebuild (Phase 1, part 1)
 - Auth0 admin role configuration
 - Admin shell with login flow
 - Post management admin page
 - Duration: 1 session
 
-### Session 3 — Admin UI completion (Phase 1, part 2)
+### Session 3 - Admin UI completion (Phase 1, part 2)
 - Newsletter admin page
 - Analytics admin page
 - Old admin page removal and redirects
 - Dev/test page removal
 - Duration: 1 session
 
-### Session 4 — Feed consolidation + homepage shell (Phase 2, part 1)
+### Session 4 - Feed consolidation + homepage shell (Phase 2, part 1)
 - Merge feed renderers into one module
 - Create homepage shell
 - Extract hero, feed, newsletter sections as modules
 - Duration: 1 session
 
-### Session 5 — Homepage completion (Phase 2, part 2)
+### Session 5 - Homepage completion (Phase 2, part 2)
 - Globe lazy-loading
 - Music system lazy-loading
 - Christmas theme deferred loading
@@ -522,7 +522,7 @@ Each session should be a focused, completable unit of work with a clear delivera
 - Performance validation
 - Duration: 1 session
 
-### Session 6 — Data path consolidation (Phase 3) ✅ COMPLETED
+### Session 6 - Data path consolidation (Phase 3) ✅ COMPLETED
 - ✅ Created `lib/postStore.js` centralized storage module
 - ✅ Migrated all 11 x-posts writers to use postStore
 - ✅ Unified earthquake ID scheme (eq- → usgs-)
@@ -530,20 +530,20 @@ Each session should be a focused, completable unit of work with a clear delivera
 - ✅ Standardized index shape (retired urls field)
 - Remaining: proxy function consolidation, Cloudflare Worker decision
 
-### Session 7 — Design system (Phase 4, part 1)
+### Session 7 - Design system (Phase 4, part 1)
 - CSS architecture setup (tokens, base, layout)
 - Decompose `styles.css`
 - Decompose `styles/responsive.css`
 - Duration: 1 session
 
-### Session 8 — Design system completion (Phase 4, part 2)
+### Session 8 - Design system completion (Phase 4, part 2)
 - Component CSS extraction
 - Legal/resource CSS consolidation
 - Page-specific CSS cleanup
 - Visual regression validation
 - Duration: 1 session
 
-### Session 9 — Build pipeline (Phase 5)
+### Session 9 - Build pipeline (Phase 5)
 - Vite (or webpack expansion) setup
 - Entry point configuration
 - JSX pre-compilation
@@ -551,7 +551,7 @@ Each session should be a focused, completable unit of work with a clear delivera
 - Netlify build integration
 - Duration: 1 session
 
-### Session 10 — Validation and cleanup
+### Session 10 - Validation and cleanup
 - End-to-end testing across all phases
 - Remove backup files
 - Update documentation
@@ -588,7 +588,7 @@ Each session should be a focused, completable unit of work with a clear delivera
 
 ### What was built
 
-**V2 Situation Monitor** — a professional, information-first intelligence dashboard rebuilt from the ground up on the V2 design system.
+**V2 Situation Monitor** - a professional, information-first intelligence dashboard rebuilt from the ground up on the V2 design system.
 
 | File | Purpose | Lines |
 |------|---------|------:|
@@ -654,8 +654,8 @@ A unified alert architecture that normalizes all event sources into a single pip
 
 | File | Purpose | Lines |
 |------|---------|------:|
-| `netlify/functions/lib/alertEvent.js` | Unified alert event model — normalizes all event types to one schema | ~175 |
-| `netlify/functions/lib/notifyForEvent.js` | Central notification dispatcher — routes events to email, push, location channels | ~280 |
+| `netlify/functions/lib/alertEvent.js` | Unified alert event model - normalizes all event types to one schema | ~175 |
+| `netlify/functions/lib/notifyForEvent.js` | Central notification dispatcher - routes events to email, push, location channels | ~280 |
 | `netlify/functions/lib/alertRateLimit.js` | Per-event deduplication and per-type cooldown | ~100 |
 | `netlify/functions/send-breaking-news-alert.js` | Admin endpoint to send breaking news push/email | ~90 |
 
@@ -664,13 +664,13 @@ A unified alert architecture that normalizes all event sources into a single pip
 | File | Change |
 |------|--------|
 | `engines/usgs.js` | `run()` now returns `notifiableEvents[]` alongside existing results |
-| `engines/nws.js` | Same — returns `notifiableEvents[]` |
+| `engines/nws.js` | Same - returns `notifiableEvents[]` |
 | `engines/faa.js` | Same |
 | `engines/uscg.js` | Same |
 | `engines/volcano.js` | Same |
 | `engines/embassy.js` | Same |
 | `ingest-all.js` | When `USE_UNIFIED_ALERTS=true`, dispatches notifiable events through the unified pipeline after each engine run |
-| `earthquake-poller.js` | Deprecated — header explains migration path; `EARTHQUAKE_POLLER_DISABLED=true` no-ops immediately |
+| `earthquake-poller.js` | Deprecated - header explains migration path; `EARTHQUAKE_POLLER_DISABLED=true` no-ops immediately |
 
 ### Architecture
 
@@ -693,7 +693,7 @@ A unified alert architecture that normalizes all event sources into a single pip
 │                   NOTIFICATION DISPATCHER                      │
 │  notifyForEvent(alertEvent)                                   │
 │                                                               │
-│  1. Check dedup (alertRateLimit — already notified?)          │
+│  1. Check dedup (alertRateLimit - already notified?)          │
 │  2. Determine channels (getNotificationChannels)              │
 │  3. Dispatch in parallel:                                     │
 │     ├── EMAIL: earthquake-specific rich email or generic      │
@@ -721,10 +721,10 @@ A unified alert architecture that normalizes all event sources into a single pip
 | Event type | Push | Email | Location email |
 |------------|------|-------|---------------|
 | Earthquake M≥6.0 | earthquake subscribers | Opt-in users (per magnitude threshold) | Within radius |
-| Earthquake M≥4.5 | earthquake subscribers | — | Within radius |
-| Weather severity≥4 | weather subscribers | — | Within radius |
-| Breaking News | breaking-news subscribers | severity≥4 → admin list | — |
-| FAA/USCG/Volcano/Embassy | — | severity≥3 → admin list | — |
+| Earthquake M≥4.5 | earthquake subscribers | - | Within radius |
+| Weather severity≥4 | weather subscribers | - | Within radius |
+| Breaking News | breaking-news subscribers | severity≥4 → admin list | - |
+| FAA/USCG/Volcano/Embassy | - | severity≥3 → admin list | - |
 
 ### Migration strategy
 
@@ -751,29 +751,29 @@ When `USE_UNIFIED_ALERTS=true`:
 - **Disable `earthquake-poller.js`** schedule in Netlify dashboard
 - **Remove engine-internal notification code** once unified pipeline is validated
 - **Consolidate `assess-earthquake-impact.js`** into `lib/impactAssessment.js`
-- **Add image generation as async enrichment** — currently still blocks in USGS engine
-- **Wire location alerts fully into dispatcher** — currently delegated to engine code
-- **Legacy `eq-` posts** — run cleanup script and remove `posts-read.js` fallback
+- **Add image generation as async enrichment** - currently still blocks in USGS engine
+- **Wire location alerts fully into dispatcher** - currently delegated to engine code
+- **Legacy `eq-` posts** - run cleanup script and remove `posts-read.js` fallback
 
 ---
 
-## 10. Checkpoint Audit — Correction Session ✅ COMPLETED (2026-03-22)
+## 10. Checkpoint Audit - Correction Session ✅ COMPLETED (2026-03-22)
 
 > All correction items resolved. Roadmap may resume.
 
 | # | Task | Status |
 |---|------|--------|
-| C1 | Guard unified alert dispatch (`result.success &&`) | ✅ Done — `ingest-all.js` |
+| C1 | Guard unified alert dispatch (`result.success &&`) | ✅ Done - `ingest-all.js` |
 | C2 | Migrate `re-extract-media.js` to postStore | ✅ Done |
-| C3 | Delete test pages from production | ✅ Done — 4 HTML files deleted |
-| C4 | Delete test functions | ✅ Done — `test-resend.js`, `test-generate.js` deleted |
+| C3 | Delete test pages from production | ✅ Done - 4 HTML files deleted |
+| C4 | Delete test functions | ✅ Done - `test-resend.js`, `test-generate.js` deleted |
 | C5 | Delete `posts-read.ts.backup` | ✅ Done |
-| C6 | Migrate 6 read-only x-posts consumers to postStore | ✅ Done — all 6 migrated |
-| C7 | Standardize CORS headers | ✅ Done — `lib/corsHeaders.js` created, adopted in touched files |
-| C8 | Replace raw CSS values in V2 styles | ✅ Done — 10 new tokens, all raw rgba/hex replaced |
-| C9 | Deprecate `premium-tokens.css` | ✅ Done — V1-only header added |
-| C10 | Wire V2 newsletter form | ✅ Done — `main.js` POSTs to `send-email` |
-| ― | Mark `bookmarklet-add-post.html` deprecated | ✅ Done — noindex, deprecation comment |
+| C6 | Migrate 6 read-only x-posts consumers to postStore | ✅ Done - all 6 migrated |
+| C7 | Standardize CORS headers | ✅ Done - `lib/corsHeaders.js` created, adopted in touched files |
+| C8 | Replace raw CSS values in V2 styles | ✅ Done - 10 new tokens, all raw rgba/hex replaced |
+| C9 | Deprecate `premium-tokens.css` | ✅ Done - V1-only header added |
+| C10 | Wire V2 newsletter form | ✅ Done - `main.js` POSTs to `send-email` |
+| ― | Mark `bookmarklet-add-post.html` deprecated | ✅ Done - noindex, deprecation comment |
 
 ### Additional fixes found during correction
 - **Bug fix in `realtime-voice.js`**: was using raw index ID as blob key (missing `post-` prefix and `.json` suffix). `postStore.readPost` now normalizes this correctly.
@@ -789,7 +789,7 @@ Resume at **Phase 2 (Homepage decomposition)**, or continue admin polish/testing
 
 ---
 
-## 11. Admin UI Rebuild — Phase 1 ✅ COMPLETED (2026-03-22)
+## 11. Admin UI Rebuild - Phase 1 ✅ COMPLETED (2026-03-22)
 
 ### What was built
 
@@ -797,7 +797,7 @@ A single, server-authenticated admin surface at `/admin/` that replaces all lega
 
 | File | Purpose | Lines |
 |------|---------|------:|
-| `admin/index.html` | Admin shell — auth guard, nav, section loading | ~120 |
+| `admin/index.html` | Admin shell - auth guard, nav, section loading | ~120 |
 | `admin/css/admin.css` | Admin-specific styles (consumes V2 tokens) | ~410 |
 | `admin/js/admin-auth.js` | Auth0 init, admin guard, token management | ~120 |
 | `admin/js/admin-app.js` | Section router, navigation binding | ~80 |
@@ -811,10 +811,10 @@ A single, server-authenticated admin surface at `/admin/` that replaces all lega
 ### Architecture
 
 1. **Auth flow**: Auth0 login → JWT obtained → server-side admin probe → shell renders
-2. **Token transport**: `Authorization: Bearer <jwt>` on every API call. No query params. No sessionStorage secrets. `cacheLocation: 'memory'` — tokens never touch persistent storage.
+2. **Token transport**: `Authorization: Bearer <jwt>` on every API call. No query params. No sessionStorage secrets. `cacheLocation: 'memory'` - tokens never touch persistent storage.
 3. **Admin verification**: Server-authoritative. Client probes `rebuild-index` endpoint; 403 = not admin.
 4. **Routing**: Hash-based (`#posts`, `#ingestion`, `#newsletter`, `#analytics`, `#system`)
-5. **Module loading**: Dynamic `import()` — each section loads on demand
+5. **Module loading**: Dynamic `import()` - each section loads on demand
 6. **Design**: V2 tokens consumed. Tool-focused. No animations. Clear hierarchy.
 
 ### Backend changes
@@ -847,12 +847,12 @@ Old admin URLs now redirect to new admin via `netlify.toml`:
 ### Old pages deprecated
 
 All six legacy admin HTML pages marked with deprecation comments and `noindex`:
-- `admin-posts-manager.html` — broken (401), redirected
-- `admin-remove-post.html` — broken (401), redirected
-- `admin-add-tweets.html` — broken (401), redirected
-- `admin-newsletter.html` — was partially working via shared secret, now redirected
-- `admin-analytics.html` — was partially working via shared secret, now redirected
-- `media.html` — broken (401), redirected
+- `admin-posts-manager.html` - broken (401), redirected
+- `admin-remove-post.html` - broken (401), redirected
+- `admin-add-tweets.html` - broken (401), redirected
+- `admin-newsletter.html` - was partially working via shared secret, now redirected
+- `admin-analytics.html` - was partially working via shared secret, now redirected
+- `media.html` - broken (401), redirected
 
 ### Build integration
 
@@ -860,12 +860,12 @@ All six legacy admin HTML pages marked with deprecation comments and `noindex`:
 
 ### What remains
 
-- **Delete old admin HTML pages** — redirects are active; pages can be removed once validated
-- **Auth0 tenant configuration** — add admin role claims for JWT-based admin identification (currently falls back to `ADMIN_EMAILS` allowlist)
-- **Newsletter template preview** — current view shows template list but not rendered preview
-- **Analytics CSV export** — current view queries logs but doesn't expose CSV download
-- **Ingest-all manual trigger** — not yet exposed in admin UI (was never in old admin either)
-- **Push notification send** — not in admin UI (send-breaking-news-alert is the primary path)
+- **Delete old admin HTML pages** - redirects are active; pages can be removed once validated
+- **Auth0 tenant configuration** - add admin role claims for JWT-based admin identification (currently falls back to `ADMIN_EMAILS` allowlist)
+- **Newsletter template preview** - current view shows template list but not rendered preview
+- **Analytics CSV export** - current view queries logs but doesn't expose CSV download
+- **Ingest-all manual trigger** - not yet exposed in admin UI (was never in old admin either)
+- **Push notification send** - not in admin UI (send-breaking-news-alert is the primary path)
 
 ### Validation checklist
 
@@ -883,7 +883,7 @@ All six legacy admin HTML pages marked with deprecation comments and `noindex`:
 
 ---
 
-## 12. V2 Homepage — Functional Integration (2026-03-23)
+## 12. V2 Homepage - Functional Integration (2026-03-23)
 
 ### What was built
 
@@ -891,10 +891,10 @@ The V2 homepage shell was upgraded from a static mockup to a functional product 
 
 | File | Purpose | Lines |
 |------|---------|------:|
-| `v2/js/feed.js` | Feed module — fetches posts-read, renders cards, loading/empty/error states | ~174 |
-| `v2/js/auth.js` | Auth module — thin Auth0 SPA integration, nav state management | ~95 |
-| `v2/js/main.js` | Entry point — orchestrates feed, auth, nav, newsletter, scroll | ~120 |
-| `v2/index.html` | Updated HTML — Auth0 SDK, config markers, auth nav, footer links | ~260 |
+| `v2/js/feed.js` | Feed module - fetches posts-read, renders cards, loading/empty/error states | ~174 |
+| `v2/js/auth.js` | Auth module - thin Auth0 SPA integration, nav state management | ~95 |
+| `v2/js/main.js` | Entry point - orchestrates feed, auth, nav, newsletter, scroll | ~120 |
+| `v2/index.html` | Updated HTML - Auth0 SDK, config markers, auth nav, footer links | ~260 |
 | `v2/styles/components.css` | Post card CSS, feed grid, auth nav, feed states, entrance animations | (additions) |
 
 ### Architecture
@@ -912,21 +912,21 @@ The V2 homepage shell was upgraded from a static mockup to a functional product 
 
 ### What was NOT changed
 
-- V1 homepage (`index.html`) — unchanged
-- Backend APIs — unchanged
-- Admin system — unchanged
-- Situation Monitor — unchanged
-- Any data schema — unchanged
+- V1 homepage (`index.html`) - unchanged
+- Backend APIs - unchanged
+- Admin system - unchanged
+- Situation Monitor - unchanged
+- Any data schema - unchanged
 
 ### What remains for V2 cutover
 
-- **Validate feed with real data in Netlify deploy** — local testing confirms error state handling; production deploy needed for full feed validation
-- **Globe visualization** — deferred (not on homepage by default per plan)
-- **Chat widget** — deferred (lazy-loaded when needed)
-- **Analytics tracker** — deferred (integrate after cutover decision)
-- **Service worker** — deferred (update precache list after cutover)
-- **Remove `noindex` tag** — only when V2 is promoted to production
-- **Performance audit** — Lighthouse comparison V1 vs V2
+- **Validate feed with real data in Netlify deploy** - local testing confirms error state handling; production deploy needed for full feed validation
+- **Globe visualization** - deferred (not on homepage by default per plan)
+- **Chat widget** - deferred (lazy-loaded when needed)
+- **Analytics tracker** - deferred (integrate after cutover decision)
+- **Service worker** - deferred (update precache list after cutover)
+- **Remove `noindex` tag** - only when V2 is promoted to production
+- **Performance audit** - Lighthouse comparison V1 vs V2
 
 ### Validation checklist
 
@@ -947,7 +947,7 @@ The V2 homepage shell was upgraded from a static mockup to a functional product 
 
 ---
 
-## 13. V2 Homepage — Performance & Cutover Readiness (2026-03-23)
+## 13. V2 Homepage - Performance & Cutover Readiness (2026-03-23)
 
 ### What was done
 
@@ -959,7 +959,7 @@ Performance, cleanup, and cutover-readiness pass on the V2 homepage. Goal: move 
 |------|--------|----------|
 | `v2/js/auth.js` | Fixed auth session persistence: returning authenticated users now get their session checked in the background (non-blocking) instead of always seeing logged-out state | **Bug fix / Cutover blocker** |
 | `v2/index.html` | Google Fonts loaded non-blocking via `media="print" onload` pattern; page paints immediately with system fonts, swaps when custom fonts are ready | **Performance** |
-| `v2/js/feed.js` | Reduced feed from 18 to 12 posts — cleaner grid proportions, less payload | **Performance** |
+| `v2/js/feed.js` | Reduced feed from 18 to 12 posts - cleaner grid proportions, less payload | **Performance** |
 | `v2/styles/components.css` | Subtle hero background gradient for depth; newsletter hint uses CSS classes instead of inline styles; stagger animation for more feed cards; desktop hero spacing refinement | **Quality / Cleanup** |
 | `v2/js/main.js` | Newsletter hint feedback uses `.is-success` / `.is-error` CSS classes instead of inline `style.color` | **Cleanup** |
 | `netlify.toml` | Removed stale `test-generate` function config (file was deleted); expanded cutover checklist with all validation steps | **Cleanup / Cutover prep** |
@@ -973,8 +973,8 @@ Performance, cleanup, and cutover-readiness pass on the V2 homepage. Goal: move 
 ### Performance improvements
 
 1. **Non-blocking fonts**: Google Fonts CSS no longer blocks first contentful paint. System font stack renders immediately; custom fonts swap in when available.
-2. **Reduced feed payload**: 12 posts instead of 18 — same visual grid (4 rows × 3 columns on desktop), 33% less data transfer and DOM nodes.
-3. **Auth SDK not loaded unless needed**: SDK still only loads on callback or session check — never synchronously in the critical path.
+2. **Reduced feed payload**: 12 posts instead of 18 - same visual grid (4 rows × 3 columns on desktop), 33% less data transfer and DOM nodes.
+3. **Auth SDK not loaded unless needed**: SDK still only loads on callback or session check - never synchronously in the critical path.
 
 ### Cutover status
 
@@ -995,11 +995,11 @@ The V2 homepage is now a **serious replacement candidate**. Remaining steps are 
 
 ### What was NOT changed
 
-- V1 homepage (`index.html`) — untouched
-- Backend APIs — untouched
-- Admin system — untouched
-- Service worker — untouched (must be updated at cutover time)
-- Data schema — untouched
+- V1 homepage (`index.html`) - untouched
+- Backend APIs - untouched
+- Admin system - untouched
+- Service worker - untouched (must be updated at cutover time)
+- Data schema - untouched
 
 ### Recommended next session
 
@@ -1007,7 +1007,7 @@ The V2 homepage is now a **serious replacement candidate**. Remaining steps are 
 
 ---
 
-## 14. Cutover Strategy — V1 → V2 Homepage (2026-03-23)
+## 14. Cutover Strategy - V1 → V2 Homepage (2026-03-23)
 
 ### Context
 
@@ -1038,7 +1038,7 @@ All items must pass in a Netlify deploy preview at `/v2/`:
 Auth0 tenant must allow callbacks from:
 - `https://noteworthynews.co/` (production)
 - `https://noteworthynews.co/v2/index.html` (pre-cutover direct access)
-- `https://*.netlify.app/*` (deploy previews — wildcard recommended)
+- `https://*.netlify.app/*` (deploy previews - wildcard recommended)
 
 Verify in Auth0 Dashboard → Applications → Settings → Allowed Callback URLs, Allowed Logout URLs, Allowed Web Origins.
 
@@ -1046,14 +1046,14 @@ Verify in Auth0 Dashboard → Applications → Settings → Allowed Callback URL
 
 Execute in a single commit, deploy, and verify:
 
-**Step 1 — Remove noindex**
+**Step 1 - Remove noindex**
 
 In `v2/index.html`, delete:
 ```html
 <meta name="robots" content="noindex"><!-- V2 development surface; remove when promoted -->
 ```
 
-**Step 2 — Bump service worker cache version**
+**Step 2 - Bump service worker cache version**
 
 In `sw.js`, change:
 ```js
@@ -1086,7 +1086,7 @@ const STATIC_ASSETS = [
 ];
 ```
 
-**Step 3 — Activate rewrite rule**
+**Step 3 - Activate rewrite rule**
 
 In `netlify.toml`, uncomment:
 ```toml
@@ -1097,11 +1097,11 @@ In `netlify.toml`, uncomment:
   force = true
 ```
 
-**Step 4 — Commit and deploy**
+**Step 4 - Commit and deploy**
 
-Commit message: `feat: V2 homepage cutover — serve V2 at root URL`
+Commit message: `feat: V2 homepage cutover - serve V2 at root URL`
 
-**Step 5 — Post-deploy verification**
+**Step 5 - Post-deploy verification**
 
 | # | Check | Expected |
 |---|-------|----------|
@@ -1144,7 +1144,7 @@ These V1 surfaces remain unchanged after cutover:
 | Gap | Risk | Mitigation |
 |-----|------|-----------|
 | No analytics tracker | Visitor tracking stops on homepage | Add `analytics-tracker.js` in next session |
-| No cookie banner | Legal exposure if cookies are set | V2 Auth0 uses `cacheLocation: 'memory'`; no cookies set by V2 itself. Analytics tracker would require it — add together. |
+| No cookie banner | Legal exposure if cookies are set | V2 Auth0 uses `cacheLocation: 'memory'`; no cookies set by V2 itself. Analytics tracker would require it - add together. |
 | No chat widget | Feature absent from homepage | Explicitly deferred; can lazy-load later |
 | No globe visualization | Feature absent from homepage | Explicitly deferred per plan; opt-in specialty feature |
 | No music system | Feature absent from homepage | Explicitly deferred; opt-in feature |
@@ -1155,7 +1155,7 @@ These V1 surfaces remain unchanged after cutover:
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|-----------|
 | Feed API returns empty | Low | High (blank homepage) | Error state with retry button already implemented |
-| Auth0 callback fails | Medium (config-dependent) | Medium (login broken) | Graceful degradation — V2 works fully without auth |
+| Auth0 callback fails | Medium (config-dependent) | Medium (login broken) | Graceful degradation - V2 works fully without auth |
 | SW serves stale V1 cache | Low (network-first) | Medium (wrong content) | CACHE_VERSION bump purges old caches |
 | SEO ranking drop | Low | High | Canonical URL preserved; same domain; no content removal |
 | Social share previews break | Low | Low | OG tags + og:image now present on V2 |
@@ -1164,14 +1164,14 @@ These V1 surfaces remain unchanged after cutover:
 
 | When | What |
 |------|------|
-| **Next session** | Deploy preview validation — run through all 13 checklist items |
+| **Next session** | Deploy preview validation - run through all 13 checklist items |
 | **Same session (if all pass)** | Execute cutover steps 1–4; verify step 5 |
 | **24h after cutover** | Monitor Google Search Console; check analytics (once added) |
-| **1 week after cutover** | Review — stable? Then begin V2 nav migration to article/archive pages |
+| **1 week after cutover** | Review - stable? Then begin V2 nav migration to article/archive pages |
 
 ---
 
-## 15. V1 → V2 Cutover — Executed (2026-03-23)
+## 15. V1 → V2 Cutover - Executed (2026-03-23)
 
 ### What was done
 
@@ -1209,29 +1209,29 @@ The V2 homepage and Situation Monitor are now the primary public surfaces. V1 is
 
 ### What was NOT changed
 
-- V1 `index.html` — preserved as fallback at `/index.html`
-- V1 `situation-monitor.html` — preserved (redirect catches the URL)
-- Article, archive, category, game, profile, contact, legal pages — all unchanged
-- Backend APIs — unchanged
-- Admin system — unchanged
-- Data schema — unchanged
+- V1 `index.html` - preserved as fallback at `/index.html`
+- V1 `situation-monitor.html` - preserved (redirect catches the URL)
+- Article, archive, category, game, profile, contact, legal pages - all unchanged
+- Backend APIs - unchanged
+- Admin system - unchanged
+- Data schema - unchanged
 
 ### Accepted gaps
 
 | Gap | Risk | Status |
 |-----|------|--------|
 | No analytics tracker on V2 homepage | Visitor tracking paused on homepage | Add in next session |
-| No cookie banner on V2 homepage | V2 Auth0 uses `cacheLocation: 'memory'` — no cookies set by V2 itself | Add with analytics |
-| ~~No chat widget on V2 homepage~~ | — | **Done:** Noteworthy News AI widget on `v2/index.html` (deferred init); see `feature-parity.md` §15 |
+| No cookie banner on V2 homepage | V2 Auth0 uses `cacheLocation: 'memory'` - no cookies set by V2 itself | Add with analytics |
+| ~~No chat widget on V2 homepage~~ | - | **Done:** Noteworthy News AI widget on `v2/index.html` (deferred init); see `feature-parity.md` §15 |
 | No globe visualization on V2 homepage | Feature absent | Deferred per plan |
-| V1 design on secondary pages | Visual inconsistency between homepage and subpages | Accepted — gradual migration |
+| V1 design on secondary pages | Visual inconsistency between homepage and subpages | Accepted - gradual migration |
 | `/v2/` visible in Situation Monitor URL | URL not fully clean | Convert to absolute paths + 200 rewrite later |
 
 ### Rollback
 
 1. **Instant**: Netlify Dashboard → Deploys → previous deploy → Publish
 2. **Git-level**: Comment out the two new `[[redirects]]` in `netlify.toml`, re-add `noindex` to `v2/index.html`, revert `CACHE_VERSION`
-3. **Data safety**: Zero risk — V2 is read-only against the same APIs
+3. **Data safety**: Zero risk - V2 is read-only against the same APIs
 
 ### Post-cutover monitoring
 
@@ -1243,17 +1243,17 @@ The V2 homepage and Situation Monitor are now the primary public surfaces. V1 is
 - [ ] Situation Monitor loads via redirect and directly
 - [ ] Mobile layout correct
 - [ ] No console errors
-- [ ] Google Search Console — no indexing errors (check 24h later)
+- [ ] Google Search Console - no indexing errors (check 24h later)
 - [ ] Old bookmarks to `/situation-monitor.html` redirect correctly
 
 ### Recommended next steps
 
-1. **Deploy and validate** — run through post-cutover monitoring checklist
+1. **Deploy and validate** - run through post-cutover monitoring checklist
 2. **Add analytics tracker** to V2 homepage (with cookie banner if needed)
-3. **Begin V2 nav migration** — add V2 header/footer to article, archive, category pages
+3. **Begin V2 nav migration** - add V2 header/footer to article, archive, category pages
 4. **Convert V2 Situation Monitor to absolute paths** → change 301 to 200 rewrite for clean URL
-5. **Delete old admin HTML pages** — redirects are active and validated
-6. **Remove V1 `index.html` weight** — once V2 is stable for 1+ week, archive or delete
+5. **Delete old admin HTML pages** - redirects are active and validated
+6. **Remove V1 `index.html` weight** - once V2 is stable for 1+ week, archive or delete
 
 ---
 
@@ -1265,18 +1265,18 @@ Safe, fast local toolchain to create X-ready clips from rights-cleared HLS/RTMP 
 
 ### Architecture
 
-- **Local scripts** in `scripts/clip-pipeline/` — not bundled into Netlify functions
+- **Local scripts** in `scripts/clip-pipeline/` - not bundled into Netlify functions
 - **JSON job store** in `data/clip-jobs/`
-- **CLI + localhost review server** — human approval required before X upload
+- **CLI + localhost review server** - human approval required before X upload
 - **Optional X upload** via separate `X_USER_ACCESS_TOKEN` (isolated from read-only `X_BEARER_TOKEN` import)
 
 ### Implementation phases (completed in order)
 
 1. Shared FFmpeg utilities + guardrails (rights, source URL validation)
-2. `make-clip.js` — transcode, thumbnail, ffprobe (local file first)
+2. `make-clip.js` - transcode, thumbnail, ffprobe (local file first)
 3. Job store + `create-job.js`
-4. `youtube-metadata.js` — metadata only
-5. `record-live.js` — HLS/RTMP with reconnect
+4. `youtube-metadata.js` - metadata only
+5. `record-live.js` - HLS/RTMP with reconnect
 6. `review-job.js` CLI + `review-server.js`
 7. `x-upload.js` + `x-retract.js` (last)
 
