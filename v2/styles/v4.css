@@ -30,6 +30,26 @@ body.v4 {
   body.v4 { --header-height: 3.5rem; }
 }
 
+/* ── Skip link ──────────────────────────────────── */
+.skip-to-content {
+  position: absolute;
+  left: -9999px;
+  top: 0.75rem;
+  z-index: 10000;
+  padding: 0.5rem 0.85rem;
+  border-radius: 6px;
+  background: var(--color-accent);
+  color: #fff;
+  font-family: var(--font-ui);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.skip-to-content:focus {
+  left: 0.75rem;
+}
+
 /* ── Layout ─────────────────────────────────────── */
 .container-wide {
   width: 100%;
@@ -286,8 +306,11 @@ body.v4 {
 .nav-icon-btn:hover { color: var(--color-text); background: rgba(255, 255, 255, 0.06); }
 
 .audio-toggle .audio-icon-on { display: none; }
+.audio-toggle.sfx-on .audio-icon-off,
 .audio-toggle.is-playing .audio-icon-off { display: none; }
+.audio-toggle.sfx-on .audio-icon-on,
 .audio-toggle.is-playing .audio-icon-on { display: block; }
+.audio-toggle.sfx-on,
 .audio-toggle.is-playing { color: var(--color-accent); }
 
 .nav-auth {
@@ -624,6 +647,114 @@ body.v4 {
     linear-gradient(90deg, rgba(4, 6, 11, 0.44) 0%, rgba(4, 6, 11, 0.1) 45%, rgba(4, 6, 11, 0.03) 100%);
 }
 
+/* ── Astronaut: tethered figure stabilizing the lead story card ── */
+.hero-astro {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.astro-tether {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.astro-tether-front {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.astro-body {
+  position: absolute;
+  z-index: 1;
+  /* Between copy and card; hand reaches the story edge. */
+  left: 41%;
+  top: 7%;
+  width: clamp(235px, 19.5vw, 310px);
+  transform:
+    translate3d(var(--astro-x, 0px), var(--astro-y, 0px), 0)
+    rotate(var(--astro-r, -6deg))
+    scale(var(--astro-s, 1));
+  will-change: transform;
+}
+
+/* Inner micro-motion: slow counter-lean so the figure reads as a body
+   settling in zero-g, not a rigid cutout riding one transform. */
+.astro-inner {
+  animation: astroSettle 11s ease-in-out infinite alternate;
+}
+
+@keyframes astroSettle {
+  from { transform: rotate(1.1deg) translateY(-2px); }
+  to { transform: rotate(-1.4deg) translateY(2.5px); }
+}
+
+.astro-body img {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter:
+    drop-shadow(0 24px 36px rgba(0, 0, 0, 0.45))
+    drop-shadow(0 8px 18px rgba(0, 0, 0, 0.28))
+    drop-shadow(0 0 20px rgba(70, 130, 220, 0.1));
+}
+
+/* Soft shadow the legs cast onto the story card surface. */
+.hero-astro-cast {
+  position: absolute;
+  z-index: 0;
+  width: 170px;
+  height: 38px;
+  margin: -19px 0 0 -85px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.18) 55%, transparent 78%);
+  filter: blur(6px);
+  opacity: 0;
+  pointer-events: none;
+  will-change: left, top, opacity;
+}
+
+/* Contact shade: the astronaut's glove dims the card surface under it,
+   selling the touch point. Position driven by hero-astro.js. */
+.hero-story::before {
+  content: '';
+  position: absolute;
+  z-index: 3;
+  left: var(--hand-x, -200px);
+  top: var(--hand-y, -200px);
+  width: 150px;
+  height: 150px;
+  margin: -75px 0 0 -75px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(2, 4, 9, 0.3), transparent 72%);
+  opacity: var(--hand-on, 0);
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+/* Reduced motion / no-JS: a calm static pose */
+@media (prefers-reduced-motion: reduce) {
+  .astro-body { transform: rotate(-6deg); }
+  .astro-inner { animation: none; }
+  .hero-story::before { display: none; }
+  .hero-astro-cast { opacity: 0.35 !important; }
+}
+
+@media (max-width: 899px) {
+  .hero-astro { display: none; }
+}
+
 /* ── Hero wire ticker: latest headlines crossing the hero floor ── */
 .hero-wire {
   position: absolute;
@@ -718,7 +849,7 @@ body.v4 {
 
 .hero-grid {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   display: grid;
   grid-template-columns: minmax(0, 0.94fr) minmax(0, 1.06fr);
   gap: clamp(2rem, 5vw, 4.25rem);
@@ -735,7 +866,8 @@ body.v4 {
 }
 
 .hero-story {
-  translate: 0 calc(var(--hp) * -46px);
+  /* Scroll parallax plus the astronaut's gentle push (set by hero-astro.js) */
+  translate: var(--sway-x, 0px) calc(var(--hp) * -46px + var(--sway-y, 0px));
   will-change: translate;
 }
 
@@ -876,19 +1008,30 @@ body.v4 {
 /* Flagship story: real lead story with real media */
 .hero-story {
   position: relative;
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(110, 158, 224, 0.26);
   border-radius: 14px;
   /* No backdrop-filter here: this card translates every frame with the
      scroll parallax, and re-blurring its backdrop each frame is the single
      most expensive effect in the hero. A near-opaque fill reads the same
      over the dark scene and keeps the card compositor-only. */
   background: rgba(7, 11, 18, 0.92);
-  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.55);
+  box-shadow:
+    0 30px 70px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(96, 148, 224, 0.06),
+    0 0 44px rgba(58, 118, 208, 0.12);
   overflow: hidden;
-  transition: border-color var(--duration-normal) var(--ease-out);
+  transition:
+    border-color var(--duration-normal) var(--ease-out),
+    box-shadow var(--duration-normal) var(--ease-out);
 }
 
-.hero-story:hover { border-color: var(--color-border-hover); }
+.hero-story:hover {
+  border-color: rgba(130, 176, 240, 0.4);
+  box-shadow:
+    0 36px 80px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(110, 162, 232, 0.12),
+    0 0 58px rgba(64, 128, 218, 0.19);
+}
 
 .hero-story[data-status="breaking"] { border-color: rgba(239, 68, 68, 0.4); }
 

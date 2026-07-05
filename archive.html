@@ -16,8 +16,10 @@
     <meta property="og:image" content="https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg">
     <meta name="twitter:card" content="summary_large_image">
 
-    <link rel="icon" type="image/png" href="/IMG_5794.PNG" sizes="32x32">
-    <link rel="apple-touch-icon" href="/IMG_5794.PNG" sizes="180x180">
+    <link rel="icon" href="/favicon.ico" sizes="48x48">
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/favicon-192x192.png" sizes="192x192">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
     <meta name="theme-color" content="#04060B">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -95,7 +97,7 @@
         }
         .arch-search input {
             width: 100%;
-            padding: 0.62rem 0.9rem 0.62rem 2.3rem;
+            padding: 0.62rem 2.4rem 0.62rem 2.3rem;
             border-radius: 8px;
             border: 1px solid var(--color-border);
             background: var(--color-bg-card);
@@ -103,6 +105,25 @@
             font-family: var(--font-ui);
             font-size: 0.875rem;
         }
+        .arch-search-clear {
+            position: absolute;
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border: none;
+            border-radius: 6px;
+            background: transparent;
+            color: var(--color-text-muted);
+            cursor: pointer;
+        }
+        .arch-search-clear:hover { color: var(--color-text); background: rgba(255,255,255,0.06); }
+        .arch-search-clear:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; }
+        .arch-search.has-value .arch-search-clear { display: inline-flex; }
         .arch-search input::placeholder { color: var(--color-text-muted); }
         .arch-search input:focus {
             outline: none;
@@ -246,10 +267,11 @@
         </div>
 
         <div class="arch-controls">
-            <div class="arch-search">
+            <div class="arch-search" id="archSearchWrap">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
                 <label class="sr-only" for="searchInput">Search stories</label>
                 <input type="search" id="searchInput" placeholder="Search stories" autocomplete="off">
+                <button type="button" class="arch-search-clear" id="searchClear" aria-label="Clear search" hidden>&times;</button>
             </div>
             <label class="sr-only" for="typeFilter">Filter by format</label>
             <select id="typeFilter" class="arch-select">
@@ -269,7 +291,7 @@
 
         <div class="nn-ad" data-nn-ad="display"></div>
 
-        <div class="arch-grid" id="archive-grid" aria-live="polite">
+        <div class="arch-grid" id="archive-grid" aria-live="polite" aria-busy="true">
             <div class="sk sk-card" aria-hidden="true"></div>
             <div class="sk sk-card" aria-hidden="true"></div>
             <div class="sk sk-card" aria-hidden="true"></div>
@@ -504,7 +526,8 @@
         }
 
         function resetFilters() {
-            document.getElementById('searchInput').value = '';
+            searchInput.value = '';
+            syncSearchClear();
             document.getElementById('typeFilter').value = '';
             document.getElementById('sortFilter').value = 'newest';
             activeCategory = '';
@@ -516,6 +539,7 @@
         }
 
         async function load() {
+            grid.setAttribute('aria-busy', 'true');
             try {
                 const res = await fetch('/.netlify/functions/posts-read?limit=200');
                 if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -529,32 +553,59 @@
                         '<p class="nn-state-text">New stories land on the front page first, then archive here.</p>' +
                         '<div class="nn-state-actions"><a class="utility-btn utility-btn--primary" href="/">Front page</a></div>' +
                     '</div>';
+                    grid.setAttribute('aria-busy', 'false');
                     return;
                 }
 
                 subEl.textContent = allPosts.length + ' stories, newest first.';
                 renderChips();
                 render();
+                grid.setAttribute('aria-busy', 'false');
             } catch (err) {
                 console.error('[Archive]', err);
                 grid.innerHTML = '<div class="nn-state" style="grid-column:1/-1;max-width:none">' +
                     '<p class="nn-state-title">Could not load stories</p>' +
                     '<p class="nn-state-text">Check your connection and try again in a moment.</p>' +
-                    '<div class="nn-state-actions"><button type="button" class="utility-btn utility-btn--primary" onclick="location.reload()">Try again</button></div>' +
+                    '<div class="nn-state-actions"><button type="button" class="utility-btn utility-btn--primary" id="arch-retry">Try again</button></div>' +
                 '</div>';
+                grid.setAttribute('aria-busy', 'false');
+                var retry = document.getElementById('arch-retry');
+                if (retry) retry.addEventListener('click', load, { once: true });
             }
         }
 
+        var searchInput = document.getElementById('searchInput');
+        var searchWrap = document.getElementById('archSearchWrap');
+        var searchClear = document.getElementById('searchClear');
+
+        function syncSearchClear() {
+            var has = !!(searchInput.value || '').trim();
+            searchWrap.classList.toggle('has-value', has);
+            searchClear.hidden = !has;
+        }
+
         let searchTimer = null;
-        document.getElementById('searchInput').addEventListener('input', () => {
+        searchInput.addEventListener('input', () => {
+            syncSearchClear();
             clearTimeout(searchTimer);
             searchTimer = setTimeout(() => { visibleCount = PAGE_SIZE; render(); }, 160);
+        });
+        searchClear.addEventListener('click', () => {
+            searchInput.value = '';
+            syncSearchClear();
+            visibleCount = PAGE_SIZE;
+            searchInput.focus();
+            render();
         });
         document.getElementById('typeFilter').addEventListener('change', () => { visibleCount = PAGE_SIZE; render(); });
         document.getElementById('sortFilter').addEventListener('change', () => { visibleCount = PAGE_SIZE; render(); });
         moreBtn.addEventListener('click', () => { visibleCount += PAGE_SIZE; render(); });
 
         load();
+    </script>
+    <script type="module">
+      import { initSFX } from '/v2/js/sfx-engine.js';
+      initSFX();
     </script>
     <script src="/src/components/cookie-banner.js"></script>
     <script src="/js/ads.js"></script>

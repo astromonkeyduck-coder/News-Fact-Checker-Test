@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, follow">
     <title>Page Not Found - Noteworthy News</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800;900&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
     <!-- Favicon and Theme -->
-    <link rel="icon" type="image/png" href="/IMG_5794.PNG" sizes="32x32">
-    <link rel="icon" type="image/png" href="/IMG_5794.PNG" sizes="192x192">
-    <link rel="shortcut icon" type="image/png" href="/IMG_5794.PNG">
-    <link rel="apple-touch-icon" href="/IMG_5794.PNG" sizes="180x180">
-    <link rel="mask-icon" href="/IMG_5794.PNG" color="#0f234a">
+    <link rel="icon" href="/favicon.ico" sizes="48x48">
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/favicon-192x192.png" sizes="192x192">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
     <meta name="theme-color" content="#0B1426">
     <style>
         * {
@@ -391,7 +391,7 @@
     <div class="noise-overlay" aria-hidden="true"></div>
 
     <!-- News ticker -->
-    <div class="ticker-wrap" role="marquee" aria-live="polite">
+    <div class="ticker-wrap" aria-hidden="true">
         <div class="ticker">
             <span>404</span>
             <span>Page not found</span>
@@ -427,6 +427,7 @@
                 <p class="news-copy">Sources say this URL has gone missing. No further details at this time. The page you're looking for doesn't exist-it might have been moved, deleted, or you may have entered the wrong address.</p>
                 <div class="buttons">
                     <a href="/" class="btn">Go Home</a>
+                    <a href="/archive.html" class="btn btn-secondary">All stories</a>
                     <a href="/game.html" class="btn btn-secondary">Fact Checker Game</a>
                     <a href="/geography-game.html" class="btn btn-secondary">Geography Game</a>
                 </div>

@@ -7,7 +7,10 @@
   <meta name="description" content="Contact the Noteworthy News newsroom: send a tip, request a correction, or ask a question. Correction requests are read first.">
   <link rel="canonical" href="https://noteworthynews.co/contact.html">
   <meta name="theme-color" content="#04060B">
-  <link rel="icon" href="/IMG_5794.PNG" type="image/png">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+  <link rel="icon" type="image/png" href="/favicon-192x192.png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
   <meta name="robots" content="index, follow">
 
   <!-- Open Graph -->
@@ -117,6 +120,10 @@
           </p>
 
           <form class="pg-form" id="contactForm" novalidate>
+            <div class="pg-honeypot" aria-hidden="true">
+              <label for="contactWebsite">Website</label>
+              <input class="pg-input" type="text" id="contactWebsite" name="website" tabindex="-1" autocomplete="off">
+            </div>
             <div class="pg-form-row">
               <div class="pg-field">
                 <label for="contactName">Name</label>
@@ -325,7 +332,8 @@
         name: document.getElementById('contactName').value.trim(),
         email: email,
         subject: document.getElementById('contactSubject').value,
-        message: message
+        message: message,
+        website: document.getElementById('contactWebsite').value.trim()
       };
 
       submitBtn.disabled = true;

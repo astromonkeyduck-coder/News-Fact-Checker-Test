@@ -4,11 +4,12 @@
  * One media component per post, card, gallery slide, or timeline item.
  * Every element gets its own state: no shared player, no duplicate IDs.
  *
- * Videos: native controls, playsinline, preload="metadata", poster when
+ * Videos: native controls, loop, playsinline, preload="metadata", poster when
  * available. Muted inline preview starts only while the video is in the
- * viewport and pauses as soon as it leaves. Nothing ever autoplays with
- * sound; unmuting is a user action through the native controls. Videos are
- * rendered outside anchor tags so the controls never fight link navigation.
+ * viewport and pauses as soon as it leaves. On desktop, hover fades audio in
+ * and out; explicit unmute via native controls persists after hover leave.
+ * Videos are rendered outside anchor tags so the controls never fight link
+ * navigation.
  *
  * Galleries: scroll-snap tracks with per-instance controls, dots, a position
  * counter, and arrow-key support. State lives on the element, never in a
@@ -21,6 +22,8 @@
  * Loaded as an ES module. Classic scripts (article loader, live story)
  * consume it through the window.PostMedia bridge set at the bottom.
  */
+
+import { bindVideoHoverAudio, refreshVideoHoverAudio } from './video-hover-audio.js';
 
 const VISIBLE_RATIO = 0.4;
 
@@ -59,12 +62,26 @@ function getObserver() {
   return _observer;
 }
 
+function ensureVideoLoop(video) {
+  if (!video) return;
+  video.loop = true;
+  video.setAttribute('loop', '');
+}
+
 function bindVideo(video) {
-  if (video.dataset.pmBound === 'true') return;
+  if (!video) return;
+
+  if (video.dataset.pmBound === 'true') {
+    ensureVideoLoop(video);
+    bindVideoHoverAudio(video);
+    return;
+  }
+
   video.dataset.pmBound = 'true';
 
-  // Preview defaults; unmuting stays a user decision via native controls.
+  // Preview defaults; hover or native controls handle audible playback.
   video.muted = true;
+  ensureVideoLoop(video);
   video.playsInline = true;
 
   video.addEventListener('pause', () => {
@@ -81,6 +98,7 @@ function bindVideo(video) {
 
   video.addEventListener('error', () => markBroken(video), { once: true });
 
+  bindVideoHoverAudio(video);
   getObserver().observe(video);
 }
 
@@ -182,6 +200,7 @@ export function initPostMedia(root = document) {
   root.querySelectorAll('.pm-media video').forEach(bindVideo);
   root.querySelectorAll('.pm-media img').forEach(bindImage);
   root.querySelectorAll('.pm-gallery').forEach(bindGallery);
+  refreshVideoHoverAudio(root);
 }
 
 /**
@@ -193,7 +212,7 @@ export function mediaHtml({ videoSrc, image, alt = '', href = '' }, esc) {
   if (videoSrc) {
     return `
       <div class="pm-media">
-        <video data-src="${esc(videoSrc)}" controls muted playsinline disablepictureinpicture
+        <video data-src="${esc(videoSrc)}" controls muted loop playsinline disablepictureinpicture
           controlslist="nodownload noremoteplayback" preload="metadata"
           ${image ? `poster="${esc(image)}"` : ''} aria-label="${esc(alt || 'Story video')}"></video>
       </div>`;
@@ -216,7 +235,7 @@ function mediaItemHtml(item, esc, { eager = false } = {}) {
   if (item.type === 'video') {
     return `
       <div class="pm-media pm-media--video">
-        <video data-src="${esc(item.url)}" controls muted playsinline disablepictureinpicture
+        <video data-src="${esc(item.url)}" controls muted loop playsinline disablepictureinpicture
           controlslist="nodownload noremoteplayback" preload="metadata"
           ${item.poster ? `poster="${esc(item.poster)}"` : ''}
           aria-label="${esc(item.alt || 'Story video')}"></video>

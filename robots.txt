@@ -4,8 +4,9 @@ Allow: /
 # Sitemap
 Sitemap: https://noteworthynews.co/sitemap.xml
 
-# Disallow admin pages
+# Disallow admin and Netlify internals
 Disallow: /admin/
+Disallow: /.netlify/
 
 # Allow all other pages
 Allow: /game.html

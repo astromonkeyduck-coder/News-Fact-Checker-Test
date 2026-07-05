@@ -7,11 +7,12 @@
 
 import { initFeed } from './feed.js';
 import { initAuth, login, signup, logout } from './auth.js';
-import { initAmbientAudio } from './ambient-audio.js';
 import { initScrollReveal } from './scroll-reveal.js';
 import { initPhoneStage } from './phone-stage.js';
 import { initStarfield, setStarfieldScroll } from './starfield.js';
+import { initHeroAstro } from './hero-astro.js';
 import { UISounds } from './ui-sounds.js';
+import { initSFX, NoteworthySFX } from './sfx-engine.js';
 
 (function () {
   'use strict';
@@ -25,7 +26,7 @@ import { UISounds } from './ui-sounds.js';
   // ── Mobile nav toggle ────────────────────────────
   function closeNav() {
     if (!navMenu.classList.contains('open')) return;
-    UISounds.tap();
+    NoteworthySFX.play('panel-close');
     navMenu.classList.remove('open');
     navToggle.setAttribute('aria-expanded', 'false');
     document.body.style.overflow = '';
@@ -33,8 +34,8 @@ import { UISounds } from './ui-sounds.js';
 
   if (navToggle && navMenu) {
     navToggle.addEventListener('click', () => {
-      UISounds.tap();
       const isOpen = navMenu.classList.toggle('open');
+      NoteworthySFX.play(isOpen ? 'panel-open' : 'panel-close');
       navToggle.setAttribute('aria-expanded', String(isOpen));
       document.body.style.overflow = isOpen ? 'hidden' : '';
     });
@@ -220,8 +221,8 @@ import { UISounds } from './ui-sounds.js';
     strip.scrollBy({ left: dir * Math.max(strip.clientWidth * 0.7, 280), behavior: prefersReducedMotion ? 'auto' : 'smooth' });
   }
 
-  if (prevBtn) prevBtn.addEventListener('click', () => { UISounds.tap(); scrollStrip(-1); });
-  if (nextBtn) nextBtn.addEventListener('click', () => { UISounds.tap(); scrollStrip(1); });
+  if (prevBtn) prevBtn.addEventListener('click', () => scrollStrip(-1));
+  if (nextBtn) nextBtn.addEventListener('click', () => scrollStrip(1));
 
   // ── Newsletter signup ────────────────────────────
   const nlForm = document.querySelector('.newsletter-form');
@@ -329,15 +330,15 @@ import { UISounds } from './ui-sounds.js';
     }
   }
 
-  if (signinBtn) signinBtn.addEventListener('click', () => { UISounds.tap(); login(); });
-  if (signupBtn) signupBtn.addEventListener('click', () => { UISounds.tap(); signup(); });
-  if (logoutBtn) logoutBtn.addEventListener('click', () => { UISounds.tap(); logout(); });
+  if (signinBtn) signinBtn.addEventListener('click', () => login());
+  if (signupBtn) signupBtn.addEventListener('click', () => signup());
+  if (logoutBtn) logoutBtn.addEventListener('click', () => logout());
 
   // ── Service worker registration ──────────────────
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js')
-        .then(reg => console.log('[SW] Registered:', reg.scope))
+        .then(() => {})
         .catch(err => console.warn('[SW] Registration failed:', err));
     });
   }
@@ -387,11 +388,12 @@ import { UISounds } from './ui-sounds.js';
   }
 
   // ── Initialize modules ─────────────────────────────
+  initSFX();
   initFeed();
   initAuth(onAuthChange);
-  initAmbientAudio();
   initScrollReveal();
   initStarfield();
   initPhoneStage();
+  initHeroAstro();
 
 })();

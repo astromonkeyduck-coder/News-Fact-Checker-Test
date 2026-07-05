@@ -4082,6 +4082,23 @@ class NoteworthyChat extends HTMLElement {
 
     // Capture root for use in nested functions
     const root = this.root;
+
+    const playSiteSfx = (name) => {
+      try {
+        if (window.NoteworthySFX && typeof window.NoteworthySFX.play === 'function') {
+          window.NoteworthySFX.play(name);
+        }
+      } catch (_) {
+        /* optional */
+      }
+    };
+    const setSiteSfxVoice = (active) => {
+      try {
+        window.NoteworthySFX?.setVoiceModeActive?.(active);
+      } catch (_) {
+        /* optional */
+      }
+    };
     
     const wrap = root.querySelector('.wrap');
     const launcher = root.querySelector('.launcher');
@@ -4203,6 +4220,7 @@ class NoteworthyChat extends HTMLElement {
           // Otherwise, expand the panel
           if (voiceControlIntegrated) {
             voiceControlIntegrated.classList.add('expanded');
+            playSiteSfx('panel-open');
           }
         }
       });
@@ -5182,14 +5200,17 @@ class NoteworthyChat extends HTMLElement {
 
     // Toggle open/close
     launcher.onclick = () => {
+      const opening = !wrap.classList.contains('open');
       wrap.classList.toggle('open');
       if (wrap.classList.contains('open')) {
+        playSiteSfx('panel-open');
         launcher.setAttribute('aria-expanded', 'true');
         input.focus();
         // The tutorial no longer auto-opens on first use; it stays one
         // click away behind the help button so the first impression is
         // the conversation itself.
       } else {
+        playSiteSfx('panel-close');
         launcher.setAttribute('aria-expanded', 'false');
       }
     };
@@ -5197,6 +5218,7 @@ class NoteworthyChat extends HTMLElement {
     closeBtn.onclick = () => {
       wrap.classList.remove('open');
       launcher.setAttribute('aria-expanded', 'false');
+      playSiteSfx('panel-close');
     };
 
     // ── Page context: which article / live story is the reader on? ──
@@ -5575,6 +5597,7 @@ class NoteworthyChat extends HTMLElement {
 
     // Helper function to show error messages
     function showError(message) {
+      playSiteSfx('error');
       const errorGroup = document.createElement('div');
       errorGroup.className = 'message-group ai-msg-group';
       const err = document.createElement('div');
@@ -6238,6 +6261,9 @@ class NoteworthyChat extends HTMLElement {
       
       fileInput.addEventListener('change', (e) => {
         handleFiles(e.target.files);
+        if (e.target.files && e.target.files.length > 0) {
+          playSiteSfx('secondary-action');
+        }
         // Reset file input
         fileInput.value = '';
       });
@@ -6794,6 +6820,7 @@ class NoteworthyChat extends HTMLElement {
         // CRITICAL: Set flags FIRST before anything else - BEFORE connectivity test
         voiceModeActive = true;
         window._voiceModeActive = true; // Set global flag FIRST
+        setSiteSfxVoice(true);
         
         // Update UI to connecting state
         updateVoiceUIState('connecting');
@@ -8423,6 +8450,7 @@ class NoteworthyChat extends HTMLElement {
       // CRITICAL: Stop everything immediately - microphone and websocket first
       voiceModeActive = false;
       window._voiceModeActive = false; // Clear global flag
+      setSiteSfxVoice(false);
       isRecording = false;
       hasActiveResponse = false; // Reset response tracking
       isMuted = false; // Reset mute state
@@ -10257,6 +10285,7 @@ class NoteworthyChat extends HTMLElement {
         console.log('Send button clicked');
         e.preventDefault();
         e.stopPropagation();
+        playSiteSfx('secondary-action');
         ask().catch(err => {
           console.error('Error in ask() from send button:', err);
         });

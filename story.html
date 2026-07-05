@@ -7,8 +7,10 @@
   <meta name="description" content="Follow this developing story live. Timestamped updates with source notes from Noteworthy News.">
   <meta name="theme-color" content="#04060B">
   <link rel="manifest" href="/site.webmanifest">
-  <link rel="icon" type="image/png" href="/IMG_5794.PNG" sizes="32x32">
-  <link rel="apple-touch-icon" href="/IMG_5794.PNG" sizes="180x180">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/favicon-192x192.png" sizes="192x192">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
 
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="Noteworthy News">
@@ -155,6 +157,10 @@
   <script src="/js/article-v4.js?v=20260705"></script>
   <script src="/src/utils/push-notifications.js"></script>
   <script src="/v2/js/live-story.js?v=20260705"></script>
+  <script type="module">
+    import { initSFX } from '/v2/js/sfx-engine.js';
+    initSFX();
+  </script>
   <script src="/js/ads.js"></script>
 
   <!-- Noteworthy News AI (same widget as the homepage) -->

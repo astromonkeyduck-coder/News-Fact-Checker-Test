@@ -68,7 +68,16 @@ exports.handler = async (event, context) => {
       };
     }
 
-    const { name, email, subject, message } = body;
+    const { name, email, subject, message, website } = body;
+
+    // Honeypot: bots fill hidden fields; respond OK without sending mail.
+    if (website && String(website).trim()) {
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({ success: true, message: 'Message sent successfully' }),
+      };
+    }
 
     if (!email || !email.includes('@')) {
       return {

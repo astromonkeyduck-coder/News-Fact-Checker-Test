@@ -14,6 +14,7 @@
   /* ── Mobile nav ─────────────────────────────────── */
   function closeNav() {
     if (!navMenu || !navMenu.classList.contains('open')) return;
+    if (window.NoteworthySFX) window.NoteworthySFX.play('panel-close');
     navMenu.classList.remove('open');
     if (navToggle) navToggle.setAttribute('aria-expanded', 'false');
     document.body.style.overflow = '';
@@ -22,6 +23,9 @@
   if (navToggle && navMenu) {
     navToggle.addEventListener('click', function () {
       var isOpen = navMenu.classList.toggle('open');
+      if (window.NoteworthySFX) {
+        window.NoteworthySFX.play(isOpen ? 'panel-open' : 'panel-close');
+      }
       navToggle.setAttribute('aria-expanded', String(isOpen));
       document.body.style.overflow = isOpen ? 'hidden' : '';
     });
@@ -109,4 +113,8 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   }
+
+  import('/v2/js/sfx-engine.js').then(function (mod) {
+    if (mod.initSFX) mod.initSFX();
+  }).catch(function () {});
 })();

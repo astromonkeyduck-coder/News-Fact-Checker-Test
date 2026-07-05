@@ -235,10 +235,10 @@
             '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"/></svg>' +
             '<span>Ask about this story</span></button>' +
           '<div class="share-menu" id="share-menu" role="menu" aria-hidden="true">' +
-            '<a href="#" class="share-option" id="share-twitter" target="_blank" rel="noopener" role="menuitem"><span>Share on X</span></a>' +
-            '<a href="#" class="share-option" id="share-facebook" target="_blank" rel="noopener" role="menuitem"><span>Facebook</span></a>' +
-            '<a href="#" class="share-option" id="share-linkedin" target="_blank" rel="noopener" role="menuitem"><span>LinkedIn</span></a>' +
-            '<a href="#" class="share-option" id="share-reddit" target="_blank" rel="noopener" role="menuitem"><span>Reddit</span></a>' +
+            '<a href="#" class="share-option" id="share-twitter" target="_blank" rel="noopener noreferrer" role="menuitem"><span>Share on X</span></a>' +
+            '<a href="#" class="share-option" id="share-facebook" target="_blank" rel="noopener noreferrer" role="menuitem"><span>Facebook</span></a>' +
+            '<a href="#" class="share-option" id="share-linkedin" target="_blank" rel="noopener noreferrer" role="menuitem"><span>LinkedIn</span></a>' +
+            '<a href="#" class="share-option" id="share-reddit" target="_blank" rel="noopener noreferrer" role="menuitem"><span>Reddit</span></a>' +
             '<a href="#" class="share-option" id="share-email" role="menuitem"><span>Email</span></a>' +
           '</div>' +
         '</div>' +

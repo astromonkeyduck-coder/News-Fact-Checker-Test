@@ -36,7 +36,7 @@
   status = 200
   force = true
 
-# TEMPORARY — Situation Monitor disabled until re-enabled
+# TEMPORARY - Situation Monitor disabled until re-enabled
 [[redirects]]
   from = "/situation-monitor.html"
   to = "/"
@@ -50,17 +50,11 @@
   force = true
 # ────────────────────────────────────────────────────────────────────
 
-# Live Story deep links — /story/<slug> serves story.html (clean URLs for push)
+# Live Story deep links - /story/<slug> serves story.html (clean URLs for push)
 # 200 rewrite keeps the slug in the address bar; live-story.js parses it.
 [[redirects]]
   from = "/story/*"
   to = "/story.html"
-  status = 200
-
-# Favicon redirect (browsers request /favicon.ico by default)
-[[redirects]]
-  from = "/favicon.ico"
-  to = "/IMG_5794.PNG"
   status = 200
 
 # Category page - /category and /category?country=... -> /category/
@@ -135,7 +129,7 @@
   status = 301
   force = false
 
-# Admin UI — all admin paths redirect to new authenticated admin surface
+# Admin UI - all admin paths redirect to new authenticated admin surface
 [[redirects]]
   from = "/admin"
   to = "/admin/"
@@ -174,7 +168,7 @@
   status = 301
   force = true
 
-# Legacy admin pages — redirect to new admin (old pages are deprecated)
+# Legacy admin pages - redirect to new admin (old pages are deprecated)
 [[redirects]]
   from = "/admin-posts-manager.html"
   to = "/admin/#posts"
@@ -338,10 +332,10 @@
   included_files = ["node_modules/ffmpeg-static/**"]
   # Note: Background function configuration is also in the function file itself (exports.config)
 
-# Video Watermarker background processor — needs the native ffmpeg binary and
+# Video Watermarker background processor - needs the native ffmpeg binary and
 # the bundled font used to render the watermark PNG. Runs as a background
 # function (up to 15 min) since a full re-encode exceeds the 26s sync cap.
-# NOTE: ffprobe-static is intentionally NOT bundled — it ships ~300MB of
+# NOTE: ffprobe-static is intentionally NOT bundled - it ships ~300MB of
 # multi-platform binaries which would exceed Netlify's function size limits.
 # We read dimensions/duration from ffmpeg itself instead (see lib/watermarkJobs.js).
 [functions."watermark-process-background"]
@@ -402,7 +396,7 @@
   schedule = "*/3 * * * *"
 
 [dev]
-  # Static site — no framework dev command. (Setting `command = "netlify dev"`
+  # Static site - no framework dev command. (Setting `command = "netlify dev"`
   # here makes the CLI spawn itself recursively and crash on startup.)
   port = 8888
   publish = "."
@@ -429,6 +423,7 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "geolocation=(), microphone=(self), camera=()"
+    X-DNS-Prefetch-Control = "off"
 
 # Stricter headers for game.html to prevent iframe embedding
 [[headers]]

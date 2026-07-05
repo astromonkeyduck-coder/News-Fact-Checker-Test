@@ -681,6 +681,16 @@ body.pg { background: var(--color-bg); }
   margin: 1.4rem 0 0;
 }
 
+.pg-honeypot {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .pg-form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;

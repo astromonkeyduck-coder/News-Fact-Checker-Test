@@ -172,6 +172,8 @@ function startVisualizer() {
 // ── Init ───────────────────────────────────────────
 
 export function initAmbientAudio() {
+  // Background music removed from V4 homepage. UI sound effects use sfx-engine.js.
+  // Kept for backward compatibility if imported elsewhere.
   createAudio();
 
   canvas = document.getElementById('audio-visualizer');
@@ -183,7 +185,7 @@ export function initAmbientAudio() {
   }
 
   const btn = document.getElementById('audioToggle');
-  if (btn) {
+  if (btn && btn.dataset.sfxBound !== 'true') {
     btn.addEventListener('click', toggleAudio);
   }
 

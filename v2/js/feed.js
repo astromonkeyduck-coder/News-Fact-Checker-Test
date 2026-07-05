@@ -592,7 +592,7 @@ export async function initFeed() {
       }
     }
 
-    UISounds.success();
+    // Feed loaded quietly; no success chime on page load.
   } catch (err) {
     console.error('[Feed] Failed to load:', err);
     UISounds.error();
@@ -615,7 +615,6 @@ export async function initFeed() {
     const retryBtn = leadEl?.querySelector('.feed-retry-btn');
     if (retryBtn) {
       retryBtn.addEventListener('click', () => {
-        UISounds.tap();
         _cachedPosts = null;
         initFeed();
       }, { once: true });
@@ -693,7 +692,6 @@ function initFilters(pool) {
   container.addEventListener('click', (e) => {
     const chip = e.target.closest('.filter-chip');
     if (!chip) return;
-    UISounds.tap();
     _activeFilter = chip.dataset.filter;
     _moreCount = 0;
     container.querySelectorAll('.filter-chip').forEach(c =>
@@ -708,7 +706,6 @@ function initLoadMore() {
   if (!btn) return;
 
   btn.addEventListener('click', () => {
-    UISounds.tap();
     _moreCount += MORE_LOAD_STEP;
     renderStoriesGrid();
   });

@@ -63,8 +63,9 @@ function getArticlePageShell() {
     <meta name="twitter:image" id="twitter-image" content="https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg">
     <meta name="twitter:site" content="@NoteworthyNews">
 
-    <link rel="icon" type="image/png" href="/IMG_5794.PNG">
-    <link rel="apple-touch-icon" href="/IMG_5794.PNG">
+    <link rel="icon" href="/favicon.ico" sizes="48x48">
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
     <meta name="theme-color" content="#04060B">
 
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">

@@ -239,7 +239,7 @@ function isTrumpPresidency() {
  */
 function buildSearchResultsFooter() {
   if (isTrumpPresidency()) {
-    return `\n\nREMINDER: Donald Trump IS the sitting U.S. President (inaugurated January 20, 2025). If results mention Trump in a presidential context, say "President Trump" — NEVER "former president". Copy titles from the results above verbatim; do not substitute from memory.`;
+    return `\n\nREMINDER: Donald Trump IS the sitting U.S. President (inaugurated January 20, 2025). If results mention Trump in a presidential context, say "President Trump" - NEVER "former president". Copy titles from the results above verbatim; do not substitute from memory.`;
   }
   return `\n\nREMINDER: Copy titles from the results above verbatim. Do not substitute officeholder titles from your training data.`;
 }

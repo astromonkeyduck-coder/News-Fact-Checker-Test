@@ -10,6 +10,8 @@ const states = new WeakMap();
 const DEFAULT_FADE_IN_MS = 350;
 const DEFAULT_FADE_OUT_MS = 250;
 const HERO_FADE_IN_MS = 200;
+const HOVER_FADE_IN_MS = 200;
+const HOVER_FADE_OUT_MS = 160;
 
 function prefersReducedMotion() {
   return (
@@ -133,4 +135,10 @@ export function ensureVideoPlaying(video) {
   });
 }
 
-export { DEFAULT_FADE_IN_MS, DEFAULT_FADE_OUT_MS, HERO_FADE_IN_MS };
+export {
+  DEFAULT_FADE_IN_MS,
+  DEFAULT_FADE_OUT_MS,
+  HERO_FADE_IN_MS,
+  HOVER_FADE_IN_MS,
+  HOVER_FADE_OUT_MS,
+};

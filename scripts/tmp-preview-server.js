@@ -73,8 +73,6 @@ http.createServer((req, res) => {
   if (p === '/') p = '/v2/index.html';
   if (p.startsWith('/story/')) p = '/story.html';
   if (p === '/article') p = '/article.html';
-  if (p === '/favicon.ico') p = '/IMG_5794.PNG';
-
   const filePath = path.join(ROOT, p);
   if (!filePath.startsWith(ROOT)) {
     res.writeHead(403);

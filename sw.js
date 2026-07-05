@@ -3,7 +3,7 @@
  * Provides offline support, caching, and faster page loads
  */
 
-const CACHE_VERSION = 'v2.5.0-article-v4';
+const CACHE_VERSION = 'v2.5.1-video-hover';
 const CACHE_NAME = `noteworthy-news-${CACHE_VERSION}`;
 
 // Helper function to check if a URL is cacheable
@@ -36,6 +36,9 @@ const STATIC_ASSETS = [
   '/story.html',
   '/v2/js/live-story.js',
   '/v2/js/post-media.js',
+  '/v2/js/video-hover-audio.js',
+  '/v2/js/video-audio.js',
+  '/v2/js/sfx-engine.js',
   '/v2/styles/live-story.css',
   '/css/article-v4.css',
   '/js/article-v4.js',
