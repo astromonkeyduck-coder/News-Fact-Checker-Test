@@ -1,17 +1,16 @@
 /**
- * Developing Now: homepage live coverage section.
+ * Live stories on the V4 homepage.
  *
- * Loads active live stories from /.netlify/functions/live-stories and renders
- * one flagship story plus compact secondary cards. Every value shown (status,
- * follower count, update time) comes from real story data. The section stays
- * hidden when there are no active stories, so it never shows an empty shell.
+ * Loads active live stories from /.netlify/functions/live-stories and:
+ *   1. fills the header live chip with a real count
+ *   2. claims the hero flagship card for the top live story
+ *   3. renders highlighted live cards at the front of the Developing Now strip
+ *
+ * Every value shown (status, update time, follower count) comes from real
+ * story data. All surfaces stay hidden when nothing is live.
  */
 (function () {
   'use strict';
-
-  var section = document.getElementById('live-stories');
-  var rail = document.getElementById('live-rail');
-  if (!section || !rail) return;
 
   var STATUS_LABELS = {
     breaking: 'Breaking',
@@ -20,6 +19,15 @@
     disputed: 'Disputed',
     resolved: 'Resolved',
     false_report: 'False report'
+  };
+
+  var STATUS_BADGE = {
+    breaking: 'badge-live',
+    developing: 'badge-warning',
+    verified: 'badge-accent',
+    disputed: 'badge-warning',
+    resolved: 'badge-accent',
+    false_report: 'badge-warning'
   };
 
   function fnBase() {
@@ -45,50 +53,50 @@
     return Math.floor(hours / 24) + 'd ago';
   }
 
-  function metaLine(story) {
-    var parts = [];
-    var updated = timeAgo(story.last_update_at || story.updated_at);
-    if (updated) parts.push('Updated ' + esc(updated));
-    var followers = story.follower_count || 0;
-    if (followers) parts.push(esc(String(followers)) + ' following');
-    return parts.join(' &middot; ');
+  function statusBadge(status) {
+    var label = STATUS_LABELS[status] || 'Live';
+    var cls = STATUS_BADGE[status] || 'badge-live';
+    return '<span class="badge ' + cls + '">' + esc(label) + '</span>';
   }
 
-  function statusPill(status) {
-    var label = STATUS_LABELS[status] || 'Update';
-    return '<span class="live-rail-status" data-status="' + esc(status) + '"><span class="dot"></span>' + esc(label) + '</span>';
-  }
-
-  function flagshipCard(story) {
+  function heroCard(story) {
     var status = story.status || 'developing';
-    var meta = metaLine(story);
+    var updated = timeAgo(story.last_update_at || story.updated_at);
+    var followers = story.follower_count || 0;
+    var metaBits = [];
+    if (updated) metaBits.push('Updated ' + esc(updated));
+    if (followers) metaBits.push(esc(String(followers)) + ' following');
+
     return (
-      '<a class="live-flagship" href="/story/' + esc(story.slug) + '" data-status="' + esc(status) + '">' +
-        '<div class="live-flagship-top">' +
-          statusPill(status) +
-          (meta ? '<span class="live-flagship-meta">' + meta + '</span>' : '') +
+      '<a class="hero-card-link" href="/story/' + esc(story.slug) + '" aria-label="' + esc(story.title) + '">' +
+        '<div class="hero-card-top">' +
+          statusBadge(status) +
+          (metaBits.length ? '<span class="hero-card-meta">' + metaBits.join(' &middot; ') + '</span>' : '') +
         '</div>' +
-        '<h3 class="live-flagship-title">' + esc(story.title) + '</h3>' +
-        (story.summary ? '<p class="live-flagship-summary">' + esc(story.summary) + '</p>' : '') +
-        '<span class="live-flagship-cta">Follow live coverage' +
-          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>' +
+        '<div class="hero-card-row">' +
+          '<h3 class="hero-card-title">' + esc(story.title) + '</h3>' +
+        '</div>' +
+        (story.summary ? '<p class="hero-card-summary">' + esc(story.summary) + '</p>' : '') +
+        '<span class="hero-card-cta">Follow live' +
+          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>' +
         '</span>' +
       '</a>'
     );
   }
 
-  function secondaryCard(story) {
+  function stripCard(story, i) {
     var status = story.status || 'developing';
     var updated = timeAgo(story.last_update_at || story.updated_at);
+    var followers = story.follower_count || 0;
+
     return (
-      '<a class="live-rail-card" href="/story/' + esc(story.slug) + '" data-status="' + esc(status) + '">' +
-        '<div class="live-rail-card-top">' +
-          statusPill(status) +
-          (updated ? '<span class="live-rail-follows">' + esc(updated) + '</span>' : '') +
+      '<a class="dev-card dev-card--live" style="--i:' + i + '" href="/story/' + esc(story.slug) + '" aria-label="' + esc(story.title) + '">' +
+        '<div class="dev-card-top">' +
+          statusBadge(status) +
+          (updated ? '<span class="dev-card-time">' + esc(updated) + '</span>' : '') +
         '</div>' +
-        '<h3 class="live-rail-card-title">' + esc(story.title) + '</h3>' +
-        (story.summary ? '<p class="live-rail-card-summary">' + esc(story.summary) + '</p>' : '') +
-        '<span class="live-rail-cta">Follow live &rarr;</span>' +
+        '<h3 class="dev-card-title">' + esc(story.title) + '</h3>' +
+        '<span class="dev-card-foot">Follow live' + (followers ? ' &middot; ' + esc(String(followers)) + ' following' : '') + '</span>' +
       '</a>'
     );
   }
@@ -99,28 +107,48 @@
       if (!res.ok) return;
       var data = await res.json();
       var stories = (data && data.stories) || [];
-      if (!stories.length) return; // leave section hidden
+      if (!stories.length) return; // all live surfaces stay hidden
 
       // Flagship: first pinned story if any, otherwise the most recent.
       var flagshipIndex = stories.findIndex(function (s) { return s.pinned; });
       if (flagshipIndex < 0) flagshipIndex = 0;
       var flagship = stories[flagshipIndex];
-      var rest = stories.filter(function (_, i) { return i !== flagshipIndex; }).slice(0, 4);
 
-      rail.innerHTML =
-        flagshipCard(flagship) +
-        (rest.length ? '<div class="live-rail-secondary">' + rest.map(secondaryCard).join('') + '</div>' : '');
-      section.hidden = false;
+      // 1. Hero card: live story takes the slot over regular posts.
+      var slot = document.getElementById('hero-card');
+      if (slot) {
+        slot.innerHTML = heroCard(flagship);
+        slot.dataset.heroSource = 'live';
+        slot.dataset.status = flagship.status || 'developing';
+      }
 
-      // Reveal the header "Live" nav link and point hero CTAs at live coverage.
+      // 2. Developing Now strip: all live stories, flagship first.
+      var track = document.getElementById('strip-live');
+      if (track) {
+        var ordered = [flagship].concat(stories.filter(function (_, i) { return i !== flagshipIndex; }));
+        track.innerHTML = ordered.map(function (s, i) { return stripCard(s, i); }).join('');
+        document.dispatchEvent(new CustomEvent('nn:strip-updated'));
+      }
+
+      // 3. Header live chip + "Live" nav link + hero CTA target.
+      var chip = document.getElementById('nav-live-chip');
+      var count = document.getElementById('nav-live-count');
+      if (chip) {
+        if (count) {
+          count.textContent = stories.length === 1
+            ? '1 story live'
+            : stories.length + ' stories live';
+        }
+        chip.hidden = false;
+      }
       document.querySelectorAll('[data-nav-live]').forEach(function (link) {
         link.hidden = false;
       });
       document.querySelectorAll('[data-live-cta]').forEach(function (link) {
-        link.setAttribute('href', '#live-stories');
+        link.setAttribute('href', '#developing');
       });
     } catch (e) {
-      // Discovery surface is non-critical: fail silently, section stays hidden.
+      // Live surfaces are non-critical: fail silently, they stay hidden.
     }
   }
 

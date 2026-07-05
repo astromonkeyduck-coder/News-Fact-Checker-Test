@@ -3,17 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Noteworthy News | Live News, Verified Context</title>
+  <title>Noteworthy News | Breaking news, followed through</title>
 
   <!-- SEO -->
-  <meta name="description" content="Noteworthy News covers fast-moving events with verified sources, visible timestamps, and clear context. Follow developing stories live, on the web and on iOS.">
+  <meta name="description" content="Noteworthy News is an independent live newsroom. Follow developing stories with timestamped updates, source notes, and plain context. On the web, and soon on iOS.">
   <link rel="canonical" href="https://noteworthynews.co/">
-  <meta name="theme-color" content="#080E1A">
+  <meta name="theme-color" content="#04060B">
+  <link rel="icon" href="/IMG_5794.PNG" type="image/png">
 
   <!-- Open Graph -->
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Noteworthy News | Live News, Verified Context">
-  <meta property="og:description" content="Follow developing stories with verified sources, visible timestamps, and clear context.">
+  <meta property="og:title" content="Noteworthy News | Breaking news, followed through">
+  <meta property="og:description" content="Live updates, source notes, and plain context as each story changes.">
   <meta property="og:url" content="https://noteworthynews.co/">
   <meta property="og:site_name" content="Noteworthy News">
   <meta property="og:image" content="https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg?v=2">
@@ -23,8 +24,8 @@
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Noteworthy News | Live News, Verified Context">
-  <meta name="twitter:description" content="Follow developing stories with verified sources, visible timestamps, and clear context.">
+  <meta name="twitter:title" content="Noteworthy News | Breaking news, followed through">
+  <meta name="twitter:description" content="Live updates, source notes, and plain context as each story changes.">
   <meta name="twitter:image" content="https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg?v=2">
 
   <!-- Preconnect -->
@@ -32,32 +33,28 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="dns-prefetch" href="https://fonts.googleapis.com">
 
+  <!-- Hero image preload (LCP) -->
+  <link rel="preload" as="image" href="/v2/assets/hero-earth-night.webp" media="(min-width: 720px)">
+  <link rel="preload" as="image" href="/v2/assets/hero-earth-night-sm.webp" media="(max-width: 719px)">
+
   <!-- Critical above-the-fold styles -->
   <style>
-    :root{--color-bg:#080E1A;--color-text:rgba(240,242,245,.95);--header-height:3.25rem;--color-live:#EF4444}
+    :root{--color-bg:#04060B;--color-text:rgba(242,244,248,.95);--header-height:3.75rem;--color-live:#EF4444}
     body{background:var(--color-bg);color:var(--color-text);margin:0;min-height:100vh}
-    .top-rule{height:2px;background:#3B8BF2;position:fixed;top:0;left:0;right:0;z-index:101}
-    .site-header{position:sticky;top:2px;z-index:100;height:var(--header-height);background:rgba(8,14,26,.82);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(240,242,245,.05)}
+    .site-header{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--header-height);background:transparent;transition:background .3s ease,border-color .3s ease,height .3s ease}
   </style>
 
   <!-- Fonts -->
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" media="print" onload="this.media='all'">
-  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap"></noscript>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,600&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,600&display=swap"></noscript>
 
   <!-- Auth0 SDK loaded lazily by v2/js/auth.js when needed -->
 
   <!-- Design System -->
   <link rel="stylesheet" href="/v2/styles/tokens.css">
   <link rel="stylesheet" href="/v2/styles/base.css">
-  <link rel="stylesheet" href="/v2/styles/layout.css">
-  <link rel="stylesheet" href="/v2/styles/components.css">
-  <link rel="stylesheet" href="/v2/styles/live-rail.css">
-  <link rel="stylesheet" href="/v2/styles/v3.css">
+  <link rel="stylesheet" href="/v2/styles/v4.css">
 
-  
-  
-  
-  
   <!-- Auth0 Configuration - Inject environment variables for production -->
     <script>
       window.AUTH0_DOMAIN = null;
@@ -65,555 +62,563 @@
     </script>
   <!-- /Auth0 Configuration -->
 </head>
-<body>
-
-  <div class="top-rule" aria-hidden="true"></div>
-  <div class="scanline-sweep" aria-hidden="true"></div>
+<body class="v4">
 
   <!-- Header -->
-  <header class="site-header">
-    <nav class="site-nav container" aria-label="Primary">
-      <a class="site-logo" href="/">
-        <img class="site-logo-icon" src="/IMG_5794.PNG" alt="" width="24" height="24">
-        <span>Noteworthy News</span>
+  <header class="site-header" id="site-header">
+    <nav class="nav-row container-wide" aria-label="Primary">
+      <a class="brand" href="/">
+        <img class="brand-mark" src="/IMG_5794.PNG" alt="" width="26" height="26">
+        <span class="brand-name">Noteworthy News</span>
       </a>
 
-      <button class="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-menu">
-        <svg class="nav-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-          <line x1="3" y1="6" x2="21" y2="6"/>
-          <line x1="3" y1="12" x2="21" y2="12"/>
-          <line x1="3" y1="18" x2="21" y2="18"/>
-        </svg>
-      </button>
-
       <div class="nav-menu" id="nav-menu">
-        <a class="nav-link" href="#live-stories" data-nav-live hidden>Live</a>
-        <a class="nav-link" href="#breaking">Top Stories</a>
-        <a class="nav-link" href="#ai">AI</a>
+        <a class="nav-link" href="#developing" data-nav-live hidden>Live</a>
+        <a class="nav-link" href="#top-stories">Top Stories</a>
         <a class="nav-link" href="#app">App</a>
+        <a class="nav-link" href="#ai">AI</a>
         <a class="nav-link" href="#verify">How We Verify</a>
-        <a class="nav-link" href="#subscribe">Newsletter</a>
+        <a class="nav-link" href="#brief">Newsletter</a>
 
-        <button class="audio-toggle" id="audioToggle" type="button" aria-label="Play background music" title="Play music">
-          <svg class="audio-icon-off" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
-          <svg class="audio-icon-on" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14"/><path d="M15.54 8.46a5 5 0 010 7.07"/></svg>
-        </button>
-
-        <div class="nav-separator" aria-hidden="true"></div>
+        <div class="nav-tools">
+          <a class="nav-icon-btn" href="/archive.html" aria-label="Search all stories" title="Search stories">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+          </a>
+          <button class="nav-icon-btn audio-toggle" id="audioToggle" type="button" aria-label="Play background music" title="Play music">
+            <svg class="audio-icon-off" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+            <svg class="audio-icon-on" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14"/><path d="M15.54 8.46a5 5 0 010 7.07"/></svg>
+          </button>
+        </div>
 
         <div class="nav-auth" id="nav-auth-out">
-          <button class="btn btn-ghost btn-sm" id="signinBtn" type="button">Sign In</button>
-          <button class="btn btn-primary btn-sm" id="signupBtn" type="button">Sign Up</button>
+          <button class="btn btn-ghost btn-sm" id="signinBtn" type="button">Sign in</button>
+          <button class="btn btn-primary btn-sm" id="signupBtn" type="button">Sign up</button>
         </div>
         <div class="nav-auth" id="nav-auth-in" hidden>
           <span class="nav-user-name" id="nav-user-name"></span>
           <a class="btn btn-ghost btn-sm" href="/notification-settings.html">Profile</a>
-          <button class="btn btn-ghost btn-sm" id="logoutBtn" type="button">Log Out</button>
+          <button class="btn btn-ghost btn-sm" id="logoutBtn" type="button">Log out</button>
         </div>
+      </div>
+
+      <div class="nav-right">
+        <a class="nav-live-chip" id="nav-live-chip" href="#developing" hidden>
+          <span class="live-dot" aria-hidden="true"></span>
+          <span class="nav-live-chip-label">LIVE</span>
+          <span class="nav-live-chip-count" id="nav-live-count"></span>
+        </a>
+        <button class="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-menu">
+          <span class="nav-toggle-bar" aria-hidden="true"></span>
+          <span class="nav-toggle-bar" aria-hidden="true"></span>
+        </button>
       </div>
     </nav>
   </header>
 
   <main>
 
-    <!-- Hero: editorial front page -->
-    <section class="hero hero-v4">
-      <div class="container">
-        <div class="hero-v4-grid">
-          <div class="hero-content">
-            <p class="hero-kicker">
-              <span class="hero-kicker-dot" aria-hidden="true"></span>
-              Independent live newsroom
-              <span class="hero-kicker-sep" aria-hidden="true"></span>
-              <time class="hero-timestamp" id="hero-time"></time>
-            </p>
-            <h1 class="hero-title">
-              Understand the story<br>while it's <em class="hero-em">still unfolding.</em>
-            </h1>
-            <p class="hero-subtitle">
-              Noteworthy News follows fast-moving events with verified sources,
-              visible timestamps, and the context to think clearly.
-            </p>
-            <div class="hero-actions">
-              <a class="btn btn-primary btn-lg" href="#breaking" data-live-cta>Follow Live Coverage</a>
-              <a class="btn btn-secondary btn-lg" href="#app">Explore the iOS App</a>
-            </div>
-            <p class="hero-note">
-              Reporting drawn from USGS, NWS, FAA, USCG and primary channels.
-            </p>
-          </div>
-
-          <div class="hero-story">
-            <p class="hero-story-kicker">Top Story</p>
-            <div id="featured-story-container" class="featured-story-wrap" aria-label="Featured story">
-              <div class="featured-skeleton" aria-hidden="true">
-                <div class="featured-skeleton-image"></div>
-                <div class="featured-skeleton-body">
-                  <div class="featured-skeleton-badge"></div>
-                  <div class="featured-skeleton-title"></div>
-                  <div class="featured-skeleton-title short"></div>
-                  <div class="featured-skeleton-text"></div>
-                  <div class="featured-skeleton-text short"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+    <!-- Hero -->
+    <section class="hero" id="top" aria-label="Noteworthy News introduction">
+      <div class="hero-bg" aria-hidden="true">
+        <picture>
+          <source srcset="/v2/assets/hero-earth-night-sm.webp" media="(max-width: 719px)">
+          <img class="hero-earth" src="/v2/assets/hero-earth-night.webp" alt="" width="2000" height="1333" fetchpriority="high" decoding="async">
+        </picture>
+        <div class="hero-veil"></div>
       </div>
-    </section>
 
-    <!-- Headline ticker (real headlines, populated by feed.js) -->
-    <div class="ticker-bar" id="hero-ticker" aria-label="Trending headlines" hidden>
-      <div class="ticker-track" id="ticker-track"></div>
-    </div>
-
-    <!-- Developing Now: flagship live story + secondary updates.
-         Populated by /v2/js/live-rail.js; stays hidden when nothing is live. -->
-    <section id="live-stories" class="section live-rail-section" hidden aria-label="Live stories you can follow">
-      <div class="container">
-        <div class="section-header" data-reveal>
-          <p class="section-label"><span class="live-rail-pulse"></span> Live Now</p>
-          <h2 class="section-title">Developing Now</h2>
-          <p class="section-subtitle">
-            Stories we are actively reporting. Follow one and get every verified update.
+      <div class="container-wide hero-grid">
+        <div class="hero-main">
+          <p class="hero-eyebrow hero-load hero-load-1">
+            <span class="live-dot live-dot--calm" aria-hidden="true"></span>
+            <span class="hero-eyebrow-text">Independent live newsroom</span>
+            <span class="hero-eyebrow-sep" aria-hidden="true"></span>
+            <time class="hero-clock mono" id="hero-time"></time>
           </p>
+          <h1 class="hero-title hero-load hero-load-2">
+            Breaking news,<br><em>followed through.</em>
+          </h1>
+          <p class="hero-sub hero-load hero-load-3">
+            Live updates, source notes, and plain context as each story changes.
+          </p>
+          <div class="hero-cta hero-load hero-load-4">
+            <a class="btn btn-primary btn-lg" href="#developing" data-live-cta>Follow live stories</a>
+            <a class="btn btn-outline btn-lg" href="#app">See the app</a>
+          </div>
+          <p class="hero-trust hero-load hero-load-5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Independent newsroom. No paywall. Corrections in public.
+          </p>
+
+          <div class="hero-card hero-load hero-load-6" id="hero-card" data-hero-source="none" aria-label="Featured story">
+            <div class="hero-card-skeleton" aria-hidden="true">
+              <div class="hcs-top"><span class="hcs-chip"></span><span class="hcs-time"></span></div>
+              <div class="hcs-line"></div>
+              <div class="hcs-line short"></div>
+            </div>
+          </div>
         </div>
-        <div class="live-rail" id="live-rail"></div>
+
+        <!-- App showcase rail (desktop) -->
+        <aside class="hero-rail hero-load hero-load-7" aria-label="Noteworthy News iOS app preview">
+          <div class="rail-head">
+            <p class="rail-title">The app keeps the story with you.</p>
+            <p class="rail-sub">Follow a story once. Every verified update reaches your Lock Screen.</p>
+          </div>
+
+          <div class="rail-phone" aria-hidden="true">
+            <div class="rail-phone-island">
+              <span class="island-dot"></span>
+              <span class="island-text mono">LIVE</span>
+            </div>
+            <p class="rail-phone-time">9:41</p>
+            <p class="rail-phone-date">Tuesday, June 17</p>
+            <div class="rail-la">
+              <div class="rail-la-head">
+                <img src="/IMG_5794.PNG" alt="" width="14" height="14">
+                <span>Noteworthy News</span>
+                <span class="rail-la-live">LIVE</span>
+              </div>
+              <p class="rail-la-title">M6.2 earthquake off Honshu coast</p>
+              <p class="rail-la-update">Update 14: Tsunami advisory lifted for coastal prefectures</p>
+              <div class="rail-la-track"><i></i></div>
+              <div class="rail-la-meta"><span>Developing</span><span>2m ago</span></div>
+            </div>
+            <div class="rail-notif">
+              <div class="rail-la-head">
+                <img src="/IMG_5794.PNG" alt="" width="14" height="14">
+                <span>Noteworthy News</span>
+                <span class="rail-la-when">now</span>
+              </div>
+              <p class="rail-la-title">NWS tornado watch until 9:00 PM</p>
+              <p class="rail-la-update">Tap to follow the live story.</p>
+            </div>
+            <p class="rail-phone-caption">App preview</p>
+          </div>
+
+          <ul class="rail-points">
+            <li>
+              <span class="rail-point-name">Follow Live Stories</span>
+              <span class="rail-point-text">Every update until the story closes.</span>
+            </li>
+            <li>
+              <span class="rail-point-name">Live Activities</span>
+              <span class="rail-point-text">Lock Screen and Dynamic Island.</span>
+            </li>
+            <li>
+              <span class="rail-point-name">Alerts you control</span>
+              <span class="rail-point-text">Thresholds, follows, quiet hours.</span>
+            </li>
+          </ul>
+
+          <div class="rail-foot">
+            <span class="chip chip-dev">iOS app in development</span>
+            <a class="rail-foot-link" href="#app">See what is coming
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </a>
+          </div>
+        </aside>
       </div>
     </section>
 
-    <!-- Top Stories: editorial grid -->
-    <section id="breaking" class="section section-roomy">
-      <div class="container">
-        <div class="section-header section-header--row" data-reveal>
-          <div>
-            <p class="section-label">Latest Developments</p>
-            <h2 class="section-title">Top Stories</h2>
+    <!-- Developing Now -->
+    <section class="developing" id="developing" aria-label="Developing now">
+      <div class="container-wide">
+        <div class="dev-head" data-reveal>
+          <p class="band-kicker">
+            <span class="live-dot" aria-hidden="true"></span>
+            Developing now
+          </p>
+          <div class="dev-head-tools">
+            <a class="band-link" href="/archive.html">All updates</a>
+            <div class="dev-arrows" hidden>
+              <button class="dev-arrow" id="dev-prev" type="button" aria-label="Scroll updates back">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <button class="dev-arrow" id="dev-next" type="button" aria-label="Scroll updates forward">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
           </div>
-          <a class="section-link" href="/archive.html">
-            View archive
+        </div>
+
+        <div class="dev-strip" id="dev-strip">
+          <div class="dev-track" id="strip-live"></div>
+          <div class="dev-track" id="strip-posts"></div>
+          <div class="dev-empty" id="strip-empty" hidden>
+            <span class="dev-empty-dot" aria-hidden="true"></span>
+            <p class="dev-empty-title">Nothing is developing right now.</p>
+            <p class="dev-empty-text">When a story is live, every timestamped update lands here first.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Top Stories + The Wire -->
+    <section class="stories" id="top-stories">
+      <div class="container-wide">
+        <div class="band-head" data-reveal>
+          <div>
+            <p class="band-kicker">Top stories</p>
+            <h2 class="band-title">What happened. What changed. What is confirmed.</h2>
+          </div>
+          <a class="band-link" href="/archive.html">
+            Archive
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
           </a>
         </div>
 
         <div class="filter-chips" id="breaking-filters" role="toolbar" aria-label="Filter stories"></div>
 
-        <div class="feed-placeholder" id="breaking-container" aria-label="Breaking news loading">
-          <div class="feed-skeleton" aria-hidden="true">
-            <div class="skeleton-image"></div>
-            <div class="skeleton-body"><div class="skeleton-line w60"></div><div class="skeleton-line w90"></div><div class="skeleton-line w40"></div></div>
+        <div class="stories-grid">
+          <div class="stories-lead" id="lead-story" data-reveal>
+            <div class="lead-skeleton" aria-hidden="true">
+              <div class="ls-media"></div>
+              <div class="ls-line"></div>
+              <div class="ls-line short"></div>
+            </div>
           </div>
-          <div class="feed-skeleton" aria-hidden="true">
-            <div class="skeleton-image"></div>
-            <div class="skeleton-body"><div class="skeleton-line w60"></div><div class="skeleton-line w90"></div><div class="skeleton-line w40"></div></div>
+
+          <div class="stories-secondary" id="secondary-stories" aria-label="More stories">
+            <div class="row-skeleton" aria-hidden="true"></div>
+            <div class="row-skeleton" aria-hidden="true"></div>
+            <div class="row-skeleton" aria-hidden="true"></div>
+            <div class="row-skeleton" aria-hidden="true"></div>
           </div>
-          <div class="feed-skeleton" aria-hidden="true">
-            <div class="skeleton-image"></div>
-            <div class="skeleton-body"><div class="skeleton-line w60"></div><div class="skeleton-line w90"></div><div class="skeleton-line w40"></div></div>
-          </div>
-          <div class="feed-skeleton" aria-hidden="true">
-            <div class="skeleton-image"></div>
-            <div class="skeleton-body"><div class="skeleton-line w60"></div><div class="skeleton-line w90"></div><div class="skeleton-line w40"></div></div>
-          </div>
+
+          <aside class="wire" id="wire-panel" data-reveal="right" aria-label="The Wire, latest updates">
+            <div class="wire-head">
+              <p class="wire-title">The Wire</p>
+              <p class="wire-sub">Quick updates from stories we track.</p>
+            </div>
+            <div class="wire-list" id="wire-list">
+              <div class="wire-skeleton" aria-hidden="true"></div>
+              <div class="wire-skeleton" aria-hidden="true"></div>
+              <div class="wire-skeleton" aria-hidden="true"></div>
+              <div class="wire-skeleton" aria-hidden="true"></div>
+            </div>
+            <a class="wire-more" href="/archive.html">Full archive
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </a>
+          </aside>
         </div>
 
-        <div class="section-cta" id="breaking-cta">
-          <button class="btn btn-secondary" id="load-more-btn" type="button" hidden>Load More</button>
+        <div class="stories-foot">
+          <button class="btn btn-outline" id="load-more-btn" type="button" hidden>Load more</button>
         </div>
       </div>
     </section>
 
-    <!-- Wire: compact latest updates (revealed by feed.js when there is depth) -->
-    <section class="section wire-section" hidden>
-      <div class="container">
-        <div class="section-header" data-reveal>
-          <p class="section-label">The Wire</p>
-          <h2 class="section-title">Latest Updates</h2>
-        </div>
-        <div class="wire-container" id="wire-container"></div>
-        <div class="section-cta">
-          <a class="btn btn-secondary" href="/archive.html">View Full Archive</a>
-        </div>
-      </div>
-    </section>
-
-    <!-- Alerts and advisories: real posts from official feeds -->
-    <section id="alerts" class="section section-alt section-roomy">
-      <div class="container">
-        <div class="section-header" data-reveal>
-          <p class="section-label">From Official Sources</p>
-          <h2 class="section-title">Alerts and Advisories</h2>
-          <p class="section-subtitle">
-            Earthquake, weather, aviation and maritime notices, published straight
-            from official feeds with timestamps intact.
+    <!-- App ecosystem -->
+    <section class="app" id="app">
+      <div class="container-wide app-grid">
+        <div class="app-copy" data-reveal="left">
+          <p class="band-kicker">Noteworthy News for iOS</p>
+          <h2 class="band-title">The story stays on your Lock Screen until it ends.</h2>
+          <p class="band-sub">
+            Follow a developing story once. The app carries every verified update
+            to your Lock Screen and Dynamic Island, with controls that keep alerts quiet until they matter.
           </p>
+
+          <ul class="app-features">
+            <li class="app-feature">
+              <span class="app-feature-icon" aria-hidden="true">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+              </span>
+              <span><strong>Follow Live Story.</strong> One tap to follow. Every update arrives until the story closes.</span>
+            </li>
+            <li class="app-feature">
+              <span class="app-feature-icon" aria-hidden="true">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="3"/><circle cx="12" cy="6" r="1"/></svg>
+              </span>
+              <span><strong>Live Activities.</strong> The story unfolds on the Lock Screen and in the Dynamic Island. No unlocking.</span>
+            </li>
+            <li class="app-feature">
+              <span class="app-feature-icon" aria-hidden="true">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+              </span>
+              <span><strong>Alerts you control.</strong> Severity thresholds, story follows, and quiet hours. Nothing else breaks through.</span>
+            </li>
+            <li class="app-feature">
+              <span class="app-feature-icon" aria-hidden="true">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+              </span>
+              <span><strong>Deep links.</strong> Every alert opens the exact update it came from. No hunting.</span>
+            </li>
+          </ul>
+
+          <div class="app-status">
+            <span class="chip chip-dev">In development</span>
+            <span class="app-status-text">Built with SwiftUI, ActivityKit, and APNs. TestFlight coming soon.</span>
+          </div>
+          <a class="btn btn-outline" href="#brief">Get notified when it ships</a>
         </div>
 
-        <div class="feed-placeholder" id="alerts-container" aria-label="Alerts loading">
-          <div class="feed-skeleton" aria-hidden="true">
-            <div class="skeleton-image"></div>
-            <div class="skeleton-body"><div class="skeleton-line w60"></div><div class="skeleton-line w90"></div><div class="skeleton-line w40"></div></div>
-          </div>
-          <div class="feed-skeleton" aria-hidden="true">
-            <div class="skeleton-image"></div>
-            <div class="skeleton-body"><div class="skeleton-line w60"></div><div class="skeleton-line w90"></div><div class="skeleton-line w40"></div></div>
-          </div>
-          <div class="feed-skeleton" aria-hidden="true">
-            <div class="skeleton-image"></div>
-            <div class="skeleton-body"><div class="skeleton-line w60"></div><div class="skeleton-line w90"></div><div class="skeleton-line w40"></div></div>
-          </div>
-        </div>
-      </div>
-    </section>
+        <div class="app-stage" data-reveal="phone" aria-hidden="true">
+          <div class="stage-phone">
+            <div class="stage-island">
+              <span class="island-dot"></span>
+              <span class="island-text mono">LIVE</span>
+              <span class="island-wave" aria-hidden="true"><i></i><i></i><i></i></span>
+            </div>
+            <div class="stage-screen">
+              <p class="stage-time">9:41</p>
+              <p class="stage-date">Tuesday, June 17</p>
 
-    <!-- Noteworthy News for iOS -->
-    <section id="app" class="section section-roomy app-section">
-      <div class="container">
-        <div class="app-grid">
-          <div class="app-content" data-reveal>
-            <p class="section-label">Noteworthy News for iOS</p>
-            <h2 class="section-title">Breaking news that finds you.</h2>
-            <p class="section-subtitle">
-              A native iOS experience built around live coverage, not another feed to refresh.
-            </p>
-
-            <ul class="app-features">
-              <li class="app-feature">
-                <span class="app-feature-icon" aria-hidden="true">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-                </span>
-                <span><strong>Follow Live Story.</strong> One tap to follow a developing event and get every verified update.</span>
-              </li>
-              <li class="app-feature">
-                <span class="app-feature-icon" aria-hidden="true">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="3"/><circle cx="12" cy="6" r="1"/></svg>
-                </span>
-                <span><strong>Live Activities.</strong> Stories unfold on your Lock Screen and in the Dynamic Island, no unlocking required.</span>
-              </li>
-              <li class="app-feature">
-                <span class="app-feature-icon" aria-hidden="true">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-                </span>
-                <span><strong>Alerts you control.</strong> Choose what breaks through: severity thresholds, story follows, quiet hours.</span>
-              </li>
-              <li class="app-feature">
-                <span class="app-feature-icon" aria-hidden="true">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                </span>
-                <span><strong>Real-time by default.</strong> The same verified feeds that power this site, native and fast.</span>
-              </li>
-            </ul>
-
-            <p class="app-status">
-              <span class="badge badge-accent">In development</span>
-              Built with SwiftUI, ActivityKit, and APNs. TestFlight coming soon.
-            </p>
-          </div>
-
-          <div class="app-visual" aria-hidden="true" data-reveal>
-            <div class="iphone">
-              <div class="iphone-island">
-                <span class="island-live-dot"></span>
-                <span class="island-label mono">LIVE</span>
-                <span class="island-eq"><i></i><i></i><i></i></span>
+              <div class="stage-card stage-card-la">
+                <div class="stage-card-head">
+                  <img src="/IMG_5794.PNG" alt="" width="15" height="15">
+                  <span>Noteworthy News</span>
+                  <span class="stage-live">LIVE</span>
+                </div>
+                <p class="stage-card-title">M6.2 earthquake off Honshu coast</p>
+                <p class="stage-card-text">Update 14: Tsunami advisory lifted for coastal prefectures</p>
+                <div class="stage-track"><i></i></div>
+                <div class="stage-card-meta"><span>Developing</span><span>2m ago</span></div>
               </div>
-              <div class="iphone-screen">
-                <p class="iphone-time">9:41</p>
-                <p class="iphone-date">Tuesday, June 17</p>
 
-                <div class="la-card">
-                  <div class="la-head">
-                    <img src="/IMG_5794.PNG" alt="" width="16" height="16" class="la-logo">
-                    <span class="la-app">Noteworthy News</span>
-                    <span class="la-live">LIVE</span>
-                  </div>
-                  <p class="la-title">M6.2 earthquake off Honshu coast</p>
-                  <p class="la-update">Update 14: Tsunami advisory lifted for coastal prefectures</p>
-                  <div class="la-track"><i style="--p:72%"></i></div>
-                  <div class="la-meta"><span>Developing</span><span>2m ago</span></div>
+              <div class="stage-card">
+                <div class="stage-card-head">
+                  <img src="/IMG_5794.PNG" alt="" width="15" height="15">
+                  <span>Noteworthy News</span>
+                  <span class="stage-when">now</span>
                 </div>
+                <p class="stage-card-title">Severe weather alert for your area</p>
+                <p class="stage-card-text">NWS tornado watch until 9:00 PM. Tap to follow live.</p>
+              </div>
 
-                <div class="la-card la-card--notif">
-                  <div class="la-head">
-                    <img src="/IMG_5794.PNG" alt="" width="16" height="16" class="la-logo">
-                    <span class="la-app">Noteworthy News</span>
-                    <span class="la-when">now</span>
-                  </div>
-                  <p class="la-title">Severe weather alert for your area</p>
-                  <p class="la-update">NWS tornado watch until 9:00 PM. Tap to follow live.</p>
+              <div class="stage-card">
+                <div class="stage-card-head">
+                  <img src="/IMG_5794.PNG" alt="" width="15" height="15">
+                  <span>Noteworthy News</span>
+                  <span class="stage-when">9m ago</span>
                 </div>
+                <p class="stage-card-title">Story you follow was updated</p>
+                <p class="stage-card-text">Ceasefire talks: joint statement expected tonight.</p>
               </div>
             </div>
           </div>
+          <p class="stage-caption">Interface preview. TestFlight coming soon.</p>
         </div>
       </div>
     </section>
 
     <!-- Noteworthy News AI -->
-    <section id="ai" class="section section-alt section-roomy ai-section">
-      <div class="container">
-        <div class="ai-grid">
-          <div class="ai-visual" aria-hidden="true" data-reveal>
-            <div class="ai-mockup">
-              <div class="ai-mockup-head">
-                <img src="/IMG_5794.PNG" alt="" width="20" height="20" class="ai-mockup-logo">
-                <span class="ai-mockup-title">Noteworthy News AI</span>
+    <section class="ai" id="ai">
+      <div class="container-wide ai-grid">
+        <div class="ai-stage" data-reveal="stage" aria-hidden="true">
+          <div class="ai-panel">
+            <div class="ai-panel-head">
+              <img src="/IMG_5794.PNG" alt="" width="18" height="18">
+              <span class="ai-panel-name">Noteworthy News AI</span>
+              <span class="ai-panel-tag">on this site</span>
+            </div>
+            <div class="ai-panel-body">
+              <div class="ai-msg ai-msg-user">Is the refinery fire video going around actually from tonight?</div>
+              <div class="ai-msg ai-msg-bot">
+                No. That clip is from a 2019 fire in Texas. Tonight's story has two
+                confirmed updates so far, both linked below.
+                <span class="ai-msg-sources">
+                  <span class="ai-source">Official statement</span>
+                  <span class="ai-source">Local fire dept.</span>
+                  <span class="ai-source">Image check</span>
+                </span>
               </div>
-              <div class="ai-mockup-body">
-                <div class="ai-msg ai-msg--user">Is this viral refinery fire video from tonight's story real?</div>
-                <div class="ai-msg ai-msg--bot">
-                  That footage is from a 2019 incident in Texas, not tonight's event.
-                  Here's what's verified so far, with timestamps:
-                  <span class="ai-msg-sources">
-                    <span class="source-badge">Official statement</span>
-                    <span class="source-badge">Local fire dept.</span>
-                    <span class="source-badge">Reverse image match</span>
-                  </span>
-                </div>
-                <div class="ai-voice-bar">
-                  <span class="ai-voice-icon" aria-hidden="true">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/></svg>
-                  </span>
-                  <span class="ai-voice-label">Voice briefing</span>
-                  <span class="ai-voice-wave"><i></i><i></i><i></i><i></i><i></i></span>
-                </div>
+              <div class="ai-attach">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+                <span>screenshot-2214.png attached for review</span>
+              </div>
+              <div class="ai-voice">
+                <span class="ai-voice-icon" aria-hidden="true">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/></svg>
+                </span>
+                <span>Voice briefing</span>
+                <span class="ai-voice-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
               </div>
             </div>
           </div>
+        </div>
 
-          <div class="ai-content" data-reveal>
-            <p class="section-label">Noteworthy News AI</p>
-            <h2 class="section-title">A research assistant for the news, built in.</h2>
-            <p class="section-subtitle">
-              Available on every page, grounded in our verified coverage.
-            </p>
+        <div class="ai-copy" data-reveal="right">
+          <p class="band-kicker">Noteworthy News AI</p>
+          <h2 class="band-title">Ask better questions about the news.</h2>
+          <p class="band-sub">
+            A research assistant built into every page and grounded in our reporting.
+            Not a chatbot bolted on top.
+          </p>
 
-            <ul class="ai-features">
-              <li>Ask for context on any developing story</li>
-              <li>Fact-check claims and viral posts</li>
-              <li>Upload screenshots or documents for analysis</li>
-              <li>Get fast-moving stories explained clearly</li>
-              <li>Listen to a voice briefing, hands-free</li>
-            </ul>
+          <ul class="ai-features">
+            <li>Ask for context on any developing story</li>
+            <li>Fact-check claims and viral posts</li>
+            <li>Upload screenshots or documents for review</li>
+            <li>Listen to a voice briefing, hands free</li>
+          </ul>
 
-            <button class="btn btn-primary" type="button" data-open-chat>Ask Noteworthy AI</button>
-            <p class="ai-disclaimer">Answers cite sources and link back to our reporting. When something isn't confirmed, it says so.</p>
-          </div>
+          <button class="btn btn-primary" type="button" data-open-chat>Ask Noteworthy AI</button>
+          <p class="ai-note">Answers cite sources and link back to our reporting. When something is not confirmed, it says so.</p>
         </div>
       </div>
     </section>
 
-    <!-- How We Verify -->
-    <section id="verify" class="section section-roomy verify-section">
-      <div class="container">
-        <div class="verify-grid">
-          <div class="verify-intro" data-reveal>
-            <p class="section-label section-label--gold">How We Verify</p>
-            <h2 class="section-title">Trust is a process, not a promise.</h2>
-            <p class="verify-lede">
-              Every story on Noteworthy News goes through the same checks, and the
-              work stays visible: where a claim came from, when we published it,
-              and what changed since.
-            </p>
-            <a class="btn btn-secondary" href="/how-we-verify.html">Read the Full Policy</a>
-          </div>
+    <!-- How we verify -->
+    <section class="verify" id="verify">
+      <div class="container-wide">
+        <div class="band-head band-head-center" data-reveal>
+          <p class="band-kicker band-kicker-gold">How we verify</p>
+          <h2 class="band-title">How we know what we know.</h2>
+          <p class="band-sub">Developing means developing. Confirmed means confirmed. The two never blend.</p>
+        </div>
 
-          <ol class="verify-list" data-reveal="stagger">
-            <li class="verify-item">
-              <span class="verify-num mono">01</span>
-              <div>
-                <h3 class="verify-title">Primary sources first</h3>
-                <p class="verify-text">Claims trace back to agencies, on-record statements, and raw data. Not screenshots of screenshots.</p>
-              </div>
-            </li>
-            <li class="verify-item">
-              <span class="verify-num mono">02</span>
-              <div>
-                <h3 class="verify-title">Timestamps on everything</h3>
-                <p class="verify-text">Every update carries the time it was published, so you can see how a story evolved.</p>
-              </div>
-            </li>
-            <li class="verify-item">
-              <span class="verify-num mono">03</span>
-              <div>
-                <h3 class="verify-title">Official statements, in context</h3>
-                <p class="verify-text">We quote what officials actually said, and we note what they have not confirmed.</p>
-              </div>
-            </li>
-            <li class="verify-item">
-              <span class="verify-num mono">04</span>
-              <div>
-                <h3 class="verify-title">Confirmed vs. developing</h3>
-                <p class="verify-text">The two are always labeled and never blended. You always know which one you're reading.</p>
-              </div>
-            </li>
-            <li class="verify-item">
-              <span class="verify-num mono">05</span>
-              <div>
-                <h3 class="verify-title">Corrections in the open</h3>
-                <p class="verify-text">When we get something wrong, the fix is visible. Nothing is silently rewritten.</p>
-              </div>
-            </li>
-            <li class="verify-item">
-              <span class="verify-num mono">06</span>
-              <div>
-                <h3 class="verify-title">Source context matters</h3>
-                <p class="verify-text">Who is saying it is part of the story. We tell you, every time.</p>
-              </div>
-            </li>
-          </ol>
+        <ol class="verify-steps" data-reveal="steps">
+          <li class="verify-step">
+            <span class="verify-num mono">01</span>
+            <h3 class="verify-name">Detect</h3>
+            <p class="verify-text">Signals come from official feeds, agency alerts, and primary accounts we watch.</p>
+          </li>
+          <li class="verify-step">
+            <span class="verify-num mono">02</span>
+            <h3 class="verify-name">Verify</h3>
+            <p class="verify-text">Claims trace to the original source or official data before we publish them.</p>
+          </li>
+          <li class="verify-step">
+            <span class="verify-num mono">03</span>
+            <h3 class="verify-name">Context</h3>
+            <p class="verify-text">We state what is known, what is not, and who is doing the saying.</p>
+          </li>
+          <li class="verify-step">
+            <span class="verify-num mono">04</span>
+            <h3 class="verify-name">Publish</h3>
+            <p class="verify-text">Every update ships with a timestamp and a source note attached.</p>
+          </li>
+          <li class="verify-step">
+            <span class="verify-num mono">05</span>
+            <h3 class="verify-name">Correct</h3>
+            <p class="verify-text">Corrections stay visible. Nothing is silently rewritten after the fact.</p>
+          </li>
+        </ol>
+
+        <div class="verify-foot" data-reveal>
+          <a class="btn btn-outline" href="/how-we-verify.html">Read our standards</a>
         </div>
       </div>
     </section>
 
     <!-- Media Literacy Lab -->
-    <section id="experiences" class="section section-alt section-roomy">
-      <div class="container">
-        <div class="section-header" data-reveal>
-          <p class="section-label">Media Literacy Lab</p>
-          <h2 class="section-title">Learn to read the news like an analyst.</h2>
-          <p class="section-subtitle">
-            An educational suite built from the same verification playbook we use in the newsroom.
-          </p>
+    <section class="lab" id="lab">
+      <div class="container-wide">
+        <div class="band-head" data-reveal>
+          <div>
+            <p class="band-kicker">Media Literacy Lab</p>
+            <h2 class="band-title">Tools for reading the news carefully.</h2>
+          </div>
+          <p class="band-sub band-sub-right">Built from the same checklist our newsroom uses.</p>
         </div>
 
-        <ol class="lab-list" data-reveal="stagger">
-          <li>
-            <a class="lab-row" href="/game.html">
-              <span class="lab-num mono">01</span>
-              <span class="lab-copy">
-                <span class="lab-title">Fact-Checker Game</span>
-                <span class="lab-text">Real headlines, real stakes. Can you tell verified reporting from misinformation?</span>
-              </span>
-              <span class="lab-arrow" aria-hidden="true">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-              </span>
-            </a>
-          </li>
-          <li>
-            <a class="lab-row" href="/geography-game.html">
-              <span class="lab-num mono">02</span>
-              <span class="lab-copy">
-                <span class="lab-title">Geography Challenge</span>
-                <span class="lab-text">Breaking news has coordinates. Identify the places behind the stories.</span>
-              </span>
-              <span class="lab-arrow" aria-hidden="true">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-              </span>
-            </a>
-          </li>
-          <li>
-            <a class="lab-row" href="/media-literacy-guide.html">
-              <span class="lab-num mono">03</span>
-              <span class="lab-copy">
-                <span class="lab-title">Media Literacy Guide</span>
-                <span class="lab-text">A practical field guide to sourcing, framing, and spotting manipulation.</span>
-              </span>
-              <span class="lab-arrow" aria-hidden="true">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-              </span>
-            </a>
-          </li>
-          <li>
-            <a class="lab-row" href="/fact-checking-tips.html">
-              <span class="lab-num mono">04</span>
-              <span class="lab-copy">
-                <span class="lab-title">Fact-Checking Tips</span>
-                <span class="lab-text">The exact techniques our newsroom uses: reverse image search, source tracing, and more.</span>
-              </span>
-              <span class="lab-arrow" aria-hidden="true">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-              </span>
-            </a>
-          </li>
-        </ol>
+        <div class="lab-grid" data-reveal="stagger">
+          <a class="lab-card" href="/game.html">
+            <span class="lab-card-icon" aria-hidden="true">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </span>
+            <span class="lab-card-name">Fact-Checker Game</span>
+            <span class="lab-card-text">Real headlines. Call verified or false, then see the evidence.</span>
+            <span class="lab-card-go" aria-hidden="true">Play
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </span>
+          </a>
+          <a class="lab-card" href="/geography-game.html">
+            <span class="lab-card-icon" aria-hidden="true">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+            </span>
+            <span class="lab-card-name">Geography Challenge</span>
+            <span class="lab-card-text">Breaking news has coordinates. Place the stories on the map.</span>
+            <span class="lab-card-go" aria-hidden="true">Play
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </span>
+          </a>
+          <a class="lab-card" href="/media-literacy-guide.html">
+            <span class="lab-card-icon" aria-hidden="true">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+            </span>
+            <span class="lab-card-name">Media Literacy Guide</span>
+            <span class="lab-card-text">A field guide to sourcing, framing, and spotting manipulation.</span>
+            <span class="lab-card-go" aria-hidden="true">Read
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </span>
+          </a>
+          <a class="lab-card" href="/fact-checking-tips.html">
+            <span class="lab-card-icon" aria-hidden="true">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+            </span>
+            <span class="lab-card-name">Fact-Checking Tips</span>
+            <span class="lab-card-text">The exact techniques we use. Reverse image search and source tracing.</span>
+            <span class="lab-card-go" aria-hidden="true">Read
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </span>
+          </a>
+        </div>
       </div>
     </section>
 
-    <!-- Newsletter -->
-    <section id="subscribe" class="section section-roomy">
-      <div class="container container-narrow text-center">
-        <div class="section-header" data-reveal>
-          <p class="section-label">Subscribe</p>
-          <h2 class="section-title">The Weekly Brief</h2>
-          <p class="section-subtitle">
-            The stories that mattered, fact-checked and delivered to your inbox.
+    <!-- Weekly Brief -->
+    <section class="brief" id="brief">
+      <div class="container-wide brief-grid">
+        <div class="brief-copy" data-reveal="left">
+          <p class="band-kicker">The Weekly Brief</p>
+          <h2 class="band-title">A weekly brief for the stories worth keeping.</h2>
+          <p class="band-sub">
+            One email. The stories that mattered, what changed since we first
+            reported them, and what to watch next.
           </p>
+
+          <form class="newsletter-form" aria-label="Newsletter signup">
+            <label for="newsletter-email" class="sr-only">Email address</label>
+            <input
+              id="newsletter-email"
+              class="newsletter-input"
+              type="email"
+              placeholder="you@example.com"
+              required
+              autocomplete="email"
+            >
+            <button type="submit" class="btn btn-primary">Get the brief</button>
+          </form>
+          <p class="newsletter-hint" aria-live="polite">Free. No spam. Unsubscribe anytime.</p>
         </div>
 
-        <form class="newsletter-form" aria-label="Newsletter signup">
-          <label for="newsletter-email" class="sr-only">Email address</label>
-          <input
-            id="newsletter-email"
-            class="newsletter-input"
-            type="email"
-            placeholder="you@example.com"
-            required
-            autocomplete="email"
-          >
-          <button type="submit" class="btn btn-primary">Subscribe</button>
-        </form>
-        <p class="newsletter-hint" aria-live="polite">Free. No spam. Unsubscribe anytime.</p>
-
-        <div class="email-preview">
-          <p class="email-preview-label">What you'll receive</p>
-          <div class="email-preview-window">
-            <div class="email-preview-chrome">
-              <div class="email-preview-dots" aria-hidden="true">
-                <span class="dot-red"></span><span class="dot-yellow"></span><span class="dot-green"></span>
-              </div>
-              <div class="email-preview-chrome-tabs">
-                <span class="email-preview-tab is-active">
-                  <span class="email-preview-unread">1</span>
-                  Inbox
-                </span>
-                <span class="email-preview-tab">Sent</span>
-              </div>
+        <div class="brief-stage" data-reveal="rise">
+          <div class="mail-card">
+            <div class="mail-meta">
+              <div class="mail-meta-row"><span class="mail-meta-label">From</span><span>Noteworthy News &lt;hello@noteworthynews.co&gt;</span></div>
+              <div class="mail-meta-row"><span class="mail-meta-label">Subject</span><span class="mail-subject">Earthquake alerts are live</span></div>
+              <div class="mail-meta-row"><span class="mail-meta-label">Date</span><span>Wednesday, Feb 18, 2026</span></div>
             </div>
-            <div class="email-preview-meta">
-              <div class="email-preview-meta-row">
-                <span class="email-preview-meta-label">From</span>
-                <span>Noteworthy News &lt;hello@noteworthynews.co&gt;</span>
-              </div>
-              <div class="email-preview-meta-row">
-                <span class="email-preview-meta-label">Subject</span>
-                <span class="email-preview-subject">Earthquake Alerts Are Live</span>
-              </div>
-              <div class="email-preview-meta-row">
-                <span class="email-preview-meta-label">Date</span>
-                <span>Wednesday, Feb 18, 2026</span>
-              </div>
-            </div>
-            <div class="email-preview-body">
-              <div class="email-preview-header">
-                <img src="/IMG_5794.PNG" alt="" width="28" height="28" class="email-preview-logo">
+            <div class="mail-body">
+              <div class="mail-brand">
+                <img src="/IMG_5794.PNG" alt="" width="24" height="24">
                 <div>
-                  <p class="email-preview-brand">Noteworthy News</p>
-                  <p class="email-preview-tagline">Real News. Real Time.</p>
+                  <p class="mail-brand-name">Noteworthy News</p>
+                  <p class="mail-brand-tag">The Weekly Brief</p>
                 </div>
               </div>
-              <div class="email-preview-rule"></div>
-              <p class="email-preview-greeting">Reader,</p>
-              <p class="email-preview-text">Earthquake alerts are live. We pull from USGS feeds and push alerts within minutes of detection. You choose the threshold:</p>
-              <div class="email-preview-thresholds">
-                <span class="email-threshold email-threshold-green">4.0+</span>
-                <span class="email-threshold email-threshold-yellow">5.0+</span>
-                <span class="email-threshold email-threshold-blue">6.0+</span>
-                <span class="email-threshold email-threshold-red">7.0+</span>
+              <p class="mail-text">Reader,</p>
+              <p class="mail-text">Earthquake alerts are live. We read USGS feeds directly and push alerts within minutes of detection. You choose the threshold:</p>
+              <div class="mail-chips">
+                <span class="mail-chip mail-chip-green">4.0+</span>
+                <span class="mail-chip mail-chip-yellow">5.0+</span>
+                <span class="mail-chip mail-chip-blue">6.0+</span>
+                <span class="mail-chip mail-chip-red">7.0+</span>
               </div>
-              <div class="email-preview-alert">
-                <div class="email-alert-header">
-                  <span class="email-alert-badge">M6.2</span>
+              <div class="mail-alert">
+                <div class="mail-alert-head">
+                  <span class="mail-alert-badge">M6.2</span>
                   <div>
-                    <p class="email-alert-title">M6.2 earthquake detected</p>
-                    <p class="email-alert-location">Tokyo, Japan &middot; Just now</p>
+                    <p class="mail-alert-title">M6.2 earthquake detected</p>
+                    <p class="mail-alert-sub">Tokyo, Japan &middot; Just now</p>
                   </div>
                 </div>
-                <div class="email-alert-map">
-                  <img src="/newsletter-sample-map.jpg" alt="Earthquake map" loading="lazy" decoding="async">
-                </div>
+                <img class="mail-alert-map" src="/newsletter-sample-map.jpg" alt="Sample earthquake alert map" loading="lazy" decoding="async">
               </div>
-              <p class="email-preview-sign">Richard<br><span>Co-Founder, Noteworthy News</span></p>
+              <p class="mail-sign">Richard<br><span>Co-Founder, Noteworthy News</span></p>
             </div>
           </div>
         </div>
@@ -621,22 +626,20 @@
     </section>
 
     <!-- Mission -->
-    <section id="mission" class="section mission-section">
-      <div class="container container-narrow">
-        <div class="mission-block" data-reveal>
-          <p class="section-label section-label--gold">Why Noteworthy Exists</p>
-          <h2 class="section-title">Built for people who want to understand the news.</h2>
+    <section class="mission" id="mission">
+      <div class="container-wide mission-grid">
+        <figure class="mission-media" data-reveal="left">
+          <img src="/v2/assets/mission-newsroom.webp" alt="A newsroom desk at night with a laptop, notes, and a city skyline outside the window" width="1280" height="853" loading="lazy" decoding="async">
+        </figure>
+        <div class="mission-copy" data-reveal="right">
+          <p class="band-kicker band-kicker-gold">Why we exist</p>
+          <h2 class="band-title">Built by a young newsroom with something to prove.</h2>
           <p class="mission-text">
-            Noteworthy News started with a simple frustration: when something big
-            happens, the fastest information is usually the least reliable. So we
-            built a newsroom that treats verification as the product. Source-first
-            reporting, real-time official data, and clear labels for what's
-            confirmed and what's still developing.
+            Noteworthy News exists to help people follow developing stories without
+            losing the source trail. The source sits next to the claim. Timestamps
+            stay on every update. Corrections stay where readers can see them.
           </p>
-          <p class="mission-sign">
-            Richard<br>
-            <span>Co-Founder, Noteworthy News</span>
-          </p>
+          <p class="mission-sign">Richard<br><span>Co-Founder, Noteworthy News</span></p>
         </div>
       </div>
     </section>
@@ -645,60 +648,61 @@
 
   <!-- Footer -->
   <footer class="site-footer">
-    <div class="container">
-      <div class="footer-grid footer-grid--v3">
+    <div class="container-wide">
+      <div class="footer-grid" data-reveal>
         <div class="footer-brand">
-          <p class="footer-brand-name">Noteworthy News</p>
-          <p class="footer-brand-tagline">
-            Live coverage of fast-moving events with verified sources,
-            visible timestamps, and clear context.
-          </p>
+          <a class="brand" href="/">
+            <img class="brand-mark" src="/IMG_5794.PNG" alt="" width="24" height="24">
+            <span class="brand-name">Noteworthy News</span>
+          </a>
+          <p class="footer-tag">Independent newsroom. No paywall. Corrections in public.</p>
         </div>
 
-        <nav aria-label="Footer navigation">
-          <p class="footer-nav-title">Explore</p>
-          <ul class="footer-nav-list">
-            <li><a class="footer-nav-link" href="/archive.html">Stories</a></li>
-            <li><a class="footer-nav-link" href="/v2/situation-monitor.html">Situation Monitor</a></li>
-            <li><a class="footer-nav-link" href="/game.html">Fact-Checker Game</a></li>
-            <li><a class="footer-nav-link" href="/geography-game.html">Geography Game</a></li>
-            <li><a class="footer-nav-link" href="/contact.html">Contact</a></li>
+        <nav aria-label="Explore">
+          <p class="footer-col-title">Explore</p>
+          <ul class="footer-list">
+            <li><a href="/archive.html">All stories</a></li>
+            <li><a href="#developing">Developing now</a></li>
+            <li><a href="#top-stories">Top stories</a></li>
+            <li><a href="#lab">Media Literacy Lab</a></li>
           </ul>
         </nav>
 
         <nav aria-label="Product">
-          <p class="footer-nav-title">Product</p>
-          <ul class="footer-nav-list">
-            <li><a class="footer-nav-link" href="#ai">Noteworthy News AI</a></li>
-            <li><a class="footer-nav-link" href="#app">iOS App</a></li>
-            <li><a class="footer-nav-link" href="#subscribe">The Weekly Brief</a></li>
-            <li><a class="footer-nav-link" href="/notification-settings.html">Notification Settings</a></li>
+          <p class="footer-col-title">Product</p>
+          <ul class="footer-list">
+            <li><a href="#app">iOS app</a></li>
+            <li><a href="#ai">Noteworthy News AI</a></li>
+            <li><a href="#brief">The Weekly Brief</a></li>
+            <li><a href="/notification-settings.html">Notification settings</a></li>
           </ul>
         </nav>
 
         <nav aria-label="Resources">
-          <p class="footer-nav-title">Resources</p>
-          <ul class="footer-nav-list">
-            <li><a class="footer-nav-link" href="/media-literacy-guide.html">Media Literacy Guide</a></li>
-            <li><a class="footer-nav-link" href="/how-we-verify.html">How We Verify</a></li>
-            <li><a class="footer-nav-link" href="/fact-checking-tips.html">Fact-Checking Tips</a></li>
-            <li><a class="footer-nav-link" href="/newsletter-preferences.html">Newsletter Prefs</a></li>
+          <p class="footer-col-title">Resources</p>
+          <ul class="footer-list">
+            <li><a href="/how-we-verify.html">How we verify</a></li>
+            <li><a href="/editorial-policy.html">Editorial policy</a></li>
+            <li><a href="/media-literacy-guide.html">Media literacy guide</a></li>
+            <li><a href="/fact-checking-tips.html">Fact-checking tips</a></li>
           </ul>
         </nav>
 
-        <nav aria-label="Legal">
-          <p class="footer-nav-title">Legal</p>
-          <ul class="footer-nav-list">
-            <li><a class="footer-nav-link" href="/privacy.html">Privacy Policy</a></li>
-            <li><a class="footer-nav-link" href="/terms.html">Terms of Service</a></li>
-            <li><a class="footer-nav-link" href="/editorial-policy.html">Editorial Policy</a></li>
+        <nav aria-label="Company">
+          <p class="footer-col-title">Company</p>
+          <ul class="footer-list">
+            <li><a href="/our-mission.html">Our mission</a></li>
+            <li><a href="/contact.html">Contact</a></li>
+            <li><a href="https://x.com/newsnoteworthy" rel="noopener" target="_blank">X</a></li>
+            <li><a href="/privacy.html">Privacy</a></li>
+            <li><a href="/terms.html">Terms</a></li>
           </ul>
         </nav>
       </div>
 
       <div class="footer-bottom">
-        <p class="footer-copyright">&copy; 2026 Noteworthy News. All rights reserved.</p>
-        <p class="footer-motto">Source-first reporting for a noisy world.</p>
+        <p>&copy; 2026 Noteworthy News. All rights reserved.</p>
+        <p class="footer-motto">Developing means developing. Confirmed means confirmed.</p>
       </div>
     </div>
   </footer>

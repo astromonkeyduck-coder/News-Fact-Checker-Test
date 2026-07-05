@@ -1,8 +1,13 @@
 /**
- * Noteworthy News V2 - Feed Module
+ * Noteworthy News V4 - Feed Module
  *
- * Fetches posts from posts-read, partitions into Breaking News vs
- * engine-sourced Alerts, and renders each into its own section.
+ * Fetches posts from posts-read and renders the homepage editorial surfaces:
+ *   - hero flagship card (unless a live story already owns the slot)
+ *   - Developing Now strip (engine alert updates; live stories render
+ *     separately via live-rail.js)
+ *   - Top Stories lead + secondary rows
+ *   - The Wire compact list
+ * Every timestamp, source, and category shown comes from real post data.
  */
 
 import { UISounds } from './ui-sounds.js';
@@ -12,7 +17,6 @@ import {
   ensureVideoSrc,
   fadeVideoIn,
   fadeVideoOut,
-  HERO_FADE_IN_MS,
   DEFAULT_FADE_IN_MS,
   DEFAULT_FADE_OUT_MS,
 } from './video-audio.js';
@@ -25,9 +29,10 @@ import {
 
 const FEED_API = '/.netlify/functions/posts-read';
 const FETCH_LIMIT = 100;
-const BREAKING_DISPLAY = 8;
-const BREAKING_LOAD_MORE = 12;
-const ALERTS_DISPLAY = 6;
+const SECONDARY_DISPLAY = 5;
+const SECONDARY_LOAD_MORE = 8;
+const STRIP_DISPLAY = 8;
+const WIRE_DISPLAY = 12;
 
 const ENGINE_CATEGORIES = new Set([
   'Earthquake', 'Weather Alert', 'Volcano Alert',
@@ -75,6 +80,18 @@ function formatDate(raw) {
   const dateStr = d.toLocaleDateString('en-US', opts);
   const timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
   return `${dateStr} · ${timeStr}`;
+}
+
+function shortTime(raw) {
+  if (!raw) return '';
+  const d = new Date(raw);
+  if (isNaN(d.getTime())) return '';
+  const mins = Math.floor((Date.now() - d.getTime()) / 60000);
+  if (mins < 1) return 'now';
+  if (mins < 60) return `${mins}m`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h`;
+  return `${Math.floor(hours / 24)}d`;
 }
 
 // Remove URLs (http/https, t.co, pic.twitter.com) so raw links never render in cards.
@@ -135,25 +152,18 @@ function esc(str) {
   return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-function shortNum(n) {
-  if (n == null || isNaN(n)) return null;
-  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
-  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
-  return String(n);
-}
-
 function isBreakingText(post) {
   const t = (post.text || post.title || post.story || '').toUpperCase();
   return t.startsWith('BREAKING');
 }
 
-function normalizeFeaturedTitle(post) {
+function normalizeTitle(post) {
   let title = getPostTitle(post);
   title = title.replace(/^(?:BREAKING|VIDEO|WATCH|UPDATE|DEVELOPING)\s*:?\s*/i, '').trim();
   return title || getPostTitle(post);
 }
 
-function shouldShowFeaturedExcerpt(title, excerpt) {
+function shouldShowExcerpt(title, excerpt) {
   if (!excerpt || !title) return false;
   const norm = (s) =>
     s
@@ -188,26 +198,7 @@ function getSmartLabel(post) {
   return null;
 }
 
-// ── Card renderers ───────────────────────────────
-
-let _allBreaking = [];
-
-function getXUrl(post) {
-  const u = post.x_url || post.link || '';
-  if (!u) return '';
-  try {
-    const parsed = new URL(u);
-    // Require a real http(s) X/Twitter URL - a substring check would let a
-    // crafted "javascript:...x.com" through to window.open().
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return '';
-    const host = parsed.hostname.replace(/^www\./, '');
-    const ok = host === 'x.com' || host.endsWith('.x.com') ||
-               host === 'twitter.com' || host.endsWith('.twitter.com');
-    return ok ? u : '';
-  } catch (e) {
-    return '';
-  }
-}
+// ── Video handling (lead card) ───────────────────
 
 function isVideoPost(post) {
   return post.postType === 'video' || !!post.video_url || (post.videos && post.videos.length > 0);
@@ -217,10 +208,6 @@ function getVideoUrl(post) {
   const raw = post.video_url || (post.videos && post.videos[0]) || null;
   if (!raw) return null;
   return raw.replace('https://video.twimg.com/', '/media/video/');
-}
-
-function isHeroFeaturedVideo(video) {
-  return !!video.closest('.featured-story-wrap');
 }
 
 function isUserMuted(video) {
@@ -240,34 +227,6 @@ function loadAndPlay(video) {
     video.addEventListener('canplay', () => {
       ensureVideoPlaying(video).then(resolve).catch(resolve);
     }, { once: true });
-  });
-}
-
-function playVideoWithSound(video) {
-  const fadeIn = () => {
-    if (isUserMuted(video)) return;
-    const target = getPreferredVolume();
-    fadeVideoIn(video, { duration: HERO_FADE_IN_MS, targetVolume: target, onComplete: () => updateMuteButton(video) });
-  };
-
-  video.muted = false;
-  video.volume = 0;
-  const attempt = video.play();
-  if (!attempt) {
-    fadeIn();
-    return;
-  }
-  attempt.then(fadeIn).catch(() => {
-    video.muted = true;
-    video.volume = 0;
-    video.play().catch(() => {});
-    const unmuteOnGesture = () => {
-      video.muted = false;
-      video.play().then(fadeIn).catch(() => {});
-    };
-    document.addEventListener('click', unmuteOnGesture, { once: true, passive: true });
-    document.addEventListener('touchstart', unmuteOnGesture, { once: true, passive: true });
-    document.addEventListener('scroll', unmuteOnGesture, { once: true, passive: true });
   });
 }
 
@@ -309,14 +268,6 @@ function syncMobileAudible() {
     .filter(([, ratio]) => ratio > 0)
     .sort((a, b) => b[1] - a[1]);
 
-  const heroEntry = visible.find(([v]) => isHeroFeaturedVideo(v));
-  if (heroEntry) {
-    for (const [video] of visible) {
-      if (!isHeroFeaturedVideo(video)) silenceVideo(video, { pause: false });
-    }
-    return;
-  }
-
   const winner = visible[0]?.[0];
 
   for (const [video] of visible) {
@@ -333,13 +284,6 @@ function syncMobileAudible() {
 }
 
 function handleVideoEnter(video, isMobile) {
-  const isHero = isHeroFeaturedVideo(video);
-
-  if (isHero) {
-    loadAndPlay(video).then(() => playVideoWithSound(video));
-    return;
-  }
-
   loadAndPlay(video).then(() => {
     video.volume = 0;
     video.muted = true;
@@ -358,30 +302,28 @@ function bindVideoControls(video) {
   video.volume = 0;
   video.muted = true;
 
-  if (!isHeroFeaturedVideo(video)) {
-    video.addEventListener('mouseenter', () => {
-      if (isUserMuted(video)) return;
-      if (_videoVisibility.get(video) <= 0) return;
-      loadAndPlay(video).then(() => {
-        fadeVideoIn(video, {
-          duration: DEFAULT_FADE_IN_MS,
-          targetVolume: getPreferredVolume(),
-          onComplete: () => updateMuteButton(video),
-        });
-      });
-    });
-    video.addEventListener('mouseleave', () => {
-      fadeVideoOut(video, {
-        duration: DEFAULT_FADE_OUT_MS,
-        pause: false,
-        resetMuted: true,
+  video.addEventListener('mouseenter', () => {
+    if (isUserMuted(video)) return;
+    if (_videoVisibility.get(video) <= 0) return;
+    loadAndPlay(video).then(() => {
+      fadeVideoIn(video, {
+        duration: DEFAULT_FADE_IN_MS,
+        targetVolume: getPreferredVolume(),
         onComplete: () => updateMuteButton(video),
       });
     });
-  }
+  });
+  video.addEventListener('mouseleave', () => {
+    fadeVideoOut(video, {
+      duration: DEFAULT_FADE_OUT_MS,
+      pause: false,
+      resetMuted: true,
+      onComplete: () => updateMuteButton(video),
+    });
+  });
 
   initVideoToolbar(video, {
-    isHero: isHeroFeaturedVideo(video),
+    isHero: false,
     onMuteClick: (_e, v) => {
       const willMute = !isUserMuted(v);
       v.dataset.userMuted = willMute ? 'true' : 'false';
@@ -414,7 +356,7 @@ function playVisibleVideos() {
   _videoVisibility.clear();
   _audibleVideo = null;
 
-  const videos = document.querySelectorAll('.post-card-video video, .featured-story-image video');
+  const videos = document.querySelectorAll('.post-card-video video');
   if (!videos.length) return;
 
   _videoObserver = new IntersectionObserver((entries) => {
@@ -448,118 +390,142 @@ function playVisibleVideos() {
   });
 }
 
-function renderCard(post, large) {
-  const title = normalizeFeaturedTitle(post);
-  const image = getPostImage(post);
+// ── Renderers ────────────────────────────────────
+
+function metaHtml(post, { withSource = true } = {}) {
   const date = formatDate(getPostDate(post));
-  const source = post.source || '';
-  const url = articleUrl(post);
-  const excerpt = stripUrls((post.text || post.content || post.Content || '').replace(/<[^>]*>/g, ''));
-  const short = excerpt.length > 160 ? excerpt.slice(0, 157) + '…' : excerpt;
-  const showExcerpt = shouldShowFeaturedExcerpt(title, short);
-  const hasVideo = isVideoPost(post);
-  const smart = getSmartLabel(post);
-
-  const classes = ['post-card'];
-  if (large) classes.push('post-card--large');
-  if (!image) classes.push('post-card--text-only');
-
-  const videoSrc = hasVideo ? getVideoUrl(post) : null;
-
-  let mediaHtml = '';
-  if (videoSrc) {
-    mediaHtml = `<div class="post-card-image post-card-video"><video data-src="${esc(videoSrc)}" muted loop playsinline disablepictureinpicture preload="none" poster="${image ? esc(image) : ''}"></video>${buildVideoToolbarHTML()}</div>`;
-  } else if (image) {
-    mediaHtml = `<div class="post-card-image"><img src="${esc(image)}" alt="" loading="lazy" decoding="async" onerror="this.parentElement.classList.add('post-card-image--broken')"></div>`;
-  }
-
-  return `
-    <a href="${esc(url)}" class="${classes.join(' ')}" aria-label="${esc(title)}">
-      ${mediaHtml}
-      <div class="post-card-body">
-        ${smart ? `<span class="badge ${smart.cls}">${esc(smart.label)}</span>` : ''}
-        <h3 class="post-card-title">${esc(title)}</h3>
-        ${showExcerpt ? `<p class="post-card-excerpt">${esc(short)}</p>` : ''}
-        <div class="post-card-meta">
-          ${source ? `<span class="post-card-source">${esc(source)}</span>` : ''}
-          ${date ? `<time class="post-card-date">${esc(date)}</time>` : ''}
-        </div>
-      </div>
-    </a>`;
+  const source = withSource ? (post.source || '') : '';
+  const parts = [];
+  if (source) parts.push(`<span>${esc(source)}</span>`);
+  if (date) parts.push(`<time>${esc(date)}</time>`);
+  return parts.length
+    ? `<div class="card-meta">${parts.join('<span class="meta-sep" aria-hidden="true">&middot;</span>')}</div>`
+    : '';
 }
 
-function renderFeatured(post) {
-  const title = normalizeFeaturedTitle(post);
+function renderHeroCard(post) {
+  const title = normalizeTitle(post);
   const image = getPostImage(post);
   const date = formatDate(getPostDate(post));
-  const url = articleUrl(post);
+  const smart = getSmartLabel(post);
   const excerpt = stripUrls((post.text || post.content || '').replace(/<[^>]*>/g, ''));
-  const short = excerpt.length > 180 ? excerpt.slice(0, 177) + '…' : excerpt;
-  const showExcerpt = shouldShowFeaturedExcerpt(title, short);
-  const isBreaking = isBreakingText(post);
-  const xLink = getXUrl(post);
-  const hasVideo = isVideoPost(post);
+  const short = excerpt.length > 150 ? excerpt.slice(0, 147) + '…' : excerpt;
+  const showExcerpt = shouldShowExcerpt(title, short);
 
-  const videoSrc = hasVideo ? getVideoUrl(post) : null;
+  return `
+    <a class="hero-card-link" href="${esc(articleUrl(post))}" aria-label="${esc(title)}">
+      <div class="hero-card-top">
+        <span class="badge ${smart ? smart.cls : 'badge-accent'}">${esc(smart ? smart.label : 'Latest')}</span>
+        ${date ? `<span class="hero-card-meta">${esc(date)}</span>` : ''}
+      </div>
+      <div class="hero-card-row">
+        <h3 class="hero-card-title">${esc(title)}</h3>
+        ${image ? `<img class="hero-card-thumb" src="${esc(image)}" alt="" loading="eager" decoding="async" onerror="this.remove()">` : ''}
+      </div>
+      ${showExcerpt ? `<p class="hero-card-summary">${esc(short)}</p>` : ''}
+      <span class="hero-card-cta">Read the story
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </span>
+    </a>`;
+}
 
-  let featuredMedia = '';
+function renderHeroFallback() {
+  return `
+    <div class="hero-card-link" role="status">
+      <div class="hero-card-top">
+        <span class="badge badge-accent">Standby</span>
+      </div>
+      <h3 class="hero-card-title">Live feed reconnecting</h3>
+      <p class="hero-card-summary">The latest stories are temporarily unavailable. Coverage continues in the archive.</p>
+      <a class="hero-card-cta" href="/archive.html">Browse the archive
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </a>
+    </div>`;
+}
+
+function renderStripCard(post, i) {
+  const title = normalizeTitle(post);
+  const time = shortTime(getPostDate(post));
+  const smart = getSmartLabel(post);
+  const source = post.source || getCategory(post) || '';
+  const magnitude = post.magnitude;
+  const foot = [magnitude ? `M${magnitude}` : '', post.location || post.location_display || source]
+    .filter(Boolean).join(' · ');
+
+  return `
+    <a class="dev-card" style="--i:${i}" href="${esc(articleUrl(post))}" aria-label="${esc(title)}">
+      <div class="dev-card-top">
+        ${smart ? `<span class="badge ${smart.cls}">${esc(smart.label)}</span>` : '<span class="badge badge-accent">Update</span>'}
+        ${time ? `<span class="dev-card-time">${esc(time)} ago</span>` : ''}
+      </div>
+      <h3 class="dev-card-title">${esc(title)}</h3>
+      ${foot ? `<span class="dev-card-foot">${esc(foot)}</span>` : ''}
+    </a>`;
+}
+
+function renderLead(post) {
+  const title = normalizeTitle(post);
+  const image = getPostImage(post);
+  const smart = getSmartLabel(post);
+  const excerpt = stripUrls((post.text || post.content || '').replace(/<[^>]*>/g, ''));
+  const short = excerpt.length > 190 ? excerpt.slice(0, 187) + '…' : excerpt;
+  const showExcerpt = shouldShowExcerpt(title, short);
+  const videoSrc = isVideoPost(post) ? getVideoUrl(post) : null;
+
+  let media = '';
   if (videoSrc) {
-    featuredMedia = `<div class="featured-story-image post-card-video"><video data-src="${esc(videoSrc)}" data-hero-featured loop playsinline disablepictureinpicture preload="auto" poster="${image ? esc(image) : ''}"></video>${buildVideoToolbarHTML()}</div>`;
+    media = `<div class="lead-media post-card-video"><video data-src="${esc(videoSrc)}" muted loop playsinline disablepictureinpicture preload="none" poster="${image ? esc(image) : ''}"></video>${buildVideoToolbarHTML()}</div>`;
   } else if (image) {
-    featuredMedia = `<div class="featured-story-image"><img src="${esc(image)}" alt="" loading="lazy" decoding="async" onerror="this.parentElement.classList.add('post-card-image--broken')"></div>`;
+    media = `<div class="lead-media"><img src="${esc(image)}" alt="" loading="lazy" decoding="async" onerror="this.parentElement.classList.add('lead-media--broken')"></div>`;
   }
 
   return `
-    <a href="${esc(url)}" class="featured-story${isBreaking ? ' featured-story--breaking' : ''}" aria-label="${esc(title)}">
-      ${featuredMedia}
-      <div class="featured-story-content">
-        <div class="featured-story-badges">
-          ${(() => { const s = getSmartLabel(post); return s ? `<span class="badge ${s.cls}">${esc(s.label)}</span>` : '<span class="badge badge-accent">Latest</span>'; })()}
-          ${date ? `<time class="featured-story-date">${esc(date)}</time>` : ''}
+    <a href="${esc(articleUrl(post))}" class="lead-card feed-in" aria-label="${esc(title)}">
+      ${media}
+      <div class="lead-body">
+        <div class="lead-top">
+          ${smart ? `<span class="badge ${smart.cls}">${esc(smart.label)}</span>` : ''}
         </div>
-        <h2 class="featured-story-title">${esc(title)}</h2>
-        ${showExcerpt ? `<p class="featured-story-excerpt">${esc(short)}</p>` : ''}
-        ${xLink ? `<span class="featured-story-source" data-href="${esc(xLink)}" onclick="event.preventDefault();event.stopPropagation();window.open(this.dataset.href,'_blank');" role="link" tabindex="0">Originally posted on X</span>` : ''}
+        <h3 class="lead-title">${esc(title)}</h3>
+        ${showExcerpt ? `<p class="lead-excerpt">${esc(short)}</p>` : ''}
+        ${metaHtml(post)}
       </div>
     </a>`;
 }
 
-function renderAlertCard(post) {
-  const title = getPostTitle(post);
-  const date = formatDate(getPostDate(post));
-  const category = getCategory(post) || 'Alert';
-  const url = articleUrl(post);
+function renderRow(post, i) {
+  const title = normalizeTitle(post);
   const image = getPostImage(post);
-  const location = post.location || post.location_display || '';
-  const magnitude = post.magnitude;
+  const smart = getSmartLabel(post);
 
   return `
-    <a href="${esc(url)}" class="post-card post-card--alert" aria-label="${esc(title)}">
-      ${image ? `<div class="post-card-image"><img src="${esc(image)}" alt="" loading="lazy" decoding="async" onerror="this.parentElement.classList.add('post-card-image--broken')"></div>` : ''}
-      <div class="post-card-body">
-        <span class="badge ${badgeClass(post)}">${magnitude ? `M${esc(String(magnitude))} ` : ''}${esc(category)}</span>
-        <h3 class="post-card-title">${esc(title)}</h3>
-        <div class="post-card-meta">
-          ${location ? `<span class="post-card-source">${esc(location)}</span>` : ''}
-          ${date ? `<time class="post-card-date">${esc(date)}</time>` : ''}
+    <a href="${esc(articleUrl(post))}" class="story-row feed-in" style="--i:${i}" aria-label="${esc(title)}">
+      <div class="story-row-body">
+        <div class="story-row-top">
+          ${smart ? `<span class="badge ${smart.cls}">${esc(smart.label)}</span>` : ''}
         </div>
+        <h3 class="story-row-title">${esc(title)}</h3>
+        ${metaHtml(post)}
       </div>
+      ${image ? `<img class="story-row-thumb" src="${esc(image)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}
     </a>`;
 }
 
-function renderWireItem(post) {
-  const title = getPostTitle(post);
-  const date = formatDate(getPostDate(post));
-  const url = articleUrl(post);
+function renderWireItem(post, i) {
+  const title = normalizeTitle(post);
+  const time = shortTime(getPostDate(post));
   const smart = getSmartLabel(post);
-  const isLive = smart && smart.cls === 'badge-live';
+  let catCls = 'wire-cat';
+  if (smart && smart.cls === 'badge-live') catCls += ' wire-cat--live';
+  if (smart && smart.cls === 'badge-warning') catCls += ' wire-cat--warning';
 
   return `
-    <a href="${esc(url)}" class="wire-item" aria-label="${esc(title)}">
-      <span class="wire-dot${isLive ? ' wire-dot--live' : ''}"></span>
-      ${smart ? `<span class="badge ${smart.cls} wire-badge">${esc(smart.label)}</span>` : ''}
-      <span class="wire-headline">${esc(title)}</span>
-      ${date ? `<time class="wire-time">${esc(date)}</time>` : ''}
+    <a href="${esc(articleUrl(post))}" class="wire-item feed-in" style="--i:${i}" aria-label="${esc(title)}">
+      <span class="wire-time">${time ? esc(time) : '&middot;'}</span>
+      <span class="wire-body">
+        <span class="wire-headline">${esc(title)}</span>
+        ${smart ? `<span class="${catCls}">${esc(smart.label)}</span>` : ''}
+      </span>
     </a>`;
 }
 
@@ -576,74 +542,59 @@ function renderError() {
     <div class="feed-state">
       <p class="feed-state-title">Couldn't load stories</p>
       <p class="feed-state-text">Something went wrong. Please try again in a moment.</p>
-      <button class="btn btn-secondary btn-sm feed-retry-btn" type="button">Retry</button>
+      <button class="btn btn-outline btn-sm feed-retry-btn" type="button">Retry</button>
     </div>`;
-}
-
-/** Featured slot fallback - shown instead of a stuck skeleton when the feed
- *  is unavailable. Still looks intentional and routes readers somewhere useful. */
-function renderFeaturedFallback() {
-  return `
-    <div class="featured-fallback" role="status">
-      <div class="featured-fallback-head">
-        <span class="badge badge-accent">Standby</span>
-        <span class="featured-fallback-signal" aria-hidden="true"><i></i><i></i><i></i></span>
-      </div>
-      <p class="featured-fallback-title">Live feed reconnecting</p>
-      <p class="featured-fallback-text">The latest verified stories are temporarily unavailable. Coverage continues in the archive.</p>
-      <a class="btn btn-secondary btn-sm" href="/archive.html">Browse the Archive</a>
-    </div>`;
-}
-
-/** Alerts section fallback when the feed API fails. */
-function renderAlertsFallback() {
-  return `
-    <div class="feed-state feed-state--fallback" role="status">
-      <p class="feed-state-title">Data feeds temporarily unavailable</p>
-      <p class="feed-state-text">Verified alerts from USGS, NWS, FAA and USCG will reappear here as soon as the connection is restored.</p>
-    </div>`;
-}
-
-function skeletons(n) {
-  return Array.from({ length: n }, () => '<div class="feed-skeleton" aria-hidden="true"></div>').join('');
 }
 
 // ── Public API ───────────────────────────────────
 
 let _cachedPosts = null;
 
-async function fetchPosts() {
-  if (_cachedPosts) return _cachedPosts;
-  const res = await fetch(`${FEED_API}?limit=${FETCH_LIMIT}`);
+const IS_LOCAL = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+
+async function fetchPostsFrom(base) {
+  const res = await fetch(`${base}?limit=${FETCH_LIMIT}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const posts = await res.json();
   if (!Array.isArray(posts)) throw new Error('Invalid response');
-  _cachedPosts = posts;
   return posts;
 }
 
-function populateTicker(posts) {
-  const tickerBar = document.getElementById('hero-ticker');
-  const track = document.getElementById('ticker-track');
-  if (!tickerBar || !track || posts.length === 0) return;
+async function fetchPosts() {
+  if (_cachedPosts) return _cachedPosts;
+  try {
+    _cachedPosts = await fetchPostsFrom(FEED_API);
+  } catch (err) {
+    // Local dev: posts-read depends on Netlify Blobs, which `netlify dev`
+    // often cannot reach. Fall back to the production feed (CORS is open).
+    if (!IS_LOCAL) throw err;
+    _cachedPosts = await fetchPostsFrom(`https://noteworthynews.co${FEED_API}`);
+  }
+  return _cachedPosts;
+}
 
-  const items = posts.slice(0, 12);
-  const html = items.map(p => {
-    const cat = getCategory(p) || 'News';
-    const title = getPostTitle(p);
-    const shortTitle = title.length > 80 ? title.slice(0, 77) + '…' : title;
-    return `<a href="${esc(articleUrl(p))}" class="ticker-item"><span class="ticker-category">${esc(cat)}</span> ${esc(shortTitle)}</a><span class="ticker-separator" aria-hidden="true">/</span>`;
-  }).join('');
+function heroSlot() {
+  return document.getElementById('hero-card');
+}
 
-  track.innerHTML = html + html;
-  tickerBar.hidden = false;
+/** Write the flagship post into the hero card unless a live story owns it. */
+function fillHeroCard(html, status) {
+  const slot = heroSlot();
+  if (!slot || slot.dataset.heroSource === 'live') return;
+  slot.innerHTML = html;
+  slot.dataset.heroSource = 'post';
+  if (status) slot.dataset.status = status;
+}
+
+function stripUpdated() {
+  document.dispatchEvent(new CustomEvent('nn:strip-updated'));
 }
 
 export async function initFeed() {
-  const heroEl = document.getElementById('featured-story-container');
-  const breakingEl = document.getElementById('breaking-container');
-  const alertsEl = document.getElementById('alerts-container');
-  const alertCountEl = document.getElementById('alert-count');
+  const leadEl = document.getElementById('lead-story');
+  const secondaryEl = document.getElementById('secondary-stories');
+  const wireEl = document.getElementById('wire-list');
+  const stripPostsEl = document.getElementById('strip-posts');
 
   try {
     const posts = await fetchPosts();
@@ -651,117 +602,80 @@ export async function initFeed() {
     const breaking = visible.filter(p => !isAlertPost(p));
     const alerts = visible.filter(p => isAlertPost(p));
 
-    const allForTicker = [...breaking.slice(0, 8), ...alerts.slice(0, 8)];
-    populateTicker(allForTicker);
+    // Hero flagship: latest breaking post, else latest alert.
+    const heroPost = breaking[0] || alerts[0] || null;
+    if (heroPost) {
+      fillHeroCard(renderHeroCard(heroPost), isBreakingText(heroPost) ? 'breaking' : '');
+    } else {
+      fillHeroCard(renderHeroFallback());
+    }
 
-    // Featured story: prefer breaking, fall back to most recent alert
-    if (heroEl) {
-      const featuredPost = breaking.length > 0 ? breaking[0] : alerts[0];
-      if (featuredPost) {
-        heroEl.innerHTML = renderFeatured(featuredPost);
+    // Developing Now strip: engine alert updates (skip one used as hero).
+    if (stripPostsEl) {
+      const stripSource = breaking.length > 0 ? alerts : alerts.slice(1);
+      const stripItems = stripSource.slice(0, STRIP_DISPLAY);
+      stripPostsEl.innerHTML = stripItems.map((p, i) => renderStripCard(p, i)).join('');
+      stripUpdated();
+    }
+
+    // Top Stories: pool excludes the hero post.
+    _storyPool = breaking.length > 0 ? breaking.slice(1) : [];
+    renderStoriesGrid();
+    initFilters(_storyPool);
+    initLoadMore();
+
+    // The Wire: everything after lead/secondary, plus alert depth, by recency.
+    if (wireEl) {
+      const wireBreaking = _storyPool.slice(1 + SECONDARY_DISPLAY);
+      const wireAlerts = alerts.slice(STRIP_DISPLAY);
+      const wirePool = [...wireBreaking, ...wireAlerts]
+        .map(p => ({ p, t: new Date(getPostDate(p) || 0).getTime() }))
+        .sort((a, b) => b.t - a.t)
+        .map(x => x.p)
+        .slice(0, WIRE_DISPLAY);
+      if (wirePool.length > 0) {
+        wireEl.innerHTML = wirePool.map((p, i) => renderWireItem(p, i)).join('');
       } else {
-        heroEl.innerHTML = renderFeaturedFallback();
-      }
-      heroEl.classList.add('feed-loaded');
-    }
-
-    // Breaking news grid: skip the featured post
-    const gridSource = breaking.length > 0 ? breaking : [];
-    if (breakingEl) {
-      const grid = gridSource.slice(1, BREAKING_DISPLAY + 1);
-      if (grid.length > 0) {
-        breakingEl.innerHTML = grid.map((post, i) =>
-          i === 0 ? renderCard(post, true) : renderCard(post)
-        ).join('');
-        breakingEl.classList.remove('feed-placeholder');
-        breakingEl.classList.add('feed-grid', 'feed-loaded');
-      } else {
-        breakingEl.innerHTML = renderEmpty('No breaking news right now');
-        breakingEl.classList.add('feed-loaded');
+        wireEl.innerHTML = renderEmpty('No additional updates');
       }
     }
 
-    // Wire feed: remaining posts beyond the grid
-    const wireEl = document.getElementById('wire-container');
-    if (wireEl && gridSource.length > BREAKING_DISPLAY + 1) {
-      const wireItems = gridSource.slice(BREAKING_DISPLAY + 1, BREAKING_DISPLAY + 1 + 12);
-      if (wireItems.length > 0) {
-        wireEl.innerHTML = wireItems.map(renderWireItem).join('');
-        wireEl.classList.add('wire-loaded');
-        const wireSection = wireEl.closest('.wire-section');
-        if (wireSection) wireSection.hidden = false;
-      }
-    }
-
-    // Alerts grid: skip featured if an alert was used there
-    const alertStart = (breaking.length === 0 && alerts.length > 0) ? 1 : 0;
-    if (alertsEl) {
-      const alertSlice = alerts.slice(alertStart, alertStart + ALERTS_DISPLAY);
-      if (alertSlice.length > 0) {
-        alertsEl.innerHTML = alertSlice.map(renderAlertCard).join('');
-        alertsEl.classList.remove('feed-placeholder');
-        alertsEl.classList.add('feed-grid', 'feed-loaded');
-      } else {
-        alertsEl.innerHTML = renderEmpty('No alerts right now');
-        alertsEl.classList.add('feed-loaded');
-      }
-    }
-
-    if (alertCountEl && alerts.length > 0) {
-      alertCountEl.textContent = `${alerts.length} active alert${alerts.length !== 1 ? 's' : ''}`;
-    }
-
-    _allBreaking = breaking;
-    initFilters(breaking);
-    initLoadMore(breaking);
     playVisibleVideos();
     UISounds.success();
   } catch (err) {
     console.error('[Feed] Failed to load:', err);
     UISounds.error();
-    const errorHtml = renderError();
-    if (breakingEl) {
-      breakingEl.innerHTML = errorHtml;
-      breakingEl.classList.add('feed-loaded');
+
+    if (leadEl) leadEl.innerHTML = renderError();
+    if (secondaryEl) secondaryEl.innerHTML = '';
+    if (wireEl) wireEl.innerHTML = renderEmpty('Updates unavailable');
+    if (stripPostsEl) {
+      stripPostsEl.innerHTML = '';
+      stripUpdated();
     }
 
-    // Never leave the featured slot or alerts grid on infinite skeletons -
-    // swap in intentional fallback modules instead.
-    if (heroEl && !heroEl.classList.contains('feed-loaded')) {
-      heroEl.innerHTML = renderFeaturedFallback();
-      heroEl.classList.add('feed-loaded');
-    }
-    if (alertsEl && !alertsEl.classList.contains('feed-loaded')) {
-      alertsEl.innerHTML = renderAlertsFallback();
-      alertsEl.classList.remove('feed-placeholder');
-      alertsEl.classList.add('feed-loaded');
+    // Never leave the hero slot on an infinite skeleton.
+    const slot = heroSlot();
+    if (slot && slot.dataset.heroSource === 'none') {
+      fillHeroCard(renderHeroFallback());
     }
 
-    const retryBtn = breakingEl?.querySelector('.feed-retry-btn');
+    const retryBtn = leadEl?.querySelector('.feed-retry-btn');
     if (retryBtn) {
       retryBtn.addEventListener('click', () => {
         UISounds.tap();
         _cachedPosts = null;
-        if (breakingEl) {
-          breakingEl.classList.remove('feed-loaded');
-          breakingEl.classList.add('feed-placeholder');
-          breakingEl.innerHTML = skeletons(4);
-        }
-        if (heroEl) {
-          heroEl.classList.remove('feed-loaded');
-        }
-        if (alertsEl) {
-          alertsEl.classList.remove('feed-loaded');
-          alertsEl.classList.add('feed-placeholder');
-          alertsEl.innerHTML = skeletons(3);
-        }
         initFeed();
       }, { once: true });
     }
   }
 }
 
-// ── Filter Chips ────────────────────────────────
+// ── Top Stories grid (lead + secondary rows) ─────
+
+let _storyPool = [];
+let _activeFilter = 'All';
+let _displayCount = SECONDARY_DISPLAY;
 
 function getFilterCategories(posts) {
   const counts = {};
@@ -775,44 +689,43 @@ function getFilterCategories(posts) {
     .map(([cat]) => cat);
 }
 
-let _activeFilter = 'All';
-let _displayCount = BREAKING_DISPLAY;
-
-function renderBreakingGrid(posts) {
-  const breakingEl = document.getElementById('breaking-container');
-  if (!breakingEl) return;
+function renderStoriesGrid() {
+  const leadEl = document.getElementById('lead-story');
+  const secondaryEl = document.getElementById('secondary-stories');
+  if (!leadEl || !secondaryEl) return;
 
   const filtered = _activeFilter === 'All'
-    ? posts.slice(1)
-    : posts.slice(1).filter(p => {
+    ? _storyPool
+    : _storyPool.filter(p => {
         const cat = getCategory(p) || (isBreakingText(p) ? 'Breaking' : 'News');
         return cat === _activeFilter;
       });
 
-  const visible = filtered.slice(0, _displayCount);
-  if (visible.length > 0) {
-    breakingEl.innerHTML = visible.map((post, i) =>
-      i === 0 ? renderCard(post, true) : renderCard(post)
-    ).join('');
-    breakingEl.classList.remove('feed-placeholder');
-    breakingEl.classList.add('feed-grid', 'feed-loaded');
+  const lead = filtered[0];
+  const rows = filtered.slice(1, 1 + _displayCount);
+
+  if (lead) {
+    leadEl.innerHTML = renderLead(lead);
   } else {
-    breakingEl.innerHTML = renderEmpty('No stories in this category');
-    breakingEl.classList.add('feed-loaded');
+    leadEl.innerHTML = renderEmpty('No stories in this category');
   }
+
+  secondaryEl.innerHTML = rows.map((p, i) => renderRow(p, i)).join('');
 
   const loadMoreBtn = document.getElementById('load-more-btn');
   if (loadMoreBtn) {
-    loadMoreBtn.hidden = visible.length === 0 || filtered.length <= _displayCount;
+    const remaining = filtered.length - 1 - _displayCount;
+    loadMoreBtn.hidden = remaining <= 0;
+    if (remaining > 0) loadMoreBtn.textContent = `Load more (${remaining})`;
   }
   playVisibleVideos();
 }
 
-function initFilters(breaking) {
+function initFilters(pool) {
   const container = document.getElementById('breaking-filters');
-  if (!container || breaking.length <= 2) return;
+  if (!container || pool.length <= 2) return;
 
-  const cats = getFilterCategories(breaking);
+  const cats = getFilterCategories(pool);
   const chips = ['All', ...cats];
 
   container.innerHTML = chips.map(cat =>
@@ -824,31 +737,21 @@ function initFilters(breaking) {
     if (!chip) return;
     UISounds.tap();
     _activeFilter = chip.dataset.filter;
-    _displayCount = BREAKING_DISPLAY;
+    _displayCount = SECONDARY_DISPLAY;
     container.querySelectorAll('.filter-chip').forEach(c =>
       c.classList.toggle('is-active', c.dataset.filter === _activeFilter)
     );
-    renderBreakingGrid(breaking);
+    renderStoriesGrid();
   });
 }
 
-function initLoadMore(breaking) {
+function initLoadMore() {
   const btn = document.getElementById('load-more-btn');
   if (!btn) return;
 
-  function updateBtn() {
-    const total = breaking.length - 1;
-    const remaining = total - _displayCount;
-    btn.hidden = remaining <= 0;
-    if (remaining > 0) btn.textContent = `Load More (${remaining})`;
-  }
-
-  updateBtn();
-
   btn.addEventListener('click', () => {
     UISounds.tap();
-    _displayCount += BREAKING_LOAD_MORE;
-    renderBreakingGrid(breaking);
-    updateBtn();
+    _displayCount += SECONDARY_LOAD_MORE;
+    renderStoriesGrid();
   });
 }

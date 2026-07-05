@@ -1,7 +1,7 @@
 /**
- * Noteworthy News V2 - Homepage Entry Point
+ * Noteworthy News V4 - Homepage Entry Point
  *
- * Orchestrates: nav, feed, auth, newsletter, scroll behavior.
+ * Orchestrates: nav, feed, auth, newsletter, scroll motion.
  * Loaded as type="module" - no globals polluted.
  */
 
@@ -18,6 +18,7 @@ import { UISounds } from './ui-sounds.js';
   const navToggle = document.querySelector('.nav-toggle');
   const navMenu = document.querySelector('.nav-menu');
   const navLinks = document.querySelectorAll('.nav-link[href^="#"]');
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // ── Mobile nav toggle ────────────────────────────
   function closeNav() {
@@ -50,14 +51,62 @@ import { UISounds } from './ui-sounds.js';
     });
   }
 
-  // ── Scroll-aware header shadow ───────────────────
-  if (header) {
-    const onScroll = () => {
-      header.classList.toggle('scrolled', window.scrollY > 10);
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
+  // ── Scroll motion: header states + hero parallax ─
+  const heroEarth = document.querySelector('.hero-earth');
+  let ticking = false;
+
+  function onScrollFrame() {
+    ticking = false;
+    const y = window.scrollY;
+
+    if (header) {
+      header.classList.toggle('scrolled', y > 8);
+      header.classList.toggle('condensed', y > 140);
+    }
+
+    if (heroEarth && !prefersReducedMotion && y < window.innerHeight * 1.3) {
+      heroEarth.style.setProperty('--scroll-y', String(Math.round(y)));
+    }
   }
+
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      ticking = true;
+      requestAnimationFrame(onScrollFrame);
+    }
+  }, { passive: true });
+  onScrollFrame();
+
+  // ── Developing Now strip: arrows + empty state ───
+  const strip = document.getElementById('dev-strip');
+  const stripLive = document.getElementById('strip-live');
+  const stripPosts = document.getElementById('strip-posts');
+  const stripEmpty = document.getElementById('strip-empty');
+  const arrows = document.querySelector('.dev-arrows');
+  const prevBtn = document.getElementById('dev-prev');
+  const nextBtn = document.getElementById('dev-next');
+
+  function syncStrip() {
+    if (!strip) return;
+    const hasCards =
+      (stripLive && stripLive.children.length > 0) ||
+      (stripPosts && stripPosts.children.length > 0);
+    if (stripEmpty) stripEmpty.hidden = hasCards;
+    if (arrows) arrows.hidden = !hasCards || strip.scrollWidth <= strip.clientWidth + 8;
+  }
+
+  document.addEventListener('nn:strip-updated', syncStrip);
+  window.addEventListener('resize', syncStrip);
+  // Feeds can fail silently; make sure the empty state eventually shows.
+  setTimeout(syncStrip, 4000);
+
+  function scrollStrip(dir) {
+    if (!strip) return;
+    strip.scrollBy({ left: dir * Math.max(strip.clientWidth * 0.7, 280), behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+  }
+
+  if (prevBtn) prevBtn.addEventListener('click', () => { UISounds.tap(); scrollStrip(-1); });
+  if (nextBtn) nextBtn.addEventListener('click', () => { UISounds.tap(); scrollStrip(1); });
 
   // ── Newsletter signup ────────────────────────────
   const nlForm = document.querySelector('.newsletter-form');
@@ -105,7 +154,7 @@ import { UISounds } from './ui-sounds.js';
         UISounds.error();
       } finally {
         btn.disabled = false;
-        btn.textContent = 'Subscribe';
+        btn.textContent = 'Get the brief';
       }
     });
   }
@@ -227,39 +276,5 @@ import { UISounds } from './ui-sounds.js';
   initAuth(onAuthChange);
   initAmbientAudio();
   initScrollReveal();
-  initCounters();
 
 })();
-
-function initCounters() {
-  const els = document.querySelectorAll('[data-count-target]');
-  if (!els.length) return;
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-  const observer = new IntersectionObserver((entries, obs) => {
-    entries.forEach(entry => {
-      if (!entry.isIntersecting) return;
-      const el = entry.target;
-      const target = parseInt(el.dataset.countTarget, 10);
-      const suffix = el.dataset.countSuffix || '';
-      if (isNaN(target)) return;
-      obs.unobserve(el);
-      animateCount(el, target, suffix);
-    });
-  }, { threshold: 0.5 });
-
-  els.forEach(el => observer.observe(el));
-}
-
-function animateCount(el, target, suffix) {
-  const duration = 1500;
-  const start = performance.now();
-  function tick(now) {
-    const progress = Math.min((now - start) / duration, 1);
-    const eased = 1 - Math.pow(1 - progress, 3);
-    const current = Math.round(eased * target);
-    el.textContent = current + suffix;
-    if (progress < 1) requestAnimationFrame(tick);
-  }
-  requestAnimationFrame(tick);
-}
