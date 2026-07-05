@@ -21,7 +21,7 @@ if (process.env.NETLIFY_DEV) {
 }
 
 const { getPostStore, readIndex, readPost } = require("./lib/postStore");
-const { normalizePost, getDate } = require("./lib/postNormalize");
+const { normalizePost, getDate, isVolcanoEnginePost } = require("./lib/postNormalize");
 
 const HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -61,7 +61,7 @@ exports.handler = async (event) => {
     const posts = await Promise.all(scanIds.map((id) => readPost(store, id)));
 
     let items = posts
-      .filter(Boolean)
+      .filter((p) => p && !isVolcanoEnginePost(p))
       .map((p) => normalizePost(p))
       .filter(Boolean);
 

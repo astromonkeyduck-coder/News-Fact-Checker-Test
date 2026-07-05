@@ -9,6 +9,7 @@ const {
   readIndex,
   readPost,
 } = require("./lib/postStore");
+const { isVolcanoEnginePost } = require("./lib/postNormalize");
 
 // Public field allowlist for posts returned to anonymous web/app clients.
 // This is the UNION of every field actually rendered by the public surfaces
@@ -88,17 +89,24 @@ exports.handler = async (event) => {
     if (requestedId && requestedId.trim()) {
       const blobId = requestedId.trim().replace(/^post-/, "");
       const post = await readPost(store, blobId);
-      if (post) {
+      if (post && !isVolcanoEnginePost(post)) {
         return {
           statusCode: 200,
           headers,
           body: JSON.stringify([toPublicPost(post)]),
         };
       }
+      if (post && isVolcanoEnginePost(post)) {
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify([]),
+        };
+      }
       // Legacy fallback: eq- prefix may still exist for older earthquake posts
       if (blobId.startsWith("usgs-")) {
         const eqPost = await readPost(store, `eq-${blobId.substring(5)}`);
-        if (eqPost) {
+        if (eqPost && !isVolcanoEnginePost(eqPost)) {
           return {
             statusCode: 200,
             headers,
@@ -130,7 +138,7 @@ exports.handler = async (event) => {
       idsToFetch.map((id) => readPost(store, id))
     );
 
-    const validPosts = posts.filter((post) => post !== null);
+    const validPosts = posts.filter((post) => post !== null && !isVolcanoEnginePost(post));
 
     validPosts.sort((a, b) => {
       const dateA = new Date(a.datePosted || a.createdAt || a.created_at || a.Date || 0);

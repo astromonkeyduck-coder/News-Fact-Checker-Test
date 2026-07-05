@@ -28,6 +28,7 @@ export function render(container) {
           <button class="admin-btn admin-btn-secondary" id="sys-rebuild-btn">Rebuild Index</button>
           <button class="admin-btn admin-btn-secondary" id="sys-remove-long-btn">Remove Long Posts</button>
           <button class="admin-btn admin-btn-secondary" id="sys-remove-old-btn">Remove Old Alert Posts</button>
+          <button class="admin-btn admin-btn-secondary" id="sys-remove-volcano-btn">Remove Volcano Alert Posts</button>
         </div>
         <div id="sys-index-result" style="margin-top:var(--space-sm)"></div>
       </div>
@@ -87,6 +88,7 @@ export function render(container) {
   document.getElementById('sys-rebuild-btn').addEventListener('click', handleRebuildIndex);
   document.getElementById('sys-remove-long-btn').addEventListener('click', handleRemoveLong);
   document.getElementById('sys-remove-old-btn').addEventListener('click', handleRemoveOld);
+  document.getElementById('sys-remove-volcano-btn').addEventListener('click', handleRemoveVolcano);
   document.getElementById('sys-alert-btn').addEventListener('click', handleBreakingAlert);
 }
 
@@ -129,6 +131,21 @@ async function handleRemoveOld() {
   btn.disabled = true;
   try {
     const data = await api.removeOldAlertPosts();
+    result.innerHTML = `<div class="admin-notice admin-notice-success">Done. ${esc(data.message || JSON.stringify(data))}</div>`;
+  } catch (err) {
+    result.innerHTML = `<div class="admin-notice admin-notice-error">${esc(err.message)}</div>`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function handleRemoveVolcano() {
+  if (!confirm('Remove all USGS volcano engine alert posts from the site? Editorial volcano news is kept.')) return;
+  const btn = document.getElementById('sys-remove-volcano-btn');
+  const result = document.getElementById('sys-index-result');
+  btn.disabled = true;
+  try {
+    const data = await api.removeVolcanoAlertPosts();
     result.innerHTML = `<div class="admin-notice admin-notice-success">Done. ${esc(data.message || JSON.stringify(data))}</div>`;
   } catch (err) {
     result.innerHTML = `<div class="admin-notice admin-notice-error">${esc(err.message)}</div>`;

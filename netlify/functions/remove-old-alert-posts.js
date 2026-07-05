@@ -11,6 +11,7 @@ const {
   writeIndex,
   postKey,
 } = require("./lib/postStore");
+const { isVolcanoEnginePost } = require("./lib/postNormalize");
 
 exports.handler = async (event, context) => {
   const headers = {
@@ -39,7 +40,9 @@ exports.handler = async (event, context) => {
       };
     }
 
-    const daysOld = parseInt(event.queryStringParameters?.days || "7", 10);
+    const params = event.queryStringParameters || {};
+    const purgeVolcano = params.category === "volcano" && (params.all === "true" || params.all === "1");
+    const daysOld = parseInt(params.days || "7", 10);
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysOld);
     const cutoffTimestamp = cutoffDate.getTime();
@@ -52,6 +55,26 @@ exports.handler = async (event, context) => {
         const post = await readPost(store, postId);
 
         if (!post) {
+          kept.push(postId);
+          continue;
+        }
+
+        if (purgeVolcano) {
+          if (isVolcanoEnginePost(post)) {
+            try {
+              await store.delete(postKey(postId));
+              removed.push({
+                id: postId,
+                category: post.category,
+                source: post.source,
+                datePosted: post.datePosted,
+                title: post.title,
+              });
+              continue;
+            } catch (deleteErr) {
+              console.error(`Error deleting post ${postId}:`, deleteErr);
+            }
+          }
           kept.push(postId);
           continue;
         }
@@ -100,14 +123,18 @@ exports.handler = async (event, context) => {
 
     await writeIndex(store, kept);
 
+    const message = purgeVolcano
+      ? `Removed ${removed.length} volcano engine alert post(s)`
+      : `Removed ${removed.length} old alert posts (older than ${daysOld} days)`;
+
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
-        message: `Removed ${removed.length} old alert posts (older than ${daysOld} days)`,
+        message,
         removed: removed.length,
         kept: kept.length,
-        cutoffDate: cutoffDate.toISOString(),
+        cutoffDate: purgeVolcano ? null : cutoffDate.toISOString(),
         details: removed,
       }),
     };

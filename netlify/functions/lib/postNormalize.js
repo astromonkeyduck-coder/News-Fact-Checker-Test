@@ -17,9 +17,19 @@
 const contentNormalize = require("../../../lib/contentNormalize");
 
 const ENGINE_CATEGORIES = new Set([
-  "Earthquake", "Weather Alert", "Volcano Alert",
+  "Earthquake", "Weather Alert",
   "Maritime Alert", "Airspace Alert", "Travel Advisory",
 ]);
+
+function isVolcanoEnginePost(post) {
+  if (!post) return false;
+  const cat = (post.category || "").toLowerCase();
+  const evt = (post.event_type || post.eventType || "").toLowerCase();
+  if (cat === "volcano alert" || evt === "volcano") return true;
+  const src = (post.source || "").toLowerCase();
+  if (src === "usgs" && cat.includes("volcano")) return true;
+  return false;
+}
 
 // Delegate to the shared single-source-of-truth normalizer so the mobile API,
 // the web article page, and the OG/crawler path all produce identical output.
@@ -117,6 +127,7 @@ function isNonWeatherNWSAlert(post) {
 }
 
 function isAlertPost(post) {
+  if (isVolcanoEnginePost(post)) return false;
   if (isLowMagEarthquake(post)) return false;
   if (isNonWeatherNWSAlert(post)) return false;
   if (ENGINE_CATEGORIES.has(post.category)) return true;
@@ -179,6 +190,7 @@ module.exports = {
   stripUrls,
   normalizePost,
   isAlertPost,
+  isVolcanoEnginePost,
   isBreakingText,
   getCategory,
   getDate,

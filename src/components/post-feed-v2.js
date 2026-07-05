@@ -62,6 +62,7 @@ function isExcludedAlert(post) {
   if (!post) return false;
   const category = (post.category || '').toLowerCase();
   const eventType = (post.event_type || post.eventType || '').toLowerCase();
+  if (category === 'volcano alert' || eventType === 'volcano') return true;
   const source = (post.source || '').toLowerCase();
   // Only exclude automated USGS-style alerts (volcano observatory, embassy seismometers).
   // Do NOT exclude regular news that mentions volcano/embassy in the story.

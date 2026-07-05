@@ -49,6 +49,7 @@
 
         // Add to page
         document.body.appendChild(banner);
+        document.body.classList.add('cookie-banner-open');
 
         // Show banner with animation
         setTimeout(() => {
@@ -135,6 +136,7 @@
     function hideBanner(banner) {
         banner.classList.remove('cookie-banner-visible');
         banner.classList.add('cookie-banner-hidden');
+        document.body.classList.remove('cookie-banner-open');
         
         setTimeout(() => {
             if (banner.parentNode) {

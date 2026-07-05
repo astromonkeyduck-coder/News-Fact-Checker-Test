@@ -175,6 +175,10 @@ export function removeOldAlertPosts() {
   return request('remove-old-alert-posts', { method: 'POST', body: {} });
 }
 
+export function removeVolcanoAlertPosts() {
+  return request('remove-old-alert-posts?category=volcano&all=true', { method: 'POST', body: {} });
+}
+
 export function sendBreakingNewsAlert(alert) {
   return request('send-breaking-news-alert', { method: 'POST', body: alert });
 }

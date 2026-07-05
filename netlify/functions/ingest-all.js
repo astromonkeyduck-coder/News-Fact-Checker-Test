@@ -331,7 +331,7 @@ exports.handler = async (event, context) => {
     console.log(`[ingest-all] Starting ingestion run (DRY_RUN=${dryRun})`);
     console.log(`[ingest-all] Available engines:`, Object.keys(engines));
     
-    const engineList = ['usgs', 'nws', 'faa', 'uscg', 'volcano', 'embassy'];
+    const engineList = ['usgs', 'nws', 'faa', 'uscg', 'embassy'];
     const results = {
       started_at: new Date().toISOString(),
       dry_run: dryRun,

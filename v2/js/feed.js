@@ -22,9 +22,19 @@ const STRIP_DISPLAY = 8;
 const WIRE_DISPLAY = 12;
 
 const ENGINE_CATEGORIES = new Set([
-  'Earthquake', 'Weather Alert', 'Volcano Alert',
+  'Earthquake', 'Weather Alert',
   'Maritime Alert', 'Airspace Alert', 'Travel Advisory',
 ]);
+
+function isVolcanoEnginePost(post) {
+  if (!post) return false;
+  const cat = (post.category || '').toLowerCase();
+  const evt = (post.event_type || post.eventType || '').toLowerCase();
+  if (cat === 'volcano alert' || evt === 'volcano') return true;
+  const src = (post.source || '').toLowerCase();
+  if (src === 'usgs' && cat.includes('volcano')) return true;
+  return false;
+}
 
 function isLowMagEarthquake(post) {
   const cat = (post.category || '').toLowerCase();
@@ -43,6 +53,7 @@ function isNonWeatherNWSAlert(post) {
 }
 
 function isAlertPost(post) {
+  if (isVolcanoEnginePost(post)) return false;
   if (isLowMagEarthquake(post)) return false;
   if (isNonWeatherNWSAlert(post)) return false;
   if (ENGINE_CATEGORIES.has(post.category)) return true;
@@ -522,7 +533,7 @@ export async function initFeed() {
 
   try {
     const posts = await fetchPosts();
-    const visible = posts.filter(p => !isLowMagEarthquake(p) && !isNonWeatherNWSAlert(p));
+    const visible = posts.filter(p => !isLowMagEarthquake(p) && !isNonWeatherNWSAlert(p) && !isVolcanoEnginePost(p));
     const breaking = visible.filter(p => !isAlertPost(p));
     const alerts = visible.filter(p => isAlertPost(p));
 

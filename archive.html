@@ -372,6 +372,16 @@
             return 'News';
         }
 
+        function isVolcanoEnginePost(post) {
+            if (!post) return false;
+            const cat = String(post.category || '').toLowerCase();
+            const evt = String(post.event_type || post.eventType || '').toLowerCase();
+            if (cat === 'volcano alert' || evt === 'volcano') return true;
+            const src = String(post.source || '').toLowerCase();
+            if (src === 'usgs' && cat.includes('volcano')) return true;
+            return false;
+        }
+
         function format(post) {
             const media = (cn && cn.getPrimaryMedia) ? cn.getPrimaryMedia(post) : { type: null };
             if (media.type === 'video') return 'video';
@@ -427,6 +437,7 @@
             const sort = document.getElementById('sortFilter').value;
 
             let list = allPosts.filter(post => {
+                if (isVolcanoEnginePost(post)) return false;
                 if (activeCategory && category(post) !== activeCategory) return false;
                 if (type && format(post) !== type) return false;
                 if (q) {
@@ -511,7 +522,7 @@
                 const posts = await res.json();
                 if (!Array.isArray(posts)) throw new Error('Bad response');
 
-                allPosts = posts;
+                allPosts = posts.filter(function (p) { return !isVolcanoEnginePost(p); });
                 if (allPosts.length === 0) {
                     grid.innerHTML = '<div class="nn-state" style="grid-column:1/-1;max-width:none">' +
                         '<p class="nn-state-title">Nothing here yet</p>' +

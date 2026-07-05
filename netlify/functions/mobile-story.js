@@ -19,7 +19,7 @@ if (process.env.NETLIFY_DEV) {
 }
 
 const { getPostStore, readPost } = require("./lib/postStore");
-const { normalizePost } = require("./lib/postNormalize");
+const { normalizePost, isVolcanoEnginePost } = require("./lib/postNormalize");
 
 const HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -53,7 +53,7 @@ exports.handler = async (event) => {
       post = await readPost(store, `eq-${blobId.substring(5)}`);
     }
 
-    if (!post) {
+    if (!post || isVolcanoEnginePost(post)) {
       return { statusCode: 404, headers: HEADERS, body: JSON.stringify({ error: "Story not found" }) };
     }
 
