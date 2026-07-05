@@ -1,5 +1,5 @@
 /**
- * Live Story client — Noteworthy News
+ * Live Story client - Noteworthy News
  *
  * Renders a single live story + its timeline, polls for updates, and wires the
  * "Follow Live" button to the existing push subscription flow (window.PushNotifications)

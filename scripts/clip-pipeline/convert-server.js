@@ -86,7 +86,7 @@ function sendJson(res, status, obj) {
 
 const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Filename');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Filename, X-Trim-Seconds');
 
   if (req.method === 'OPTIONS') {
     res.writeHead(204);
@@ -130,7 +130,9 @@ const server = http.createServer(async (req, res) => {
         sendJson(res, 400, { ok: false, error: 'Invalid WebM capture (missing header).' });
         return;
       }
-      const mp4 = convertWebmChunksToMp4Buffer(null, [webm.toString('base64')]);
+      const mp4 = convertWebmChunksToMp4Buffer(null, [webm.toString('base64')], {
+        trimSeconds: Number(req.headers['x-trim-seconds']) || 0,
+      });
       res.writeHead(200, {
         'Content-Type': 'video/mp4',
         'Access-Control-Allow-Origin': '*',

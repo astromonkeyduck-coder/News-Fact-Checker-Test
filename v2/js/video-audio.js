@@ -1,5 +1,5 @@
 /**
- * V2 — HTML5 video volume fade utilities
+ * V2 - HTML5 video volume fade utilities
  *
  * Smooth volume ramps for feed/hero videos. Uses `video.volume` for fades;
  * `muted` is only used as an autoplay gate and when fully silent.

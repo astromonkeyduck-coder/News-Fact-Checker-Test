@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Noteworthy — Save Last 30s",
-  "version": "1.4.8",
+  "version": "1.6.3",,
   "description": "Save the last 30 seconds from YouTube as MP4 with one click.",
   "icons": {
     "16": "icons/icon16.png",

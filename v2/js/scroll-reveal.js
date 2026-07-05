@@ -1,5 +1,5 @@
 /**
- * Noteworthy News V2 — Scroll Reveal
+ * Noteworthy News V2 - Scroll Reveal
  *
  * Lightweight IntersectionObserver utility. Elements with [data-reveal]
  * start hidden and animate in when they enter the viewport.

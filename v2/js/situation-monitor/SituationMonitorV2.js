@@ -1,5 +1,5 @@
 /**
- * Situation Monitor V2 — Shell Orchestrator
+ * Situation Monitor V2 - Shell Orchestrator
  *
  * Responsibilities:
  *  1. Initialize panels and map

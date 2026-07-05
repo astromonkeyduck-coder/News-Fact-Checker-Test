@@ -1,5 +1,5 @@
 /**
- * Noteworthy News V2 — Ambient Audio + CRT Waveform Visualizer
+ * Noteworthy News V2 - Ambient Audio + CRT Waveform Visualizer
  *
  * Plays NewsfeedGlow.mp3 on loop, with a header mute/unmute toggle.
  * Draws a real-time frequency-bar visualizer on a fixed canvas at the

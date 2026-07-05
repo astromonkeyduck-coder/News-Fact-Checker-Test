@@ -7,6 +7,8 @@
   const DEFAULT_BUFFER_SECONDS = 30;
   const MIN_BYTES = 5000;
   const MIN_TOTAL_BYTES = 100000;
+  /** Restart only after this many 1s chunks (~2 min) to cap memory — not when buffer fills */
+  const MAX_SESSION_CHUNKS = 120;
 
   let bufferSeconds = DEFAULT_BUFFER_SECONDS;
   let recorder = null;
@@ -16,22 +18,64 @@
   let statusEl = null;
   let saving = false;
   let activeMimeType = '';
-  /** @type {Blob[]} */
-  let chunkRing = [];
+  /** @type {Blob[]} — all chunks from the current recorder session (never drop mid-session) */
+  let sessionChunks = [];
   /** @type {Blob | null} */
   let initChunk = null;
-  /** @type {number | null} */
-  let initChunkSeq = null;
-  /** @type {number} */
-  let globalChunkSeq = 0;
-  /** @type {number} */
-  let ringBaseSeq = 0;
-  /** @type {boolean} */
-  let rolloverPending = false;
   /** @type {Blob | null} */
   let latestBlob = null;
   /** @type {Promise<void>} */
   let chunkQueue = Promise.resolve();
+
+  function withTimeout(promise, timeoutMs, message) {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        setTimeout(() => reject(new Error(message)), timeoutMs);
+      }),
+    ]);
+  }
+
+  async function drainChunkQueue(timeoutMs = 4000) {
+    const deadline = Date.now() + timeoutMs;
+    let pending = chunkQueue;
+    await withTimeout(
+      pending,
+      Math.max(500, deadline - Date.now()),
+      'Buffer sync timed out — refresh YouTube and try again'
+    );
+
+    while (Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      if (chunkQueue === pending) break;
+      pending = chunkQueue;
+      await withTimeout(
+        pending,
+        Math.max(200, deadline - Date.now()),
+        'Buffer sync timed out — refresh YouTube and try again'
+      );
+    }
+  }
+
+  async function flushRecorderData(timeoutMs = 1200) {
+    if (!recorder || recorder.state !== 'recording') return;
+
+    await withTimeout(
+      new Promise((resolve) => {
+        const done = () => resolve();
+        recorder.addEventListener('dataavailable', done, { once: true });
+        try {
+          recorder.requestData();
+        } catch {
+          resolve();
+        }
+      }),
+      timeoutMs,
+      'Recorder flush timed out'
+    ).catch(() => {
+      /* proceed with buffered chunks */
+    });
+  }
 
   function loadSettings(cb) {
     chrome.storage.sync.get({ bufferSeconds: DEFAULT_BUFFER_SECONDS }, (data) => {
@@ -45,7 +89,7 @@
     if (area !== 'sync' || !changes.bufferSeconds) return;
     bufferSeconds = changes.bufferSeconds.newValue || DEFAULT_BUFFER_SECONDS;
     if (button) button.textContent = `Save last ${bufferSeconds}s`;
-    if (attachedVideo) startBuffer(attachedVideo);
+    updateSaveButtonState();
   });
 
   function findVideo() {
@@ -75,22 +119,29 @@
 
   async function blobHasWebmHeader(blob) {
     if (!blob || blob.size < 4) return false;
-    const header = new Uint8Array(await blob.slice(0, 4).arrayBuffer());
-    return header[0] === 0x1a
-      && header[1] === 0x45
-      && header[2] === 0xdf
-      && header[3] === 0xa3;
+    try {
+      const header = new Uint8Array(await withTimeout(
+        blob.slice(0, 4).arrayBuffer(),
+        2000,
+        'Timed out reading capture header'
+      ));
+      return header[0] === 0x1a
+        && header[1] === 0x45
+        && header[2] === 0xdf
+        && header[3] === 0xa3;
+    } catch {
+      return false;
+    }
   }
 
   function updateSaveButtonState() {
     if (!button) return;
-    const initAdjacent = initChunkSeq !== null && initChunkSeq === ringBaseSeq - 1;
-    const headerReady = Boolean(initChunk) && (initAdjacent || chunkRing[0] === initChunk);
-    const bufferReady = chunkRing.length >= bufferSeconds && headerReady;
+    const headerReady = Boolean(initChunk);
+    const bufferReady = sessionChunks.length >= bufferSeconds && headerReady;
     button.disabled = saving || !bufferReady;
     button.title = bufferReady
       ? `Save last ${bufferSeconds}s as MP4 (Alt+Shift+C)`
-      : `Buffering ${chunkRing.length}/${bufferSeconds}s — keep playing`;
+      : `Buffering ${sessionChunks.length}/${bufferSeconds}s — keep playing`;
   }
 
   function setSaving(active) {
@@ -112,33 +163,38 @@
     recorder = null;
   }
 
-  function startBuffer(video) {
+  function buildSessionBlob(chunks) {
+    if (!chunks.length) return null;
+    if (chunks.length === 1) return chunks[0];
+    return new Blob(chunks, { type: activeMimeType || 'video/webm' });
+  }
+
+  /** Soft cap — restart only after long sessions, never when buffer first fills. */
+  async function restartSessionIfTooLong(video) {
+    if (sessionChunks.length < MAX_SESSION_CHUNKS || saving) return;
+    setStatus('Starting fresh buffer (session limit)…');
+    startBuffer(video);
+  }
+
+  function startRecorder(video) {
     if (!video || video.readyState < 2 || saving) return;
 
-    stopRecorder();
-    latestBlob = null;
-    chunkRing = [];
-    initChunk = null;
-    initChunkSeq = null;
-    globalChunkSeq = 0;
-    ringBaseSeq = 0;
-    rolloverPending = false;
-
-    let stream;
-    try {
-      stream = video.captureStream();
-    } catch (err) {
-      setStatus('Capture blocked (DRM?). Try another stream.', true);
-      console.error('[Noteworthy clip]', err);
-      return;
+    let stream = activeStream;
+    if (!stream) {
+      try {
+        stream = video.captureStream();
+      } catch (err) {
+        setStatus('Capture blocked (DRM?). Try another stream.', true);
+        console.error('[Noteworthy clip]', err);
+        return;
+      }
+      if (!stream.getVideoTracks().length) {
+        setStatus('No video track to capture.', true);
+        return;
+      }
+      activeStream = stream;
     }
 
-    if (!stream.getVideoTracks().length) {
-      setStatus('No video track to capture.', true);
-      return;
-    }
-
-    activeStream = stream;
     activeMimeType = pickMimeType();
     if (!activeMimeType) {
       setStatus('MediaRecorder not supported.', true);
@@ -160,33 +216,25 @@
       if (!event.data || event.data.size === 0) return;
 
       chunkQueue = chunkQueue.then(async () => {
-        const seq = globalChunkSeq;
-        globalChunkSeq += 1;
-
-        if (await blobHasWebmHeader(event.data)) {
+        if (!initChunk && await blobHasWebmHeader(event.data)) {
           initChunk = event.data;
-          initChunkSeq = seq;
         }
 
-        chunkRing.push(event.data);
-        while (chunkRing.length > bufferSeconds) {
-          chunkRing.shift();
-          ringBaseSeq += 1;
-        }
+        sessionChunks.push(event.data);
         latestBlob = event.data;
 
-        const headHasHeader = await blobHasWebmHeader(chunkRing[0]);
-        const initAdjacent = initChunkSeq !== null && initChunkSeq === ringBaseSeq - 1;
-        if (!headHasHeader && !initAdjacent && attachedVideo && !rolloverPending && !saving) {
-          rolloverRecorder(attachedVideo);
-          return;
-        }
-
         if (!saving) {
-          const kb = Math.round(chunkRing.reduce((n, b) => n + b.size, 0) / 1024);
-          const initOk = headHasHeader || initAdjacent ? 'ready' : 'waiting for header';
-          setStatus(`Buffering ${chunkRing.length}s / ${bufferSeconds}s (${kb} KB, ${initOk})`);
+          const kb = Math.round(sessionChunks.reduce((n, b) => n + b.size, 0) / 1024);
+          if (sessionChunks.length >= bufferSeconds) {
+            setStatus(`Ready — ${sessionChunks.length}s buffered (saves last ${bufferSeconds}s, ${kb} KB)`);
+          } else {
+            const initOk = initChunk ? 'ready' : 'waiting for header';
+            setStatus(`Buffering ${sessionChunks.length}/${bufferSeconds}s (${kb} KB, ${initOk})`);
+          }
           updateSaveButtonState();
+          if (attachedVideo) {
+            restartSessionIfTooLong(attachedVideo);
+          }
         }
       }).catch((err) => {
         console.error('[Noteworthy clip] chunk handler:', err);
@@ -195,22 +243,20 @@
 
     recorder.onerror = () => setStatus('Recorder error — refresh page.', true);
 
-    recorder.start(2000);
-    setStatus(`Recording ${bufferSeconds}s buffer…`);
+    recorder.start(1000);
+    setStatus(`Recording — need ${bufferSeconds}s before save`);
   }
 
-  function rolloverRecorder(video) {
-    if (rolloverPending || saving || !video) return;
-    rolloverPending = true;
+  function startBuffer(video) {
+    if (!video || video.readyState < 2 || saving) return;
+
     stopRecorder();
-    chunkRing = [];
+    activeStream = null;
+    latestBlob = null;
+    sessionChunks = [];
     initChunk = null;
-    initChunkSeq = null;
-    globalChunkSeq = 0;
-    ringBaseSeq = 0;
-    rolloverPending = false;
-    setStatus('Refreshing capture buffer…');
-    startBuffer(video);
+
+    startRecorder(video);
   }
 
   function isValidMp4Bytes(bytes) {
@@ -260,27 +306,31 @@
     return /context invalidated|refresh this YouTube page/i.test(message);
   }
 
-  function sendExtensionMessage(payload) {
-    return new Promise((resolve, reject) => {
-      if (!isExtensionContextValid()) {
-        reject(new Error('Extension was reloaded. Refresh this YouTube page (F5), then try Save again.'));
-        return;
-      }
-
-      chrome.runtime.sendMessage(payload, (response) => {
-        const runtimeError = chrome.runtime.lastError;
-        if (runtimeError) {
-          const message = runtimeError.message || String(runtimeError);
-          if (/context invalidated|extension.*invalid/i.test(message)) {
-            reject(new Error('Extension was reloaded. Refresh this YouTube page (F5), then try Save again.'));
-          } else {
-            reject(new Error(message));
-          }
+  function sendExtensionMessage(payload, timeoutMs = 45000) {
+    return withTimeout(
+      new Promise((resolve, reject) => {
+        if (!isExtensionContextValid()) {
+          reject(new Error('Extension was reloaded. Refresh this YouTube page (F5), then try Save again.'));
           return;
         }
-        resolve(response);
-      });
-    });
+
+        chrome.runtime.sendMessage(payload, (response) => {
+          const runtimeError = chrome.runtime.lastError;
+          if (runtimeError) {
+            const message = runtimeError.message || String(runtimeError);
+            if (/context invalidated|extension.*invalid/i.test(message)) {
+              reject(new Error('Extension was reloaded. Refresh this YouTube page (F5), then try Save again.'));
+            } else {
+              reject(new Error(message));
+            }
+            return;
+          }
+          resolve(response);
+        });
+      }),
+      timeoutMs,
+      'Extension did not respond — reload the extension at chrome://extensions, refresh YouTube, and try again'
+    );
   }
 
   function nativeInstallCmd() {
@@ -300,9 +350,7 @@
   }
 
   async function validateChunksForSave(chunks) {
-    const headHasHeader = chunks.length > 0 && await blobHasWebmHeader(chunks[0]);
-    const initAdjacent = initChunkSeq !== null && initChunkSeq === ringBaseSeq - 1;
-    if (!headHasHeader && !(initChunk && initAdjacent)) {
+    if (chunks.length > 1 && !initChunk) {
       throw new Error(
         'Capture not ready yet. Keep the video playing until the buffer fills, then save.'
       );
@@ -321,16 +369,21 @@
       );
     }
 
-    if (!(await blobHasWebmHeader(chunks[0]))) {
+    const merged = buildSessionBlob(chunks);
+    if (!merged || !(await blobHasWebmHeader(merged.slice(0, 4)))) {
       throw new Error('Invalid capture — refresh YouTube, play the video, then try again.');
     }
   }
 
-  async function convertViaLocalServerRaw(merged, filename) {
+  async function convertViaLocalServerRaw(merged, filename, trimSeconds) {
     setStatus('Converting to MP4…');
+    const headers = { 'Content-Type': 'application/octet-stream' };
+    if (trimSeconds > 0) {
+      headers['X-Trim-Seconds'] = String(trimSeconds);
+    }
     const response = await fetch('http://127.0.0.1:39284/convert/raw', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/octet-stream' },
+      headers,
       body: merged,
     });
 
@@ -354,8 +407,10 @@
     return { ok: true, via: 'local', downloaded: true };
   }
 
-  async function uploadMergedViaBackground(merged, filename) {
+  async function uploadMergedViaBackground(merged, filename, trimSeconds = 0) {
     const uploadId = `up-${Date.now()}`;
+    const totalBytes = merged.size;
+    const b64 = await blobToBase64(merged);
     const B64_SLICE = 480000;
 
     const begin = await sendExtensionMessage({
@@ -364,22 +419,21 @@
       chunkCount: 1,
       filename,
       merged: true,
+      expectedBytes: totalBytes,
+      trimSeconds,
     });
     if (!begin?.ok) {
       throw new Error(begin?.error || 'Upload begin failed');
     }
 
     setStatus('Uploading clip…');
-    const b64 = await blobToBase64(merged);
     for (let offset = 0; offset < b64.length; offset += B64_SLICE) {
-      const slice = b64.slice(offset, offset + B64_SLICE);
       const chunkResult = await sendExtensionMessage({
         type: 'CLIP_UPLOAD_CHUNK',
         uploadId,
         index: 0,
-        data: slice,
+        data: b64.slice(offset, offset + B64_SLICE),
         append: offset > 0,
-        byteLength: offset === 0 ? merged.size : undefined,
       });
       if (!chunkResult?.ok) {
         throw new Error(chunkResult?.error || 'Upload failed');
@@ -390,6 +444,7 @@
     const finish = await sendExtensionMessage({
       type: 'CLIP_UPLOAD_FINISH',
       uploadId,
+      trimSeconds,
     });
     if (!finish?.ok) {
       throw new Error(finish?.error || 'Convert failed');
@@ -397,18 +452,21 @@
     return finish;
   }
 
-  function mergedWebmBlob(chunks) {
-    return chunks.length === 1
-      ? chunks[0]
-      : new Blob(chunks, { type: activeMimeType || 'video/webm' });
+  async function mergedWebmBlob(chunks) {
+    const blob = buildSessionBlob(chunks);
+    if (!blob) {
+      throw new Error('No capture chunks to merge');
+    }
+    return blob;
   }
 
   async function uploadMergedWebmForConvert(chunks, filename) {
-    const merged = mergedWebmBlob(chunks);
+    const merged = await mergedWebmBlob(chunks);
     if (!(await blobHasWebmHeader(merged.slice(0, 4)))) {
       throw new Error('Invalid WebM capture — refresh YouTube, play the video, then save again.');
     }
 
+    const trimSeconds = chunks.length > bufferSeconds ? bufferSeconds : 0;
     let lastError = null;
 
     try {
@@ -416,7 +474,7 @@
       if (health.ok) {
         const status = await health.json();
         if (status?.ok) {
-          return await convertViaLocalServerRaw(merged, filename);
+          return await convertViaLocalServerRaw(merged, filename, trimSeconds);
         }
       }
     } catch (err) {
@@ -425,13 +483,13 @@
     }
 
     try {
-      return await uploadMergedViaBackground(merged, filename);
+      return await uploadMergedViaBackground(merged, filename, trimSeconds);
     } catch (err) {
       lastError = err;
-      console.warn('[Noteworthy clip] Native convert failed:', err.message);
+      console.warn('[Noteworthy clip] Background convert failed:', err.message);
     }
 
-    throw lastError || new Error('Could not convert clip — reload the extension and try again.');
+    throw lastError || new Error('Could not convert clip — is npm run clip:convert-server running?');
   }
 
   async function convertChunksToMp4(chunks, filename) {
@@ -450,40 +508,30 @@
   }
 
   async function chunksForSave() {
-    const body = chunkRing.length ? chunkRing.slice() : (latestBlob ? [latestBlob] : []);
+    const body = sessionChunks.length ? sessionChunks.slice() : (latestBlob ? [latestBlob] : []);
     if (!body.length) {
       return body;
     }
-    if (await blobHasWebmHeader(body[0])) {
-      return body;
+
+    if (initChunk) {
+      const headHasHeader = await blobHasWebmHeader(body[0]);
+      if (!headHasHeader) {
+        const rest = body.filter((chunk) => chunk !== initChunk);
+        return [initChunk, ...rest];
+      }
     }
-    if (initChunk && initChunkSeq === ringBaseSeq - 1) {
-      return [initChunk, ...body];
-    }
-    throw new Error('Capture gap — keep playing for a few seconds, then save again.');
+
+    return body;
   }
 
   async function captureBlobForSave() {
-    if (recorder && recorder.state === 'recording') {
-      await new Promise((resolve) => {
-        const onData = () => resolve();
-        recorder.addEventListener('dataavailable', onData, { once: true });
-        try {
-          recorder.requestData();
-        } catch {
-          resolve();
-        }
-        setTimeout(resolve, 800);
-      });
-    }
-
     const chunks = await chunksForSave();
     const blob = chunks[chunks.length - 1] || latestBlob;
     return { blob, chunks };
   }
 
   function restartBufferIfNeeded() {
-    if (attachedVideo && activeStream) {
+    if (attachedVideo) {
       setTimeout(() => startBuffer(attachedVideo), 300);
     }
   }
@@ -496,30 +544,27 @@
     setSaving(true);
     setStatus('Preparing clip…');
 
-    await chunkQueue;
+    let filename = '';
+    let chunks = [];
 
-    const { blob, chunks } = await captureBlobForSave();
     try {
+      await drainChunkQueue(4000);
+      await flushRecorderData(1200);
+      await drainChunkQueue(1500);
+
+      ({ chunks } = await captureBlobForSave());
       await validateChunksForSave(chunks);
-    } catch (validationErr) {
-      setSaving(false);
-      setStatus(validationErr.message, true);
-      return { ok: false, error: validationErr.message };
-    }
 
-    const totalBytes = chunks.reduce((sum, chunk) => sum + chunk.size, 0);
-    if (!blob || totalBytes < MIN_BYTES) {
-      setSaving(false);
-      setStatus('Not enough video yet. Play ~10s then retry.', true);
-      return { ok: false, error: 'Not enough video buffered yet. Let it play longer.' };
-    }
+      const totalBytes = chunks.reduce((sum, chunk) => sum + chunk.size, 0);
+      if (totalBytes < MIN_BYTES) {
+        throw new Error('Not enough video buffered yet. Let it play longer, then save again.');
+      }
 
-    const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    const filename = `youtube-last-${bufferSeconds}s-${stamp}.mp4`;
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      filename = `youtube-last-${bufferSeconds}s-${stamp}.mp4`;
 
-    setStatus('Converting to MP4…');
+      setStatus('Converting to MP4…');
 
-    try {
       if (!isExtensionContextValid()) {
         throw new Error('Extension was reloaded. Refresh this YouTube page (F5), then try Save again.');
       }
@@ -555,8 +600,8 @@
       restartBufferIfNeeded();
       return { ok: true, seconds: bufferSeconds, format: 'mp4', via: result.via };
     } catch (err) {
-      console.error('[Noteworthy clip] MP4 failed:', err);
-      const baseName = filename.replace(/\.mp4$/i, '');
+      console.error('[Noteworthy clip] save failed:', err);
+      const baseName = (filename || `youtube-last-${bufferSeconds}s-failed`).replace(/\.mp4$/i, '');
       const contextDead = isContextInvalidatedError(err);
 
       if (contextDead) {
@@ -565,40 +610,35 @@
           'The extension was updated or reloaded while this tab was open.\n\n' +
             '1. Refresh YouTube (F5)\n' +
             '2. Let the video play until the buffer fills\n' +
-            '3. Click Save again\n\n' +
-            'No setup command is needed if the popup already says "Automatic MP4 ready".'
+            '3. Click Save again'
         );
-        restartBufferIfNeeded();
         return { ok: false, error: err.message };
       }
 
-      if (chunks.length > 1) {
-        const merged = mergedWebmBlob(chunks);
+      if (chunks.length > 0) {
+        const merged = await mergedWebmBlob(chunks);
         downloadBlob(merged, `${baseName}.webm`);
-        setStatus('Saved WebM fallback — run convert command (see alert)', true);
+        setStatus('Saved WebM fallback — see alert', true);
         alert(
           `MP4 convert failed: ${err.message}\n\n` +
             `Saved merged WebM: ${baseName}.webm\n\n` +
-            'Convert manually:\n' +
+            'For automatic MP4 next time, run in Terminal (leave open):\n' +
+            'npm run clip:convert-server\n\n' +
+            'Then reload the extension at chrome://extensions and try again.\n\n' +
+            'Convert this file manually:\n' +
             `npm run clip:convert-webm -- ~/Downloads/${baseName}.webm --rights-basis "Manual review"`
         );
-      } else {
-        const webmName = `${baseName}.webm`;
-        const webmBlob = mergedWebmBlob(chunks);
-        downloadBlob(webmBlob, webmName);
-        setStatus('Saved WebM — convert locally (see alert)', true);
-        alert(
-          `MP4 convert failed: ${err.message}\n\n` +
-            `Saved WebM: ${webmName}\n\n` +
-            setupHelpText() + '\n\n' +
-            'Or convert manually:\n' +
-            `npm run clip:convert-webm -- ~/Desktop/${webmName} --rights-basis "Manual review"`
-        );
+        restartBufferIfNeeded();
+        return { ok: true, seconds: bufferSeconds, format: 'webm', warning: err.message };
       }
+
+      setStatus(err.message || 'Save failed', true);
+      alert(err.message || 'Save failed');
       restartBufferIfNeeded();
-      return { ok: true, seconds: bufferSeconds, format: 'webm', warning: err.message };
+      return { ok: false, error: err.message };
     } finally {
       setSaving(false);
+      updateSaveButtonState();
     }
   }
 
@@ -642,13 +682,25 @@
       return;
     }
 
-    attachedVideo = video;
-    startBuffer(video);
+    if (video !== attachedVideo) {
+      attachedVideo = video;
+      startBuffer(video);
 
-    if (!video.dataset.noteworthyClipHooked) {
-      video.dataset.noteworthyClipHooked = '1';
-      video.addEventListener('play', () => startBuffer(video));
-      video.addEventListener('loadeddata', () => startBuffer(video));
+      if (!video.dataset.noteworthyClipHooked) {
+        video.dataset.noteworthyClipHooked = '1';
+        video.addEventListener('play', () => {
+          if (!recorder || recorder.state !== 'recording') startBuffer(video);
+        });
+        video.addEventListener('loadeddata', () => {
+          if (!recorder || recorder.state !== 'recording') startBuffer(video);
+        });
+      }
+      return;
+    }
+
+    // Same video but recorder died — restart without clearing if we still have chunks.
+    if (!recorder || recorder.state !== 'recording') {
+      startBuffer(video);
     }
   }
 
@@ -657,12 +709,8 @@
     activeStream = null;
     stopRecorder();
     latestBlob = null;
-    chunkRing = [];
+    sessionChunks = [];
     initChunk = null;
-    initChunkSeq = null;
-    globalChunkSeq = 0;
-    ringBaseSeq = 0;
-    rolloverPending = false;
     setTimeout(attachToCurrentVideo, 1200);
   }
 

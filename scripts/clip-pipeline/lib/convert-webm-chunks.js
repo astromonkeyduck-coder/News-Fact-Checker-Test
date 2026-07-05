@@ -6,11 +6,22 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 
 let ffmpegPath;
+let ffprobePath;
 try {
   ffmpegPath = require('ffmpeg-static');
 } catch {
   ffmpegPath = 'ffmpeg';
 }
+try {
+  ffprobePath = require('ffprobe-static');
+} catch {
+  ffprobePath = 'ffprobe';
+}
+
+const {
+  mergeWebmChunkBuffers,
+  isEbmlHeader,
+} = require('./merge-webm-chunks');
 
 function decodeChunks(webmBase64, webmChunksBase64) {
   const chunks = Array.isArray(webmChunksBase64)
@@ -18,7 +29,7 @@ function decodeChunks(webmBase64, webmChunksBase64) {
     : [];
 
   if (chunks.length > 0) {
-    return Buffer.concat(chunks);
+    return mergeWebmChunkBuffers(chunks);
   }
 
   if (webmBase64) {
@@ -29,14 +40,37 @@ function decodeChunks(webmBase64, webmChunksBase64) {
 }
 
 function hasWebmHeader(buf) {
-  return buf.length >= 4
-    && buf[0] === 0x1a
-    && buf[1] === 0x45
-    && buf[2] === 0xdf
-    && buf[3] === 0xa3;
+  return isEbmlHeader(buf);
 }
 
-function convertWebmChunksToMp4Buffer(webmBase64, webmChunksBase64) {
+function probeDurationSeconds(inputPath) {
+  const result = spawnSync(ffprobePath, [
+    '-v', 'error',
+    '-show_entries', 'format=duration',
+    '-of', 'default=noprint_wrappers=1:nokey=1',
+    inputPath,
+  ], { encoding: 'utf8' });
+
+  const val = parseFloat(String(result.stdout || '').trim());
+  return Number.isFinite(val) && val > 0 ? val : 0;
+}
+
+function buildInputArgs(inputPath, trimSeconds) {
+  if (trimSeconds <= 0) {
+    return ['-i', inputPath];
+  }
+
+  const duration = probeDurationSeconds(inputPath);
+  if (duration <= trimSeconds + 0.25) {
+    return ['-i', inputPath];
+  }
+
+  const start = Math.max(0, duration - trimSeconds);
+  return ['-ss', String(start), '-i', inputPath, '-t', String(trimSeconds)];
+}
+
+function convertWebmChunksToMp4Buffer(webmBase64, webmChunksBase64, options = {}) {
+  const trimSeconds = Number(options.trimSeconds) || 0;
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'noteworthy-clip-'));
   const inputPath = path.join(tmpDir, 'input.webm');
   const outputPath = path.join(tmpDir, 'output.mp4');
@@ -59,17 +93,20 @@ function convertWebmChunksToMp4Buffer(webmBase64, webmChunksBase64) {
 
     fs.writeFileSync(inputPath, merged);
 
+    const inputArgs = buildInputArgs(inputPath, trimSeconds);
+
     const result = spawnSync(
       ffmpegPath,
       [
         '-hide_banner', '-y',
-        '-fflags', '+genpts+discardcorrupt',
+        '-fflags', '+genpts+igndts',
+        '-avoid_negative_ts', 'make_zero',
         '-err_detect', 'ignore_err',
-        '-i', inputPath,
+        '-max_muxing_queue_size', '9999',
+        ...inputArgs,
         '-map', '0:v:0?',
         '-map', '0:a:0?',
-        '-vf', "setpts=N/FRAME_RATE/TB,scale='min(1280,iw)':-2",
-        '-af', 'asetpts=N/SR/TB',
+        '-vf', "scale='min(1280,iw)':-2",
         '-c:v', 'libx264',
         '-preset', 'ultrafast',
         '-pix_fmt', 'yuv420p',

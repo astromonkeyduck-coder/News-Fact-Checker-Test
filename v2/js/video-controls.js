@@ -1,5 +1,5 @@
 /**
- * V2 — Minimal video toolbar (volume, rewind, speed, mute)
+ * V2 - Minimal video toolbar (volume, rewind, speed, mute)
  * Used by feed cards and featured hero videos.
  */
 

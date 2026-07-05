@@ -1,5 +1,5 @@
 /*
- * Noteworthy News V2 — Component Styles
+ * Noteworthy News V2 - Component Styles
  */
 
 /* ═══════════════════════════════════════════════════
@@ -350,7 +350,7 @@
 
 
 /* ═══════════════════════════════════════════════════
-   HERO — Broadcast banner style
+   HERO - Broadcast banner style
    ═══════════════════════════════════════════════════ */
 
 .hero {
@@ -746,7 +746,7 @@
 
 
 /* ═══════════════════════════════════════════════════
-   CARDS (About section — legacy)
+   CARDS (About section - legacy)
    ═══════════════════════════════════════════════════ */
 
 .card {
@@ -958,7 +958,7 @@
 
 
 /* ═══════════════════════════════════════════════════
-   FEED — Grid, Cards, Loading, Empty, Error
+   FEED - Grid, Cards, Loading, Empty, Error
    ═══════════════════════════════════════════════════ */
 
 .feed-placeholder,
@@ -2380,43 +2380,6 @@
       rgba(255, 255, 255, 0.015) 4px
     );
   pointer-events: none;
-}
-
-.radar-pulse {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 300px;
-  height: 300px;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  border: 1px solid rgba(var(--color-accent-rgb), 0.08);
-  animation: radarExpand 4s ease-out infinite;
-  pointer-events: none;
-}
-
-.radar-pulse::before,
-.radar-pulse::after {
-  content: '';
-  position: absolute;
-  inset: -40px;
-  border-radius: 50%;
-  border: 1px solid rgba(var(--color-accent-rgb), 0.05);
-  animation: radarExpand 4s ease-out infinite;
-}
-
-.radar-pulse::before { animation-delay: 1.3s; }
-.radar-pulse::after { animation-delay: 2.6s; }
-
-@keyframes radarExpand {
-  0% {
-    transform: translate(-50%, -50%) scale(0.3);
-    opacity: 0.6;
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(2);
-    opacity: 0;
-  }
 }
 
 .monitor-teaser-content {

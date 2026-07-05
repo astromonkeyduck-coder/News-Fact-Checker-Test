@@ -191,11 +191,17 @@ async function convertViaLocalServer(webmChunksBase64) {
   return new Uint8Array(await response.arrayBuffer());
 }
 
-async function convertViaLocalServerRaw(webmBytes) {
+async function convertViaLocalServerRaw(webmBytes, trimSeconds = 0) {
+  const headers = { 'Content-Type': 'application/octet-stream' };
+  if (trimSeconds > 0) {
+    headers['X-Trim-Seconds'] = String(trimSeconds);
+  }
+
+  const body = webmBytes instanceof Uint8Array ? webmBytes : new Uint8Array(webmBytes);
   const response = await fetch(LOCAL_CONVERT_RAW_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/octet-stream' },
-    body: webmBytes,
+    headers,
+    body,
   });
 
   if (!response.ok) {
@@ -215,11 +221,13 @@ async function convertViaLocalServerRaw(webmBytes) {
 /** @type {Map<string, { filename: string, parts: Uint8Array[] }>} */
 const clipUploadSessions = new Map();
 
-function clipUploadBegin(uploadId, chunkCount, filename, merged = false) {
+function clipUploadBegin(uploadId, chunkCount, filename, merged = false, expectedBytes = 0, trimSeconds = 0) {
   clipUploadSessions.set(uploadId, {
     filename,
     parts: new Array(chunkCount),
     merged: Boolean(merged),
+    expectedBytes: Number(expectedBytes) || 0,
+    trimSeconds: Number(trimSeconds) || 0,
   });
   return { ok: true };
 }
@@ -251,26 +259,41 @@ function clipUploadChunk(uploadId, index, buffer, data, byteLength, append = fal
   }
 
   if (typeof data === 'string' && data.length > 0) {
-    if (append && typeof session.parts[index] === 'string') {
+    if (append) {
+      if (typeof session.parts[index] !== 'string') {
+        throw new Error(`Cannot append to missing chunk ${index + 1} — refresh YouTube and try again`);
+      }
       session.parts[index] += data;
-      return { ok: true, bytesWritten: session.parts[index].length };
+    } else {
+      session.parts[index] = data;
     }
-    const minB64Len = byteLength ? Math.floor(byteLength * 4 / 3 * 0.85) : 100;
-    if (!append && byteLength && data.length < minB64Len) {
-      throw new Error(`Chunk ${index + 1} truncated (${data.length} b64 chars)`);
-    }
-    session.parts[index] = data;
-    return { ok: true, bytesWritten: byteLength || data.length };
+    return { ok: true, bytesWritten: session.parts[index].length };
   }
 
   const bytes = bytesFromPayload(buffer, data, byteLength, index);
-
-  if (byteLength && bytes.byteLength < Math.max(100, byteLength * 0.85)) {
-    throw new Error(`Chunk ${index + 1} truncated (${bytes.byteLength} of ${byteLength} bytes sent)`);
+  if (bytes.byteLength === 0) {
+    throw new Error(`Chunk ${index + 1} is empty — refresh YouTube and try again`);
   }
 
-  session.parts[index] = bytes;
-  return { ok: true, bytesWritten: bytes.byteLength };
+  if (append) {
+    const existing = session.parts[index];
+    if (existing instanceof Uint8Array) {
+      const combined = new Uint8Array(existing.byteLength + bytes.byteLength);
+      combined.set(existing, 0);
+      combined.set(bytes, existing.byteLength);
+      session.parts[index] = combined;
+    } else if (typeof existing === 'string') {
+      throw new Error(`Cannot append binary to text chunk ${index + 1}`);
+    } else {
+      throw new Error(`Cannot append to missing chunk ${index + 1} — refresh YouTube and try again`);
+    }
+  } else {
+    session.parts[index] = bytes;
+  }
+
+  const written = session.parts[index];
+  const size = written instanceof Uint8Array ? written.byteLength : written.length;
+  return { ok: true, bytesWritten: size };
 }
 
 function partsToWebmBase64(parts) {
@@ -321,6 +344,12 @@ async function clipUploadFinish(uploadId) {
     );
   }
 
+  if (session.expectedBytes && totalBytes < Math.floor(session.expectedBytes * 0.9)) {
+    throw new Error(
+      `Upload incomplete (${totalBytes} of ${session.expectedBytes} bytes) — refresh YouTube and try again`
+    );
+  }
+
   const webmChunksBase64 = session.merged
     ? partsToWebmBase64(parts).slice(0, 1)
     : partsToWebmBase64(parts);
@@ -338,9 +367,11 @@ async function clipUploadFinish(uploadId) {
 
   if (await isLocalServerAvailable()) {
     try {
-      const bytes = session.merged
-        ? await convertViaLocalServerRaw(base64ToBytes(webmChunksBase64[0]))
-        : await convertViaLocalServer(webmChunksBase64);
+      const mergedPart = parts[0];
+      const webmBytes = typeof mergedPart === 'string'
+        ? base64ToBytes(mergedPart)
+        : (mergedPart instanceof Uint8Array ? mergedPart : new Uint8Array(mergedPart));
+      const bytes = await convertViaLocalServerRaw(webmBytes, session.trimSeconds || 0);
       return downloadMp4Bytes(bytes, session.filename);
     } catch (localErr) {
       console.warn('[Noteworthy] Local convert server failed:', localErr.message);
@@ -541,7 +572,9 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         message.uploadId,
         message.chunkCount,
         message.filename,
-        message.merged
+        message.merged,
+        message.expectedBytes,
+        message.trimSeconds
       ));
     } catch (err) {
       sendResponse({ ok: false, error: err.message });

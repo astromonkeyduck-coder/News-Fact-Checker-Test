@@ -1,7 +1,7 @@
 /**
- * Noteworthy News V2 — Auth Module
+ * Noteworthy News V2 - Auth Module
  *
- * Thin Auth0 SPA integration. SDK is loaded lazily — only fetched when
+ * Thin Auth0 SPA integration. SDK is loaded lazily - only fetched when
  * needed (auth callback in URL, or user clicks Sign In/ Sign Up).
  *
  * If Auth0 config is absent (dev without env vars), degrades silently.
@@ -48,7 +48,7 @@ async function mergeAuth0ConfigFromServer() {
       window.AUTH0_CLIENT_ID = data.clientId;
     }
   } catch (_) {
-    // Offline or function missing — keep inline/build values
+    // Offline or function missing - keep inline/build values
   }
 }
 
@@ -168,7 +168,7 @@ async function checkSession() {
       if (onAuthChangeFn) onAuthChangeFn(currentUser);
     }
   } catch {
-    // Silent failure — user stays in logged-out state
+    // Silent failure - user stays in logged-out state
   }
 }
 

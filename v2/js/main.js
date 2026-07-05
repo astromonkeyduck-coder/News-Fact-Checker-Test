@@ -1,8 +1,8 @@
 /**
- * Noteworthy News V2 — Homepage Entry Point
+ * Noteworthy News V2 - Homepage Entry Point
  *
  * Orchestrates: nav, feed, auth, newsletter, scroll behavior.
- * Loaded as type="module" — no globals polluted.
+ * Loaded as type="module" - no globals polluted.
  */
 
 import { initFeed } from './feed.js';

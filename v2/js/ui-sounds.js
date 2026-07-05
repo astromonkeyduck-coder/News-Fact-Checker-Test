@@ -1,7 +1,7 @@
 /**
- * Noteworthy News V2 — Synthesized UI sound effects (Web Audio API)
+ * Noteworthy News V2 - Synthesized UI sound effects (Web Audio API)
  *
- * Short, quiet tones — no external assets. Respects prefers-reduced-motion
+ * Short, quiet tones - no external assets. Respects prefers-reduced-motion
  * and localStorage key `nw-ui-sounds` === 'off' to disable.
  */
 
@@ -85,7 +85,7 @@ export const UISounds = {
     });
   },
 
-  /** Two-note ascending chime — feed loaded, newsletter success */
+  /** Two-note ascending chime - feed loaded, newsletter success */
   success() {
     play(async () => {
       const ctx = await getCtx();
@@ -110,7 +110,7 @@ export const UISounds = {
     });
   },
 
-  /** Descending tones — errors */
+  /** Descending tones - errors */
   error() {
     play(async () => {
       const ctx = await getCtx();
@@ -135,7 +135,7 @@ export const UISounds = {
     });
   },
 
-  /** Attention tone — alert banner appears */
+  /** Attention tone - alert banner appears */
   notify() {
     play(async () => {
       const ctx = await getCtx();
@@ -153,7 +153,7 @@ export const UISounds = {
     });
   },
 
-  /** Rising sweep — monitor ready / manual refresh complete */
+  /** Rising sweep - monitor ready / manual refresh complete */
   sweep() {
     play(async () => {
       const ctx = await getCtx();
@@ -172,7 +172,7 @@ export const UISounds = {
     });
   },
 
-  /** Pitched click — ambient on/off */
+  /** Pitched click - ambient on/off */
   toggle(isOn) {
     play(async () => {
       const ctx = await getCtx();

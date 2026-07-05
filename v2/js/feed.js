@@ -1,5 +1,5 @@
 /**
- * Noteworthy News V2 — Feed Module
+ * Noteworthy News V2 - Feed Module
  *
  * Fetches posts from posts-read, partitions into Breaking News vs
  * engine-sourced Alerts, and renders each into its own section.
@@ -197,7 +197,7 @@ function getXUrl(post) {
   if (!u) return '';
   try {
     const parsed = new URL(u);
-    // Require a real http(s) X/Twitter URL — a substring check would let a
+    // Require a real http(s) X/Twitter URL - a substring check would let a
     // crafted "javascript:...x.com" through to window.open().
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return '';
     const host = parsed.hostname.replace(/^www\./, '');
@@ -580,6 +580,30 @@ function renderError() {
     </div>`;
 }
 
+/** Featured slot fallback - shown instead of a stuck skeleton when the feed
+ *  is unavailable. Still looks intentional and routes readers somewhere useful. */
+function renderFeaturedFallback() {
+  return `
+    <div class="featured-fallback" role="status">
+      <div class="featured-fallback-head">
+        <span class="badge badge-accent">Standby</span>
+        <span class="featured-fallback-signal" aria-hidden="true"><i></i><i></i><i></i></span>
+      </div>
+      <p class="featured-fallback-title">Live feed reconnecting</p>
+      <p class="featured-fallback-text">The latest verified stories are temporarily unavailable. Coverage continues in the archive.</p>
+      <a class="btn btn-secondary btn-sm" href="/archive.html">Browse the Archive</a>
+    </div>`;
+}
+
+/** Alerts section fallback when the feed API fails. */
+function renderAlertsFallback() {
+  return `
+    <div class="feed-state feed-state--fallback" role="status">
+      <p class="feed-state-title">Data feeds temporarily unavailable</p>
+      <p class="feed-state-text">Verified alerts from USGS, NWS, FAA and USCG will reappear here as soon as the connection is restored.</p>
+    </div>`;
+}
+
 function skeletons(n) {
   return Array.from({ length: n }, () => '<div class="feed-skeleton" aria-hidden="true"></div>').join('');
 }
@@ -635,8 +659,10 @@ export async function initFeed() {
       const featuredPost = breaking.length > 0 ? breaking[0] : alerts[0];
       if (featuredPost) {
         heroEl.innerHTML = renderFeatured(featuredPost);
-        heroEl.classList.add('feed-loaded');
+      } else {
+        heroEl.innerHTML = renderFeaturedFallback();
       }
+      heroEl.classList.add('feed-loaded');
     }
 
     // Breaking news grid: skip the featured post
@@ -676,7 +702,7 @@ export async function initFeed() {
         alertsEl.classList.remove('feed-placeholder');
         alertsEl.classList.add('feed-grid', 'feed-loaded');
       } else {
-        alertsEl.innerHTML = renderEmpty('No active alerts');
+        alertsEl.innerHTML = renderEmpty('No alerts right now');
         alertsEl.classList.add('feed-loaded');
       }
     }
@@ -699,6 +725,18 @@ export async function initFeed() {
       breakingEl.classList.add('feed-loaded');
     }
 
+    // Never leave the featured slot or alerts grid on infinite skeletons -
+    // swap in intentional fallback modules instead.
+    if (heroEl && !heroEl.classList.contains('feed-loaded')) {
+      heroEl.innerHTML = renderFeaturedFallback();
+      heroEl.classList.add('feed-loaded');
+    }
+    if (alertsEl && !alertsEl.classList.contains('feed-loaded')) {
+      alertsEl.innerHTML = renderAlertsFallback();
+      alertsEl.classList.remove('feed-placeholder');
+      alertsEl.classList.add('feed-loaded');
+    }
+
     const retryBtn = breakingEl?.querySelector('.feed-retry-btn');
     if (retryBtn) {
       retryBtn.addEventListener('click', () => {
@@ -708,6 +746,14 @@ export async function initFeed() {
           breakingEl.classList.remove('feed-loaded');
           breakingEl.classList.add('feed-placeholder');
           breakingEl.innerHTML = skeletons(4);
+        }
+        if (heroEl) {
+          heroEl.classList.remove('feed-loaded');
+        }
+        if (alertsEl) {
+          alertsEl.classList.remove('feed-loaded');
+          alertsEl.classList.add('feed-placeholder');
+          alertsEl.innerHTML = skeletons(3);
         }
         initFeed();
       }, { once: true });
