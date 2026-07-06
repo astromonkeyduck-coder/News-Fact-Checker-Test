@@ -270,7 +270,7 @@ import { initSFX, NoteworthySFX } from './sfx-engine.js';
         UISounds.error();
       } finally {
         btn.disabled = false;
-        btn.textContent = 'Get the brief';
+        btn.textContent = 'Be the first to know';
       }
     });
   }

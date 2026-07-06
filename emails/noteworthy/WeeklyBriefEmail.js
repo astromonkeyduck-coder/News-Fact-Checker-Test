@@ -38,7 +38,7 @@ function subject(props = {}) {
 }
 
 function preheader(props = {}) {
-  return props.preheaderLine || props.hero?.dek || 'What happened. What changed. What is confirmed.';
+  return props.preheaderLine || props.hero?.dek || 'Be the first to know.';
 }
 
 /* ── Module renderers ───────────────────────────────────────── */

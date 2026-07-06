@@ -14,7 +14,7 @@ const {
 } = require('./shell');
 
 const SUBJECT = 'Welcome to The Weekly Brief';
-const PREHEADER = 'Every week: what happened, what changed, and what is confirmed.';
+const PREHEADER = 'Be the first to know — sourced stories, labeled updates, and what to watch next.';
 
 /** The site's verify pipeline, compact. Detect → Verify → Context → Publish → Correct. */
 function verifyPipeline() {
