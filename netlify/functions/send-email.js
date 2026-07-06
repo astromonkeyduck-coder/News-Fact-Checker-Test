@@ -15,6 +15,14 @@ try {
 // Load Resend module
 const { Resend } = require('resend');
 
+// Noteworthy newsletter email templates (emails/noteworthy) — dark newsroom
+// system with subject/preheader/html/text per template. Bundled statically
+// by esbuild, so no included_files config is needed.
+const {
+  NewsletterWelcomeEmail,
+  BreakingNewsWelcomeEmail,
+} = require('../../emails/noteworthy');
+
 // Smart name inference from email addresses
 // Uses multiple strategies: direct match, leet normalization, skeleton matching, etc.
 const { getFirstNameFromEmail } = require('./lib/name-inference.js');
@@ -152,9 +160,23 @@ exports.handler = async (event, context) => {
 
     // Parse request body safely
     let email;
+    // Optional signup context: pages may send { source: 'breaking-story',
+    // storyHeadline, storyUrl, storyLastUpdate } to get the breaking-news
+    // welcome variant. Absent → standard welcome. Nothing else changes.
+    let signupSource = null;
+    let signupStory = null;
     try {
       const body = event.body ? JSON.parse(event.body) : {};
       email = body.email;
+      signupSource = typeof body.source === 'string' ? body.source : null;
+      if (signupSource === 'breaking-story' && typeof body.storyHeadline === 'string' && typeof body.storyUrl === 'string') {
+        signupStory = {
+          headline: body.storyHeadline.slice(0, 200),
+          url: body.storyUrl.slice(0, 500),
+          statusKind: 'developing',
+          lastUpdate: typeof body.storyLastUpdate === 'string' ? body.storyLastUpdate.slice(0, 40) : undefined,
+        };
+      }
     } catch (parseError) {
       console.error('Error parsing request body:', parseError);
       return {
@@ -172,7 +194,10 @@ exports.handler = async (event, context) => {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: 'Valid email is required' }),
+        body: JSON.stringify({
+          error: 'Valid email is required',
+          message: 'Please enter a valid email address.',
+        }),
       };
     }
 
@@ -429,10 +454,11 @@ This is an automated notification from your website.`,
       }
     }
     
-    // Generate unsubscribe link
+    // Generate unsubscribe + preferences links
     // Base64 encode email for security (prevents tampering)
     const encodedEmail = Buffer.from(email).toString('base64');
     const unsubscribeUrl = `https://noteworthynews.co/unsubscribe.html?email=${encodeURIComponent(encodedEmail)}`;
+    const preferencesUrl = `https://noteworthynews.co/newsletter-preferences.html?email=${encodeURIComponent(encodedEmail)}`;
     
     // Extract name from contact data or email
     let firstName = 'there';
@@ -480,98 +506,40 @@ This is an automated notification from your website.`,
     }
     
     const welcomeDisplayName = getDisplayName(fullName, firstName);
-    
+
+    // Build the welcome email from the Noteworthy template system
+    // (emails/noteworthy). Signups from a developing story page get the
+    // breaking-news variant; everyone else gets the standard welcome.
+    //
+    // TODO (double opt-in): when a confirm endpoint exists, send
+    // NewsletterVerifyEmail here instead, hold the contact out of the
+    // audience until the link is clicked, then send the welcome from the
+    // confirm handler. The template is ready:
+    //   const { NewsletterVerifyEmail } = require('../../emails/noteworthy');
+    //   NewsletterVerifyEmail({ confirmUrl, expiresHours: 48 })
+    const welcomeTemplate = signupStory ? BreakingNewsWelcomeEmail : NewsletterWelcomeEmail;
+    const welcomeProps = {
+      greetingName: welcomeDisplayName !== 'there' ? welcomeDisplayName : null,
+      unsubscribeUrl,
+      preferencesUrl,
+      ...(signupStory ? { story: signupStory } : {}),
+    };
+
     // Send auto-reply to the subscriber
-    console.log('Sending welcome email to subscriber:', email, 'with displayName:', welcomeDisplayName, 'firstName:', firstName, 'fullName:', fullName);
+    console.log('Sending welcome email to subscriber:', email, 'with displayName:', welcomeDisplayName, 'variant:', signupStory ? 'breaking-story' : 'standard');
     const autoReplyResult = await resend.emails.send({
       from: fromEmail,
       to: email,
       replyTo: 'richard@noteworthynews.co',
-      subject: 'Welcome to Noteworthy News! 🎉',
+      subject: welcomeTemplate.subject(welcomeProps),
       clickTracking: false, // Disable click tracking for better deliverability
-      text: `Welcome to Noteworthy News!
-
-Hi ${welcomeDisplayName},
-
-Thank you for subscribing to Noteworthy News! We're thrilled to have you join a newsroom community that checks the news carefully.
-
-You'll now receive:
-• Weekly fact-checked news stories
-• Media literacy tips and insights
-• Updates about our interactive fact-checking games
-• Critical thinking resources
-
-Stay informed and stay curious!
-
-Best regards,
-The Noteworthy News Team
-
----
-If you didn't subscribe to this newsletter, you can safely ignore this email.
-
-To unsubscribe from future emails, visit: ${unsubscribeUrl}`,
-      html: `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f5f5f5;">
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f5f5f5;">
-    <tr>
-      <td style="padding: 40px 20px;">
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-          <tr>
-            <td style="padding: 40px 30px; text-align: center; background: linear-gradient(135deg, rgba(74, 144, 226, 0.1) 0%, rgba(46, 204, 113, 0.1) 100%); border-radius: 10px 10px 0 0;">
-              <img src="https://noteworthynews.co/IMG_5992.PNG" alt="Noteworthy News Logo" style="max-width: 150px; height: auto; border-radius: 50%; display: block; margin: 0 auto 20px; border: 3px solid #4a90e2; box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);" />
-              <h2 style="color: #4a90e2; margin: 0; font-size: 24px; font-weight: bold;">Thanks for subscribing! 🎉</h2>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 30px; background-color: #ffffff;">
-              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 15px 0;">Hi ${welcomeDisplayName},</p>
-              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">Thank you for subscribing to Noteworthy News! We're thrilled to have you join a newsroom community that checks the news carefully.</p>
-              <p style="color: #4a90e2; font-size: 17px; font-weight: bold; margin: 0 0 15px 0;">You'll now receive:</p>
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
-                <tr>
-                  <td style="padding: 8px 0;">
-                    <p style="color: #333333; font-size: 16px; margin: 0; line-height: 1.6;">📰 Weekly fact-checked news stories</p>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px 0;">
-                    <p style="color: #333333; font-size: 16px; margin: 0; line-height: 1.6;">🔍 Media literacy tips and insights</p>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px 0;">
-                    <p style="color: #333333; font-size: 16px; margin: 0; line-height: 1.6;">🎮 Updates about our interactive fact-checking games</p>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px 0;">
-                    <p style="color: #333333; font-size: 16px; margin: 0; line-height: 1.6;">💡 Critical thinking resources</p>
-                  </td>
-                </tr>
-              </table>
-              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 25px 0 0 0;"><strong>Stay informed and stay curious!</strong></p>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 25px 30px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border-top: 2px solid #4a90e2; border-radius: 0 0 10px 10px;">
-              <p style="color: #333333; font-size: 16px; margin: 0 0 8px 0; line-height: 1.5;"><strong>The Noteworthy News Team</strong></p>
-              <p style="color: #999999; font-size: 12px; margin: 15px 0 0 0; line-height: 1.4;">If you didn't subscribe to this newsletter, you can safely ignore this email.</p>
-              <p style="text-align: center; margin: 20px 0 0 0; padding-top: 20px; border-top: 1px solid #e0e0e0;">
-                <a href="${unsubscribeUrl}" style="color: #999999; font-size: 12px; text-decoration: underline;">Unsubscribe from this newsletter</a>
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`,
+      text: welcomeTemplate.text(welcomeProps),
+      html: welcomeTemplate(welcomeProps),
+      headers: {
+        // One-click unsubscribe improves deliverability for list mail
+        'List-Unsubscribe': `<${unsubscribeUrl}>`,
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+      },
     });
 
     // Log auto-reply result

@@ -306,6 +306,13 @@
   status = 200
   force = false
 
+# Noteworthy newsletter email preview bench (QA for emails/noteworthy templates)
+[[redirects]]
+  from = "/emails/noteworthy"
+  to = "/.netlify/functions/noteworthy-email-previews"
+  status = 200
+  force = false
+
 [functions]
   # Use esbuild to automatically compile TypeScript functions
   node_bundler = "esbuild"
