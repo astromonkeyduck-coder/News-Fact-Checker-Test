@@ -459,6 +459,7 @@
                 <div class="stage-screen">
                   <img class="screen-wallpaper" src="/v2/assets/earth-disc-sm.webp?v=5" alt="" loading="lazy" decoding="async">
                   <div class="screen-shade"></div>
+                  <div class="stage-weather-fx" id="stage-weather-fx" aria-hidden="true" hidden></div>
 
                   <div class="screen-statusbar">
                     <p class="stage-location" id="stage-location">Noteworthy</p>
@@ -498,6 +499,14 @@
                     <p class="stage-time" id="stage-time">9:41</p>
                   </div>
 
+                  <div class="stage-weather" id="stage-weather" hidden aria-live="polite">
+                    <div class="stage-weather-icon" id="stage-weather-icon" aria-hidden="true"></div>
+                    <div class="stage-weather-meta">
+                      <p class="stage-weather-temp" id="stage-weather-temp"></p>
+                      <p class="stage-weather-label" id="stage-weather-label"></p>
+                    </div>
+                  </div>
+
                   <div class="stage-cards">
                     <div class="stage-card stage-card-la">
                       <div class="stage-card-head">
@@ -511,14 +520,14 @@
                       <div class="stage-card-meta"><span>Developing</span><span>2m ago</span></div>
                     </div>
 
-                    <div class="stage-card">
+                    <div class="stage-card stage-card-weather" id="stage-weather-card" hidden>
                       <div class="stage-card-head">
-                        <img src="/IMG_5794.PNG" alt="" width="20" height="20">
-                        <span>Noteworthy News</span>
-                        <span class="stage-when">now</span>
+                        <span class="stage-weather-alert-icon" id="stage-weather-alert-icon" aria-hidden="true"></span>
+                        <span>Weather Alert</span>
+                        <span class="stage-when" id="stage-weather-when">now</span>
                       </div>
-                      <p class="stage-card-title" data-stage-weather-area>Severe weather alert for your area</p>
-                      <p class="stage-card-text">NWS tornado watch until 9:00 PM. Tap to follow live.</p>
+                      <p class="stage-card-title" id="stage-weather-title"></p>
+                      <p class="stage-card-text" id="stage-weather-text"></p>
                     </div>
 
                     <div class="stage-card">

@@ -2144,6 +2144,224 @@ article:hover .pm-media img { transform: scale(1.03); }
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.4);
 }
 
+/* Live weather readout (Open-Meteo + optional NWS alert card) */
+.stage-weather {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: fit-content;
+  margin: 0.55rem auto 0;
+  padding: 0.2rem 0.35rem;
+  color: rgba(255, 255, 255, 0.94);
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.35);
+}
+
+.stage-weather-icon {
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  color: rgba(255, 255, 255, 0.92);
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.28));
+}
+
+.stage-weather-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.stage-weather-icon[data-weather="clear"] svg circle,
+.stage-weather-icon[data-weather="partly-cloudy"] svg circle {
+  animation: stageSunPulse 5.5s ease-in-out infinite;
+}
+
+.stage-weather-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  min-width: 0;
+}
+
+.stage-weather-temp {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.stage-weather-label {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.2;
+}
+
+.stage-weather-fx {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.stage-sun-glow {
+  position: absolute;
+  top: 8%;
+  left: 50%;
+  width: 72%;
+  aspect-ratio: 1;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(250, 204, 21, 0.16) 0%, rgba(250, 204, 21, 0.04) 42%, transparent 72%);
+  animation: stageSunGlow 7s ease-in-out infinite;
+}
+
+.stage-fog-layer {
+  position: absolute;
+  inset: auto -10% 18% -10%;
+  height: 38%;
+  background: linear-gradient(180deg, transparent, rgba(203, 213, 225, 0.12) 38%, rgba(148, 163, 184, 0.16) 100%);
+  filter: blur(10px);
+  animation: stageFogDrift 12s ease-in-out infinite;
+}
+
+.stage-fog-layer--back {
+  inset: auto -18% 10% -18%;
+  height: 46%;
+  opacity: 0.55;
+  animation-duration: 16s;
+  animation-direction: reverse;
+}
+
+.stage-rain-drop {
+  position: absolute;
+  top: -8%;
+  left: calc((var(--i) * 7.1%) + 2%);
+  width: 1px;
+  height: 14%;
+  background: linear-gradient(180deg, transparent, rgba(125, 211, 252, 0.55), transparent);
+  opacity: 0;
+  transform: rotate(12deg);
+  animation: stageRainFall 1.35s linear infinite;
+  animation-delay: calc(var(--i) * 0.11s);
+}
+
+.stage-rain-drop--heavy {
+  height: 18%;
+  background: linear-gradient(180deg, transparent, rgba(186, 230, 253, 0.72), transparent);
+  animation-duration: 0.95s;
+}
+
+.stage-snow-flake {
+  position: absolute;
+  top: -4%;
+  left: calc((var(--i) * 5.6%) + 1%);
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.72);
+  opacity: 0;
+  animation: stageSnowFall 4.8s linear infinite;
+  animation-delay: calc(var(--i) * 0.24s);
+}
+
+.stage-lightning-flash {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.08);
+  opacity: 0;
+  animation: stageLightning 7.5s ease-out infinite;
+}
+
+.stage-screen[data-weather="cloudy"] .screen-shade,
+.stage-screen[data-weather="rain"] .screen-shade,
+.stage-screen[data-weather="drizzle"] .screen-shade,
+.stage-screen[data-weather="snow"] .screen-shade,
+.stage-screen[data-weather="thunderstorm"] .screen-shade,
+.stage-screen[data-weather="fog"] .screen-shade {
+  background:
+    linear-gradient(180deg,
+      rgba(1, 3, 8, 0.62) 0%, rgba(1, 3, 8, 0.08) 20%,
+      rgba(1, 3, 8, 0.06) 40%, rgba(2, 4, 9, 0.58) 74%,
+      rgba(1, 3, 7, 0.82) 100%);
+}
+
+.stage-card-weather {
+  border-color: rgba(251, 191, 36, 0.28);
+  background: rgba(28, 30, 24, 0.68);
+}
+
+.stage-card-weather[data-severity="extreme"],
+.stage-card-weather[data-severity="severe"] {
+  border-color: rgba(239, 68, 68, 0.34);
+  background: rgba(32, 22, 24, 0.72);
+}
+
+.stage-weather-alert-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 5.5px;
+  background: rgba(251, 191, 36, 0.14);
+  color: #FBBF24;
+}
+
+.stage-weather-alert-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+@keyframes stageSunPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.04); opacity: 0.92; }
+}
+
+@keyframes stageSunGlow {
+  0%, 100% { opacity: 0.72; transform: translateX(-50%) scale(1); }
+  50% { opacity: 1; transform: translateX(-50%) scale(1.06); }
+}
+
+@keyframes stageFogDrift {
+  0%, 100% { transform: translateX(-2%); opacity: 0.65; }
+  50% { transform: translateX(3%); opacity: 0.9; }
+}
+
+@keyframes stageRainFall {
+  0% { opacity: 0; transform: translateY(-10%) rotate(12deg); }
+  15% { opacity: 0.75; }
+  100% { opacity: 0; transform: translateY(520%) rotate(12deg); }
+}
+
+@keyframes stageSnowFall {
+  0% { opacity: 0; transform: translateY(-8%) translateX(0); }
+  20% { opacity: 0.85; }
+  100% { opacity: 0; transform: translateY(520%) translateX(8px); }
+}
+
+@keyframes stageLightning {
+  0%, 92%, 100% { opacity: 0; }
+  93% { opacity: 0.55; }
+  94% { opacity: 0; }
+  95% { opacity: 0.35; }
+  96% { opacity: 0; }
+}
+
+.stage-weather-fx--static .stage-rain-drop,
+.stage-weather-fx--static .stage-snow-flake,
+.stage-weather-fx--static .stage-lightning-flash,
+.stage-weather-fx--static .stage-sun-glow,
+.stage-weather-fx--static .stage-fog-layer,
+.stage-weather-fx--static .stage-weather-icon svg circle {
+  animation: none !important;
+}
+
 /* Notification stack pinned above the dock */
 .stage-cards {
   position: relative;
@@ -3149,6 +3367,12 @@ article:hover .pm-media img { transform: scale(1.03); }
 
   .dev-card, .feed-in { animation: none; }
   .live-dot, .island-dot { animation: none; }
+  .stage-weather-icon svg circle,
+  .stage-rain-drop,
+  .stage-snow-flake,
+  .stage-lightning-flash,
+  .stage-sun-glow,
+  .stage-fog-layer { animation: none !important; }
 }
 
 /* ═══════════════════════════════════════════════════
