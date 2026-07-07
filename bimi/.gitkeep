@@ -1,0 +1,2 @@
+# Place bimi.pem here after your CA (DigiCert/Sectigo/SSL.com) issues the VMC or CMC.
+# See docs/production/bimi-setup.md

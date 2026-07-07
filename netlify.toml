@@ -422,6 +422,21 @@
 # Note: The schedule property below may not work without a plugin in some Netlify plans.
 # Use the Dashboard UI to configure scheduling instead.
 
+# BIMI brand logo — must be served as image/svg+xml for mailbox providers
+[[headers]]
+  for = "/bimi/bimi-logo.svg"
+  [headers.values]
+    Content-Type = "image/svg+xml; charset=utf-8"
+    Cache-Control = "public, max-age=86400"
+    Access-Control-Allow-Origin = "*"
+
+[[headers]]
+  for = "/bimi/bimi.pem"
+  [headers.values]
+    Content-Type = "application/x-pem-file; charset=utf-8"
+    Cache-Control = "public, max-age=86400"
+    Access-Control-Allow-Origin = "*"
+
 # Security headers to prevent unwanted iframe embedding and improve security
 [[headers]]
   for = "/*"
