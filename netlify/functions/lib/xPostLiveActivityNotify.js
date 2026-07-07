@@ -14,6 +14,7 @@
 
 const apns = require("./apnsClient");
 const { contentState } = require("./liveActivityNotify");
+const { AUTO_X_POST_CATEGORY } = require("./liveStoryCategories");
 
 let supabase = null;
 function getSupabase() {
@@ -22,7 +23,6 @@ function getSupabase() {
 }
 
 const ATTRIBUTES_TYPE = "LiveStoryAttributes";
-const X_CATEGORY = "X";
 const STALE_AFTER_MS = 30 * 60 * 1000;
 const DISMISS_AFTER_MS = 2 * 60 * 60 * 1000; // X posts are ephemeral - dismiss after 2h
 const HEADLINE_MAX = 140;
@@ -46,7 +46,8 @@ function titleFromPost(post) {
 }
 
 function slugFromPost(post) {
-  if (post.slug) return post.slug;
+  // Always use an internal slug so auto rows never collide with manually
+  // created live stories that may share the post's public URL slug.
   if (post.id) return `x-${post.id}`;
   return `x-${Date.now()}`;
 }
@@ -54,6 +55,7 @@ function slugFromPost(post) {
 /**
  * Upsert a lightweight live_stories row so activity-start token registration
  * works and we can track/end X-post activities in live_activity_tokens.
+ * Rows are archived and tagged category X so they never surface in Developing Now.
  */
 async function ensureLiveStoryForPost(sb, post) {
   const slug = slugFromPost(post);
@@ -67,7 +69,8 @@ async function ensureLiveStoryForPost(sb, post) {
         slug,
         title,
         status: "breaking",
-        category: X_CATEGORY,
+        category: AUTO_X_POST_CATEGORY,
+        archived: true,
         severity: 4,
         confidence: "medium",
         last_update_at: now,
@@ -88,7 +91,7 @@ async function endPriorXPostActivities(sb, logger) {
   const { data: xStories, error: sErr } = await sb
     .from("live_stories")
     .select("id")
-    .eq("category", X_CATEGORY);
+    .eq("category", AUTO_X_POST_CATEGORY);
   if (sErr) throw sErr;
   const storyIds = (xStories || []).map((s) => s.id);
   if (!storyIds.length) return { ended: 0 };
@@ -243,7 +246,7 @@ async function notifyXPostLiveActivity({ post, logger = console, dryRun = false 
           storySlug: story.slug,
           storyId: String(post.id),
           title: story.title,
-          category: X_CATEGORY,
+          category: AUTO_X_POST_CATEGORY,
           contentPostId: String(post.id),
         },
         "content-state": cs,
