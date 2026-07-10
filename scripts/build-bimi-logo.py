@@ -4,11 +4,9 @@
 Pure computed geometry — no fonts, no raster tracing — so the output is
 sharp at any size and passes SVG Tiny PS validation.
 
-Construction (measured row-by-row from ios .../Logo.imageset/logo.png):
-  - blue globe, light upper-left highlight, deep navy rim
-  - heavy white N (stem + 8px diagonal + right stem)
-  - heavy black W drawn ON TOP as four united parallelogram strokes,
-    its left edge slicing across the N's right stem like the original
+Every coordinate below was measured row-by-row from the original mark
+(ios .../Logo.imageset/logo.png rendered at 96px), then the whole letter
+block is shifted by BLOCK_DX to sit dead-center on the globe.
 
 Run: python3 scripts/build-bimi-logo.py  (or npm run bimi:build)
 """
@@ -21,62 +19,61 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "bimi/bimi-logo.svg"
 
 SIZE = 96
+BLOCK_DX = -1.25  # center the measured letter block on the globe (cx=48)
 
-# ---- Layout (96px grid) ----------------------------------------------------
-# Letter block is centered on the globe (cx=48): N spans x22-45.5,
-# W spans x41.5-73 and sits slightly lower than the N like the original.
-N_LEFT = 22.0
-N_TOP = 31.5
-N_BASE = 58.0
-STEM = 7.5        # stem thickness
-DIAG = 8.0        # diagonal horizontal thickness
+# ---- N (original coords, 96px grid) ----------------------------------------
+# Stem x24-31, right stem x40-47.5, cap y31.5, baseline y58.
+# Diagonal: top edge 24-32.5; right edge slope 0.556 (hits right stem at
+# y45); left edge slope 0.667 (leaves stem at y42, crosses x40 at y55.5).
+N_POINTS = [
+    (24.0, 31.5), (32.5, 31.5), (40.0, 45.0), (40.0, 31.5), (47.5, 31.5),
+    (47.5, 58.0), (40.0, 58.0), (40.0, 55.5), (31.0, 42.0), (31.0, 58.0),
+    (24.0, 58.0),
+]
 
-W_LEFT = 41.5
-W_TOP = 31.5      # flush with the N's cap line
-W_BOTTOM = 61.0   # dips below the N baseline like the original
-W_WIDTH = 31.5
-W_STROKE = 6.2    # stroke thickness (horizontal)
-W_SLANT = 5.6     # horizontal run of each stroke over full height
-W_APEX_LEFT = 11.5  # apex top edge, local coords
+# ---- W (original coords) ----------------------------------------------------
+W_LEFT = 42.5
+W_TOP = 31.5      # flush with the N cap line
+W_BOTTOM = 59.5   # dips slightly below the N baseline
+W_WIDTH = 32.0    # right edge lands at x74.5
+W_STROKE = 5.8
+W_SLANT = 6.5     # horizontal run of each stroke over the full height
+W_APEX_LEFT = 12.3   # apex top edge, local coords
+W_RIGHT_STROKE = 6.8  # the final up-stroke is a touch heavier, per original
 
 
 def n_path() -> str:
-    l, t, b = N_LEFT, N_TOP, N_BASE
-    r = l + 23.5                # N bbox right (x45.5)
-    sr = l + STEM               # left stem right edge
-    rl = r - STEM               # right stem left edge
-    dt = l + DIAG               # diagonal top right corner
-    # Where the diagonal's right edge meets the right stem, and where its
-    # left edge leaves the left stem (slope chosen to land on stem corners).
-    slope = (r - DIAG - l) / (b - t)
-    y_hit_right = t + (rl - dt) / slope
-    y_leave_left = t + (sr - l) / slope
-    pts = [
-        (l, t), (dt, t), (rl, y_hit_right), (rl, t), (r, t),
-        (r, b), (rl, b), (sr, y_leave_left), (sr, b), (l, b),
-    ]
-    return "M" + " L".join(f"{x:.1f} {y:.1f}" for x, y in pts) + " Z"
+    return (
+        "M"
+        + " L".join(f"{x + BLOCK_DX:g} {y:g}" for x, y in N_POINTS)
+        + " Z"
+    )
 
 
 def w_path() -> str:
     """Four overlapping parallelogram strokes; nonzero fill unites them."""
-    h = W_BOTTOM - W_TOP
-    apex_r = W_APEX_LEFT + W_STROKE
 
-    def para(top_l: float, bot_l: float) -> str:
+    def para(top_l: float, bot_l: float, width: float) -> str:
         pts = [
             (W_LEFT + top_l, W_TOP),
-            (W_LEFT + top_l + W_STROKE, W_TOP),
-            (W_LEFT + bot_l + W_STROKE, W_BOTTOM),
+            (W_LEFT + top_l + width, W_TOP),
+            (W_LEFT + bot_l + width, W_BOTTOM),
             (W_LEFT + bot_l, W_BOTTOM),
         ]
-        return "M" + " L".join(f"{x:.1f} {y:.1f}" for x, y in pts) + " Z"
+        return (
+            "M"
+            + " L".join(f"{x + BLOCK_DX:g} {y:g}" for x, y in pts)
+            + " Z"
+        )
 
-    s1 = para(0.0, W_SLANT)                                   # down
-    s2 = para(W_APEX_LEFT, W_APEX_LEFT - W_SLANT)             # up to apex
-    s3 = para(W_APEX_LEFT, W_APEX_LEFT + W_SLANT)             # down from apex
-    s4 = para(W_WIDTH - W_STROKE, W_WIDTH - W_STROKE - W_SLANT)  # up
-    _ = apex_r, h
+    s1 = para(0.0, W_SLANT, W_STROKE)                        # down
+    s2 = para(W_APEX_LEFT, W_APEX_LEFT - W_SLANT, W_STROKE)  # up to apex
+    s3 = para(W_APEX_LEFT, W_APEX_LEFT + W_SLANT, W_STROKE)  # down from apex
+    s4 = para(                                               # final up-stroke
+        W_WIDTH - W_RIGHT_STROKE,
+        W_WIDTH - W_RIGHT_STROKE - W_SLANT,
+        W_RIGHT_STROKE,
+    )
     return " ".join([s1, s2, s3, s4])
 
 
