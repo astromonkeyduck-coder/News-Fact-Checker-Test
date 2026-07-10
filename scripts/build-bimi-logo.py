@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 """Build the BIMI-compliant Noteworthy News logo SVG.
 
-Recreates the NW globe mark (blue globe, white N, black W) as clean
-vector geometry using real bold font glyphs — no raster tracing, so the
-output stays sharp and passes SVG Tiny PS validation.
+Recreates the NW globe mark as clean vector geometry — no raster
+tracing, so the output stays sharp and passes SVG Tiny PS validation.
 
-Requires: fonttools (pip install fonttools) and DejaVu Sans Bold
-(preinstalled on most Linux systems).
+Construction (measured from ios .../Logo.imageset/logo.png at 96px):
+  - blue globe with light upper-left highlight
+  - complete white N (DejaVu Sans Bold glyph), bbox x23-47
+  - black W (DejaVu Sans Bold glyph) drawn ON TOP, bbox starting at
+    x44 so its left edge slices over the N's right stem — the black W
+    overlaps part of the N exactly like the original mark
+
+Requires: fonttools (pip install fonttools) and DejaVu Sans Bold.
 
 Run: python3 scripts/build-bimi-logo.py  (or npm run bimi:build)
 """
@@ -16,6 +21,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from fontTools.misc.transform import Transform
+from fontTools.pens.boundsPen import BoundsPen
 from fontTools.pens.svgPathPen import SVGPathPen
 from fontTools.pens.transformPen import TransformPen
 from fontTools.ttLib import TTFont
@@ -26,30 +32,42 @@ FONT = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf")
 
 SIZE = 96
 CAP_HEIGHT_UNITS = 1493  # DejaVu Sans Bold capital height in font units
-TARGET_CAP_PX = 26.5
+CAP_PX = 27.0
 BASELINE_Y = 58.0
-SQUEEZE = 0.88  # horizontal compression to match the logo's heavy look
-OVERLAP = 4.0   # W tucks just behind the N's right stem (stem ~4.7px wide)
+
+# Measured from the original 96px logo:
+N_LEFT = 23.0    # N bbox left edge
+N_WIDTH = 24.0   # N bbox width (right edge x47)
+W_LEFT = 42.5    # W bbox left edge — slices over the N's right stem at top
 
 
 def main() -> None:
     glyph_set = TTFont(str(FONT)).getGlyphSet()
-    scale = TARGET_CAP_PX / CAP_HEIGHT_UNITS
+    yscale = CAP_PX / CAP_HEIGHT_UNITS
 
-    def glyph(ch: str, dx: float) -> tuple[str, float]:
+    def bbox(ch: str) -> tuple[float, float]:
+        pen = BoundsPen(glyph_set)
+        glyph_set[ch].draw(pen)
+        xmin, _, xmax, _ = pen.bounds
+        return xmin, xmax
+
+    def path(ch: str, target_left: float, xscale: float, xmin_units: float) -> str:
         pen = SVGPathPen(glyph_set)
-        t = Transform().translate(dx, BASELINE_Y).scale(scale * SQUEEZE, -scale)
+        dx = target_left - xmin_units * xscale
+        t = Transform().translate(dx, BASELINE_Y).scale(xscale, -yscale)
         glyph_set[ch].draw(TransformPen(pen, t))
-        return pen.getCommands(), glyph_set[ch].width * scale * SQUEEZE
+        return pen.getCommands()
 
-    _, n_adv = glyph("N", 0)
-    _, w_adv = glyph("W", 0)
-    total = n_adv + w_adv - OVERLAP
-    n_x = SIZE / 2 - total / 2
-    w_x = n_x + n_adv - OVERLAP
+    n_xmin, n_xmax = bbox("N")
+    w_xmin, w_xmax = bbox("W")
 
-    n_path, _ = glyph("N", n_x)
-    w_path, _ = glyph("W", w_x)
+    # N compressed to the original's 24px bbox; W at its natural width
+    # for the same cap height (~34px, matching the original's ~31-34px).
+    n_xscale = N_WIDTH / (n_xmax - n_xmin)
+    w_xscale = yscale
+
+    n_path = path("N", N_LEFT, n_xscale, n_xmin)
+    w_path = path("W", W_LEFT, w_xscale, w_xmin)
 
     svg = f'''<?xml version="1.0" encoding="UTF-8"?>
 <svg version="1.2" baseProfile="tiny-ps" width="{SIZE}" height="{SIZE}" viewBox="0 0 {SIZE} {SIZE}" xmlns="http://www.w3.org/2000/svg">
@@ -64,8 +82,8 @@ def main() -> None:
     </radialGradient>
   </defs>
   <circle cx="48" cy="48" r="36" fill="url(#globe)"/>
-  <path fill="#0B0B0B" d="{w_path}"/>
   <path fill="#FFFFFF" d="{n_path}"/>
+  <path fill="#0B0B0B" d="{w_path}"/>
 </svg>
 '''
     OUT.write_text(svg)
