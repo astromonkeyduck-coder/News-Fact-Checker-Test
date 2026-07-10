@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg version="1.2" baseProfile="tiny-ps" width="96" height="96" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg">
+  <rect width="96" height="96" fill="#000000"/>
+  <circle cx="48" cy="48" r="38" fill="#2B7FD4"/>
+  <path fill="#1E5FA0" d="M24 34c8-6 18-8 28-6 6 1 11 4 15 8-6 2-12 3-18 2-9-1-17-2-25-4z"/>
+  <path fill="#1E5FA0" d="M58 58c-7 8-16 12-26 11-7-1-13-4-18-9 7-1 14-2 21-1 8 1 15 3 23-1z"/>
+  <path fill="#FFFFFF" d="M30 30h6v36h-6V30zm0 0l24 36h-7L30 30zm18 0h6v36h-6V30z"/>
+  <path fill="#111111" d="M48 30h6l12 22V30h6v36h-6L54 44v22h-6V30z"/>
+</svg>

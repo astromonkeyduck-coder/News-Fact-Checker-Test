@@ -15,6 +15,8 @@
     "update-timestamp": "node scripts/update-last-modified.js",
     "test:games": "jest --testPathPattern=GamesGallery.test.js",
     "validate:games": "node scripts/validate-game-embeds.js",
+    "bimi:validate": "node scripts/validate-bimi-svg.js",
+    "bimi:audit": "node scripts/bimi-dns-audit.js",
     "audit:game": "node scripts/security-audit-game.js",
     "add:game": "node scripts/safe-add-game.js",
     "test:earthquake": "node test-earthquake-visual.js",
