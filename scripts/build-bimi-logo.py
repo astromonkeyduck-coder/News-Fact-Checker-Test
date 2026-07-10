@@ -36,38 +36,31 @@ CAP_PX = 27.0
 BASELINE_Y = 58.0
 
 # Measured from the original 96px logo:
-N_LEFT = 23.0    # N bbox left edge
-N_WIDTH = 24.0   # N bbox width (right edge x47)
 W_LEFT = 42.5    # W bbox left edge — slices over the N's right stem at top
+
+# Heavy N polygon, measured row-by-row from the original (all x/y in the
+# 96px grid): stem x24-31, diagonal 8px thick from top (24-32) to the
+# right stem's foot, right stem x40-47.5, cap top y31.5, baseline y58.
+N_PATH = (
+    "M24 31.5 L32 31.5 L40 45.3 L40 31.5 L47.5 31.5 "
+    "L47.5 58 L40 58 L31 43.6 L31 58 L24 58 Z"
+)
 
 
 def main() -> None:
     glyph_set = TTFont(str(FONT)).getGlyphSet()
     yscale = CAP_PX / CAP_HEIGHT_UNITS
 
-    def bbox(ch: str) -> tuple[float, float]:
-        pen = BoundsPen(glyph_set)
-        glyph_set[ch].draw(pen)
-        xmin, _, xmax, _ = pen.bounds
-        return xmin, xmax
+    pen = BoundsPen(glyph_set)
+    glyph_set["W"].draw(pen)
+    w_xmin, _, _, _ = pen.bounds
 
-    def path(ch: str, target_left: float, xscale: float, xmin_units: float) -> str:
-        pen = SVGPathPen(glyph_set)
-        dx = target_left - xmin_units * xscale
-        t = Transform().translate(dx, BASELINE_Y).scale(xscale, -yscale)
-        glyph_set[ch].draw(TransformPen(pen, t))
-        return pen.getCommands()
-
-    n_xmin, n_xmax = bbox("N")
-    w_xmin, w_xmax = bbox("W")
-
-    # N compressed to the original's 24px bbox; W at its natural width
-    # for the same cap height (~34px, matching the original's ~31-34px).
-    n_xscale = N_WIDTH / (n_xmax - n_xmin)
-    w_xscale = yscale
-
-    n_path = path("N", N_LEFT, n_xscale, n_xmin)
-    w_path = path("W", W_LEFT, w_xscale, w_xmin)
+    svg_pen = SVGPathPen(glyph_set)
+    dx = W_LEFT - w_xmin * yscale
+    t = Transform().translate(dx, BASELINE_Y).scale(yscale, -yscale)
+    glyph_set["W"].draw(TransformPen(svg_pen, t))
+    w_path = svg_pen.getCommands()
+    n_path = N_PATH
 
     svg = f'''<?xml version="1.0" encoding="UTF-8"?>
 <svg version="1.2" baseProfile="tiny-ps" width="{SIZE}" height="{SIZE}" viewBox="0 0 {SIZE} {SIZE}" xmlns="http://www.w3.org/2000/svg">
