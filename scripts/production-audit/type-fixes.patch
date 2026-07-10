@@ -1,0 +1,75 @@
+--- a/netlify/functions/fetch-profile-tweets.ts
++++ b/netlify/functions/fetch-profile-tweets.ts
+@@ -65,7 +65,7 @@
+     : title;
+ 
+   // Calculate read time
+-  const wordCount = text.split(/\s+/).filter(w => w.length > 0).length;
++  const wordCount = text.split(/\s+/).filter((w: string) => w.length > 0).length;
+   const readTime = Math.ceil(wordCount / 200) || 1;
+ 
+   // Try to extract image from oEmbed HTML
+--- a/netlify/functions/fetch-tweets-simple.ts
++++ b/netlify/functions/fetch-tweets-simple.ts
+@@ -8,7 +8,7 @@
+ import { fetchTweetOEmbed, extractTweetId, extractUsername } from "../../src/lib/posts/oembed-fetch";
+ import { normalizeTweetToCard, toTitle, readTimeFromText } from "../../src/lib/posts/normalize";
+ import { extractEnhancedData } from "../../src/lib/posts/enhanced-extract";
+-import { extractTwitterMedia } from "../../src/lib/posts/twitter-media-extract";
++import { extractTwitterMedia, type TwitterMedia } from "../../src/lib/posts/twitter-media-extract";
+ 
+ const {
+   getPostStore,
+@@ -39,7 +39,7 @@
+   // XIRI METHOD: Also try scraping photo pages for media (like Discord bots do)
+   // This gets media that oEmbed doesn't provide
+   // Try headless browser first (if available), then fall back to static methods
+-  let scrapedMedia = { images: [], videos: [] };
++  let scrapedMedia: TwitterMedia = { images: [], videos: [] };
+   try {
+     // Try headless browser first (for dynamically loaded media)
+     // Set useHeadless=true to enable Puppeteer (requires puppeteer package)
+--- a/netlify/functions/x-webhook.ts
++++ b/netlify/functions/x-webhook.ts
+@@ -88,9 +88,7 @@
+         await notifyXPostLiveActivity({
+           post: {
+             id: tweetId,
+-            slug: card.slug,
+             title: card.title,
+-            text: card.text || card.story,
+             story: card.story,
+           },
+           logger: console,
+--- a/src/lib/posts/enhanced-extract.ts
++++ b/src/lib/posts/enhanced-extract.ts
+@@ -172,7 +172,7 @@
+ export interface EnhancedTweetData {
+   images: string[];
+   videos: string[];
+-  datePosted: string; // ISO string
++  datePosted?: string; // ISO string when Snowflake extraction succeeds
+   views?: number;
+   likes?: number;
+   reposts?: number;
+--- a/src/lib/posts/twitter-media-extract-headless.ts
++++ b/src/lib/posts/twitter-media-extract-headless.ts
+@@ -131,7 +131,7 @@
+         }
+ 
+         // Also check for video sources
+-        const sourceElements = Array.from(document.querySelectorAll('video source'));
++        const sourceElements = Array.from(document.querySelectorAll<HTMLSourceElement>('video source'));
+         for (const source of sourceElements) {
+           const src = source.src || source.getAttribute('src');
+           if (src && !seen.has(src)) {
+--- a/src/widgets/noteworthy-chat.ts
++++ b/src/widgets/noteworthy-chat.ts
+@@ -1823,7 +1823,6 @@
+         });
+         
+         // Create session with backend
+-        const endpoint = this.getAttribute('data-endpoint') || '/.netlify/functions/noteworthy-chat';
+         const realtimeEndpoint = endpoint.replace('/noteworthy-chat', '/realtime-voice');
+         
+         // Retry logic for fetching ephemeral token (handles intermittent failures)
