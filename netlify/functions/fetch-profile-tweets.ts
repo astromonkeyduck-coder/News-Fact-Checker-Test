@@ -65,7 +65,7 @@ function oEmbedToCard(oembed: any, tweetUrl: string): any {
     : title;
 
   // Calculate read time
-  const wordCount = text.split(/\s+/).filter(w => w.length > 0).length;
+  const wordCount = text.split(/\s+/).filter((w: string) => w.length > 0).length;
   const readTime = Math.ceil(wordCount / 200) || 1;
 
   // Try to extract image from oEmbed HTML

@@ -1,0 +1,93 @@
+name: Apply phase-two hardening
+
+on:
+  push:
+    branches:
+      - audit/production-hardening-2026-07-10
+
+permissions:
+  contents: write
+
+concurrency:
+  group: phase-two-hardening
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out latest audit branch
+        uses: actions/checkout@v4
+        with:
+          ref: audit/production-hardening-2026-07-10
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Apply phase-two hardening
+        run: node scripts/production-audit/apply-phase2-hardening.js
+
+      - name: Apply compatible production dependency fixes
+        run: npm audit fix --omit=dev || true
+
+      - name: Reinstall from the resulting lockfile
+        run: npm ci --ignore-scripts
+
+      - name: Run hardening tests
+        run: node --test scripts/production-audit/hardening.test.js
+
+      - name: Validate changed JavaScript syntax
+        run: |
+          node --check netlify/functions/lib/publicCors.js
+          node --check netlify/functions/middleware/requireAuth.js
+          node --check netlify/functions/send-email.js
+          node --check netlify/functions/push-subscribe.js
+          node --check netlify/functions/follow-live-story.js
+          node --check netlify/functions/notification-preferences.js
+
+      - name: Run production build
+        run: npm run build
+
+      - name: Run TypeScript check
+        run: npx tsc --noEmit
+
+      - name: Enforce high-severity production dependency audit
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Reject malformed diffs
+        run: git diff --check
+
+      - name: Commit verified phase-two changes
+        env:
+          BRANCH_NAME: audit/production-hardening-2026-07-10
+        run: |
+          rm -f .github/workflows/apply-phase2-hardening.yml
+          git config user.name "noteworthy-audit[bot]"
+          git config user.email "noteworthy-audit[bot]@users.noreply.github.com"
+          git add \
+            .github/workflows/apply-phase2-hardening.yml \
+            netlify.toml \
+            netlify/functions/lib/publicCors.js \
+            netlify/functions/middleware/requireAuth.js \
+            netlify/functions/send-email.js \
+            netlify/functions/push-subscribe.js \
+            netlify/functions/follow-live-story.js \
+            netlify/functions/notification-preferences.js \
+            package.json \
+            package-lock.json \
+            scripts/production-audit/hardening.test.js
+          git diff --cached --check
+          if ! git diff --cached --quiet; then
+            git commit -m "security: restrict public trust boundaries and secret scanning"
+            git push origin "HEAD:${BRANCH_NAME}"
+          fi

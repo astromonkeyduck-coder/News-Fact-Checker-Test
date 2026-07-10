@@ -8,7 +8,7 @@ import { Handler } from "@netlify/functions";
 import { fetchTweetOEmbed, extractTweetId, extractUsername } from "../../src/lib/posts/oembed-fetch";
 import { normalizeTweetToCard, toTitle, readTimeFromText } from "../../src/lib/posts/normalize";
 import { extractEnhancedData } from "../../src/lib/posts/enhanced-extract";
-import { extractTwitterMedia } from "../../src/lib/posts/twitter-media-extract";
+import { extractTwitterMedia, type TwitterMedia } from "../../src/lib/posts/twitter-media-extract";
 
 const {
   getPostStore,
@@ -39,7 +39,7 @@ async function oEmbedToCard(oembed: any, tweetUrl: string): Promise<any> {
   // XIRI METHOD: Also try scraping photo pages for media (like Discord bots do)
   // This gets media that oEmbed doesn't provide
   // Try headless browser first (if available), then fall back to static methods
-  let scrapedMedia = { images: [], videos: [] };
+  let scrapedMedia: TwitterMedia = { images: [], videos: [] };
   try {
     // Try headless browser first (for dynamically loaded media)
     // Set useHeadless=true to enable Puppeteer (requires puppeteer package)

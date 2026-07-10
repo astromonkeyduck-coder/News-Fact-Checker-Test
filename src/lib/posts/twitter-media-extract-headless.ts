@@ -131,7 +131,7 @@ export async function extractTwitterMediaHeadless(tweetUrl: string): Promise<Twi
         }
 
         // Also check for video sources
-        const sourceElements = Array.from(document.querySelectorAll('video source'));
+        const sourceElements = Array.from(document.querySelectorAll<HTMLSourceElement>('video source'));
         for (const source of sourceElements) {
           const src = source.src || source.getAttribute('src');
           if (src && !seen.has(src)) {
