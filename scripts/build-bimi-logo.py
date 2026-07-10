@@ -32,7 +32,7 @@ STEM = 7.5        # stem thickness
 DIAG = 8.0        # diagonal horizontal thickness
 
 W_LEFT = 41.5
-W_TOP = 33.0
+W_TOP = 31.5      # flush with the N's cap line
 W_BOTTOM = 61.0   # dips below the N baseline like the original
 W_WIDTH = 31.5
 W_STROKE = 6.2    # stroke thickness (horizontal)
