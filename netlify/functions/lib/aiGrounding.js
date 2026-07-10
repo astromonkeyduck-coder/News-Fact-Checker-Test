@@ -72,6 +72,7 @@ async function fetchLiveStories(limit = 5) {
       .from("live_stories")
       .select("slug, title, summary, status, severity, category, last_update_at, created_at")
       .eq("archived", false)
+      .neq("category", "X")
       .not("status", "in", "(resolved,false_report)")
       .order("pinned", { ascending: false })
       .order("last_update_at", { ascending: false, nullsFirst: false })

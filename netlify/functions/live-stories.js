@@ -57,6 +57,7 @@ async function listStories(params) {
     .from("live_stories")
     .select(STORY_PUBLIC_COLUMNS)
     .eq("archived", false)
+    .neq("category", "X") // auto-ingested X posts are not editorial live stories
     .order("pinned", { ascending: false })
     .order("last_update_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false })
@@ -86,7 +87,7 @@ async function getStoryBySlug(slug) {
 
   if (storyErr) throw storyErr;
 
-  if (!story) {
+  if (!story || story.category === "X") {
     return {
       statusCode: 404,
       headers: corsHeaders,
