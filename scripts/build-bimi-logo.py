@@ -29,7 +29,7 @@ CAP_HEIGHT_UNITS = 1493  # DejaVu Sans Bold capital height in font units
 TARGET_CAP_PX = 26.5
 BASELINE_Y = 58.0
 SQUEEZE = 0.88  # horizontal compression to match the logo's heavy look
-OVERLAP = 7.0   # W tucks behind the N like the original mark
+OVERLAP = 4.0   # W tucks just behind the N's right stem (stem ~4.7px wide)
 
 
 def main() -> None:
