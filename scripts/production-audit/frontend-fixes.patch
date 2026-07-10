@@ -1,0 +1,431 @@
+--- a/v2/styles/v4.css
++++ b/v2/styles/v4.css
+@@ -85,10 +85,10 @@
+ .btn:active { transform: translateY(1px); }
+ 
+ .btn-primary {
+-  background: var(--color-accent);
++  background: #2563EB;
+   color: #fff;
+ }
+-.btn-primary:hover { background: var(--color-accent-hover); color: #fff; }
++.btn-primary:hover { background: #1D4ED8; color: #fff; }
+ 
+ .btn-outline {
+   background: rgba(255, 255, 255, 0.02);
+@@ -104,7 +104,7 @@
+ .btn-ghost:hover { color: var(--color-text); }
+ 
+ .btn-lg { padding: 0.9rem 1.55rem; font-size: 0.9375rem; border-radius: 8px; }
+-.btn-sm { padding: 0.5rem 0.85rem; font-size: 0.8125rem; }
++.btn-sm { min-height: 44px; padding: 0.5rem 0.85rem; font-size: 0.8125rem; }
+ 
+ .chip {
+   display: inline-flex;
+@@ -296,9 +296,9 @@
+   display: inline-flex;
+   align-items: center;
+   justify-content: center;
+-  width: 34px;
+-  height: 34px;
+-  border-radius: 7px;
++  width: 44px;
++  height: 44px;
++  border-radius: 8px;
+   color: var(--color-text-secondary);
+   transition: color var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out);
+ }
+@@ -368,9 +368,9 @@
+   flex-direction: column;
+   justify-content: center;
+   gap: 5px;
+-  width: 40px;
+-  height: 40px;
+-  padding: 0 9px;
++  width: 44px;
++  height: 44px;
++  padding: 0 10px;
+   border-radius: 8px;
+ }
+ 
+@@ -432,8 +432,8 @@
+   }
+ 
+   .nav-icon-btn {
+-    width: 42px;
+-    height: 42px;
++    width: 44px;
++    height: 44px;
+     border: 1px solid var(--color-border);
+   }
+ 
+@@ -1078,7 +1078,7 @@
+ 
+ .hero-story-time {
+   font-size: 0.75rem;
+-  color: var(--color-text-muted);
++  color: var(--color-text-secondary);
+ }
+ 
+ .hero-story-title {
+@@ -1250,9 +1250,9 @@
+   display: inline-flex;
+   align-items: center;
+   justify-content: center;
+-  width: 30px;
+-  height: 30px;
+-  border-radius: 7px;
++  width: 44px;
++  height: 44px;
++  border-radius: 8px;
+   border: 1px solid var(--color-border);
+   color: var(--color-text-secondary);
+   transition: color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out);
+@@ -1378,7 +1378,7 @@
+   font-family: var(--font-mono);
+   font-size: 0.66rem;
+   letter-spacing: 0.04em;
+-  color: var(--color-text-muted);
++  color: var(--color-text-secondary);
+   white-space: nowrap;
+ }
+ 
+@@ -1398,7 +1398,7 @@
+ .dev-card-foot {
+   margin-top: auto;
+   font-size: 0.72rem;
+-  color: var(--color-text-muted);
++  color: var(--color-text-secondary);
+ }
+ 
+ /* Live (flagship) cards in the strip */
+@@ -1514,6 +1514,7 @@
+   color: var(--color-text-secondary);
+   border: 1px solid var(--color-border);
+   border-radius: var(--radius-full);
++  min-height: 44px;
+   padding: 0.38rem 0.85rem;
+   transition: all var(--duration-fast) var(--ease-out);
+ }
+@@ -1607,7 +1608,7 @@
+   align-items: center;
+   gap: 0.6rem;
+   font-size: 0.75rem;
+-  color: var(--color-text-muted);
++  color: var(--color-text-secondary);
+ }
+ 
+ .card-meta .meta-sep { opacity: 0.5; }
+@@ -1758,7 +1759,7 @@
+   font-family: var(--font-mono);
+   font-size: 0.64rem;
+   letter-spacing: 0.03em;
+-  color: var(--color-text-muted);
++  color: var(--color-text-secondary);
+   white-space: nowrap;
+ }
+ 
+@@ -3384,8 +3385,8 @@
+   bottom: 1.4rem;
+   left: 1.4rem;
+   z-index: var(--z-elevated);
+-  width: 42px;
+-  height: 42px;
++  width: 44px;
++  height: 44px;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+--- a/v2/js/feed.js
++++ b/v2/js/feed.js
+@@ -312,7 +312,7 @@
+ 
+   return `
+     ${postMedia(post)}
+-    <a class="hero-story-link" href="${esc(articleUrl(post))}" aria-label="${esc(title)}">
++    <a class="hero-story-link" href="${esc(articleUrl(post))}">
+       <div class="hero-story-body">
+         <div class="hero-story-top">
+           <span class="badge ${smart ? smart.cls : 'badge-accent'}">${esc(smart ? smart.label : 'Latest')}</span>
+@@ -366,7 +366,7 @@
+   const hasMedia = !!thumb;
+ 
+   return `
+-    <a class="dev-card${hasMedia ? ' dev-card--has-media' : ''}" style="--i:${i}" href="${esc(articleUrl(post))}" aria-label="${esc(title)}">
++    <a class="dev-card${hasMedia ? ' dev-card--has-media' : ''}" style="--i:${i}" href="${esc(articleUrl(post))}">
+       ${thumb}
+       <div class="dev-card-body">
+         <div class="dev-card-top">
+@@ -389,7 +389,7 @@
+   return `
+     <article class="lead-card feed-in">
+       ${postMedia(post)}
+-      <a class="lead-link" href="${esc(articleUrl(post))}" aria-label="${esc(title)}">
++      <a class="lead-link" href="${esc(articleUrl(post))}">
+         <div class="lead-body">
+           <div class="lead-top">
+             ${smart ? `<span class="badge ${smart.cls}">${esc(smart.label)}</span>` : ''}
+@@ -409,7 +409,7 @@
+   return `
+     <article class="story-cell feed-in" style="--i:${i}">
+       ${postMedia(post)}
+-      <a class="story-cell-link" href="${esc(articleUrl(post))}" aria-label="${esc(title)}">
++      <a class="story-cell-link" href="${esc(articleUrl(post))}">
+         <div class="story-cell-top">
+           ${smart ? `<span class="badge ${smart.cls}">${esc(smart.label)}</span>` : ''}
+         </div>
+@@ -428,7 +428,7 @@
+   if (smart && smart.cls === 'badge-warning') catCls += ' wire-cat--warning';
+ 
+   return `
+-    <a href="${esc(articleUrl(post))}" class="wire-item feed-in" style="--i:${Math.min(i, 10)}" aria-label="${esc(title)}">
++    <a href="${esc(articleUrl(post))}" class="wire-item feed-in" style="--i:${Math.min(i, 10)}">
+       <span class="wire-time">${time ? esc(time) : '&middot;'}</span>
+       <span class="wire-body">
+         <span class="wire-headline">${esc(title)}</span>
+--- a/v2/js/live-rail.js
++++ b/v2/js/live-rail.js
+@@ -68,7 +68,7 @@
+     if (followers) metaBits.push(esc(String(followers)) + ' following');
+ 
+     return (
+-      '<a class="hero-story-link" href="/story/' + esc(story.slug) + '" aria-label="' + esc(story.title) + '">' +
++      '<a class="hero-story-link" href="/story/' + esc(story.slug) + '">' +
+         '<div class="hero-story-body">' +
+           '<div class="hero-story-top">' +
+             statusBadge(status) +
+@@ -90,7 +90,7 @@
+     var followers = story.follower_count || 0;
+ 
+     return (
+-      '<a class="dev-card dev-card--live" style="--i:' + i + '" href="/story/' + esc(story.slug) + '" aria-label="' + esc(story.title) + '">' +
++      '<a class="dev-card dev-card--live" style="--i:' + i + '" href="/story/' + esc(story.slug) + '">' +
+         '<div class="dev-card-top">' +
+           statusBadge(status) +
+           (updated ? '<span class="dev-card-time">' + esc(updated) + '</span>' : '') +
+--- a/v2/index.html
++++ b/v2/index.html
+@@ -89,7 +89,7 @@
+   <header class="site-header" id="site-header">
+     <nav class="nav-row container-wide" aria-label="Primary">
+       <a class="brand" href="/">
+-        <img class="brand-mark" src="/IMG_5794.PNG" alt="" width="26" height="26">
++        <img class="brand-mark" src="/favicon-192x192.png" alt="" width="26" height="26">
+         <span class="brand-name">Noteworthy News</span>
+       </a>
+ 
+@@ -350,7 +350,7 @@
+         <div class="ai-stage" data-reveal="stage" aria-hidden="true">
+           <div class="ai-panel">
+             <div class="ai-panel-head">
+-              <img src="/IMG_5794.PNG" alt="" width="18" height="18">
++              <img src="/favicon-192x192.png" alt="" width="18" height="18">
+               <span class="ai-panel-name">Noteworthy News AI</span>
+               <span class="ai-panel-tag">on this site</span>
+             </div>
+@@ -510,7 +510,7 @@
+                   <div class="stage-cards">
+                     <div class="stage-card stage-card-la">
+                       <div class="stage-card-head">
+-                        <img src="/IMG_5794.PNG" alt="" width="20" height="20">
++                        <img src="/favicon-192x192.png" alt="" width="20" height="20">
+                         <span>Noteworthy News</span>
+                         <span class="stage-live">LIVE</span>
+                       </div>
+@@ -532,7 +532,7 @@
+ 
+                     <div class="stage-card">
+                       <div class="stage-card-head">
+-                        <img src="/IMG_5794.PNG" alt="" width="20" height="20">
++                        <img src="/favicon-192x192.png" alt="" width="20" height="20">
+                         <span>Noteworthy News</span>
+                         <span class="stage-when">9m ago</span>
+                       </div>
+@@ -701,7 +701,7 @@
+             </div>
+             <div class="mail-body">
+               <div class="mail-brand">
+-                <img src="/IMG_5794.PNG" alt="" width="24" height="24">
++                <img src="/favicon-192x192.png" alt="" width="24" height="24">
+                 <div>
+                   <p class="mail-brand-name">Noteworthy News</p>
+                   <p class="mail-brand-tag">The Weekly Brief</p>
+@@ -759,7 +759,7 @@
+       <div class="footer-grid" data-reveal>
+         <div class="footer-brand">
+           <a class="brand" href="/">
+-            <img class="brand-mark" src="/IMG_5794.PNG" alt="" width="24" height="24">
++            <img class="brand-mark" src="/favicon-192x192.png" alt="" width="24" height="24">
+             <span class="brand-name">Noteworthy News</span>
+           </a>
+           <p class="footer-tag">Independent newsroom. No paywall. Corrections in public.</p>
+@@ -822,84 +822,113 @@
+   <script type="module" src="/v2/js/main.js"></script>
+   <script src="/v2/js/live-rail.js" defer></script>
+ 
+-  <!-- Noteworthy News AI chat (same widget as legacy homepage) -->
+-  <script src="/src/widgets/voice-audio-engine.js"></script>
+-  <script src="/src/widgets/noteworthy-chat.js" defer onerror="console.error('Failed to load noteworthy-chat.js')"></script>
++  <!-- Noteworthy News AI chat: preserve the existing widget, but keep its
++       400KB+ bundle off the critical rendering path. -->
+   <script>
+     (function () {
+-      let initAttempts = 0;
+-      const maxAttempts = 10;
+-      let initialized = false;
++      var initialized = false;
++      var initPromise = null;
++      var scriptsPromise = null;
++      var widgetTag = 'noteworthy-chat-widget';
++
++      function loadScript(src) {
++        return new Promise(function (resolve, reject) {
++          var existing = document.querySelector('script[data-chat-src="' + src + '"]');
++          if (existing) {
++            if (existing.dataset.loaded === 'true') resolve();
++            else {
++              existing.addEventListener('load', resolve, { once: true });
++              existing.addEventListener('error', reject, { once: true });
++            }
++            return;
++          }
+ 
+-      function initChat() {
+-        if (initialized) return;
+-        initAttempts++;
++          var script = document.createElement('script');
++          script.src = src;
++          script.defer = true;
++          script.dataset.chatSrc = src;
++          script.addEventListener('load', function () {
++            script.dataset.loaded = 'true';
++            resolve();
++          }, { once: true });
++          script.addEventListener('error', function () {
++            reject(new Error('Failed to load ' + src));
++          }, { once: true });
++          document.head.appendChild(script);
++        });
++      }
+ 
+-        if (!customElements.get('noteworthy-chat-widget')) {
+-          if (initAttempts < maxAttempts) {
+-            setTimeout(initChat, 200);
+-          } else {
+-            const script = document.createElement('script');
+-            script.src = '/src/widgets/noteworthy-chat.js';
+-            script.defer = true;
+-            script.onload = function () { setTimeout(initChat, 100); };
+-            script.onerror = function () {
+-              console.error('[V2 Chat] Failed to reload noteworthy-chat.js');
+-            };
+-            document.head.appendChild(script);
+-          }
+-          return;
++      function ensureChatScripts() {
++        if (customElements.get(widgetTag)) return Promise.resolve();
++        if (!scriptsPromise) {
++          scriptsPromise = loadScript('/src/widgets/voice-audio-engine.js')
++            .then(function () { return loadScript('/src/widgets/noteworthy-chat.js'); })
++            .then(function () { return customElements.whenDefined(widgetTag); });
+         }
++        return scriptsPromise;
++      }
++
++      function initChat() {
++        if (initialized) return Promise.resolve(document.querySelector(widgetTag));
++        if (initPromise) return initPromise;
+ 
+-        try {
+-          if (document.querySelector('noteworthy-chat-widget')) {
++        initPromise = ensureChatScripts().then(function () {
++          var existing = document.querySelector(widgetTag);
++          if (existing) {
+             initialized = true;
+-            return;
++            return existing;
+           }
+-          const el = document.createElement('noteworthy-chat-widget');
++
++          var el = document.createElement(widgetTag);
+           el.setAttribute('data-endpoint', '/.netlify/functions/noteworthy-chat');
+           el.setAttribute('data-open', 'false');
+           el.setAttribute('data-brand-title', 'Noteworthy News AI');
+-          el.setAttribute('data-logo', '/IMG_5794.PNG');
++          el.setAttribute('data-logo', '/favicon-192x192.png');
+           document.body.appendChild(el);
+           initialized = true;
+-        } catch (err) {
++          return el;
++        }).catch(function (err) {
++          initPromise = null;
+           console.error('[V2 Chat] Init error:', err);
+-        }
++          return null;
++        });
++
++        return initPromise;
+       }
+ 
+-      if (document.readyState === 'loading') {
+-        document.addEventListener('DOMContentLoaded', function () {
+-          setTimeout(initChat, 1000);
+-        });
+-      } else {
+-        setTimeout(initChat, 1000);
++      function scheduleIdleLoad() {
++        if ('requestIdleCallback' in window) {
++          window.requestIdleCallback(function () { initChat(); }, { timeout: 12000 });
++        } else {
++          setTimeout(function () { initChat(); }, 8000);
+       }
+ 
+-      var onFirstInteraction = function () {
+-        if (!initialized) initChat();
+-        document.removeEventListener('click', onFirstInteraction);
+-        document.removeEventListener('scroll', onFirstInteraction, { passive: true });
++      if (document.readyState === 'complete') scheduleIdleLoad();
++      else window.addEventListener('load', scheduleIdleLoad, { once: true });
++
++      var intentEvents = ['pointerdown', 'keydown', 'touchstart', 'scroll'];
++      var onFirstIntent = function () {
++        initChat();
++        intentEvents.forEach(function (type) {
++          document.removeEventListener(type, onFirstIntent);
++        });
+       };
+-      document.addEventListener('click', onFirstInteraction);
+-      document.addEventListener('scroll', onFirstInteraction, { passive: true });
++      intentEvents.forEach(function (type) {
++        document.addEventListener(type, onFirstIntent, { passive: true });
++      });
+ 
+-      // "Ask Noteworthy AI" buttons open the chat widget.
+-      document.addEventListener('click', function (e) {
+-        var trigger = e.target.closest('[data-open-chat]');
++      // "Ask Noteworthy AI" buttons load and open the existing widget.
++      document.addEventListener('click', function (event) {
++        var trigger = event.target.closest('[data-open-chat]');
+         if (!trigger) return;
+-        e.preventDefault();
+-        if (!initialized) initChat();
+-        var tryOpen = function (attempt) {
+-          var widget = document.querySelector('noteworthy-chat-widget');
+-          var launcher = widget && widget.shadowRoot && widget.shadowRoot.querySelector('.launcher');
+-          if (launcher) {
+-            if (launcher.getAttribute('aria-expanded') !== 'true') launcher.click();
+-          } else if (attempt < 8) {
+-            setTimeout(function () { tryOpen(attempt + 1); }, 250);
+-          }
+-        };
+-        tryOpen(0);
++        event.preventDefault();
++
++        initChat().then(function (widget) {
++          if (!widget || !widget.shadowRoot) return;
++          var launcher = widget.shadowRoot.querySelector('.launcher');
++          if (launcher && launcher.getAttribute('aria-expanded') !== 'true') launcher.click();
++        });
+       });
+     })();
+   </script>
