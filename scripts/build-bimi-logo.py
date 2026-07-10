@@ -33,17 +33,22 @@ FONT = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf")
 SIZE = 96
 CAP_HEIGHT_UNITS = 1493  # DejaVu Sans Bold capital height in font units
 CAP_PX = 27.0
-BASELINE_Y = 58.0
+N_BASELINE_Y = 58.0
+W_DROP = 2.5      # W sits slightly below the N's baseline, like the original
+BLOCK_DX = -2.0   # shift the whole NW block left to center it on the globe
 
 # Measured from the original 96px logo:
-W_LEFT = 42.5    # W bbox left edge — slices over the N's right stem at top
+W_LEFT = 42.5 + BLOCK_DX  # W bbox left — slices over the N's right stem
 
 # Heavy N polygon, measured row-by-row from the original (all x/y in the
-# 96px grid): stem x24-31, diagonal 8px thick from top (24-32) to the
-# right stem's foot, right stem x40-47.5, cap top y31.5, baseline y58.
+# 96px grid before BLOCK_DX): stem x24-31, diagonal 8px thick from top
+# (24-32) to the right stem's foot, right stem x40-47.5, cap y31.5-58.
+N_POINTS = [
+    (24, 31.5), (32, 31.5), (40, 45.3), (40, 31.5), (47.5, 31.5),
+    (47.5, 58), (40, 58), (31, 43.6), (31, 58), (24, 58),
+]
 N_PATH = (
-    "M24 31.5 L32 31.5 L40 45.3 L40 31.5 L47.5 31.5 "
-    "L47.5 58 L40 58 L31 43.6 L31 58 L24 58 Z"
+    "M" + " L".join(f"{x + BLOCK_DX:g} {y:g}" for x, y in N_POINTS) + " Z"
 )
 
 
@@ -57,7 +62,7 @@ def main() -> None:
 
     svg_pen = SVGPathPen(glyph_set)
     dx = W_LEFT - w_xmin * yscale
-    t = Transform().translate(dx, BASELINE_Y).scale(yscale, -yscale)
+    t = Transform().translate(dx, N_BASELINE_Y + W_DROP).scale(yscale, -yscale)
     glyph_set["W"].draw(TransformPen(svg_pen, t))
     w_path = svg_pen.getCommands()
     n_path = N_PATH
