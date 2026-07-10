@@ -1823,7 +1823,6 @@ export class NoteworthyChat extends HTMLElement {
         });
         
         // Create session with backend
-        const endpoint = this.getAttribute('data-endpoint') || '/.netlify/functions/noteworthy-chat';
         const realtimeEndpoint = endpoint.replace('/noteworthy-chat', '/realtime-voice');
         
         // Retry logic for fetching ephemeral token (handles intermittent failures)

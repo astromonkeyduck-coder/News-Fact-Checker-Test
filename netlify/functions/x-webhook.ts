@@ -88,9 +88,7 @@ async function handleWebhookEvent(body: any): Promise<{ status: string; processe
         await notifyXPostLiveActivity({
           post: {
             id: tweetId,
-            slug: card.slug,
             title: card.title,
-            text: card.text || card.story,
             story: card.story,
           },
           logger: console,

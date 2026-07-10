@@ -172,7 +172,7 @@ function parseAbbreviatedNumber(str: string): number | null {
 export interface EnhancedTweetData {
   images: string[];
   videos: string[];
-  datePosted: string; // ISO string
+  datePosted?: string; // ISO string when Snowflake extraction succeeds
   views?: number;
   likes?: number;
   reposts?: number;
