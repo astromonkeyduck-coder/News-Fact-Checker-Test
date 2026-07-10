@@ -3,14 +3,15 @@
   <title>Noteworthy News</title>
   <rect width="96" height="96" fill="#000000"/>
   <defs>
-    <radialGradient id="globe" gradientUnits="userSpaceOnUse" cx="38" cy="33" r="62">
-      <stop offset="0" stop-color="#87BCE9"/>
-      <stop offset="0.33" stop-color="#3B76BA"/>
-      <stop offset="0.7" stop-color="#1D4585"/>
-      <stop offset="1" stop-color="#0D2450"/>
+    <radialGradient id="globe" gradientUnits="userSpaceOnUse" cx="37" cy="31" r="66">
+      <stop offset="0" stop-color="#9CC8F0"/>
+      <stop offset="0.22" stop-color="#5D95D2"/>
+      <stop offset="0.5" stop-color="#2E67AE"/>
+      <stop offset="0.78" stop-color="#1A4489"/>
+      <stop offset="1" stop-color="#0B2148"/>
     </radialGradient>
   </defs>
   <circle cx="48" cy="48" r="36" fill="url(#globe)"/>
-  <path fill="#FFFFFF" d="M22 31.5 L30 31.5 L38 45.3 L38 31.5 L45.5 31.5 L45.5 58 L38 58 L29 43.6 L29 58 L22 58 Z"/>
-  <path fill="#0B0B0B" d="M40.5 33.5H47.173141326188876L51.838914936369726 53.12156731413262L56.46851975887475 33.5H63.17782987273945L67.80743469524447 53.12156731413262L72.47320830542532 33.5H79.09209645010047L72.72638981915605 60.5H64.6969189551239L59.79604822505023 39.97421299397187L54.94943067649029 60.5H46.91995981245814Z"/>
+  <path fill="#FFFFFF" d="M22.0 31.5 L30.0 31.5 L38.0 45.2 L38.0 31.5 L45.5 31.5 L45.5 58.0 L38.0 58.0 L29.5 44.3 L29.5 58.0 L22.0 58.0 Z"/>
+  <path fill="#0B0B0B" d="M41.5 33.0 L47.7 33.0 L53.3 61.0 L47.1 61.0 Z M53.0 33.0 L59.2 33.0 L53.6 61.0 L47.4 61.0 Z M53.0 33.0 L59.2 33.0 L64.8 61.0 L58.6 61.0 Z M66.8 33.0 L73.0 33.0 L67.4 61.0 L61.2 61.0 Z"/>
 </svg>
