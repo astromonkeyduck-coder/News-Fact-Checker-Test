@@ -1,14 +1,15 @@
 /**
  * X Post → Live Activity (remote push-to-start)
  *
- * When a new Noteworthy X post lands (webhook / import / manual fetch), remote-
- * start a Live Activity on every paired iOS device that has a push-to-start
- * token (iOS 17.2+). Each post gets its own short-lived activity; any still-
- * running activity from a prior X post is ended first so users don't stack
- * dozens of Lock Screen cards.
+ * Opt-in helper for manually triggering a Live Activity from a post. Ingestion
+ * paths (x-webhook, xImportService) no longer call this automatically — live
+ * stories are created only from the admin Live Stories panel.
+ *
+ * Set X_LIVE_ACTIVITY_ENABLED=true and invoke notifyXPostLiveActivity explicitly
+ * when you want to remote-start a Live Activity on paired iOS devices (iOS 17.2+).
  *
  * Requires the same APNS_* env vars as liveActivityNotify. Fail-soft: never
- * blocks ingestion. Tap opens the native article via attributes.contentPostId
+ * blocks callers. Tap opens the native article via attributes.contentPostId
  * (noteworthylive://post/<id>).
  */
 

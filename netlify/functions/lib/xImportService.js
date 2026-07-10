@@ -335,23 +335,6 @@ async function importLatestPosts(opts) {
 
         result.imported_count++;
         console.log(`[xImport] Imported ${tweet.id} → "${title.slice(0, 60)}"`);
-
-        // Remote-start a Live Activity on paired iOS devices (fail-soft).
-        try {
-          const { notifyXPostLiveActivity } = require("./xPostLiveActivityNotify");
-          await notifyXPostLiveActivity({
-            post: {
-              id: tweet.id,
-              slug,
-              title,
-              text: tweet.text,
-              story: card.story || card.text,
-            },
-            logger: console,
-          });
-        } catch (laErr) {
-          console.warn(`[xImport] Live Activity dispatch skipped for ${tweet.id}:`, laErr.message);
-        }
       } catch (err) {
         result.failed_count++;
         result.errors.push(`Tweet ${tweet.id}: ${err.message}`);
