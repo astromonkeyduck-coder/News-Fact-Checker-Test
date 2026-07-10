@@ -1,0 +1,284 @@
+name: Finalize production audit
+
+on:
+  push:
+    branches:
+      - audit/production-hardening-2026-07-10
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-audit-hardening
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out latest audit branch
+        uses: actions/checkout@v4
+        with:
+          ref: audit/production-hardening-2026-07-10
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install locked dependencies
+        id: install
+        shell: bash
+        run: |
+          set +e
+          mkdir -p audit
+          npm ci --ignore-scripts > audit/npm-ci.log 2>&1
+          status=$?
+          echo "GATE_NPM_CI=$status" >> "$GITHUB_ENV"
+          cat audit/npm-ci.log
+          exit 0
+
+      - name: Apply or confirm audited hardening
+        shell: bash
+        run: |
+          set +e
+          if [ "${GATE_NPM_CI:-1}" -eq 0 ]; then
+            node scripts/production-audit/apply-hardening-recovery.js > audit/hardening-apply.log 2>&1
+            status=$?
+          else
+            status=1
+          fi
+          echo "GATE_HARDENING_APPLY=$status" >> "$GITHUB_ENV"
+          cat audit/hardening-apply.log 2>/dev/null || true
+          exit 0
+
+      - name: Run production dependency audit
+        shell: bash
+        run: |
+          set +e
+          if [ "${GATE_NPM_CI:-1}" -eq 0 ]; then
+            npm audit --omit=dev --audit-level=high --json > audit/npm-audit.json 2> audit/npm-audit.stderr
+            status=$?
+          else
+            status=1
+          fi
+          echo "GATE_NPM_AUDIT=$status" >> "$GITHUB_ENV"
+          cat audit/npm-audit.stderr 2>/dev/null || true
+          exit 0
+
+      - name: Run production build
+        shell: bash
+        run: |
+          set +e
+          if [ "${GATE_NPM_CI:-1}" -eq 0 ]; then
+            npm run build > audit/build.log 2>&1
+            status=$?
+          else
+            status=1
+          fi
+          echo "GATE_BUILD=$status" >> "$GITHUB_ENV"
+          cat audit/build.log 2>/dev/null || true
+          exit 0
+
+      - name: Run TypeScript check
+        shell: bash
+        run: |
+          set +e
+          if [ "${GATE_NPM_CI:-1}" -eq 0 ]; then
+            npx tsc --noEmit > audit/typecheck.log 2>&1
+            status=$?
+          else
+            status=1
+          fi
+          echo "GATE_TYPECHECK=$status" >> "$GITHUB_ENV"
+          cat audit/typecheck.log 2>/dev/null || true
+          exit 0
+
+      - name: Run focused hardening tests
+        shell: bash
+        run: |
+          set +e
+          if [ "${GATE_NPM_CI:-1}" -eq 0 ]; then
+            node --test scripts/production-audit/hardening.test.js > audit/hardening-tests.log 2>&1
+            status=$?
+          else
+            status=1
+          fi
+          echo "GATE_HARDENING_TESTS=$status" >> "$GITHUB_ENV"
+          cat audit/hardening-tests.log 2>/dev/null || true
+          exit 0
+
+      - name: Run existing repository checks
+        shell: bash
+        run: |
+          set +e
+          status=0
+          if [ "${GATE_NPM_CI:-1}" -eq 0 ]; then
+            shopt -s nullglob
+            checks=(scripts/check-*.js)
+            if [ "${#checks[@]}" -gt 0 ]; then
+              for check in "${checks[@]}"; do
+                node "$check" >> audit/repository-checks.log 2>&1 || status=$?
+              done
+            elif npm run | grep -qE '^  test'; then
+              npm test -- --runInBand >> audit/repository-checks.log 2>&1 || status=$?
+            fi
+          else
+            status=1
+          fi
+          echo "GATE_REPOSITORY_CHECKS=$status" >> "$GITHUB_ENV"
+          cat audit/repository-checks.log 2>/dev/null || true
+          exit 0
+
+      - name: Inventory and static security audit
+        shell: bash
+        run: |
+          set +e
+          status=0
+          node scripts/production-audit/inventory.js > audit/inventory-command.log 2>&1 || status=$?
+          node scripts/production-audit/security-audit.js > audit/security-command.log 2>&1 || status=$?
+          echo "GATE_SECURITY_AUDIT=$status" >> "$GITHUB_ENV"
+          cat audit/inventory-command.log audit/security-command.log 2>/dev/null || true
+          exit 0
+
+      - name: Install browser audit tooling
+        shell: bash
+        run: |
+          set +e
+          status=0
+          if [ "${GATE_NPM_CI:-1}" -eq 0 ]; then
+            npm install --no-save --package-lock=false axe-core@4.10.3 >> audit/browser-install.log 2>&1 || status=$?
+            npx playwright install --with-deps chromium >> audit/browser-install.log 2>&1 || status=$?
+          else
+            status=1
+          fi
+          echo "BROWSER_TOOLING_STATUS=$status" >> "$GITHUB_ENV"
+          cat audit/browser-install.log 2>/dev/null || true
+          exit 0
+
+      - name: Run mobile and desktop browser audit
+        shell: bash
+        run: |
+          set +e
+          status=0
+          if [ "${BROWSER_TOOLING_STATUS:-1}" -eq 0 ] && [ "${GATE_BUILD:-1}" -eq 0 ]; then
+            serve_dir="."
+            if [ -d "_site" ]; then serve_dir="_site"; fi
+            python3 -m http.server 4173 --bind 127.0.0.1 --directory "$serve_dir" > audit/static-server.log 2>&1 &
+            server_pid=$!
+            echo "$server_pid" > audit/static-server.pid
+            sleep 3
+            AUDIT_BASE_URL="http://127.0.0.1:4173/v2/index.html" \
+              BASE_URL="http://127.0.0.1:4173/v2/index.html" \
+              node scripts/production-audit/browser-audit.js > audit/browser-command.log 2>&1 || status=$?
+          else
+            status=1
+          fi
+          echo "GATE_BROWSER_AUDIT=$status" >> "$GITHUB_ENV"
+          cat audit/browser-command.log audit/static-server.log 2>/dev/null || true
+          exit 0
+
+      - name: Run mobile Lighthouse
+        shell: bash
+        run: |
+          set +e
+          status=0
+          if [ "${BROWSER_TOOLING_STATUS:-1}" -eq 0 ] && [ -f audit/static-server.pid ]; then
+            npx --yes lighthouse@12.5.1 "http://127.0.0.1:4173/v2/index.html" \
+              --quiet \
+              --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
+              --output=json \
+              --output-path=audit/lighthouse-mobile.json > audit/lighthouse-mobile.log 2>&1 || status=$?
+          else
+            status=1
+          fi
+          echo "GATE_LIGHTHOUSE_MOBILE=$status" >> "$GITHUB_ENV"
+          cat audit/lighthouse-mobile.log 2>/dev/null || true
+          exit 0
+
+      - name: Run desktop Lighthouse
+        shell: bash
+        run: |
+          set +e
+          status=0
+          if [ "${BROWSER_TOOLING_STATUS:-1}" -eq 0 ] && [ -f audit/static-server.pid ]; then
+            npx --yes lighthouse@12.5.1 "http://127.0.0.1:4173/v2/index.html" \
+              --quiet \
+              --preset=desktop \
+              --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
+              --output=json \
+              --output-path=audit/lighthouse-desktop.json > audit/lighthouse-desktop.log 2>&1 || status=$?
+          else
+            status=1
+          fi
+          echo "GATE_LIGHTHOUSE_DESKTOP=$status" >> "$GITHUB_ENV"
+          cat audit/lighthouse-desktop.log 2>/dev/null || true
+          if [ -f audit/static-server.pid ]; then kill "$(cat audit/static-server.pid)" 2>/dev/null || true; fi
+          exit 0
+
+      - name: Generate evidence report
+        id: report
+        shell: bash
+        run: |
+          set +e
+          node scripts/production-audit/generate-final-report.js > audit/final-report.log 2>&1
+          status=$?
+          echo "REPORT_STATUS=$status" >> "$GITHUB_ENV"
+          cat audit/final-report.log
+          exit 0
+
+      - name: Upload complete audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: noteworthy-production-audit
+          path: |
+            audit/
+            PRODUCTION_AUDIT.md
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Commit audit result and verified fixes
+        if: always()
+        shell: bash
+        env:
+          BRANCH_NAME: audit/production-hardening-2026-07-10
+        run: |
+          rm -f .github/workflows/apply-audit-hardening.yml
+          rm -f .github/workflows/recover-audit-hardening.yml
+          rm -f .github/workflows/finalize-production-audit.yml
+          git config user.name "noteworthy-audit[bot]"
+          git config user.email "noteworthy-audit[bot]@users.noreply.github.com"
+          git add \
+            .github/workflows/production-readiness.yml \
+            .github/workflows/apply-audit-hardening.yml \
+            .github/workflows/recover-audit-hardening.yml \
+            .github/workflows/finalize-production-audit.yml \
+            PRODUCTION_AUDIT.md \
+            admin/js/admin-auth.js \
+            netlify/functions/send-email.js \
+            netlify/functions/push-subscribe.js \
+            netlify/functions/follow-live-story.js \
+            netlify/functions/notification-preferences.js \
+            netlify.toml \
+            scripts/production-audit/apply-hardening.js \
+            scripts/production-audit/apply-hardening-runner.js \
+            scripts/production-audit/apply-hardening-recovery.js \
+            sw.js \
+            v2/index.html \
+            v2/js/main.js
+          git diff --cached --check
+          if ! git diff --cached --quiet; then
+            git commit -m "audit: record production-readiness evidence"
+            git push origin "HEAD:${BRANCH_NAME}"
+          fi
+
+      - name: Enforce final audit status
+        if: always()
+        shell: bash
+        run: exit "${REPORT_STATUS:-1}"
