@@ -1,0 +1,48 @@
+name: Publish audit PR summary
+
+on:
+  push:
+    branches:
+      - audit/production-hardening-2026-07-10
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: phase-two-hardening
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out latest audit branch
+        uses: actions/checkout@v4
+        with:
+          ref: audit/production-hardening-2026-07-10
+          fetch-depth: 0
+
+      - name: Generate source-backed pull request body
+        run: node scripts/production-audit/update-pr-summary.js /tmp/noteworthy-pr-body.md
+
+      - name: Update draft pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr edit 6 --repo "$GITHUB_REPOSITORY" --body-file /tmp/noteworthy-pr-body.md
+
+      - name: Remove one-time publisher
+        env:
+          BRANCH_NAME: audit/production-hardening-2026-07-10
+        run: |
+          rm -f .github/workflows/update-audit-pr-summary.yml
+          git config user.name "noteworthy-audit[bot]"
+          git config user.email "noteworthy-audit[bot]@users.noreply.github.com"
+          git add .github/workflows/update-audit-pr-summary.yml
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: remove one-time audit publisher"
+            git push origin "HEAD:${BRANCH_NAME}"
+          fi
