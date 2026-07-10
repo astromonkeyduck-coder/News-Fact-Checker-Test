@@ -1,0 +1,228 @@
+name: Production Readiness Audit
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-readiness-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: Build, security, accessibility, and runtime audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      AUTH0_DOMAIN: ci-placeholder.auth0.com
+      AUTH0_CLIENT_ID: ci-placeholder-client
+      AUTH0_AUDIENCE: https://noteworthynews.co/api
+      PUPPETEER_SKIP_DOWNLOAD: "true"
+      PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: "true"
+      CI: "true"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          lfs: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Inventory repository and capture text-source snapshot
+        shell: bash
+        run: node scripts/production-audit/inventory.js
+
+      - name: Install dependencies reproducibly
+        id: install
+        shell: bash
+        run: |
+          set +e
+          npm ci --ignore-scripts > audit-artifacts/npm-ci.log 2>&1
+          status=$?
+          echo "$status" > audit-artifacts/npm-ci.status
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          tail -n 160 audit-artifacts/npm-ci.log
+          exit 0
+
+      - name: Audit production dependency vulnerabilities
+        if: steps.install.outputs.status == '0'
+        shell: bash
+        run: |
+          set +e
+          npm audit --omit=dev --json > audit-artifacts/npm-audit.json 2> audit-artifacts/npm-audit.stderr
+          status=$?
+          echo "$status" > audit-artifacts/npm-audit.status
+          node <<'NODE'
+          const fs = require('fs');
+          try {
+            const report = JSON.parse(fs.readFileSync('audit-artifacts/npm-audit.json', 'utf8'));
+            const counts = report.metadata?.vulnerabilities || {};
+            const high = Object.entries(report.vulnerabilities || {})
+              .filter(([, value]) => ['high', 'critical'].includes(value.severity))
+              .map(([name, value]) => ({
+                name,
+                severity: value.severity,
+                direct: value.isDirect,
+                range: value.range,
+                fixAvailable: value.fixAvailable,
+              }));
+            console.log('Production dependency vulnerability counts:', counts);
+            console.log(JSON.stringify(high, null, 2));
+          } catch (error) {
+            console.error('Unable to parse npm audit report:', error.message);
+          }
+          NODE
+          exit 0
+
+      - name: Build deployable site
+        if: steps.install.outputs.status == '0'
+        id: build
+        shell: bash
+        run: |
+          set +e
+          npm run build > audit-artifacts/build.log 2>&1
+          status=$?
+          echo "$status" > audit-artifacts/build.status
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          tail -n 200 audit-artifacts/build.log
+          exit 0
+
+      - name: Type-check TypeScript
+        if: steps.install.outputs.status == '0'
+        id: typecheck
+        shell: bash
+        run: |
+          set +e
+          npx tsc --noEmit --pretty false > audit-artifacts/typecheck.log 2>&1
+          status=$?
+          echo "$status" > audit-artifacts/typecheck.status
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          tail -n 220 audit-artifacts/typecheck.log
+          exit 0
+
+      - name: Run existing repository checks
+        if: steps.install.outputs.status == '0'
+        shell: bash
+        run: |
+          set +e
+          : > audit-artifacts/repository-checks.log
+          for command in \
+            "npm run validate:games" \
+            "npm run audit:game" \
+            "npm run test:games -- --runInBand"; do
+            echo "===== $command =====" | tee -a audit-artifacts/repository-checks.log
+            bash -lc "$command" >> audit-artifacts/repository-checks.log 2>&1
+            echo "exit=$?" | tee -a audit-artifacts/repository-checks.log
+          done
+          tail -n 260 audit-artifacts/repository-checks.log
+          exit 0
+
+      - name: Analyze trust boundaries, auth, CORS, and secrets
+        if: always()
+        shell: bash
+        run: node scripts/production-audit/security-audit.js
+
+      - name: Audit homepage runtime, accessibility, and mobile behavior
+        if: steps.install.outputs.status == '0'
+        id: browser
+        shell: bash
+        run: |
+          set +e
+          CHROME_BIN="$(command -v google-chrome-stable || command -v google-chrome || command -v chromium || true)"
+          if [ -z "$CHROME_BIN" ]; then
+            echo "2" > audit-artifacts/browser-audit.status
+            echo "Chrome unavailable" > audit-artifacts/browser-audit.txt
+            echo "status=2" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          npm install --no-save --ignore-scripts axe-core@4.10.3 > audit-artifacts/browser-install.log 2>&1
+          install_status=$?
+          if [ "$install_status" != "0" ]; then
+            echo "$install_status" > audit-artifacts/browser-audit.status
+            echo "status=$install_status" >> "$GITHUB_OUTPUT"
+            tail -n 120 audit-artifacts/browser-install.log
+            exit 0
+          fi
+
+          python3 -m http.server 4173 --bind 127.0.0.1 > audit-artifacts/static-server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          sleep 2
+
+          CHROME_BIN="$CHROME_BIN" AUDIT_BASE_URL="http://127.0.0.1:4173" \
+            node scripts/production-audit/browser-audit.js > audit-artifacts/browser-audit.txt 2>&1
+          node_status=$?
+          status="$(cat audit-artifacts/browser-audit.status 2>/dev/null || echo "$node_status")"
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          tail -n 260 audit-artifacts/browser-audit.txt
+
+          npx --yes lighthouse@12.5.1 http://127.0.0.1:4173/v2/index.html \
+            --chrome-path="$CHROME_BIN" \
+            --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
+            --only-categories=performance,accessibility,best-practices,seo \
+            --output=json \
+            --output-path=audit-artifacts/lighthouse.json \
+            --quiet > audit-artifacts/lighthouse.log 2>&1
+          lighthouse_status=$?
+          echo "$lighthouse_status" > audit-artifacts/lighthouse.status
+          if [ -s audit-artifacts/lighthouse.json ]; then
+            node <<'NODE'
+            const report = require('./audit-artifacts/lighthouse.json');
+            const categories = Object.fromEntries(
+              Object.entries(report.categories || {}).map(([key, value]) => [key, Math.round((value.score || 0) * 100)])
+            );
+            const lowest = Object.values(report.audits || {})
+              .filter((audit) => audit.score !== null && audit.score < 0.9 && ['binary', 'numeric'].includes(audit.scoreDisplayMode))
+              .sort((a, b) => (a.score ?? 1) - (b.score ?? 1))
+              .slice(0, 30)
+              .map((audit) => ({ id: audit.id, title: audit.title, score: audit.score, displayValue: audit.displayValue }));
+            console.log('Lighthouse categories:', categories);
+            console.log('Lowest-scoring audits:', JSON.stringify(lowest, null, 2));
+            NODE
+          else
+            tail -n 120 audit-artifacts/lighthouse.log
+          fi
+          exit 0
+
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-readiness-audit
+          path: audit-artifacts
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Enforce reproducibility and browser gates
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          failed=0
+          for gate in npm-ci build typecheck browser-audit; do
+            file="audit-artifacts/${gate}.status"
+            if [ ! -f "$file" ]; then
+              echo "::error::$gate did not produce a status file"
+              failed=1
+              continue
+            fi
+            status="$(tr -d '[:space:]' < "$file")"
+            if [ "$status" != "0" ]; then
+              echo "::error::$gate failed with exit code $status"
+              failed=1
+            else
+              echo "$gate passed"
+            fi
+          done
+          exit "$failed"
