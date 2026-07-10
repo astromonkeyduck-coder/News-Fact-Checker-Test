@@ -1,0 +1,92 @@
+name: Recover audited hardening
+
+on:
+  push:
+    branches:
+      - audit/production-hardening-2026-07-10
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-audit-hardening
+  cancel-in-progress: false
+
+jobs:
+  recover:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out latest audit branch
+        uses: actions/checkout@v4
+        with:
+          ref: audit/production-hardening-2026-07-10
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Apply or confirm hardening
+        run: node scripts/production-audit/apply-hardening-recovery.js
+
+      - name: Run focused hardening tests
+        run: node --test scripts/production-audit/hardening.test.js
+
+      - name: Validate changed JavaScript syntax
+        run: |
+          node --check admin/js/admin-auth.js
+          node --check netlify/functions/send-email.js
+          node --check netlify/functions/push-subscribe.js
+          node --check netlify/functions/follow-live-story.js
+          node --check netlify/functions/notification-preferences.js
+          node --check sw.js
+          node --check v2/js/main.js
+
+      - name: Build production site
+        run: npm run build
+
+      - name: Type-check production source
+        run: npx tsc --noEmit
+
+      - name: Reject malformed diffs
+        run: git diff --check
+
+      - name: Commit verified recovery result
+        env:
+          BRANCH_NAME: audit/production-hardening-2026-07-10
+        run: |
+          rm -f .github/workflows/apply-audit-hardening.yml
+          rm -f .github/workflows/recover-audit-hardening.yml
+          git config user.name "noteworthy-audit[bot]"
+          git config user.email "noteworthy-audit[bot]@users.noreply.github.com"
+          git add \
+            .github/workflows/production-readiness.yml \
+            .github/workflows/apply-audit-hardening.yml \
+            .github/workflows/recover-audit-hardening.yml \
+            admin/js/admin-auth.js \
+            netlify/functions/send-email.js \
+            netlify/functions/push-subscribe.js \
+            netlify/functions/follow-live-story.js \
+            netlify/functions/notification-preferences.js \
+            netlify.toml \
+            scripts/production-audit/apply-hardening.js \
+            scripts/production-audit/apply-hardening-runner.js \
+            scripts/production-audit/apply-hardening-recovery.js \
+            sw.js \
+            v2/index.html \
+            v2/js/main.js
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo "Nothing to commit"
+            exit 0
+          fi
+          git commit -m "security: harden public flows and client trust boundaries"
+          git push origin "HEAD:${BRANCH_NAME}"
