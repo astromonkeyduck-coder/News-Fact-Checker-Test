@@ -18,6 +18,7 @@ yarn-error.log*
 
 # Build outputs
 dist/
+bimi/work/
 build/
 
 # IDE
