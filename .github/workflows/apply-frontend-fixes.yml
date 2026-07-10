@@ -1,0 +1,58 @@
+name: Apply measured homepage fixes
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.ref == 'audit/production-hardening-2026-07-10'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out audit branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 1
+          persist-credentials: true
+
+      - name: Apply verified patch and remove one-shot machinery
+        shell: bash
+        run: |
+          set -euo pipefail
+          git apply --check scripts/production-audit/frontend-fixes.patch
+          git apply scripts/production-audit/frontend-fixes.patch
+          rm scripts/production-audit/frontend-fixes.patch
+          rm .github/workflows/apply-frontend-fixes.yml
+
+      - name: Validate changed JavaScript before commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check v2/js/feed.js
+          node --check v2/js/live-rail.js
+          python3 - <<'PY'
+          from pathlib import Path
+          source = Path('v2/index.html').read_text()
+          marker = '<!-- Noteworthy News AI chat:'
+          start = source.index(marker)
+          script_start = source.index('<script>', start) + len('<script>')
+          script_end = source.index('</script>', script_start)
+          Path('/tmp/noteworthy-chat-inline.js').write_text(source[script_start:script_end])
+          PY
+          node --check /tmp/noteworthy-chat-inline.js
+
+      - name: Commit and push
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "Noteworthy Production Audit"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -m "fix(home): improve accessibility and critical-path weight"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
