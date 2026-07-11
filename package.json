@@ -16,6 +16,7 @@
     "test:games": "jest --testPathPattern=GamesGallery.test.js",
     "validate:games": "node scripts/validate-game-embeds.js",
     "bimi:validate": "node scripts/validate-bimi-svg.js",
+    "bimi:build": "python3 scripts/build-bimi-logo.py",
     "bimi:audit": "node scripts/bimi-dns-audit.js",
     "audit:game": "node scripts/security-audit-game.js",
     "add:game": "node scripts/safe-add-game.js",
