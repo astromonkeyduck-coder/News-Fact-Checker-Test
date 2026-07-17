@@ -22,6 +22,12 @@ function postIdForEvent(event) {
   return event.canonical_key.replace(/[^a-zA-Z0-9]+/g, '-');
 }
 
+function truncate(value, max) {
+  if (value == null) return null;
+  const s = String(value);
+  return s.length <= max ? s : `${s.slice(0, max - 1)}…`;
+}
+
 function eventTypeForEvent(event) {
   return event.event_kind === 'outbreak' ? 'food_outbreak' : 'food_recall';
 }

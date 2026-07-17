@@ -42,7 +42,13 @@
     "clip:review:cli": "node scripts/clip-pipeline/review-job.js",
     "clip:upload": "node scripts/clip-pipeline/x-upload.js",
     "clip:retract": "node scripts/clip-pipeline/x-retract.js",
-    "test:clip-pipeline": "node scripts/clip-pipeline/run-manual-tests.js"
+    "test:clip-pipeline": "node scripts/clip-pipeline/run-manual-tests.js",
+    "fda:test": "node --test tests/food-safety/*.test.js",
+    "fda:test:fixtures": "node --test tests/food-safety/parsers.test.js",
+    "fda:replay": "node scripts/food-safety/replay.js",
+    "fda:backfill": "node scripts/food-safety/backfill.js",
+    "fda:reconcile": "node scripts/food-safety/reconcile.js",
+    "fda:build-geometry": "node scripts/food-safety/build-us-states.js"
   },
   "dependencies": {
     "@auth0/auth0-spa-js": "^2.8.0",

@@ -74,7 +74,29 @@ function normalizeStateToken(token) {
     if (t !== t.toUpperCase()) return null;
     return t.toUpperCase();
   }
+  // Dotted abbreviations: "D.C." → DC (uppercase in source only)
+  const dotted = t.match(/^([A-Z])\.([A-Z])$/);
+  if (dotted) {
+    const abbr = `${dotted[1]}${dotted[2]}`;
+    if (VALID_ABBRS.has(abbr)) return abbr;
+  }
   return abbrFromStateName(t);
+}
+
+/**
+ * A list token may carry a prose prefix ("was distributed in California").
+ * Accept a full state name only when it terminates the token — an interior
+ * mention ("the FDA in Washington announced…") is never accepted.
+ */
+const NAME_AT_END_RE = new RegExp(
+  `\\b(${ALL.map(([, name]) => name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\s*\\.?$`,
+  'i',
+);
+
+function stateFromTokenEnd(token) {
+  const m = String(token || '').match(NAME_AT_END_RE);
+  if (!m) return null;
+  return abbrFromStateName(m[1]);
 }
 
 /**
@@ -99,7 +121,7 @@ function extractStateList(text) {
   const states = [];
   let unknown = 0;
   for (const token of tokens) {
-    const abbr = normalizeStateToken(token);
+    const abbr = normalizeStateToken(token) || stateFromTokenEnd(token);
     if (abbr) {
       if (!states.includes(abbr)) states.push(abbr);
     } else {

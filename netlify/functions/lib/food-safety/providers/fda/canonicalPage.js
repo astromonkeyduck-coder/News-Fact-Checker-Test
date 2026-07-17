@@ -276,8 +276,8 @@ function extractProductRows(text, { fallbackBrand = null, fallbackProduct = null
     if (/use.by/i.test(rest) && dates.length) row.use_by_date = dates.join(', ');
     else if (/best.by/i.test(rest) && dates.length) row.best_by_date = dates.join(', ');
     else if (/expir/i.test(rest) && dates.length) row.expiration_date = dates.join(', ');
-    const lot = rest.match(/\blot(?:\s*(?:code|number|#))?s?[:\s]+([A-Z0-9 ,/-]{2,60})/i);
-    if (lot) row.lot_code = lot[1].trim().replace(/[.,]$/, '');
+    const lot = extractLotCode(rest);
+    if (lot) row.lot_code = lot;
     rows.push(row);
   }
 
@@ -292,19 +292,33 @@ function extractProductRows(text, { fallbackBrand = null, fallbackProduct = null
   // Fallback: single product from summary fields + any UPC/lot in the text
   if (rows.length === 0 && fallbackProduct) {
     const upcs = extractUpcs(text);
-    const lot = text.match(/\blot(?:\s*(?:code|number|#))?s?[:\s]+([A-Z0-9 ,/-]{2,60})/i);
+    const lot = extractLotCode(text);
     const row = {
       product_name: fallbackProduct,
       brand: fallbackBrand || null,
       upc: upcs[0] || null,
       source_evidence: { text: 'derived from summary fields' },
     };
-    if (lot) row.lot_code = lot[1].trim().replace(/[.,]$/, '');
+    if (lot) row.lot_code = lot;
     if (upcs.length > 1) row.additional_codes = upcs.slice(1).map((u) => `UPC ${u}`);
     rows.push(row);
   }
 
   return rows;
+}
+
+/**
+ * Extract a lot code near a "Lot"/"Lot Code"/"Lot Number" label.
+ * A real code must contain a digit; prose like "lots of Product X" never
+ * qualifies as a lot code.
+ */
+function extractLotCode(text) {
+  if (!text) return null;
+  const m = text.match(/\blot(?:\s*(?:code|number|#))?s?[:\s]+([A-Z0-9][A-Z0-9 ,/-]{1,59})/i);
+  if (!m) return null;
+  const value = m[1].trim().replace(/[.,]$/, '').trim();
+  if (!/\d/.test(value)) return null;
+  return value;
 }
 
 /** Extract distribution info from the announcement narrative. */
