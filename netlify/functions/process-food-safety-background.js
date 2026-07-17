@@ -59,6 +59,25 @@ exports.handler = async (event) => {
     return { statusCode: 401, body: JSON.stringify({ error: 'unauthorized' }) };
   }
 
+  let requestBody = {};
+  try {
+    requestBody = JSON.parse(event.body || '{}');
+  } catch (_) { /* empty body is fine for normal runs */ }
+
+  if (Array.isArray(requestBody.publish_ids) && requestBody.publish_ids.length) {
+    const { publishEventIds } = require('./lib/food-safety/publishBatch');
+    const results = await publishEventIds(requestBody.publish_ids);
+    logger.info('Internal publish_ids complete', { results });
+    return { statusCode: 200, body: JSON.stringify({ ok: true, publish: results }) };
+  }
+
+  if (requestBody.publish_ready) {
+    const { publishReadyEvents } = require('./lib/food-safety/publishBatch');
+    const results = await publishReadyEvents();
+    logger.info('Internal publish_ready complete', { results });
+    return { statusCode: 200, body: JSON.stringify({ ok: true, publish: results }) };
+  }
+
   const { claimPendingDocuments } = require('./lib/food-safety/store');
   const { processSourceDocument } = require('./lib/food-safety/pipeline');
 
