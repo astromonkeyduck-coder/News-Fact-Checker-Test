@@ -1352,6 +1352,16 @@ body.v4 {
   object-position: 28% center;
 }
 
+/* FDA product packaging: never crop labels/UPCs; show full package */
+.dev-card-thumb--product {
+  background: #0d1119;
+}
+
+.dev-card-thumb--product img {
+  object-fit: contain;
+  padding: 3px;
+}
+
 .dev-card:hover .dev-card-thumb img {
   transform: scale(1.06);
 }

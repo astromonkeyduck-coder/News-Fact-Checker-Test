@@ -414,6 +414,10 @@
         const bodyElement = document.getElementById('article-body');
         if (!bodyElement) return null;
 
+        if (classification.isFoodSafety) {
+            loadFoodSafetyEnhancements(post, bodyElement);
+        }
+
         if (isEarthquake) {
             const earthquakeMagnitude = post.assets?.magnitude || post.magnitude;
             const enhancementsHTML = await generateEarthquakeEnhancements(post, earthquakeMagnitude);
@@ -908,6 +912,29 @@
         return icons[iconType] || '';
     }
     
+    /**
+     * Food Safety (FDA) articles: lazy-load the enhancement module which
+     * fetches the public detail endpoint and renders the action banner,
+     * verified metrics, product table, map, timeline, and source links.
+     * The deterministic story text already in the body is the fallback.
+     */
+    function loadFoodSafetyEnhancements(post, bodyElement) {
+        const run = () => {
+            if (window.FoodSafetyArticle && window.FoodSafetyArticle.enhance) {
+                window.FoodSafetyArticle.enhance(post, bodyElement);
+            }
+        };
+        if (window.FoodSafetyArticle) {
+            run();
+            return;
+        }
+        const script = document.createElement('script');
+        script.src = '/src/components/food-safety/food-safety-article.js';
+        script.onload = run;
+        script.onerror = () => console.warn('[ArticleLoader] Food Safety module failed to load');
+        document.head.appendChild(script);
+    }
+
     /**
      * Generate earthquake-specific enhancements (location details, nearby places, assessments, etc.)
      */
@@ -2096,6 +2123,10 @@
                         post.category === 'Earthquake' ||
                         post.event_type === 'earthquake' ||
                         post.source === 'USGS',
+                    isFoodSafety:
+                        post.category === 'Food Safety' ||
+                        post.event_type === 'food_recall' ||
+                        post.event_type === 'food_outbreak',
                     isVerifiedEvent: false,
                 };
 

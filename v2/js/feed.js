@@ -24,7 +24,46 @@ const WIRE_DISPLAY = 12;
 const ENGINE_CATEGORIES = new Set([
   'Earthquake', 'Weather Alert',
   'Maritime Alert', 'Airspace Alert', 'Travel Advisory',
+  'Food Safety',
 ]);
+
+// ── Food Safety (FDA) ────────────────────────────
+
+function isFoodSafetyPost(post) {
+  if (!post) return false;
+  if ((post.category || '') === 'Food Safety') return true;
+  const evt = (post.event_type || post.eventType || '').toLowerCase();
+  return evt === 'food_recall' || evt === 'food_outbreak';
+}
+
+/** Card kicker: FOOD RECALL / OUTBREAK / ALLERGEN ALERT, or UPDATE N. */
+function foodSafetyLabel(post) {
+  const fs = post.food_safety_summary || {};
+  if (fs.update_number > 0) {
+    return { label: `Update ${fs.update_number}`, cls: 'badge-accent' };
+  }
+  const kind = fs.event_kind || ((post.event_type || '') === 'food_outbreak' ? 'outbreak' : 'recall');
+  if (kind === 'outbreak') return { label: 'Outbreak', cls: 'badge-live' };
+  if (kind === 'allergen_alert' || fs.hazard_category === 'allergen') {
+    return { label: 'Allergen Alert', cls: 'badge-warning' };
+  }
+  if (kind === 'safety_alert') return { label: 'Safety Alert', cls: 'badge-warning' };
+  return { label: 'Food Recall', cls: 'badge-warning' };
+}
+
+/**
+ * Compact card footer built ONLY from official compact-summary fields:
+ * metrics (when reported), hazard, geography. Never invents values.
+ */
+function foodSafetyFoot(post) {
+  const fs = post.food_safety_summary || {};
+  const parts = [];
+  if (fs.metric_summary) parts.push(fs.metric_summary);
+  else if (fs.hazard_label) parts.push(fs.hazard_label);
+  if (fs.geography_label) parts.push(fs.geography_label);
+  if (parts.length < 2 && fs.public_action) parts.push(fs.public_action);
+  return parts.filter(Boolean).join(' · ');
+}
 
 function isVolcanoEnginePost(post) {
   if (!post) return false;
@@ -132,6 +171,7 @@ function isEarthquakePost(post) {
 
 function isGraphicMapImage(imageUrl, post) {
   if (!imageUrl) return false;
+  if (isFoodSafetyPost(post)) return false;
   const u = String(imageUrl).toLowerCase();
   if (u.includes('/assets/alerts/')) return false;
   if (u.includes('earthquake') || u.includes('get-uploaded-image') || u.includes('earthquake.usgs.gov')) {
@@ -255,6 +295,7 @@ function badgeClass(post) {
 }
 
 function getSmartLabel(post) {
+  if (isFoodSafetyPost(post)) return foodSafetyLabel(post);
   const text = (post.text || post.title || post.story || '').toUpperCase();
   if (text.startsWith('UPDATE:') || text.startsWith('UPDATE |')) return { label: 'Update', cls: 'badge-accent' };
   if (text.startsWith('DEVELOPING:') || text.startsWith('DEVELOPING |')) return { label: 'Developing', cls: 'badge-warning' };
@@ -345,8 +386,11 @@ function stripCardThumb(post) {
   const image = getPostImage(post);
   if (!image) return '';
   const graphic = isGraphicMapImage(image, post);
+  // Product packaging must stay fully visible (UPCs, labels): contain, not crop.
+  const product = isFoodSafetyPost(post);
+  const mods = `${graphic ? ' dev-card-thumb--map' : ''}${product ? ' dev-card-thumb--product' : ''}`;
   return `
-    <div class="dev-card-thumb${graphic ? ' dev-card-thumb--map' : ''}" aria-hidden="true">
+    <div class="dev-card-thumb${mods}" aria-hidden="true">
       <img src="${esc(image)}" alt="" loading="lazy" decoding="async">
     </div>`;
 }
@@ -360,13 +404,18 @@ function renderStripCard(post, i) {
   const location = post.location || post.location_display || '';
   // Skip location when the headline already carries it.
   const locBit = location && !title.toLowerCase().includes(location.toLowerCase()) ? location : '';
-  const foot = [magnitude ? `M${magnitude}` : '', locBit, source]
-    .filter(Boolean).join(' · ');
+  const foot = isFoodSafetyPost(post)
+    ? foodSafetyFoot(post)
+    : [magnitude ? `M${magnitude}` : '', locBit, source]
+      .filter(Boolean).join(' · ');
   const thumb = stripCardThumb(post);
   const hasMedia = !!thumb;
 
+  // Red metric treatment only for officially reported illnesses.
+  const urgent = isFoodSafetyPost(post) && (post.food_safety_summary?.illnesses ?? 0) > 0;
+
   return `
-    <a class="dev-card${hasMedia ? ' dev-card--has-media' : ''}" style="--i:${i}" href="${esc(articleUrl(post))}" aria-label="${esc(title)}">
+    <a class="dev-card${hasMedia ? ' dev-card--has-media' : ''}${urgent ? ' dev-card--live' : ''}" style="--i:${i}" href="${esc(articleUrl(post))}" aria-label="${esc(title)}">
       ${thumb}
       <div class="dev-card-body">
         <div class="dev-card-top">
@@ -538,7 +587,14 @@ export async function initFeed() {
     const alerts = visible.filter(p => isAlertPost(p));
 
     // Hero flagship: latest breaking story that carries real media.
-    const heroPost = breaking.find(hasMedia) || breaking[0] || alerts[0] || null;
+    // Food Safety posts never seize the hero automatically unless severity>=4
+    // with real media and a clear consumer action (deterministic rule).
+    const heroAlert = alerts.find(p => !isFoodSafetyPost(p))
+      || alerts.find(p => isFoodSafetyPost(p)
+        && (p.severity || 0) >= 4
+        && hasMedia(p)
+        && !!(p.food_safety_summary && p.food_safety_summary.public_action));
+    const heroPost = breaking.find(hasMedia) || breaking[0] || heroAlert || null;
     if (heroPost) {
       fillHeroCard(renderHeroStory(heroPost), isBreakingText(heroPost) ? 'breaking' : '');
     } else {

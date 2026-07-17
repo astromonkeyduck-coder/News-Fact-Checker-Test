@@ -1,0 +1,515 @@
+/**
+ * Food Safety article styles — dark editorial system, consistent with
+ * article-v4 tokens. Loaded only on Food Safety articles.
+ */
+
+/* ── Sections ─────────────────────────────────── */
+
+.fs-section {
+  margin: 2.2rem 0;
+  max-width: var(--nn-measure, 68ch);
+}
+
+.fs-section-title {
+  font-family: var(--font-heading, inherit);
+  font-size: 1.06rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--color-text, #f2f4f8);
+  margin: 0 0 0.7rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid var(--color-border-soft, rgba(255, 255, 255, 0.08));
+}
+
+.fs-section-src {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted, #8b93a3);
+  margin-left: 0.4rem;
+}
+
+.fs-section-sub {
+  font-size: 0.82rem;
+  color: var(--color-text-muted, #8b93a3);
+  margin: -0.3rem 0 0.8rem;
+}
+
+/* ── 1. Action banner ─────────────────────────── */
+
+.fs-banner {
+  margin: 0 0 1.6rem;
+  padding: 0.9rem 1.05rem;
+  background: var(--color-bg-panel, #10141d);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.12));
+  border-left: 3px solid #e5484d;
+  border-radius: 6px;
+}
+
+.fs-banner-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.74rem;
+}
+
+.fs-banner-kind {
+  font-family: var(--font-mono, monospace);
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  padding: 0.18rem 0.5rem;
+  border-radius: 3px;
+  background: rgba(229, 72, 77, 0.14);
+  border: 1px solid rgba(229, 72, 77, 0.36);
+  color: #ff8f92;
+}
+
+.fs-banner-kind--allergen_alert {
+  background: rgba(234, 179, 8, 0.12);
+  border-color: rgba(234, 179, 8, 0.32);
+  color: #e9c551;
+}
+
+.fs-banner-update,
+.fs-banner-status {
+  font-family: var(--font-mono, monospace);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.18rem 0.5rem;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--color-border-soft, rgba(255, 255, 255, 0.1));
+  color: var(--color-text-secondary, #c6cbd6);
+}
+
+.fs-banner-date {
+  margin-left: auto;
+  color: var(--color-text-muted, #8b93a3);
+}
+
+.fs-banner-action {
+  margin: 0.7rem 0 0;
+  font-family: var(--font-heading, inherit);
+  font-size: 1.02rem;
+  font-weight: 700;
+  letter-spacing: 0.015em;
+  text-transform: uppercase;
+  color: var(--color-white-pure, #fff);
+}
+
+/* ── 2. What changed ──────────────────────────── */
+
+.fs-changed {
+  padding: 0.9rem 1.05rem;
+  background: rgba(59, 130, 246, 0.05);
+  border: 1px solid rgba(59, 130, 246, 0.18);
+  border-radius: 6px;
+}
+
+.fs-changed .fs-section-title {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 0.25rem;
+  font-size: 0.92rem;
+}
+
+.fs-changed-list {
+  margin: 0.5rem 0 0;
+  padding-left: 1.1rem;
+  color: var(--color-text-secondary, #c6cbd6);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.fs-changed-list li { margin: 0.22rem 0; }
+
+/* ── 3. Metric cards ──────────────────────────── */
+
+.fs-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.6rem;
+}
+
+.fs-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+  padding: 0.75rem 0.85rem;
+  background: var(--color-bg-panel, #10141d);
+  border: 1px solid var(--color-border-soft, rgba(255, 255, 255, 0.08));
+  border-radius: 6px;
+}
+
+.fs-metric-value {
+  font-family: var(--font-heading, inherit);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--color-text, #f2f4f8);
+  line-height: 1.15;
+}
+
+.fs-metric--alert .fs-metric-value { color: #ff8f92; }
+
+.fs-metric-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-muted, #8b93a3);
+}
+
+.fs-metrics-note {
+  margin: 0.6rem 0 0;
+  font-size: 0.74rem;
+  color: var(--color-text-muted, #8b93a3);
+}
+
+/* ── 4. Products table ────────────────────────── */
+
+.fs-products-filter {
+  width: 100%;
+  margin: 0 0 0.7rem;
+  padding: 0.55rem 0.75rem;
+  font: inherit;
+  font-size: 0.88rem;
+  color: var(--color-text, #f2f4f8);
+  background: var(--color-bg-panel, #10141d);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.12));
+  border-radius: 5px;
+}
+
+.fs-products-filter:focus {
+  outline: 2px solid var(--color-accent, #3b82f6);
+  outline-offset: 1px;
+}
+
+.fs-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-border-soft, rgba(255, 255, 255, 0.08));
+  border-radius: 6px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.fs-table-wrap:focus-visible {
+  outline: 2px solid var(--color-accent, #3b82f6);
+}
+
+.fs-products-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+
+.fs-products-table th {
+  position: sticky;
+  top: 0;
+  text-align: left;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--color-text-muted, #8b93a3);
+  background: var(--color-bg-panel, #10141d);
+  padding: 0.55rem 0.7rem;
+  border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.12));
+  white-space: nowrap;
+}
+
+.fs-products-table td {
+  padding: 0.55rem 0.7rem;
+  border-bottom: 1px solid var(--color-border-soft, rgba(255, 255, 255, 0.07));
+  color: var(--color-text-secondary, #c6cbd6);
+  vertical-align: top;
+}
+
+.fs-products-table tbody tr:last-child td { border-bottom: none; }
+.fs-products-table tbody tr:hover td { background: rgba(255, 255, 255, 0.025); }
+
+.fs-cell-empty { color: var(--color-text-muted, #566); }
+
+/* Mobile: table rows become labeled cards, no horizontal squinting */
+@media (max-width: 640px) {
+  .fs-table-wrap { overflow-x: visible; border: none; }
+  .fs-products-table, .fs-products-table tbody { display: block; }
+  .fs-products-table thead { display: none; }
+  .fs-products-table tr {
+    display: block;
+    margin-bottom: 0.7rem;
+    padding: 0.65rem 0.8rem;
+    background: var(--color-bg-panel, #10141d);
+    border: 1px solid var(--color-border-soft, rgba(255, 255, 255, 0.08));
+    border-radius: 6px;
+  }
+  .fs-products-table td {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.8rem;
+    padding: 0.28rem 0;
+    border-bottom: none;
+    text-align: right;
+  }
+  .fs-products-table td::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-text-muted, #8b93a3);
+    text-align: left;
+    padding-top: 0.1rem;
+  }
+}
+
+/* ── 5. Map ───────────────────────────────────── */
+
+.fs-map-toggle {
+  display: inline-flex;
+  gap: 0;
+  margin-bottom: 0.8rem;
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.12));
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.fs-map-toggle-btn {
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.42rem 0.85rem;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted, #8b93a3);
+  cursor: pointer;
+  transition: background var(--duration-fast, 0.15s), color var(--duration-fast, 0.15s);
+}
+
+.fs-map-toggle-btn + .fs-map-toggle-btn {
+  border-left: 1px solid var(--color-border-soft, rgba(255, 255, 255, 0.08));
+}
+
+.fs-map-toggle-btn.is-active {
+  background: rgba(59, 130, 246, 0.14);
+  color: var(--color-text, #f2f4f8);
+}
+
+.fs-map-toggle-btn:focus-visible {
+  outline: 2px solid var(--color-accent, #3b82f6);
+  outline-offset: -2px;
+}
+
+.fs-map-container { min-height: 120px; }
+
+.fs-map-figure { margin: 0; }
+
+.fs-map-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 460px;
+}
+
+.fs-map-state {
+  fill: #1a2030;
+  stroke: #2a3245;
+  stroke-width: 0.75;
+  transition: fill var(--duration-fast, 0.15s);
+}
+
+.fs-map-state--active { fill: #b3312f; }
+.fs-map-state--level1 { fill: #7c2f31; }
+.fs-map-state--level2 { fill: #b3312f; }
+.fs-map-state--level3 { fill: #e5484d; }
+
+.fs-map-state:focus-visible {
+  outline: none;
+  stroke: var(--color-accent, #3b82f6);
+  stroke-width: 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fs-map-state, .fs-map-toggle-btn { transition: none; }
+}
+
+.fs-map-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0.6rem 0 0;
+  font-size: 0.74rem;
+  color: var(--color-text-muted, #8b93a3);
+}
+
+.fs-map-legend-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.fs-map-legend-swatch.fs-map-state--active { background: #b3312f; }
+.fs-map-legend-swatch.fs-map-state--level1 { background: #7c2f31; }
+.fs-map-legend-swatch.fs-map-state--level2 { background: #b3312f; }
+.fs-map-legend-swatch.fs-map-state--level3 { background: #e5484d; }
+
+.fs-map-caption {
+  margin-top: 0.5rem;
+  font-size: 0.76rem;
+  color: var(--color-text-muted, #8b93a3);
+}
+
+.fs-map-nationwide-note,
+.fs-map-territories,
+.fs-map-source-text,
+.fs-map-alt,
+.fs-map-unknown {
+  font-size: 0.82rem;
+  color: var(--color-text-secondary, #c6cbd6);
+  margin: 0.6rem 0 0;
+  line-height: 1.5;
+}
+
+.fs-map-unknown {
+  padding: 0.7rem 0.9rem;
+  background: var(--color-bg-panel, #10141d);
+  border: 1px dashed var(--color-border, rgba(255, 255, 255, 0.14));
+  border-radius: 6px;
+  color: var(--color-text-muted, #8b93a3);
+}
+
+.fs-map-alt-details { margin-top: 0.7rem; }
+
+.fs-map-alt-details summary {
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary, #c6cbd6);
+}
+
+.fs-map-alt-table {
+  width: 100%;
+  margin-top: 0.5rem;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.fs-map-alt-table th,
+.fs-map-alt-table td {
+  text-align: left;
+  padding: 0.35rem 0.6rem;
+  border-bottom: 1px solid var(--color-border-soft, rgba(255, 255, 255, 0.07));
+  color: var(--color-text-secondary, #c6cbd6);
+}
+
+.fs-map-alt-table th {
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted, #8b93a3);
+}
+
+/* ── 6. Timeline ──────────────────────────────── */
+
+.fs-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: relative;
+}
+
+.fs-timeline::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 6px;
+  bottom: 6px;
+  width: 1px;
+  background: var(--color-border, rgba(255, 255, 255, 0.12));
+}
+
+.fs-timeline-item {
+  position: relative;
+  display: flex;
+  gap: 0.9rem;
+  padding: 0 0 1.1rem 0;
+}
+
+.fs-timeline-item:last-child { padding-bottom: 0; }
+
+.fs-timeline-marker {
+  flex-shrink: 0;
+  width: 11px;
+  height: 11px;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: var(--color-bg, #090c12);
+  border: 2px solid #e5484d;
+  z-index: 1;
+}
+
+.fs-timeline-item:not(:first-child) .fs-timeline-marker {
+  border-color: var(--color-border-hover, rgba(255, 255, 255, 0.25));
+}
+
+.fs-timeline-date {
+  display: block;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-muted, #8b93a3);
+  margin-bottom: 0.15rem;
+}
+
+.fs-timeline-text {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--color-text-secondary, #c6cbd6);
+}
+
+/* ── 7. Sources ───────────────────────────────── */
+
+.fs-sources {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.fs-source-item a {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  padding: 0.6rem 0.8rem;
+  background: var(--color-bg-panel, #10141d);
+  border: 1px solid var(--color-border-soft, rgba(255, 255, 255, 0.08));
+  border-radius: 6px;
+  text-decoration: none;
+  transition: border-color var(--duration-fast, 0.15s);
+}
+
+.fs-source-item a:hover {
+  border-color: var(--color-border-hover, rgba(255, 255, 255, 0.25));
+}
+
+.fs-source-role {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text, #f2f4f8);
+}
+
+.fs-source-url {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.7rem;
+  color: var(--color-text-muted, #8b93a3);
+  word-break: break-all;
+}

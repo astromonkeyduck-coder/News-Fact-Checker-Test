@@ -23,18 +23,23 @@
       post.category === 'Earthquake' ||
       post.event_type === 'earthquake' ||
       post.source === 'USGS';
-    const verifiedSources = ['USGS', 'NWS', 'FAA'];
+    const isFoodSafety =
+      post.category === 'Food Safety' ||
+      post.event_type === 'food_recall' ||
+      post.event_type === 'food_outbreak';
+    const verifiedSources = ['USGS', 'NWS', 'FAA', 'FDA'];
     const isVerifiedEvent =
       isEarthquake ||
+      isFoodSafety ||
       !!post.event_type ||
       (post.source && verifiedSources.includes(post.source)) ||
-      ['Earthquake', 'Weather', 'Airspace', 'Volcano'].includes(post.category);
+      ['Earthquake', 'Weather', 'Airspace', 'Volcano', 'Food Safety'].includes(post.category);
     const postXUrl = post.x_url || post.link || '';
     const isXPost =
       !isVerifiedEvent &&
       (postXUrl.includes('x.com') || postXUrl.includes('twitter.com'));
     const template = isXPost ? 'breaking-brief' : 'longform';
-    return { template, isXPost, isEarthquake, isVerifiedEvent };
+    return { template, isXPost, isEarthquake, isFoodSafety, isVerifiedEvent };
   }
 
   const BREAKING_PILL = { label: 'Breaking', cls: 'nn-pill--breaking' };
@@ -102,6 +107,7 @@
   function getKickerLabel(post, classification, presentation) {
     if (classification.isXPost) return 'News update';
     if (classification.isEarthquake) return 'Earthquake';
+    if (classification.isFoodSafety) return 'Food Safety';
     const cat = (post.category || '').trim();
     if (!cat || /breaking/i.test(cat)) return presentation.isBreaking ? '' : 'News';
     return cat;
