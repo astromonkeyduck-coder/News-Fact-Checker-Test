@@ -27,6 +27,48 @@ You don’t add these yourself unless you’re doing something custom.
 | **WINDY_API_KEY** | Optional: more global webcams in Live Cams (Windy API) | [windy.com](https://www.windy.com) API |
 | **NY511_API_KEY** | Optional: New York state traffic cams in Live Cams | NY511 developer program |
 
+## FDA Food Safety (recalls & outbreaks)
+
+All flags default to **off** — the site behaves identically until you enable them. See `docs/fda-food-safety-runbook.md` for the enable sequence.
+
+### Feature flags
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| **ENABLE_FDA** | `false` | Master switch for FDA discovery (RSS, recall table, CORE table) |
+| **FDA_AUTO_PUBLISH** | `false` | Allow validated events to publish automatically; otherwise everything lands in the admin review queue |
+| **FDA_AI_EXTRACTION_ENABLED** | `false` | AI fallback extraction for unstructured prose (deterministic parsing works without it) |
+| **FDA_PUSH_NOTIFICATIONS_ENABLED** | `false` | Reserved push hook; no pushes are sent while false |
+| **FDA_EMAIL_TRIGGER_ENABLED** | `false` | FDA/GovDelivery inbound-email wake-up signal (`fda-email-trigger` webhook) |
+| **FDA_HERO_ELIGIBLE** | `false` | Allow severity ≥4 food-safety posts to compete for the homepage hero |
+
+### Keys and secrets
+
+| Variable | Required | Purpose |
+|----------|----------|---------|
+| **SUPABASE_URL** / **SUPABASE_SERVICE_ROLE_KEY** | yes (shared) | Food-safety tables live in Supabase (server-only, RLS blocks anon) |
+| **FOOD_SAFETY_INTERNAL_TOKEN** | yes when enabled | Internal secret protecting the background-processor trigger (any long random string) |
+| **OPENFDA_API_KEY** | optional | Higher openFDA rate limits for backfill/reconciliation ([open.fda.gov](https://open.fda.gov/apis/authentication/)) |
+| **FDA_EMAIL_WEBHOOK_SECRET** | required if email trigger enabled | Resend/Svix inbound-webhook signing secret (fails closed in production) |
+| **FDA_EMAIL_RECIPIENT** | optional | Dedicated alias, default `fda-alerts@noteworthynews.co` |
+| **FDA_EMAIL_ALLOWED_SENDERS** | optional | Comma-separated exact sender allowlist |
+| **FDA_EMAIL_ALLOWED_DOMAINS** | optional | Comma-separated sender-domain allowlist (defaults to fda.gov / govdelivery.com family) |
+| **FDA_ADMIN_ALERT_EMAIL** | optional | Destination for stale-source / parser-drift admin alerts (falls back to `ALERT_TO_EMAIL`) |
+
+### Tuning (all have safe defaults)
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| **FDA_MAX_DOCS_PER_RUN** | `8` | Background-processor batch size |
+| **FDA_MAX_BACKFILL_ITEMS** | `100` | Cap for openFDA backfill runs |
+| **FDA_CONFIDENCE_THRESHOLD** | `0.75` | Extraction confidence below this routes to review |
+| **FDA_MAX_ATTEMPTS** | `5` | Max processing attempts before a source document is marked failed |
+| **FDA_LOCK_TTL_MS** | `600000` | Stale-claim recovery window |
+| **FDA_RECALL_TABLE_INTERVAL_MIN** | `30` | Recall-index poll cadence |
+| **FDA_CORE_TABLE_INTERVAL_MIN** | `60` | CORE investigation-table poll cadence |
+
+---
+
 ### Live Clip Pipeline (local scripts)
 
 | Variable | Used for | Where to get it |
