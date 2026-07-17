@@ -19,6 +19,7 @@ const contentNormalize = require("../../../lib/contentNormalize");
 const ENGINE_CATEGORIES = new Set([
   "Earthquake", "Weather Alert",
   "Maritime Alert", "Airspace Alert", "Travel Advisory",
+  "Food Safety",
 ]);
 
 function isVolcanoEnginePost(post) {
