@@ -402,6 +402,22 @@
 [functions."import-x-posts"]
   schedule = "*/3 * * * *"
 
+# FDA food-safety discovery (fast pass, ENABLE_FDA gated). Heavy parsing,
+# media, and publication live in process-food-safety-background.
+[functions."ingest-food-safety"]
+  node_bundler = "esbuild"
+  included_files = ["netlify/functions/lib/**"]
+  schedule = "*/5 * * * *"
+
+# FDA food-safety background processor: claims pending source documents,
+# fetches/parses canonical FDA pages, correlates, versions, publishes.
+# Background functions run up to 15 minutes. Also has a 15-minute
+# retry-sweep schedule in exports.config.
+[functions."process-food-safety-background"]
+  node_bundler = "esbuild"
+  included_files = ["netlify/functions/lib/**"]
+  schedule = "*/15 * * * *"
+
 [dev]
   # Static site - no framework dev command. (Setting `command = "netlify dev"`
   # here makes the CLI spawn itself recursively and crash on startup.)
