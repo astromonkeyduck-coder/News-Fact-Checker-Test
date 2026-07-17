@@ -42,6 +42,9 @@ const PUBLIC_POST_FIELDS = new Set([
   "lat", "lon", "depth", "magnitude", "mag", "severity",
   "event_type", "eventId", "event_id",
   "assets", "raw", "public_metrics",
+  // food safety (compact card summary + detail-endpoint pointer only;
+  // full product rows / versions / evidence stay behind food-safety-event)
+  "food_safety_summary", "food_safety_event_id",
   // social metrics
   "views", "likes", "reposts", "replies",
 ]);
