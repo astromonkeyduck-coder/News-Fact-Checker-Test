@@ -122,6 +122,67 @@ test('food product type overrides weak text exclusion matches', () => {
   assert.equal(r.include, true);
 });
 
+test('wet dog food is excluded even when productType is generic Food', () => {
+  const r = scopeFilter({
+    title: 'High Protein Chopped Chicken & Duck Flavor Wet Dog Food recalled over foreign material (plastic)',
+    description: 'Potential presence of hard plastic pieces in wet dog food sold for dogs.',
+    productType: 'Food',
+  });
+  assert.equal(r.include, false);
+  assert.match(r.reason, /veterinary_or_pet_food/);
+});
+
+test('dog treats are excluded even with productType Food', () => {
+  const r = scopeFilter({
+    title: 'Brand X Dog Treats recalled due to Salmonella',
+    productType: 'Food',
+  });
+  assert.equal(r.include, false);
+  assert.match(r.reason, /veterinary_or_pet_food/);
+});
+
+test('cat food is excluded even with productType Food', () => {
+  const r = scopeFilter({
+    title: 'Premium Cat Food recalled for undeclared allergen',
+    productType: 'Food',
+  });
+  assert.equal(r.include, false);
+  assert.match(r.reason, /veterinary_or_pet_food/);
+});
+
+test('animal feed is excluded even with productType Food', () => {
+  const r = scopeFilter({
+    title: 'Cattle animal feed recalled due to aflatoxin contamination',
+    productType: 'Food',
+  });
+  assert.equal(r.include, false);
+  assert.match(r.reason, /veterinary_or_pet_food/);
+});
+
+test('hot dogs remain in scope', () => {
+  const r = scopeFilter({
+    title: 'All-beef hot dogs recalled due to possible Listeria contamination',
+    productType: 'Food',
+  });
+  assert.equal(r.include, true);
+});
+
+test('corn dogs remain in scope', () => {
+  const r = scopeFilter({
+    title: 'Frozen corn dogs recalled due to undeclared milk allergen',
+    productType: 'Food',
+  });
+  assert.equal(r.include, true);
+});
+
+test('catfish remains in scope', () => {
+  const r = scopeFilter({
+    title: 'Breaded catfish fillets recalled due to undeclared wheat allergen',
+    productType: 'Food',
+  });
+  assert.equal(r.include, true);
+});
+
 // ── Severity ───────────────────────────────────────────────────────────────
 
 test('deaths force severity 5 with explainable reason', () => {
