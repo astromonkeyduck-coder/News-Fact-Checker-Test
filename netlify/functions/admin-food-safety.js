@@ -18,7 +18,7 @@ if (process.env.NETLIFY_DEV) {
   } catch (e) { /* optional in dev */ }
 }
 
-const { requireAdminAuth } = require('./middleware/requireAuth');
+const { requireAdminAuthOrSecret } = require('./middleware/requireAuth');
 
 const HEADERS = {
   'Content-Type': 'application/json',
@@ -28,7 +28,7 @@ const HEADERS = {
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 exports.handler = async (event) => {
-  const auth = await requireAdminAuth(event);
+  const auth = await requireAdminAuthOrSecret(event, 'FOOD_SAFETY_INTERNAL_TOKEN');
   if (auth.statusCode) return auth; // 401/403/500 from middleware
 
   const supabase = require('./lib/supabaseClient');
