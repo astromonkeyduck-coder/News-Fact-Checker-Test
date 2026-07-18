@@ -4,7 +4,7 @@
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-async function publishEventIds(ids) {
+async function publishEventIds(ids, { force = false } = {}) {
   const { getEventById, getProducts, updateEvent } = require('./store');
   const { publishPost, upsertVerifiedEvent } = require('./publish');
 
@@ -23,7 +23,7 @@ async function publishEventIds(ids) {
         results.push({ id, status: 'suppressed', reason: eventRow.review_reason });
         continue;
       }
-      if (eventRow.publish_state === 'published' && eventRow.post_id) {
+      if (!force && eventRow.publish_state === 'published' && eventRow.post_id) {
         results.push({ id, status: 'already_published', post_id: eventRow.post_id });
         continue;
       }
@@ -36,7 +36,12 @@ async function publishEventIds(ids) {
       const { postId } = await publishPost(eventRow, { products, hasMapData });
       await updateEvent(id, { publish_state: 'published', review_reason: null, post_id: postId });
       await upsertVerifiedEvent({ ...eventRow, post_id: postId });
-      results.push({ id, status: 'published', post_id: postId, title: eventRow.display_title });
+      results.push({
+        id,
+        status: force && eventRow.post_id ? 'republished' : 'published',
+        post_id: postId,
+        title: eventRow.display_title,
+      });
     } catch (e) {
       results.push({ id, status: 'error', error: e.message });
     }

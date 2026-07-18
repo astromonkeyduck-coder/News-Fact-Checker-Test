@@ -66,7 +66,9 @@ exports.handler = async (event) => {
 
   if (Array.isArray(requestBody.publish_ids) && requestBody.publish_ids.length) {
     const { publishEventIds } = require('./lib/food-safety/publishBatch');
-    const results = await publishEventIds(requestBody.publish_ids);
+    const results = await publishEventIds(requestBody.publish_ids, {
+      force: requestBody.force === true,
+    });
     logger.info('Internal publish_ids complete', { results });
     return { statusCode: 200, body: JSON.stringify({ ok: true, publish: results }) };
   }
