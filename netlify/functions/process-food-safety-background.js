@@ -80,14 +80,18 @@ exports.handler = async (event) => {
     return { statusCode: 200, body: JSON.stringify({ ok: true, publish: results }) };
   }
 
-  if (requestBody.rewrite_sources === true || (Array.isArray(requestBody.rewrite_ids) && requestBody.rewrite_ids.length)) {
+  if (
+    requestBody.rewrite_sources === true
+    || requestBody.rewrite_posts === true
+    || (Array.isArray(requestBody.rewrite_ids) && requestBody.rewrite_ids.length)
+  ) {
     const supabase = require('./lib/supabaseClient');
-    const { getEventById } = require('./lib/food-safety/store');
-    const { getPostStore, readPost, writePost } = require('./lib/postStore');
-    const { buildPublicSourceUrls, postIdForEvent } = require('./lib/food-safety/publish');
+    const { getEventById, getProducts, updateEvent } = require('./lib/food-safety/store');
+    const { publishPost, upsertVerifiedEvent, postIdForEvent } = require('./lib/food-safety/publish');
+    const { buildPublicGeographyFields } = require('./lib/food-safety/geographyContext');
 
     let ids = Array.isArray(requestBody.rewrite_ids) ? requestBody.rewrite_ids.map(String) : [];
-    if (requestBody.rewrite_sources === true && !ids.length) {
+    if ((requestBody.rewrite_sources === true || requestBody.rewrite_posts === true) && !ids.length) {
       const { data, error } = await supabase
         .from('food_safety_events')
         .select('id')
@@ -98,7 +102,6 @@ exports.handler = async (event) => {
       ids = (data || []).map((r) => r.id);
     }
 
-    const store = getPostStore();
     const results = [];
     for (const id of ids) {
       try {
@@ -107,31 +110,23 @@ exports.handler = async (event) => {
           results.push({ id, status: eventRow ? 'suppressed' : 'not_found' });
           continue;
         }
-        const postId = eventRow.post_id || postIdForEvent(eventRow);
-        const existing = await readPost(store, postId);
-        if (!existing) {
-          results.push({ id, status: 'post_missing', post_id: postId });
-          continue;
-        }
-        const sourceUrls = buildPublicSourceUrls(eventRow);
-        await writePost(store, postId, {
-          ...existing,
-          source_url: eventRow.source_url || existing.source_url,
-          source_urls: sourceUrls,
-          link: eventRow.source_url || existing.link,
-          url: eventRow.source_url || existing.url,
-        });
-        const cleanedLinks = (Array.isArray(eventRow.source_links) ? eventRow.source_links : [])
-          .filter((l) => l && l.url && (l.role === 'canonical' || l.role === 'core_table'));
-        if (cleanedLinks.length && cleanedLinks.length !== (eventRow.source_links || []).length) {
-          await supabase.from('food_safety_events').update({ source_links: cleanedLinks }).eq('id', id);
-        }
-        results.push({ id, status: 'rewritten', post_id: postId, source_count: sourceUrls.length });
+        const products = await getProducts(id);
+        const geo = buildPublicGeographyFields(eventRow);
+        const eventForPublish = { ...eventRow, ...geo };
+        const hasMapData = Boolean(
+          (eventForPublish.outbreak_case_states && eventForPublish.outbreak_case_states.length)
+          || (eventForPublish.confirmed_distribution_states && eventForPublish.confirmed_distribution_states.length)
+          || eventRow.geographic_scope === 'nationwide',
+        );
+        const { postId } = await publishPost(eventForPublish, { products, hasMapData });
+        await updateEvent(id, { post_id: postId, publish_state: 'published', review_reason: null });
+        await upsertVerifiedEvent({ ...eventForPublish, post_id: postId });
+        results.push({ id, status: 'rewritten', post_id: postId || postIdForEvent(eventRow) });
       } catch (e) {
         results.push({ id, status: 'error', error: e.message });
       }
     }
-    logger.info('Internal rewrite_sources complete', { results });
+    logger.info('Internal rewrite_posts complete', { results });
     return { statusCode: 200, body: JSON.stringify({ ok: true, rewrite: results }) };
   }
 
