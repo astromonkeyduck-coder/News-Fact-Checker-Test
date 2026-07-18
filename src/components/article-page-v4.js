@@ -163,9 +163,24 @@
     return typeof s === 'string' ? s : (s && s.url) || '';
   }
 
+  function dedupeSourceEntries(sourceUrls) {
+    const urls = Array.isArray(sourceUrls) ? sourceUrls : [];
+    const seen = new Set();
+    const out = [];
+    for (const s of urls) {
+      const href = sourceHref(s);
+      if (!href) continue;
+      const key = href.split('?')[0].split('#')[0];
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(s);
+    }
+    return out;
+  }
+
   function buildSourceChipsHTML(sourceUrls, opts, escapeHtml) {
     const { xUrl, includeX = false } = opts || {};
-    const urls = Array.isArray(sourceUrls) ? sourceUrls : [];
+    const urls = dedupeSourceEntries(sourceUrls);
     if (urls.length === 0 && !includeX) return '';
 
     const chips = urls.map((s, i) => {
@@ -597,7 +612,7 @@
       </li>`);
     };
 
-    const sourceUrls = Array.isArray(post.source_urls) ? post.source_urls : [];
+    const sourceUrls = dedupeSourceEntries(post.source_urls);
     sourceUrls.forEach((s, i) => {
       push(sourceHref(s), sourceLabel(s, i), '');
     });
