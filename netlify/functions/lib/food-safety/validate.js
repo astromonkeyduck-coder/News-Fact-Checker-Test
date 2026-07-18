@@ -133,6 +133,9 @@ const PUBLIC_EVENT_FIELDS = [
   'geographic_scope', 'case_states', 'distribution_states',
   'case_counts_by_state', 'distribution_text', 'retailers',
   'recommendations', 'source_links', 'images', 'severity', 'post_id',
+  // Explicit geography concepts (preferred over reusing case_states alone)
+  'outbreak_case_states', 'confirmed_distribution_states',
+  'national_surveillance_context', 'possible_additional_distribution',
 ];
 
 const PUBLIC_PRODUCT_FIELDS = [
@@ -156,7 +159,9 @@ function pick(obj, fields) {
 
 /** Strip an event row to the strict public allowlist. */
 function toPublicEvent(eventRow) {
-  const out = pick(eventRow, PUBLIC_EVENT_FIELDS);
+  const { buildPublicGeographyFields } = require('./geographyContext');
+  const geo = buildPublicGeographyFields(eventRow);
+  const out = pick({ ...eventRow, ...geo }, PUBLIC_EVENT_FIELDS);
   // Public images: only safe display fields, never internal evidence
   if (Array.isArray(out.images)) {
     out.images = out.images.map((img) => ({
@@ -173,6 +178,15 @@ function toPublicEvent(eventRow) {
     out.source_links = out.source_links
       .filter((l) => l && l.url && isAllowedUrl(l.url))
       .map((l) => ({ url: l.url, label: l.label || null, role: l.role || null }));
+  }
+  // Guard: never publish an invented national total
+  if (out.national_surveillance_context
+      && out.national_surveillance_context.national_case_count != null
+      && !Number.isFinite(out.national_surveillance_context.national_case_count)) {
+    out.national_surveillance_context = {
+      ...out.national_surveillance_context,
+      national_case_count: null,
+    };
   }
   return out;
 }

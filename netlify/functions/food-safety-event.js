@@ -72,24 +72,47 @@ exports.handler = async (event) => {
     ]);
 
     const publicEvent = toPublicEvent(eventRow);
+    const {
+      buildOutbreakCaseMapNotice, LABELS,
+    } = require('./lib/food-safety/geographyContext');
 
-    // Map payload: only source-backed geography
+    // Map payload: only source-backed geography. Outbreak case states and
+    // confirmed distribution states are never merged or relabeled as national.
+    const outbreakCaseStates = (publicEvent.outbreak_case_states || eventRow.case_states || [])
+      .map((abbr) => ({ abbr, name: stateNameFromAbbr(abbr) }));
+    const confirmedDistributionStates = (publicEvent.confirmed_distribution_states
+      || eventRow.distribution_states || [])
+      .map((abbr) => ({ abbr, name: stateNameFromAbbr(abbr) }));
+
     const map = {
-      mode_case_data: Boolean(eventRow.case_states && eventRow.case_states.length),
+      mode_case_data: outbreakCaseStates.length > 0,
       mode_distribution_data: Boolean(
-        (eventRow.distribution_states && eventRow.distribution_states.length)
+        confirmedDistributionStates.length
         || eventRow.geographic_scope === 'nationwide',
       ),
       nationwide_distribution: eventRow.geographic_scope === 'nationwide',
-      case_states: (eventRow.case_states || []).map((abbr) => ({
-        abbr, name: stateNameFromAbbr(abbr),
-      })),
-      distribution_states: (eventRow.distribution_states || []).map((abbr) => ({
-        abbr, name: stateNameFromAbbr(abbr),
-      })),
+      // Preferred explicit names
+      outbreak_case_states: outbreakCaseStates,
+      confirmed_distribution_states: confirmedDistributionStates,
+      // Compatibility aliases (same arrays — not national disease maps)
+      case_states: outbreakCaseStates,
+      distribution_states: confirmedDistributionStates,
       // Per-state counts appear ONLY when officially supplied
       case_counts_by_state: eventRow.case_counts_by_state || null,
       distribution_text: eventRow.distribution_text || null,
+      possible_additional_distribution: publicEvent.possible_additional_distribution === true,
+      national_surveillance_context: publicEvent.national_surveillance_context || null,
+      outbreak_case_map_notice: buildOutbreakCaseMapNotice(publicEvent, {
+        caseStateCount: outbreakCaseStates.length,
+      }),
+      labels: {
+        tab_cases: LABELS.mapTabCases,
+        tab_distribution: LABELS.mapTabDistribution,
+        caption_cases: LABELS.mapCaptionCases,
+        caption_distribution: LABELS.mapCaptionDistribution,
+        legend_cases: LABELS.mapLegendCases,
+        legend_distribution: LABELS.mapLegendDistribution,
+      },
       as_of: eventRow.source_updated_at || eventRow.fda_publish_date || null,
     };
 

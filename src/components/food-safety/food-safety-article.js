@@ -129,28 +129,71 @@
       cards.push(`<div class="fs-metric${cls ? ` ${cls}` : ''}"><span class="fs-metric-value">${esc(String(value))}</span><span class="fs-metric-label">${esc(label)}</span></div>`);
     };
 
+    const isOutbreak = ev.event_kind === 'outbreak';
     // Only explicitly reported numbers. null never becomes 0.
-    add('Illnesses', fmtNum(ev.illnesses), typeof ev.illnesses === 'number' && ev.illnesses > 0 ? 'fs-metric--alert' : '');
-    add('Hospitalizations', fmtNum(ev.hospitalizations), typeof ev.hospitalizations === 'number' && ev.hospitalizations > 0 ? 'fs-metric--alert' : '');
-    add('Deaths', fmtNum(ev.deaths), typeof ev.deaths === 'number' && ev.deaths > 0 ? 'fs-metric--alert' : '');
-    if (Array.isArray(ev.case_states) && ev.case_states.length) {
-      add('States with cases', ev.case_states.length);
+    // Outbreak metrics are investigation-linked — never framed as a national disease total.
+    add(
+      isOutbreak ? 'Illnesses linked to this investigation' : 'Illnesses',
+      fmtNum(ev.illnesses),
+      typeof ev.illnesses === 'number' && ev.illnesses > 0 ? 'fs-metric--alert' : '',
+    );
+    add(
+      isOutbreak ? 'Hospitalizations linked to this investigation' : 'Hospitalizations',
+      fmtNum(ev.hospitalizations),
+      typeof ev.hospitalizations === 'number' && ev.hospitalizations > 0 ? 'fs-metric--alert' : '',
+    );
+    add(
+      isOutbreak ? 'Deaths linked to this investigation' : 'Deaths',
+      fmtNum(ev.deaths),
+      typeof ev.deaths === 'number' && ev.deaths > 0 ? 'fs-metric--alert' : '',
+    );
+
+    const outbreakStates = ev.outbreak_case_states || ev.case_states;
+    if (Array.isArray(outbreakStates) && outbreakStates.length) {
+      add(isOutbreak ? 'States with outbreak-linked cases' : 'States with cases', outbreakStates.length);
     }
-    if (Array.isArray(ev.distribution_states) && ev.distribution_states.length) {
-      add('Distribution states', ev.distribution_states.length);
+    const distStates = ev.confirmed_distribution_states || ev.distribution_states;
+    if (Array.isArray(distStates) && distStates.length) {
+      add('Confirmed distribution states', distStates.length);
     } else if (ev.geographic_scope === 'nationwide') {
-      add('Distribution', 'Nationwide');
+      add('Confirmed product distribution', 'Nationwide');
     }
     add('Last illness onset', fmtDate(ev.last_illness_onset));
     add('FDA classification', ev.fda_recall_classification);
     if (productCount > 1) add('Affected products', productCount);
+
+    // Never invent or display a national pathogen total.
+    const nationalCount = ev.national_surveillance_context
+      && ev.national_surveillance_context.national_case_count;
+    if (Number.isFinite(nationalCount)) {
+      add('National surveillance cases (official)', fmtNum(nationalCount));
+    }
 
     if (!cards.length) return '';
     return `
       <section class="fs-section" aria-labelledby="fs-metrics-h">
         <h2 id="fs-metrics-h" class="fs-section-title">Verified figures <span class="fs-section-src">per FDA</span></h2>
         <div class="fs-metrics">${cards.join('')}</div>
-        <p class="fs-metrics-note">Only figures explicitly reported by FDA appear here. Missing figures were not reported, not zero.</p>
+        <p class="fs-metrics-note">Only figures explicitly reported by FDA for this investigation appear here. Missing figures were not reported, not zero.${isOutbreak ? ' These totals are not a national disease count.' : ''}</p>
+      </section>`;
+  }
+
+  function buildNationalContext(ev) {
+    const ctx = ev.national_surveillance_context;
+    if (!ctx || !ctx.outbreak_is_subset_of_national) return '';
+    const statements = Array.isArray(ctx.statements) ? ctx.statements.filter(Boolean) : [];
+    if (!statements.length) return '';
+    // Guard: never invent a national total in this section.
+    if (ctx.national_case_count != null && !Number.isFinite(ctx.national_case_count)) return '';
+    return `
+      <section class="fs-section fs-national-context" aria-labelledby="fs-national-h">
+        <h2 id="fs-national-h" class="fs-section-title">National surveillance context</h2>
+        <ul class="fs-national-list">
+          ${statements.map((s) => `<li>${esc(s)}</li>`).join('')}
+        </ul>
+        ${Number.isFinite(ctx.national_case_count)
+    ? `<p class="fs-national-total">Official national surveillance total: ${esc(fmtNum(ctx.national_case_count))}</p>`
+    : '<p class="fs-national-note">No separate national case total is shown because FDA and CDC have not published one for this advisory beyond the investigation-linked figures above.</p>'}
       </section>`;
   }
 
@@ -221,27 +264,39 @@
 
   // ── 5. Map ─────────────────────────────────────
 
-  function buildMapSection(map) {
+  function buildMapSection(map, ev) {
     const hasCases = map.mode_case_data;
     const hasDist = map.mode_distribution_data;
     if (!hasCases && !hasDist) return '';
 
+    const labels = map.labels || {};
+    const tabCases = labels.tab_cases || 'Cases linked to this outbreak';
+    const tabDist = labels.tab_distribution || 'Confirmed product distribution';
+
     const toggle = hasCases && hasDist
       ? `<div class="fs-map-toggle" role="tablist" aria-label="Map mode">
-          <button type="button" class="fs-map-toggle-btn is-active" data-mode="cases" role="tab" aria-selected="true">States with cases</button>
-          <button type="button" class="fs-map-toggle-btn" data-mode="distribution" role="tab" aria-selected="false">Where it was sold</button>
+          <button type="button" class="fs-map-toggle-btn is-active" data-mode="cases" role="tab" aria-selected="true">${esc(tabCases)}</button>
+          <button type="button" class="fs-map-toggle-btn" data-mode="distribution" role="tab" aria-selected="false">${esc(tabDist)}</button>
         </div>`
       : '';
 
     const single = !toggle
-      ? `<p class="fs-section-sub">${hasCases ? 'States with confirmed cases' : 'States where the product was distributed'}</p>`
+      ? `<p class="fs-section-sub">${hasCases
+    ? (labels.caption_cases || 'States reporting outbreak-associated cases')
+    : (labels.caption_distribution || 'Confirmed product distribution')}</p>`
+      : '';
+
+    // Case-mode national-subset notice is rendered inside FoodSafetyMap (cases only).
+    const possibleDist = (map.possible_additional_distribution || ev.possible_additional_distribution)
+      ? '<p class="fs-map-distribution-caveat" role="note">FDA says implicated product may have been distributed beyond the states currently confirmed.</p>'
       : '';
 
     return `
       <section class="fs-section" id="fs-map" aria-labelledby="fs-map-h">
-        <h2 id="fs-map-h" class="fs-section-title">${hasCases ? 'Cases and distribution' : 'Distribution'}</h2>
+        <h2 id="fs-map-h" class="fs-section-title">${hasCases ? 'Outbreak-linked cases and confirmed distribution' : 'Confirmed product distribution'}</h2>
         ${toggle}${single}
         <div class="fs-map-container" data-fs-map></div>
+        ${possibleDist}
         ${map.distribution_text ? `<p class="fs-map-source-text">FDA distribution note: ${esc(map.distribution_text)}</p>` : ''}
       </section>`;
   }
@@ -377,8 +432,9 @@
     below.className = 'fs-detail';
     below.innerHTML = [
       buildMetrics(ev, products.length),
+      buildNationalContext(ev),
       buildProducts(products),
-      buildMapSection(map),
+      buildMapSection(map, ev),
       buildTimeline(timeline),
       buildSources(ev),
     ].join('');

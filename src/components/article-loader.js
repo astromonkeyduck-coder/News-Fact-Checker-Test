@@ -929,7 +929,7 @@
             return;
         }
         const script = document.createElement('script');
-        script.src = '/src/components/food-safety/food-safety-article.js';
+        script.src = '/src/components/food-safety/food-safety-article.js?v=20260718g';
         script.onload = run;
         script.onerror = () => console.warn('[ArticleLoader] Food Safety module failed to load');
         document.head.appendChild(script);

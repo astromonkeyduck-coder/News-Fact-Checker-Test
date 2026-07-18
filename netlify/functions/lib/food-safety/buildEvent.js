@@ -8,6 +8,11 @@ const {
 } = require('./classify');
 const { computeSeverity } = require('./severity');
 const { materialHash } = require('./normalize');
+const {
+  extractNationalSurveillanceContext,
+  extractPossibleAdditionalDistribution,
+  mergeOtherOutcomes,
+} = require('./geographyContext');
 
 const EXTRACTION_METHOD_DETERMINISTIC = 'deterministic';
 
@@ -97,10 +102,9 @@ function buildEventCandidate(parse, context = {}) {
     hospitalizations: numOrNull(metrics.hospitalizations),
     deaths: numOrNull(metrics.deaths),
     hus_cases: numOrNull(metrics.husCases),
-    other_outcomes: metrics.qualifiers && Object.keys(metrics.qualifiers).length
-      ? { qualifiers: metrics.qualifiers } : null,
 
     geographic_scope: geographicScope,
+    // case_states = outbreak-associated states only (never national pathogen map)
     case_states: caseStates.length ? caseStates : null,
     distribution_states: distStates.length ? distStates : null,
     case_counts_by_state: context.caseCountsByState || null,
@@ -121,6 +125,27 @@ function buildEventCandidate(parse, context = {}) {
   };
 
   if (isExpansion) event.status = 'expanded';
+
+  // Geography context from full page text (subset-of-nationwide, distribution caveats).
+  const contextText = [
+    parse.fullText,
+    parse.announcementText,
+    parse.recallReason,
+    parse.distributionText,
+    parse.productDescription,
+    parse.title,
+  ].filter(Boolean).join('\n');
+  const nationalCtx = extractNationalSurveillanceContext(contextText, {
+    organism: hazard.organism,
+  });
+  const possibleExtraDist = extractPossibleAdditionalDistribution(contextText);
+  event.national_surveillance_context = nationalCtx;
+  event.possible_additional_distribution = possibleExtraDist || null;
+  event.other_outcomes = mergeOtherOutcomes(null, {
+    qualifiers: metrics.qualifiers,
+    nationalSurveillanceContext: nationalCtx,
+    possibleAdditionalDistribution: possibleExtraDist ? true : null,
+  });
 
   event.display_title = buildDisplayTitle(event);
   event.short_dek = buildShortDek(event, parse);

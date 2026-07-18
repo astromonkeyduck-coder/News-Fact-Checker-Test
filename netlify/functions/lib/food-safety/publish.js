@@ -123,16 +123,33 @@ function buildStoryText(event, products = []) {
   paragraphs.push(what.join(' '));
 
   if (typeof event.illnesses === 'number') {
-    const metricBits = [`${event.illnesses.toLocaleString('en-US')} illnesses`];
-    if (typeof event.hospitalizations === 'number') metricBits.push(`${event.hospitalizations.toLocaleString('en-US')} hospitalizations`);
-    if (typeof event.deaths === 'number') metricBits.push(`${event.deaths.toLocaleString('en-US')} deaths`);
-    paragraphs.push(`FDA reports ${metricBits.join(', ')}${event.case_states && event.case_states.length ? ` across ${event.case_states.length} state${event.case_states.length > 1 ? 's' : ''}` : ''}.`);
+    const linked = event.event_kind === 'outbreak' ? ' linked to this investigation' : '';
+    const metricBits = [`${event.illnesses.toLocaleString('en-US')} illnesses${linked}`];
+    if (typeof event.hospitalizations === 'number') {
+      metricBits.push(`${event.hospitalizations.toLocaleString('en-US')} hospitalizations${linked}`);
+    }
+    if (typeof event.deaths === 'number') {
+      metricBits.push(`${event.deaths.toLocaleString('en-US')} deaths${linked}`);
+    }
+    const caseStates = event.outbreak_case_states || event.case_states;
+    paragraphs.push(`FDA reports ${metricBits.join(', ')}${caseStates && caseStates.length ? ` across ${caseStates.length} state${caseStates.length > 1 ? 's' : ''} reporting outbreak-associated cases` : ''}.`);
+  }
+
+  const nationalCtx = event.national_surveillance_context
+    || (event.other_outcomes && event.other_outcomes.national_surveillance_context);
+  if (nationalCtx && nationalCtx.outbreak_is_subset_of_national && Array.isArray(nationalCtx.statements)) {
+    paragraphs.push(nationalCtx.statements.join(' '));
   }
 
   if (event.distribution_text) {
-    paragraphs.push(`Distribution: ${event.distribution_text}`);
+    paragraphs.push(`Confirmed product distribution: ${event.distribution_text}`);
   } else if (event.geographic_scope === 'nationwide') {
     paragraphs.push('The product was distributed nationwide, according to FDA.');
+  }
+  const possibleExtra = event.possible_additional_distribution
+    || (event.other_outcomes && event.other_outcomes.possible_additional_distribution);
+  if (possibleExtra) {
+    paragraphs.push('FDA says implicated product may have been distributed beyond the states currently confirmed.');
   }
 
   if (event.public_action) {

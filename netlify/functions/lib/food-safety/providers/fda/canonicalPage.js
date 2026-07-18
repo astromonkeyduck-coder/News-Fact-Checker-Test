@@ -403,6 +403,8 @@ function parseCanonicalPage(html, canonicalUrl) {
     isInitialPressReleaseLinked: /Link to Initial Press Release/i.test(bodyText),
     bodyHash: normalizedBodyHash(html),
     rawTextHash: sha256(bodyText),
+    // Plain text of the page for geography-context extraction (not persisted raw).
+    fullText: bodyText,
     warnings: [],
   };
 

@@ -268,6 +268,46 @@
 
 /* ── 5. Map ───────────────────────────────────── */
 
+.fs-map-context-notice,
+.fs-map-distribution-caveat {
+  margin: 0 0 0.85rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid rgba(229, 72, 77, 0.45);
+  border-left: 3px solid #e5484d;
+  background: rgba(179, 49, 47, 0.14);
+  color: #f3d4d4;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.fs-map-distribution-caveat {
+  border-color: rgba(180, 180, 190, 0.35);
+  border-left-color: #9aa0a6;
+  background: rgba(255, 255, 255, 0.04);
+  color: #c8cdd3;
+  margin-top: 0.75rem;
+}
+
+.fs-national-context .fs-national-list {
+  margin: 0.4rem 0 0.6rem;
+  padding-left: 1.15rem;
+  color: #d7dbe0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.fs-national-context .fs-national-list li + li {
+  margin-top: 0.35rem;
+}
+
+.fs-national-note,
+.fs-national-total {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #9aa0a6;
+  line-height: 1.45;
+}
+
 .fs-map-toggle {
   display: inline-flex;
   gap: 0;

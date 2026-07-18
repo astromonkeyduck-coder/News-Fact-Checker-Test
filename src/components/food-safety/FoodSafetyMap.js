@@ -2,9 +2,9 @@
  * FoodSafetyMap — dependency-free SVG U.S. map for Food Safety articles.
  *
  * Two explicitly separate modes:
- *   cases        — binary affected-state highlighting, or a choropleth ONLY
- *                  when official per-state counts exist
- *   distribution — source-backed distribution states; explicit nationwide
+ *   cases        — outbreak-associated case states for THIS investigation
+ *                  (never framed as the full national pathogen picture)
+ *   distribution — confirmed product distribution states; explicit nationwide
  *                  gets an honest all-states treatment with a label
  *
  * Truth rules enforced here:
@@ -13,6 +13,7 @@
  *   - a text/table alternative always renders beneath the SVG
  *   - Puerto Rico / territories (outside the AlbersUsa projection) are
  *     listed explicitly as text when present in the data
+ *   - case mode and distribution mode never share field names for meaning
  *
  * Geometry is vendored locally at /assets/food-safety/us-states.json
  * (Census-derived us-atlas, precomputed AlbersUsa paths — no runtime CDN).
@@ -22,6 +23,15 @@
 
   const GEOMETRY_URL = '/assets/food-safety/us-states.json';
   let geometryPromise = null;
+
+  const DEFAULT_LABELS = {
+    tab_cases: 'Cases linked to this outbreak',
+    tab_distribution: 'Confirmed product distribution',
+    caption_cases: 'States reporting outbreak-associated cases',
+    caption_distribution: 'Confirmed product distribution',
+    legend_cases: 'Outbreak-associated cases reported',
+    legend_distribution: 'Confirmed product distribution',
+  };
 
   function loadGeometry() {
     if (!geometryPromise) {
@@ -45,6 +55,18 @@
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return null;
     return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  }
+
+  function labelsFor(map) {
+    return { ...DEFAULT_LABELS, ...(map && map.labels ? map.labels : {}) };
+  }
+
+  /** Resolve state lists without mixing outbreak cases and distribution. */
+  function stateEntriesForMode(mode, map) {
+    if (mode === 'cases') {
+      return map.outbreak_case_states || map.case_states || [];
+    }
+    return map.confirmed_distribution_states || map.distribution_states || [];
   }
 
   /** Bin official per-state counts into up to 4 intensity levels. */
@@ -72,7 +94,8 @@
   async function render(container, { mode, map } = {}) {
     if (!container || !map) return;
     const isCases = mode === 'cases';
-    const stateEntries = isCases ? (map.case_states || []) : (map.distribution_states || []);
+    const labels = labelsFor(map);
+    const stateEntries = stateEntriesForMode(mode, map);
     const counts = isCases && map.case_counts_by_state && typeof map.case_counts_by_state === 'object'
       ? map.case_counts_by_state : null;
     const nationwide = !isCases && map.nationwide_distribution === true;
@@ -85,8 +108,8 @@
     if (!nationwide && abbrs.size === 0) {
       container.innerHTML = `
         <p class="fs-map-unknown">${isCases
-    ? 'FDA has not published a state-by-state case list for this event.'
-    : 'FDA has not published a state-level distribution list for this event.'}</p>`;
+    ? 'FDA has not published a state-by-state list of outbreak-associated cases for this event.'
+    : 'FDA has not published a state-level confirmed distribution list for this event.'}</p>`;
       return;
     }
 
@@ -94,13 +117,14 @@
     try {
       geometry = await loadGeometry();
     } catch (e) {
-      container.innerHTML = buildTextAlternative({ isCases, stateEntries, counts, nationwide, map });
+      container.innerHTML = buildTextAlternative({ isCases, stateEntries, counts, nationwide, labels, map });
       return;
     }
 
     const bin = counts ? binCounts(counts) : null;
     const asOf = formatAsOf(map.as_of);
     const uid = `fsmap-${Math.random().toString(36).slice(2, 8)}`;
+    const caption = isCases ? labels.caption_cases : labels.caption_distribution;
 
     const paths = geometry.states.map((s) => {
       const active = nationwide || abbrs.has(s.abbr);
@@ -113,53 +137,60 @@
       }
       const label = active
         ? (typeof count === 'number'
-          ? `${s.name}: ${count.toLocaleString('en-US')} ${isCases ? 'cases' : ''}`.trim()
-          : `${s.name}: ${isCases ? 'confirmed cases reported' : 'product distributed'}`)
+          ? `${s.name}: ${count.toLocaleString('en-US')} outbreak-associated cases`
+          : `${s.name}: ${isCases ? 'outbreak-associated cases reported' : 'confirmed product distribution'}`)
         : s.name;
       return `<path d="${s.path}" class="${cls}" data-abbr="${s.abbr}" tabindex="${active ? 0 : -1}"
         role="img" aria-label="${esc(label)}"><title>${esc(label)}</title></path>`;
     }).join('');
 
-    const legend = buildLegend({ isCases, counts, nationwide });
-
-    // Territories present in the data but outside the projection
+    const legend = buildLegend({ isCases, counts, nationwide, labels });
     const missing = stateEntries.filter((s) => !geometry.states.some((g) => g.abbr === s.abbr));
 
+    // Context notice sits above the SVG when FDA says cases are a national subset.
+    const contextNotice = isCases && map.outbreak_case_map_notice
+      ? `<p class="fs-map-context-notice" role="note">${esc(map.outbreak_case_map_notice)}</p>`
+      : '';
+
     container.innerHTML = `
+      ${contextNotice}
       <figure class="fs-map-figure" role="group" aria-labelledby="${uid}-caption">
         <svg viewBox="0 0 ${geometry.meta.width} ${geometry.meta.height}" class="fs-map-svg"
-             preserveAspectRatio="xMidYMid meet" aria-hidden="false">
+             role="img" aria-label="${esc(caption)}"
+             preserveAspectRatio="xMidYMid meet">
+          <title>${esc(caption)}</title>
           <g>${paths}</g>
         </svg>
         ${nationwide ? '<p class="fs-map-nationwide-note">FDA reports nationwide distribution. State-level records were not individually supplied.</p>' : ''}
         ${legend}
         <figcaption id="${uid}-caption" class="fs-map-caption">
-          ${isCases ? 'States with confirmed cases' : 'States where product was distributed'}
+          ${esc(caption)}
           ${asOf ? ` · as of ${esc(asOf)} (FDA)` : ' (FDA)'}
         </figcaption>
         ${missing.length ? `<p class="fs-map-territories">Also listed by FDA: ${esc(missing.map((s) => s.name || s.abbr).join(', '))}</p>` : ''}
       </figure>
-      ${buildTextAlternative({ isCases, stateEntries, counts, nationwide, map })}`;
+      ${buildTextAlternative({ isCases, stateEntries, counts, nationwide, labels, map })}`;
   }
 
-  function buildLegend({ isCases, counts, nationwide }) {
+  function buildLegend({ isCases, counts, nationwide, labels }) {
     if (nationwide) {
       return `<div class="fs-map-legend"><span class="fs-map-legend-swatch fs-map-state--active"></span>
         <span>Nationwide distribution (per FDA)</span></div>`;
     }
     if (counts) {
-      return `<div class="fs-map-legend" aria-label="Case count intensity legend">
-        <span class="fs-map-legend-swatch fs-map-state--level1"></span><span>Fewer cases</span>
+      return `<div class="fs-map-legend" aria-label="Outbreak-associated case count intensity legend">
+        <span class="fs-map-legend-swatch fs-map-state--level1"></span><span>Fewer outbreak-linked cases</span>
         <span class="fs-map-legend-swatch fs-map-state--level2"></span>
-        <span class="fs-map-legend-swatch fs-map-state--level3"></span><span>More cases</span>
+        <span class="fs-map-legend-swatch fs-map-state--level3"></span><span>More outbreak-linked cases</span>
       </div>`;
     }
-    return `<div class="fs-map-legend"><span class="fs-map-legend-swatch fs-map-state--active"></span>
-      <span>${isCases ? 'Confirmed cases reported' : 'Product distributed'}</span></div>`;
+    return `<div class="fs-map-legend" aria-label="${esc(isCases ? labels.legend_cases : labels.legend_distribution)}">
+      <span class="fs-map-legend-swatch fs-map-state--active"></span>
+      <span>${esc(isCases ? labels.legend_cases : labels.legend_distribution)}</span></div>`;
   }
 
   /** Accessible text/table alternative (always rendered under the SVG). */
-  function buildTextAlternative({ isCases, stateEntries, counts, nationwide }) {
+  function buildTextAlternative({ isCases, stateEntries, counts, nationwide, labels }) {
     if (nationwide && stateEntries.length === 0) {
       return '<p class="fs-map-alt">FDA reports the product was distributed nationwide.</p>';
     }
@@ -168,17 +199,20 @@
       const rows = stateEntries
         .map((s) => ({ name: s.name || s.abbr, count: counts[s.abbr] }))
         .sort((a, b) => (b.count || 0) - (a.count || 0));
-      return `<details class="fs-map-alt-details"><summary>State-by-state table</summary>
-        <table class="fs-map-alt-table"><thead><tr><th scope="col">State</th><th scope="col">Official count</th></tr></thead>
+      return `<details class="fs-map-alt-details"><summary>Outbreak-associated cases by state</summary>
+        <table class="fs-map-alt-table"><thead><tr><th scope="col">State</th><th scope="col">Official outbreak-linked count</th></tr></thead>
         <tbody>${rows.map((r) => `<tr><td>${esc(r.name)}</td><td>${typeof r.count === 'number' ? r.count.toLocaleString('en-US') : 'Not reported'}</td></tr>`).join('')}</tbody>
         </table></details>`;
     }
     const names = stateEntries.map((s) => s.name || s.abbr);
+    const heading = isCases
+      ? (labels.caption_cases || 'States reporting outbreak-associated cases')
+      : (labels.caption_distribution || 'Confirmed product distribution');
     const note = isCases
-      ? 'State-by-state counts were not provided by FDA.'
+      ? ' These are outbreak-associated states for this investigation, not all states with national pathogen activity. State-by-state counts were not provided by FDA.'
       : '';
-    return `<p class="fs-map-alt">${isCases ? 'States with confirmed cases' : 'Distribution states'}: ${esc(names.join(', '))}.${note ? ` ${note}` : ''}</p>`;
+    return `<p class="fs-map-alt">${esc(heading)}: ${esc(names.join(', '))}.${note}</p>`;
   }
 
-  window.FoodSafetyMap = { render, loadGeometry };
+  window.FoodSafetyMap = { render, loadGeometry, DEFAULT_LABELS };
 }());

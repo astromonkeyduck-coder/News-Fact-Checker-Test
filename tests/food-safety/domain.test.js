@@ -241,6 +241,8 @@ test('material update produces structured change entries', () => {
   const types = diff.materialChanges.map((c) => c.type);
   assert.ok(types.includes('illness_total'));
   assert.ok(types.includes('new_case_states'));
+  const caseChange = diff.materialChanges.find((c) => c.type === 'new_case_states');
+  assert.ok(caseChange && /outbreak-associated case states/i.test(caseChange.label));
   const ill = diff.materialChanges.find((c) => c.type === 'illness_total');
   assert.equal(ill.from, 10);
   assert.equal(ill.to, 25);
