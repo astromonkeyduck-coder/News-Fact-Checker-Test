@@ -4,7 +4,7 @@
  * Section router, navigation binding, shell orchestration.
  */
 
-import { initAdminAuth, logout } from './admin-auth.js';
+import { initAdminAuth, logout } from './admin-auth.js?v=20260718-auth0';
 
 const SECTIONS = {
   posts:       () => import('./views/posts.js'),
