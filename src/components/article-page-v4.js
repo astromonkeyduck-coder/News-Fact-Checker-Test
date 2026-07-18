@@ -154,6 +154,12 @@
 
   function sourceLabel(s, index) {
     if (typeof s === 'string') {
+      if (/fda\.gov\/(?:safety\/recalls-market-withdrawals-safety-alerts|food\/outbreaks-foodborne-illness)\//i.test(s)
+          && !isFdaResourceUrl(s)) {
+        if (/\/outbreak-investigation-|\/investigation-/i.test(s)) return 'FDA outbreak advisory';
+        if (/recall|allergy-alert/i.test(s)) return 'FDA recall announcement';
+        return 'FDA announcement';
+      }
       return hostOf(s) || `Source ${index + 1}`;
     }
     return s.display || s.title || (s.url ? sourceLabel(s.url, index) : `Source ${index + 1}`);
