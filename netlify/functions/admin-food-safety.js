@@ -18,7 +18,9 @@ if (process.env.NETLIFY_DEV) {
   } catch (e) { /* optional in dev */ }
 }
 
+const crypto = require('crypto');
 const { requireAdminAuthOrSecret } = require('./middleware/requireAuth');
+const { config } = require('./lib/food-safety/config');
 
 const HEADERS = {
   'Content-Type': 'application/json',
@@ -27,8 +29,30 @@ const HEADERS = {
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+function timingSafeEqualStr(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+function isInternalFoodSafetyAuthorized(event) {
+  const token = config.internalToken;
+  if (!token) return false;
+  const provided = (event.headers && (event.headers['x-internal-token'] || event.headers['X-Internal-Token'])) || '';
+  return timingSafeEqualStr(token, provided);
+}
+
+async function requireFoodSafetyAdmin(event) {
+  if (isInternalFoodSafetyAuthorized(event)) {
+    return { user: { sub: 'food-safety-internal', role: 'admin' }, authMethod: 'internal' };
+  }
+  return requireAdminAuthOrSecret(event, 'FOOD_SAFETY_INTERNAL_TOKEN');
+}
+
 exports.handler = async (event) => {
-  const auth = await requireAdminAuthOrSecret(event, 'FOOD_SAFETY_INTERNAL_TOKEN');
+  const auth = await requireFoodSafetyAdmin(event);
   if (auth.statusCode) return auth; // 401/403/500 from middleware
 
   const supabase = require('./lib/supabaseClient');
