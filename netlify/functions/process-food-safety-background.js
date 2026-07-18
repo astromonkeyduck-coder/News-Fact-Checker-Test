@@ -80,6 +80,61 @@ exports.handler = async (event) => {
     return { statusCode: 200, body: JSON.stringify({ ok: true, publish: results }) };
   }
 
+  if (requestBody.rewrite_sources === true || (Array.isArray(requestBody.rewrite_ids) && requestBody.rewrite_ids.length)) {
+    const supabase = require('./lib/supabaseClient');
+    const { getEventById } = require('./lib/food-safety/store');
+    const { getPostStore, readPost, writePost } = require('./lib/postStore');
+    const { buildPublicSourceUrls, postIdForEvent } = require('./lib/food-safety/publish');
+
+    let ids = Array.isArray(requestBody.rewrite_ids) ? requestBody.rewrite_ids.map(String) : [];
+    if (requestBody.rewrite_sources === true && !ids.length) {
+      const { data, error } = await supabase
+        .from('food_safety_events')
+        .select('id')
+        .eq('publish_state', 'published')
+        .not('post_id', 'is', null)
+        .limit(100);
+      if (error) throw new Error(error.message);
+      ids = (data || []).map((r) => r.id);
+    }
+
+    const store = getPostStore();
+    const results = [];
+    for (const id of ids) {
+      try {
+        const eventRow = await getEventById(id);
+        if (!eventRow || eventRow.publish_state === 'suppressed') {
+          results.push({ id, status: eventRow ? 'suppressed' : 'not_found' });
+          continue;
+        }
+        const postId = eventRow.post_id || postIdForEvent(eventRow);
+        const existing = await readPost(store, postId);
+        if (!existing) {
+          results.push({ id, status: 'post_missing', post_id: postId });
+          continue;
+        }
+        const sourceUrls = buildPublicSourceUrls(eventRow);
+        await writePost(store, postId, {
+          ...existing,
+          source_url: eventRow.source_url || existing.source_url,
+          source_urls: sourceUrls,
+          link: eventRow.source_url || existing.link,
+          url: eventRow.source_url || existing.url,
+        });
+        const cleanedLinks = (Array.isArray(eventRow.source_links) ? eventRow.source_links : [])
+          .filter((l) => l && l.url && (l.role === 'canonical' || l.role === 'core_table'));
+        if (cleanedLinks.length && cleanedLinks.length !== (eventRow.source_links || []).length) {
+          await supabase.from('food_safety_events').update({ source_links: cleanedLinks }).eq('id', id);
+        }
+        results.push({ id, status: 'rewritten', post_id: postId, source_count: sourceUrls.length });
+      } catch (e) {
+        results.push({ id, status: 'error', error: e.message });
+      }
+    }
+    logger.info('Internal rewrite_sources complete', { results });
+    return { statusCode: 200, body: JSON.stringify({ ok: true, rewrite: results }) };
+  }
+
   const { claimPendingDocuments } = require('./lib/food-safety/store');
   const { processSourceDocument } = require('./lib/food-safety/pipeline');
 

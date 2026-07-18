@@ -178,9 +178,64 @@
     return out;
   }
 
+  // FDA pages embed dozens of sidebar resource links; they all render as "fda.gov".
+  const FDA_RESOURCE_PATH_RE = /\/(recall-resources|enforcement-reports|industry-guidance-recalls|major-product-recalls|about-core-network|core-annual-reports|core-publications|outbreak-investigation-reports|post-outbreak-response|strengthening-food-safety|public-health-advisories|food-safety-tips|food-safety-resources|foodborne-illness-outbreak-executive|foodborne-outbreak-overview|foodborne-outbreak-response|foodborne-pathogens|investigations-foodborne-illness-outbreaks)(?:-[a-z0-9-]+)?\/?$/i;
+
+  function isFdaResourceUrl(href) {
+    if (!href || typeof href !== 'string') return false;
+    try {
+      const u = new URL(href);
+      if (!/(^|\.)fda\.gov$/i.test(u.hostname)) return false;
+      const path = u.pathname.replace(/\/+$/, '') || '/';
+      if (path === '/safety/recalls-market-withdrawals-safety-alerts') return true;
+      if (path === '/food/outbreaks-foodborne-illness') return true;
+      return FDA_RESOURCE_PATH_RE.test(path);
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Normalize source lists for display. FDA Food Safety posts keep the canonical
+   * announcement (and at most one peer recall/outbreak link), never sidebar junk.
+   */
+  function normalizeSourcesForDisplay(post, sourceUrls) {
+    let entries = dedupeSourceEntries(sourceUrls);
+    const isFda = post && (post.source === 'FDA' || post.category === 'Food Safety' || post.event_type === 'food_recall' || post.event_type === 'food_outbreak');
+    if (!isFda) return entries;
+
+    entries = entries.filter((s) => !isFdaResourceUrl(sourceHref(s)));
+
+    const primary = post.source_url || post.url || post.link || null;
+    if (primary && !isFdaResourceUrl(primary)) {
+      const primaryKey = primary.split('?')[0].split('#')[0];
+      const hasPrimary = entries.some((s) => sourceHref(s).split('?')[0].split('#')[0] === primaryKey);
+      if (!hasPrimary) {
+        entries = [{ url: primary, display: 'FDA announcement' }, ...entries];
+      } else {
+        entries = entries.map((s) => {
+          const href = sourceHref(s);
+          if (href.split('?')[0].split('#')[0] !== primaryKey) return s;
+          if (typeof s === 'string') return { url: s, display: 'FDA announcement' };
+          return { ...s, display: s.display || s.title || 'FDA announcement' };
+        });
+      }
+    }
+
+    // Cap: primary + at most one additional peer FDA announcement.
+    if (entries.length > 2) {
+      const primaryKey = primary ? primary.split('?')[0].split('#')[0] : null;
+      const rest = entries.filter((s) => sourceHref(s).split('?')[0].split('#')[0] !== primaryKey);
+      const primaryEntry = entries.find((s) => sourceHref(s).split('?')[0].split('#')[0] === primaryKey);
+      entries = [primaryEntry || entries[0], rest[0]].filter(Boolean);
+    }
+
+    return dedupeSourceEntries(entries);
+  }
+
   function buildSourceChipsHTML(sourceUrls, opts, escapeHtml) {
-    const { xUrl, includeX = false } = opts || {};
-    const urls = dedupeSourceEntries(sourceUrls);
+    const { xUrl, includeX = false, post = null } = opts || {};
+    const urls = normalizeSourcesForDisplay(post, sourceUrls);
     if (urls.length === 0 && !includeX) return '';
 
     const chips = urls.map((s, i) => {
@@ -540,8 +595,8 @@
     }
 
     const sourceUrls = Array.isArray(post.source_urls) ? post.source_urls : [];
-    if (sourceUrls.length > 0) {
-      html += spineNode(buildSourceChipsHTML(sourceUrls, {}, escapeHtml), '', 'Sources', escapeHtml);
+    if (sourceUrls.length > 0 || post.source_url) {
+      html += spineNode(buildSourceChipsHTML(sourceUrls, { post }, escapeHtml), '', 'Sources', escapeHtml);
     }
 
     html += '</div>';
@@ -574,9 +629,9 @@
     const sourceUrls = Array.isArray(post.source_urls) ? post.source_urls : [];
     const xUrl = post.x_url || post.link || '';
     const hasX = xUrl && (xUrl.includes('x.com') || xUrl.includes('twitter.com'));
-    if (sourceUrls.length > 0 || hasX) {
+    if (sourceUrls.length > 0 || post.source_url || hasX) {
       html += spineNode(
-        buildSourceChipsHTML(sourceUrls, { xUrl: hasX ? xUrl : null, includeX: hasX }, escapeHtml),
+        buildSourceChipsHTML(sourceUrls, { xUrl: hasX ? xUrl : null, includeX: hasX, post }, escapeHtml),
         '',
         'Sources',
         escapeHtml
@@ -612,7 +667,7 @@
       </li>`);
     };
 
-    const sourceUrls = dedupeSourceEntries(post.source_urls);
+    const sourceUrls = normalizeSourcesForDisplay(post, post.source_urls);
     sourceUrls.forEach((s, i) => {
       push(sourceHref(s), sourceLabel(s, i), '');
     });
@@ -620,9 +675,9 @@
     const xUrl = post.x_url || post.link || '';
     if (xUrl && (xUrl.includes('x.com') || xUrl.includes('twitter.com'))) {
       push(xUrl, 'Original post on X', post.author ? `Posted by ${post.author}` : '');
-    } else if (post.source_url || post.url || post.link) {
+    } else if (!sourceUrls.length && (post.source_url || post.url || post.link)) {
       const href = post.source_url || post.url || post.link;
-      if (href && !href.includes('noteworthynews.co')) {
+      if (href && !href.includes('noteworthynews.co') && !isFdaResourceUrl(href)) {
         push(href, post.source ? `${post.source} (original)` : 'Original source', '');
       }
     }
