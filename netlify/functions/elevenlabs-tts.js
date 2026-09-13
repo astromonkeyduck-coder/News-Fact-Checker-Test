@@ -13,7 +13,10 @@ const crypto = require('node:crypto');
 const { getStore } = require('@netlify/blobs');
 const { getPostStore, readPost } = require('./lib/postStore');
 
-const DEFAULT_VOICE_ID = '21m00Tcm4TlvDq8ikWAM'; // ElevenLabs "Rachel"
+// ElevenLabs "Matilda" (premade, professional/informative). The account's
+// current plan rejects library voices such as Rachel via the API (402
+// paid_plan_required); premade voices from /v1/voices remain usable.
+const DEFAULT_VOICE_ID = 'XrExE9yKIg1WjnnlVkGX';
 const DEFAULT_MODEL = 'eleven_multilingual_v2';
 const ARTICLE_CHAR_CAP = 4800;
 const SNIPPET_CHAR_CAP = 1000;
