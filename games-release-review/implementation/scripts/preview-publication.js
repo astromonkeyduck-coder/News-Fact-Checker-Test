@@ -1,0 +1,25 @@
+'use strict';
+// Isolated preview. No .env, production functions, service credentials or mutation proxy.
+const http=require('node:http'),fs=require('node:fs'),path=require('node:path');
+const R=require('../publication/render'),M=require('../publication/model'),D=require('../publication/data'),I=require('../publication/information');
+const Q=require('../lib/publicationSourceQuality'), {normalizePostId}=require('../netlify/functions/lib/postStore');
+const root=path.resolve(__dirname,'..'),raw=D.merge(require('../publication/data/posts.json'));
+const G=require('../publication/story-guides');
+const Inside=require('../publication/inside-story/render');
+const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.xml':'application/xml','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.svg':'image/svg+xml','.webp':'image/webp','.ico':'image/x-icon','.mp4':'video/mp4'};
+const server=http.createServer(async(req,res)=>{const u=new URL(req.url,'http://localhost');const send=(status,body,type='text/html; charset=utf-8')=>{res.writeHead(status,{'Content-Type':type,'Cache-Control':'no-store','X-Robots-Tag':'noindex, nofollow'});res.end(body);};
+ let route;try{route=path.posix.normalize(decodeURIComponent(u.pathname));}catch{return send(400,'Malformed URL');}
+ if(route.includes('\\')||route.includes('\0'))return send(400,'Malformed URL');
+ if(req.method==='POST'&&route==='/.netlify/functions/send-email'){let body='';for await(const chunk of req){body+=chunk;if(body.length>10000)return send(413,'{}','application/json');}try{const data=JSON.parse(body);return send(/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(data.email||'')?200:400,JSON.stringify({success:/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(data.email||''),preview:true,message:'Local test only. No email sent.'}),'application/json');}catch{return send(400,'{"success":false}','application/json');}}
+ if(!['GET','HEAD'].includes(req.method))return send(405,'{"error":"Live mutations disabled in preview"}','application/json');
+ if(route.startsWith('/publication/editorial/records/')||route.startsWith('/.')){if(route==='/.netlify/functions/posts-read'){let id=u.searchParams.get('id');try{if(id)id=normalizePostId(id);}catch{return send(400,'{"error":"Invalid story identifier"}','application/json');}const p=raw.find(p=>p.id===id||p.id==='usgs-'+id?.replace(/^eq-/,''));return send(id&&!p?404:200,JSON.stringify(id?[p].filter(Boolean).map(Q.publicationPost):raw.filter(Q.isListedPost).map(Q.publicationPost)),'application/json');}return send(404,'{"error":"This service is not enabled in the isolated preview"}','application/json');}
+ if(route==='/'||route==='/index.html'||route==='/v2/'||route==='/v2/index.html')return send(200,R.home(raw,{preview:true}));
+ if(route==='/archive.html')return send(200,R.archive(raw,Object.fromEntries(u.searchParams),{preview:true}));
+ if(route==='/article.html'||route==='/article'){let id=u.searchParams.get('id');try{if(id)id=normalizePostId(id);}catch{return send(404,R.errorPage(404,id,{preview:true}));}const post=raw.find(p=>p.id===id||p.id==='usgs-'+id?.replace(/^eq-/,''));return send(post?200:404,post?R.article(post,raw,{preview:true}):R.errorPage(404,id,{preview:true}));}
+ if(route.startsWith('/inside-the-story')){if(![Inside.route,Inside.route+'index.html',Inside.route.slice(0,-1)].includes(route))return send(404,R.errorPage(404,'',{preview:true}));return send(200,R.page({title:Inside.title,description:Inside.description,canonical:Inside.route,preview:true,insideStory:true,content:Inside.content()}));}
+ if(route.startsWith('/story-so-far')){const match=route.match(/^\/story-so-far(?:\/([a-z0-9-]+))?\/(?:index\.html)?$/);const guide=match&&match[1]?G.bySlug(match[1]):null;if(!match||(match[1]&&!guide))return send(404,R.errorPage(404,'',{preview:true}));return send(200,R.page({title:guide?guide.title:'The story so far',description:guide?guide.intro:'Connected coverage, sourced claims and what changed.',canonical:guide?G.href(guide):'/story-so-far/',active:'briefs',preview:true,readingControls:true,content:guide?G.detailContent(guide,raw):G.indexContent()}));}
+ const info=I.information(route,{preview:true});if(info)return send(200,info);
+ let file=path.resolve(root,'.'+route);if(!file.startsWith(root+path.sep))return send(403,'Forbidden');
+ try{if(fs.statSync(file).isDirectory())file=path.join(file,'index.html');if(fs.existsSync(file)){if(path.extname(file)==='.html')return send(200,fs.readFileSync(file,'utf8').replace('data-preview="false"','data-preview="true"'));res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream','Cache-Control':'no-store','X-Robots-Tag':'noindex'});return fs.createReadStream(file).pipe(res);}}catch{}
+ return send(404,R.errorPage(404,'',{preview:true}));
+});server.listen(Number(process.env.PREVIEW_PORT)||4173,'127.0.0.1',()=>console.log('Publication preview: http://127.0.0.1:4173 — public snapshot only; no live writes.'));

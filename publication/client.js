@@ -20,6 +20,7 @@
   const speakerIcon='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6.5 9H3v6h3.5L11 19V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9.5 9.5 0 0 1 0 13"/></svg>';
   const pauseIcon='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M9 5v14"/><path d="M15 5v14"/></svg>';
   let narration=null,loadingAudio=false;
+  document.addEventListener('noteworthy:audio-owner',event=>{if(event.detail?.owner!=='article-narration')narration?.pause();});
   const setLabel=(icon,text)=>{listen.innerHTML=icon+' '+text;};
   document.querySelectorAll('video').forEach(v=>v.addEventListener('play',()=>narration?.pause()));
   listen.addEventListener('click',async()=>{
@@ -32,7 +33,7 @@
     const data=await response.json().catch(()=>({}));
     if(!response.ok||!data.audio)throw Error();
     narration=new Audio('data:audio/mpeg;base64,'+data.audio);
-    narration.addEventListener('play',()=>{setLabel(pauseIcon,'Pause');listen.setAttribute('aria-pressed','true');listenStatus.textContent='AI-generated narration.';document.querySelectorAll('video').forEach(v=>v.pause());});
+    narration.addEventListener('play',()=>{document.dispatchEvent(new CustomEvent('noteworthy:audio-owner',{detail:{owner:'article-narration'}}));setLabel(pauseIcon,'Pause');listen.setAttribute('aria-pressed','true');listenStatus.textContent='AI-generated narration.';document.querySelectorAll('video').forEach(v=>v.pause());});
     narration.addEventListener('pause',()=>{if(!narration.ended){setLabel(speakerIcon,'Resume');listen.setAttribute('aria-pressed','false');}});
     narration.addEventListener('ended',()=>{setLabel(speakerIcon,'Listen again');listen.setAttribute('aria-pressed','false');narration.currentTime=0;});
     await narration.play();
