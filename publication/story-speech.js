@@ -1,23 +1,33 @@
+/* Spoken answers use ElevenLabs exclusively. No browser speech fallback. */
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.NoteworthyStorySpeech=api;})(typeof window==='object'?window:this,function(){
  'use strict';
+ const ENDPOINT='/.netlify/functions/elevenlabs-tts';
  function plainText(value){return String(value||'').replace(/!\[([^\]]*)\]\([^)]*\)/g,'$1').replace(/\[([^\]]+)\]\([^)]*\)/g,'$1').replace(/https?:\/\/\S+/g,'').replace(/^\s{0,3}#{1,6}\s+/gm,'').replace(/[*_`~]/g,'').replace(/\s+/g,' ').trim();}
- function chunks(text){const words=plainText(text).split(/\s+/),parts=[];let part='';for(const word of words){if(part.length+word.length+(part?1:0)>240){parts.push(part);part='';}part+=(part?' ':'')+word;}if(part)parts.push(part);return parts.filter(Boolean);}
- function createSpeech({synthesis,Utterance,onChange=()=>{}}){
-  const supported=Boolean(synthesis&&Utterance);let generation=0,current=null;
-  function stop(){generation++;current=null;if(supported)synthesis.cancel();onChange({state:'stopped'});}
-  function speak(text){
-   stop();if(!supported){onChange({state:'unavailable',message:'Spoken answers are unavailable in this browser.'});return false;}
-   const parts=chunks(text),token=generation;if(!parts.length)return false;
-   function next(index){
-    if(token!==generation)return;if(index>=parts.length){current=null;onChange({state:'ended'});return;}
-    const utterance=new Utterance(parts[index]);current=utterance;utterance.lang='en-US';utterance.rate=1;utterance.pitch=1;
-    const voices=synthesis.getVoices?.()||[],english=voices.filter(v=>/^en[-_]/i.test(v.lang));utterance.voice=english.find(v=>/Samantha|Natural|Google US English/i.test(v.name))||english.find(v=>v.default)||english[0]||null;
-    utterance.onstart=()=>{if(token===generation)onChange({state:'speaking'});};
-    utterance.onend=()=>{if(token===generation)next(index+1);};
-    utterance.onerror=()=>{if(token===generation){generation++;current=null;onChange({state:'error',message:'Audio could not play. Use Read aloud to try again.'});}};
-    onChange({state:'starting'});try{synthesis.speak(utterance);}catch{utterance.onerror();}
-   }
-   next(0);return true;
+ function chunks(value){let text=plainText(value);const result=[];while(text){if(text.length<=900){result.push(text);break;}const slice=text.slice(0,900),sentence=Math.max(slice.lastIndexOf('. '),slice.lastIndexOf('? '),slice.lastIndexOf('! ')),space=slice.lastIndexOf(' '),cut=sentence>350?sentence+1:space>0?space:900;result.push(text.slice(0,cut));text=text.slice(cut).trim();}return result;}
+ function createSpeech({window:w,preview=false,onChange=()=>{}}){
+  const supported=Boolean(w?.fetch&&w.Audio&&w.AbortController);let generation=0,current=null,controller=null,timer=null,finishPlayback=null,cacheSize=0;const cache=new Map();
+  function stop(){generation++;if(timer)w.clearTimeout(timer);timer=null;controller?.abort();controller=null;if(current){current.onended=current.onerror=current.onplaying=null;current.pause();current.removeAttribute?.('src');current.load?.();current=null;}if(finishPlayback){finishPlayback(false);finishPlayback=null;}onChange({state:'stopped'});}
+  async function speak(value){
+   stop();if(preview){onChange({state:'unavailable',message:'ElevenLabs audio is not connected in this local preview.'});return false;}if(!supported){onChange({state:'unavailable',message:'ElevenLabs audio is unavailable in this browser.'});return false;}
+   const parts=chunks(value),token=generation;if(!parts.length)return false;
+   try{
+    for(const text of parts){
+     if(token!==generation)return false;onChange({state:'starting',message:'Preparing ElevenLabs audio…'});let source=cache.get(text);
+     if(!source){
+      const requestController=new w.AbortController(),requestTimer=w.setTimeout(()=>requestController.abort(),25000);controller=requestController;timer=requestTimer;
+      let response,data;try{response=await w.fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,storyAnswer:true}),signal:requestController.signal});data=await response.json().catch(()=>({}));}finally{w.clearTimeout(requestTimer);if(timer===requestTimer)timer=null;if(controller===requestController)controller=null;}
+      if(token!==generation)return false;
+      if(!response.ok)throw Error(response.status===429?'ElevenLabs audio has reached its request limit. Please try again later.':'ElevenLabs audio is unavailable right now. Use Read aloud to try again.');
+      if(data.format!=='mp3'||typeof data.audio!=='string'||!data.audio.length||data.audio.length>6000000||!/^[A-Za-z0-9+/]+={0,2}$/.test(data.audio)||data.truncated===true||(Number.isFinite(data.character_count)&&data.character_count!==text.length))throw Error('The complete ElevenLabs audio was not returned. Use Read aloud to try again.');
+      source='data:audio/mpeg;base64,'+data.audio;cache.set(text,source);cacheSize+=source.length;while(cache.size>24||cacheSize>12000000){const first=cache.keys().next().value;cacheSize-=cache.get(first).length;cache.delete(first);}
+     }
+     if(token!==generation)return false;
+     const audio=current=new w.Audio(source);
+     const played=await new Promise((resolve,reject)=>{finishPlayback=resolve;audio.onplaying=()=>{if(token===generation)onChange({state:'speaking',message:'Reading aloud · ElevenLabs'});};audio.onended=()=>resolve(true);audio.onerror=()=>reject(Error('ElevenLabs audio could not play. Use Read aloud to try again.'));try{const playing=audio.play();playing?.catch(()=>reject(Error('Your browser paused audio. Use Read aloud to play the ElevenLabs answer.')));}catch{reject(Error('ElevenLabs audio could not play. Use Read aloud to try again.'));}});
+     if(token!==generation||!played)return false;audio.onended=audio.onerror=audio.onplaying=null;current=null;finishPlayback=null;
+    }
+    if(token===generation)onChange({state:'ended'});return token===generation;
+   }catch(error){if(token!==generation)return false;stop();onChange({state:'error',message:error.name==='AbortError'?'ElevenLabs audio took too long. Use Read aloud to try again.':error.message});return false;}
   }
   return {supported,speak,stop};
  }

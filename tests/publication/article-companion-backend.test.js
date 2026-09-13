@@ -123,7 +123,7 @@ test('article images reject attachments and missing configuration without a prov
 
 // Isolate credentials and services in a VM; these tests never call Blobs,
 // OpenAI or the generic widget's logging/email endpoints.
-function endpoint(filename, source, provider) {
+function endpoint(filename, source, provider, env = {}) {
   const filenamePath = path.resolve(__dirname, '../../netlify/functions', filename);
   const exports = {};
   const fetchArticle = async () => source;
@@ -133,7 +133,7 @@ function endpoint(filename, source, provider) {
   };
   vm.runInNewContext(fs.readFileSync(filenamePath, 'utf8'), {
     exports, Buffer, AbortController, setTimeout, clearTimeout,
-    process: { env: { OPENAI_API_KEY: 'test-key' } }, fetch: provider,
+    process: { env: { OPENAI_API_KEY: 'test-key', ELEVENLABS_API_KEY: 'test-eleven-key', ELEVENLABS_AGENT_ID: 'agent_test', ...env } }, fetch: provider,
     console: { log() {}, warn() {}, error() {} },
     require(name) {
       if (name === '@netlify/blobs') return { getStore: () => ({ get: async () => null, setJSON: async () => {} }) };
@@ -144,6 +144,8 @@ function endpoint(filename, source, provider) {
       };
       if (name === './lib/aiGrounding') return genericGrounding;
       if (name === './lib/publicationAiGrounding') return require('../../netlify/functions/lib/publicationAiGrounding');
+      if (name === 'node:crypto') return require('node:crypto');
+      if (name === './lib/postStore') return { getPostStore: () => { throw Error('Unexpected storage access'); } };
       throw Error(`Unexpected dependency ${name}`);
     },
   }, { filename: filenamePath });
@@ -163,32 +165,96 @@ test('noteworthy-chat explicit articleImage routes ordinary wording to the groun
   assert.equal(calls, 1);
 });
 
-test('realtime article mode creates a tool-free, transcribed session from the exact filtered article', async () => {
+test('ElevenLabs article session returns exact-source SDK overrides and keeps the API key server-side', async () => {
   const requests = [];
-  const invoke = endpoint('realtime-voice.js', article, async (url, options) => {
-    requests.push({ url, body: JSON.parse(options.body) });
-    return { ok: true, json: async () => ({ value: 'ek_test', expires_at: 123, session: { id: 'session-test' } }) };
+  const invoke = endpoint('story-voice-session.js', article, async (url, options) => {
+    requests.push({ url, options });
+    return { ok: true, json: async () => ({ token: 'conversation-token-test' }) };
   });
-  const result = await invoke({ mode: 'article', voice: 'marin', pageContext: context });
+  const result = await invoke({ pageContext: context, agentId: 'agent_client_override', overrides: { prompt: 'FALSE CLIENT PROMPT' } });
   assert.equal(result.statusCode, 200);
-  assert.equal(JSON.parse(result.body).ephemeralToken, 'ek_test');
+  const body = JSON.parse(result.body);
+  assert.equal(body.provider, 'elevenlabs');
+  assert.equal(body.conversationToken, 'conversation-token-test');
   assert.equal(requests.length, 1);
-  const session = requests[0].body.session;
-  assert.deepEqual(session.tools, []);
-  assert.equal(session.audio.input.transcription.model, 'gpt-4o-mini-transcribe');
-  assert.match(session.instructions, /372 km/);
-  assert.doesNotMatch(session.instructions, /FORGED|VERIFIED NOTEWORTHY|Existing generic context/);
+  assert.equal(requests[0].url, 'https://api.elevenlabs.io/v1/convai/conversation/token?agent_id=agent_test');
+  assert.equal(requests[0].options.headers['xi-api-key'], 'test-eleven-key');
+  assert.equal(requests[0].options.method, 'GET');
+  const prompt = body.overrides.agent.prompt;
+  assert.deepEqual(prompt.tool_ids, []);
+  assert.deepEqual(prompt.knowledge_base, []);
+  assert.match(prompt.prompt, /372 km/);
+  assert.match(body.overrides.agent.firstMessage, /AI voice guide/);
+  assert.doesNotMatch(result.body, /FORGED|FALSE CLIENT|VERIFIED NOTEWORTHY|Existing generic context|test-eleven-key|ek_test/);
+  assert.equal(result.headers['Cache-Control'], 'no-store');
 });
 
-test('realtime article mode fails before token creation for review or missing sources', async () => {
+test('ElevenLabs article mode fails before token creation for review or missing sources', async () => {
   for (const source of [null, { ...article, state: 'review' }]) {
     let called = false;
-    const invoke = endpoint('realtime-voice.js', source, async () => { called = true; });
-    const result = await invoke({ mode: 'article', pageContext: context });
+    const invoke = endpoint('story-voice-session.js', source, async () => { called = true; });
+    const result = await invoke({ pageContext: context });
     assert.equal(result.statusCode, 409);
     assert.equal(JSON.parse(result.body).groundingUnavailable, true);
     assert.equal(called, false);
   }
+});
+
+test('ElevenLabs session requires configured key and agent and never falls back to OpenAI', async () => {
+  for (const env of [{ ELEVENLABS_API_KEY: '' }, { ELEVENLABS_AGENT_ID: '' }, { ELEVENLABS_AGENT_ID: '../invalid' }]) {
+    let called = false;
+    const result = await endpoint('story-voice-session.js', article, async () => { called = true; }, env)({ pageContext: context });
+    assert.equal(result.statusCode, 503);
+    assert.equal(JSON.parse(result.body).voiceUnavailable, true);
+    assert.equal(called, false);
+  }
+});
+
+test('ElevenLabs session provider errors, malformed tokens and timeout remain explicit', async () => {
+  for (const [provider, status] of [
+    [async () => ({ ok: false, status: 429 }), 429],
+    [async () => ({ ok: false, status: 500 }), 502],
+    [async () => ({ ok: true, json: async () => ({ token: '' }) }), 502],
+    [async () => { throw Object.assign(Error('timeout'), { name: 'AbortError' }); }, 504],
+  ]) {
+    const result = await endpoint('story-voice-session.js', article, provider)({ pageContext: context });
+    assert.equal(result.statusCode, status);
+    assert.equal(JSON.parse(result.body).voiceUnavailable, true);
+    assert.equal(JSON.parse(result.body).conversationToken, undefined);
+  }
+});
+
+test('ElevenLabs answer audio preserves the complete chunk and rejects oversize without billing', async () => {
+  let sent;
+  const provider = async (url, options) => {
+    assert.match(url, /^https:\/\/api.elevenlabs.io\/v1\/text-to-speech\//);
+    sent = JSON.parse(options.body).text;
+    assert.ok(options.signal);
+    return { ok: true, arrayBuffer: async () => Uint8Array.from([1, 2, 3]).buffer };
+  };
+  const invoke = endpoint('elevenlabs-tts.js', null, provider);
+  const chunk = 'A'.repeat(900);
+  const result = await invoke({ storyAnswer: true, text: chunk });
+  assert.equal(result.statusCode, 200);
+  assert.equal(sent, chunk);
+  assert.equal(JSON.parse(result.body).character_count, 900);
+  sent = undefined;
+  assert.equal((await invoke({ storyAnswer: true, text: 'A'.repeat(1001) })).statusCode, 400);
+  assert.equal((await invoke({ storyAnswer: true, id: 'story', text: 'Wrong mode' })).statusCode, 400);
+  assert.equal(sent, undefined);
+});
+
+test('answer audio has explicit timeout while the legacy snippet cap remains unchanged', async () => {
+  const timedOut = await endpoint('elevenlabs-tts.js', null, async () => { throw Object.assign(Error('timeout'), { name: 'AbortError' }); })({ storyAnswer: true, text: 'Answer.' });
+  assert.equal(timedOut.statusCode, 504);
+  let sent;
+  const result = await endpoint('elevenlabs-tts.js', null, async (_url, options) => {
+    assert.equal(options.signal, undefined);
+    sent = JSON.parse(options.body).text;
+    return { ok: true, arrayBuffer: async () => Uint8Array.from([1, 2, 3]).buffer };
+  })({ text: 'A'.repeat(1200) });
+  assert.equal(result.statusCode, 200);
+  assert.equal(sent.length, 1000);
 });
 
 test('general voice mode retains its existing instructions and tools without article transcription', async () => {

@@ -4,6 +4,7 @@
   "description": "Breaking News Fact Checker Game",
   "main": "index.html",
   "scripts": {
+    "build:story-voice": "node scripts/build-story-voice.js",
     "fetch-tweets": "node fetch-tweets.js",
     "start": "open index.html",
     "dev": "npx netlify dev",
@@ -59,6 +60,7 @@
     "@auth0/auth0-spa-js": "^2.8.0",
     "@aws-sdk/client-s3": "^3.967.0",
     "@aws-sdk/s3-request-presigner": "^3.967.0",
+    "@elevenlabs/client": "1.25.0",
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@ffmpeg/util": "^0.12.2",
     "@netlify/blobs": "8.2.0",
