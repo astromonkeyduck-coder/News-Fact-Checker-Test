@@ -1,0 +1,1025 @@
+{
+  "environment": "Fresh headless Chromium; local saved-content preview; unthrottled; no user profile",
+  "checks": [
+    {
+      "name": "home 375px no horizontal overflow",
+      "pass": true,
+      "detail": 375
+    },
+    {
+      "name": "home 375px resolved",
+      "pass": true,
+      "detail": 200
+    },
+    {
+      "name": "home 375px no automatic video playback",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "news-article 375px no horizontal overflow",
+      "pass": true,
+      "detail": 375
+    },
+    {
+      "name": "news-article 375px resolved",
+      "pass": true,
+      "detail": 200
+    },
+    {
+      "name": "news-article 375px no automatic video playback",
+      "pass": true,
+      "detail": [
+        {
+          "paused": true,
+          "autoplay": false,
+          "controls": true,
+          "muted": false
+        }
+      ]
+    },
+    {
+      "name": "archive 375px no horizontal overflow",
+      "pass": true,
+      "detail": 375
+    },
+    {
+      "name": "archive 375px resolved",
+      "pass": true,
+      "detail": 200
+    },
+    {
+      "name": "archive 375px no automatic video playback",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "home 390px no horizontal overflow",
+      "pass": true,
+      "detail": 390
+    },
+    {
+      "name": "home 390px resolved",
+      "pass": true,
+      "detail": 200
+    },
+    {
+      "name": "home 390px no automatic video playback",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "news-article 390px no horizontal overflow",
+      "pass": true,
+      "detail": 390
+    },
+    {
+      "name": "news-article 390px resolved",
+      "pass": true,
+      "detail": 200
+    },
+    {
+      "name": "news-article 390px no automatic video playback",
+      "pass": true,
+      "detail": [
+        {
+          "paused": true,
+          "autoplay": false,
+          "controls": true,
+          "muted": false
+        }
+      ]
+    },
+    {
+      "name": "archive 390px no horizontal overflow",
+      "pass": true,
+      "detail": 390
+    },
+    {
+      "name": "archive 390px resolved",
+      "pass": true,
+      "detail": 200
+    },
+    {
+      "name": "archive 390px no automatic video playback",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "home 768px no horizontal overflow",
+      "pass": true,
+      "detail": 768
+    },
+    {
+      "name": "home 768px resolved",
+      "pass": true,
+      "detail": 200
+    },
+    {
+      "name": "home 768px no automatic video playback",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "news-article 768px no horizontal overflow",
+      "pass": true,
+      "detail": 768
+    },
+    {
+      "name": "news-article 768px resolved",
+      "pass": true,
+      "detail": 200
+    },
+    {
+      "name": "news-article 768px no automatic video playback",
+      "pass": true,
+      "detail": [
+        {
+          "paused": true,
+          "autoplay": false,
+          "controls": true,
+          "muted": false
+        }
+      ]
+    },
+    {
+      "name": "archive 768px no horizontal overflow",
+      "pass": true,
+      "detail": 768
+    },
+    {
+      "name": "archive 768px resolved",
+      "pass": true,
+      "detail": 200
+    },
+    {
+      "name": "archive 768px no automatic video playback",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "home 1280px no horizontal overflow",
+      "pass": true,
+      "detail": 1280
+    },
+    {
+      "name": "home 1280px resolved",
+      "pass": true,
+      "detail": 200
+    },
+    {
+      "name": "home 1280px no automatic video playback",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "news-article 1280px no horizontal overflow",
+      "pass": true,
+      "detail": 1280
+    },
+    {
+      "name": "news-article 1280px resolved",
+      "pass": true,
+      "detail": 200
+    },
+    {
+      "name": "news-article 1280px no automatic video playback",
+      "pass": true,
+      "detail": [
+        {
+          "paused": true,
+          "autoplay": false,
+          "controls": true,
+          "muted": false
+        }
+      ]
+    },
+    {
+      "name": "archive 1280px no horizontal overflow",
+      "pass": true,
+      "detail": 1280
+    },
+    {
+      "name": "archive 1280px resolved",
+      "pass": true,
+      "detail": 200
+    },
+    {
+      "name": "archive 1280px no automatic video playback",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "home 1440px no horizontal overflow",
+      "pass": true,
+      "detail": 1440
+    },
+    {
+      "name": "home 1440px resolved",
+      "pass": true,
+      "detail": 200
+    },
+    {
+      "name": "home 1440px no automatic video playback",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "news-article 1440px no horizontal overflow",
+      "pass": true,
+      "detail": 1440
+    },
+    {
+      "name": "news-article 1440px resolved",
+      "pass": true,
+      "detail": 200
+    },
+    {
+      "name": "news-article 1440px no automatic video playback",
+      "pass": true,
+      "detail": [
+        {
+          "paused": true,
+          "autoplay": false,
+          "controls": true,
+          "muted": false
+        }
+      ]
+    },
+    {
+      "name": "archive 1440px no horizontal overflow",
+      "pass": true,
+      "detail": 1440
+    },
+    {
+      "name": "archive 1440px resolved",
+      "pass": true,
+      "detail": 200
+    },
+    {
+      "name": "archive 1440px no automatic video playback",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "usgs-article 1440px no horizontal overflow",
+      "pass": true,
+      "detail": 1440
+    },
+    {
+      "name": "usgs-article 1440px resolved",
+      "pass": true,
+      "detail": 200
+    },
+    {
+      "name": "usgs-article 1440px no automatic video playback",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "USGS source and automated attribution visible",
+      "pass": true
+    },
+    {
+      "name": "fda-article 390px no horizontal overflow",
+      "pass": true,
+      "detail": 390
+    },
+    {
+      "name": "fda-article 390px resolved",
+      "pass": true,
+      "detail": 200
+    },
+    {
+      "name": "fda-article 390px no automatic video playback",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "Ambiguous FDA import uses review notice",
+      "pass": true
+    },
+    {
+      "name": "fda-recall 1440px no horizontal overflow",
+      "pass": true,
+      "detail": 1440
+    },
+    {
+      "name": "fda-recall 1440px resolved",
+      "pass": true,
+      "detail": 200
+    },
+    {
+      "name": "fda-recall 1440px no automatic video playback",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "FDA unknown illness values not zero",
+      "pass": false
+    },
+    {
+      "name": "Lead headline complete",
+      "pass": true,
+      "detail": "5 people dead, multiple others injured after Amazon cargo plane crash at Miami International Airport, the sheriff’s office says."
+    },
+    {
+      "name": "Copy link succeeds or exposes readable fallback",
+      "pass": false,
+      "detail": ""
+    },
+    {
+      "name": "Correction action includes article URL",
+      "pass": true
+    },
+    {
+      "name": "Miami exactly five results",
+      "pass": true
+    },
+    {
+      "name": "Miami pagination hidden",
+      "pass": true
+    },
+    {
+      "name": "Search query shareable",
+      "pass": true,
+      "detail": "http://127.0.0.1:4173/archive.html?q=Miami"
+    },
+    {
+      "name": "Miami plus video reduces to two",
+      "pass": true
+    },
+    {
+      "name": "Combined filters yield zero, pagination hidden",
+      "pass": true
+    },
+    {
+      "name": "Reset clears search and filters",
+      "pass": true
+    },
+    {
+      "name": "Load more preserves category and grows matching count",
+      "pass": true,
+      "detail": {
+        "initialCount": "Showing 12 of 70 matching stories",
+        "moreCount": "Showing 24 of 70 matching stories",
+        "url": "http://127.0.0.1:4173/archive.html?category=News&page=2"
+      }
+    },
+    {
+      "name": "Reload preserves shareable filters and pagination",
+      "pass": true
+    },
+    {
+      "name": "Mobile menu opens",
+      "pass": true
+    },
+    {
+      "name": "Escape closes menu and restores focus",
+      "pass": true
+    },
+    {
+      "name": "Cookie controls stay in normal flow",
+      "pass": true
+    },
+    {
+      "name": "Footer cookie settings focus control",
+      "pass": true
+    },
+    {
+      "name": "Reject cookies dismisses choice",
+      "pass": true
+    },
+    {
+      "name": "Cookie preferences can be reopened",
+      "pass": true
+    },
+    {
+      "name": "Newsletter local mock explicitly confirms no live send",
+      "pass": true
+    },
+    {
+      "name": "Missing record has specific recovery state",
+      "pass": true
+    },
+    {
+      "name": "No uncaught browser script errors",
+      "pass": true,
+      "detail": []
+    }
+  ],
+  "pages": [
+    {
+      "name": "home",
+      "route": "/",
+      "status": 200,
+      "width": 375,
+      "scrollWidth": 375,
+      "title": "Independent news, followed through | Noteworthy News",
+      "h1": "5 people dead, multiple others injured after Amazon cargo plane crash at Miami International Airport, the sheriff’s office says.",
+      "h1Top": 487.15625,
+      "h1Bottom": 702.125,
+      "h1Font": "32px",
+      "brokenImages": [],
+      "videos": [],
+      "fixedOverlays": [],
+      "timing": [
+        {
+          "domContentLoadedMs": 192,
+          "loadMs": 280,
+          "transferBytes": 14362
+        }
+      ],
+      "paints": [
+        {
+          "name": "first-paint",
+          "ms": 212
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 212
+        }
+      ]
+    },
+    {
+      "name": "news-article",
+      "route": "/article.html?id=2096717577204502980",
+      "status": 200,
+      "width": 375,
+      "scrollWidth": 375,
+      "title": "5 people dead, multiple others injured after Amazon cargo plane crash at Miami International Airport, the sheriff’s office says. | Noteworthy News",
+      "h1": "5 people dead, multiple others injured after Amazon cargo plane crash at Miami International Airport, the sheriff’s office says.",
+      "h1Top": 269.875,
+      "h1Bottom": 500.3125,
+      "h1Font": "34px",
+      "brokenImages": [],
+      "videos": [
+        {
+          "paused": true,
+          "autoplay": false,
+          "controls": true,
+          "muted": false
+        }
+      ],
+      "fixedOverlays": [],
+      "timing": [
+        {
+          "domContentLoadedMs": 38,
+          "loadMs": 38,
+          "transferBytes": 10044
+        }
+      ],
+      "paints": [
+        {
+          "name": "first-paint",
+          "ms": 72
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 72
+        }
+      ]
+    },
+    {
+      "name": "archive",
+      "route": "/archive.html",
+      "status": 200,
+      "width": 375,
+      "scrollWidth": 375,
+      "title": "All stories | Noteworthy News",
+      "h1": "All stories.",
+      "h1Top": 236.828125,
+      "h1Bottom": 281.28125,
+      "h1Font": "39px",
+      "brokenImages": [],
+      "videos": [],
+      "fixedOverlays": [],
+      "timing": [
+        {
+          "domContentLoadedMs": 30,
+          "loadMs": 37,
+          "transferBytes": 394375
+        }
+      ],
+      "paints": [
+        {
+          "name": "first-paint",
+          "ms": 56
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 56
+        }
+      ]
+    },
+    {
+      "name": "home",
+      "route": "/",
+      "status": 200,
+      "width": 390,
+      "scrollWidth": 390,
+      "title": "Independent news, followed through | Noteworthy News",
+      "h1": "5 people dead, multiple others injured after Amazon cargo plane crash at Miami International Airport, the sheriff’s office says.",
+      "h1Top": 496.53125,
+      "h1Bottom": 711.5,
+      "h1Font": "32px",
+      "brokenImages": [],
+      "videos": [],
+      "fixedOverlays": [],
+      "timing": [
+        {
+          "domContentLoadedMs": 23,
+          "loadMs": 24,
+          "transferBytes": 14362
+        }
+      ],
+      "paints": [
+        {
+          "name": "first-paint",
+          "ms": 48
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 48
+        }
+      ]
+    },
+    {
+      "name": "news-article",
+      "route": "/article.html?id=2096717577204502980",
+      "status": 200,
+      "width": 390,
+      "scrollWidth": 390,
+      "title": "5 people dead, multiple others injured after Amazon cargo plane crash at Miami International Airport, the sheriff’s office says. | Noteworthy News",
+      "h1": "5 people dead, multiple others injured after Amazon cargo plane crash at Miami International Airport, the sheriff’s office says.",
+      "h1Top": 269.875,
+      "h1Bottom": 500.3125,
+      "h1Font": "34px",
+      "brokenImages": [],
+      "videos": [
+        {
+          "paused": true,
+          "autoplay": false,
+          "controls": true,
+          "muted": false
+        }
+      ],
+      "fixedOverlays": [],
+      "timing": [
+        {
+          "domContentLoadedMs": 22,
+          "loadMs": 22,
+          "transferBytes": 10044
+        }
+      ],
+      "paints": [
+        {
+          "name": "first-paint",
+          "ms": 48
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 48
+        }
+      ]
+    },
+    {
+      "name": "archive",
+      "route": "/archive.html",
+      "status": 200,
+      "width": 390,
+      "scrollWidth": 390,
+      "title": "All stories | Noteworthy News",
+      "h1": "All stories.",
+      "h1Top": 236.828125,
+      "h1Bottom": 281.28125,
+      "h1Font": "39px",
+      "brokenImages": [],
+      "videos": [],
+      "fixedOverlays": [],
+      "timing": [
+        {
+          "domContentLoadedMs": 31,
+          "loadMs": 34,
+          "transferBytes": 394375
+        }
+      ],
+      "paints": [
+        {
+          "name": "first-paint",
+          "ms": 44
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 44
+        }
+      ]
+    },
+    {
+      "name": "home",
+      "route": "/",
+      "status": 200,
+      "width": 768,
+      "scrollWidth": 768,
+      "title": "Independent news, followed through | Noteworthy News",
+      "h1": "5 people dead, multiple others injured after Amazon cargo plane crash at Miami International Airport, the sheriff’s office says.",
+      "h1Top": 580.96875,
+      "h1Bottom": 777.140625,
+      "h1Font": "36px",
+      "brokenImages": [],
+      "videos": [],
+      "fixedOverlays": [],
+      "timing": [
+        {
+          "domContentLoadedMs": 14,
+          "loadMs": 25,
+          "transferBytes": 14362
+        }
+      ],
+      "paints": [
+        {
+          "name": "first-paint",
+          "ms": 48
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 48
+        }
+      ]
+    },
+    {
+      "name": "news-article",
+      "route": "/article.html?id=2096717577204502980",
+      "status": 200,
+      "width": 768,
+      "scrollWidth": 768,
+      "title": "5 people dead, multiple others injured after Amazon cargo plane crash at Miami International Airport, the sheriff’s office says. | Noteworthy News",
+      "h1": "5 people dead, multiple others injured after Amazon cargo plane crash at Miami International Airport, the sheriff’s office says.",
+      "h1Top": 309.046875,
+      "h1Bottom": 573.046875,
+      "h1Font": "40px",
+      "brokenImages": [],
+      "videos": [
+        {
+          "paused": true,
+          "autoplay": false,
+          "controls": true,
+          "muted": false
+        }
+      ],
+      "fixedOverlays": [],
+      "timing": [
+        {
+          "domContentLoadedMs": 23,
+          "loadMs": 23,
+          "transferBytes": 10044
+        }
+      ],
+      "paints": [
+        {
+          "name": "first-paint",
+          "ms": 52
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 52
+        }
+      ]
+    },
+    {
+      "name": "archive",
+      "route": "/archive.html",
+      "status": 200,
+      "width": 768,
+      "scrollWidth": 768,
+      "title": "All stories | Noteworthy News",
+      "h1": "All stories.",
+      "h1Top": 277,
+      "h1Bottom": 331.71875,
+      "h1Font": "48px",
+      "brokenImages": [],
+      "videos": [],
+      "fixedOverlays": [],
+      "timing": [
+        {
+          "domContentLoadedMs": 27,
+          "loadMs": 29,
+          "transferBytes": 394375
+        }
+      ],
+      "paints": [
+        {
+          "name": "first-paint",
+          "ms": 40
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 40
+        }
+      ]
+    },
+    {
+      "name": "home",
+      "route": "/",
+      "status": 200,
+      "width": 1280,
+      "scrollWidth": 1280,
+      "title": "Independent news, followed through | Noteworthy News",
+      "h1": "5 people dead, multiple others injured after Amazon cargo plane crash at Miami International Airport, the sheriff’s office says.",
+      "h1Top": 663.984375,
+      "h1Bottom": 820.921875,
+      "h1Font": "36px",
+      "brokenImages": [],
+      "videos": [],
+      "fixedOverlays": [],
+      "timing": [
+        {
+          "domContentLoadedMs": 26,
+          "loadMs": 27,
+          "transferBytes": 14362
+        }
+      ],
+      "paints": [
+        {
+          "name": "first-paint",
+          "ms": 52
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 52
+        }
+      ]
+    },
+    {
+      "name": "news-article",
+      "route": "/article.html?id=2096717577204502980",
+      "status": 200,
+      "width": 1280,
+      "scrollWidth": 1280,
+      "title": "5 people dead, multiple others injured after Amazon cargo plane crash at Miami International Airport, the sheriff’s office says. | Noteworthy News",
+      "h1": "5 people dead, multiple others injured after Amazon cargo plane crash at Miami International Airport, the sheriff’s office says.",
+      "h1Top": 309.046875,
+      "h1Bottom": 520.234375,
+      "h1Font": "48px",
+      "brokenImages": [],
+      "videos": [
+        {
+          "paused": true,
+          "autoplay": false,
+          "controls": true,
+          "muted": false
+        }
+      ],
+      "fixedOverlays": [],
+      "timing": [
+        {
+          "domContentLoadedMs": 13,
+          "loadMs": 14,
+          "transferBytes": 10044
+        }
+      ],
+      "paints": [
+        {
+          "name": "first-paint",
+          "ms": 48
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 48
+        }
+      ]
+    },
+    {
+      "name": "archive",
+      "route": "/archive.html",
+      "status": 200,
+      "width": 1280,
+      "scrollWidth": 1280,
+      "title": "All stories | Noteworthy News",
+      "h1": "All stories.",
+      "h1Top": 277,
+      "h1Bottom": 331.71875,
+      "h1Font": "48px",
+      "brokenImages": [],
+      "videos": [],
+      "fixedOverlays": [],
+      "timing": [
+        {
+          "domContentLoadedMs": 27,
+          "loadMs": 34,
+          "transferBytes": 394375
+        }
+      ],
+      "paints": [
+        {
+          "name": "first-paint",
+          "ms": 60
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 60
+        }
+      ]
+    },
+    {
+      "name": "home",
+      "route": "/",
+      "status": 200,
+      "width": 1440,
+      "scrollWidth": 1440,
+      "title": "Independent news, followed through | Noteworthy News",
+      "h1": "5 people dead, multiple others injured after Amazon cargo plane crash at Miami International Airport, the sheriff’s office says.",
+      "h1Top": 662.796875,
+      "h1Bottom": 832.796875,
+      "h1Font": "39px",
+      "brokenImages": [],
+      "videos": [],
+      "fixedOverlays": [],
+      "timing": [
+        {
+          "domContentLoadedMs": 25,
+          "loadMs": 26,
+          "transferBytes": 14362
+        }
+      ],
+      "paints": [
+        {
+          "name": "first-paint",
+          "ms": 52
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 52
+        }
+      ]
+    },
+    {
+      "name": "news-article",
+      "route": "/article.html?id=2096717577204502980",
+      "status": 200,
+      "width": 1440,
+      "scrollWidth": 1440,
+      "title": "5 people dead, multiple others injured after Amazon cargo plane crash at Miami International Airport, the sheriff’s office says. | Noteworthy News",
+      "h1": "5 people dead, multiple others injured after Amazon cargo plane crash at Miami International Airport, the sheriff’s office says.",
+      "h1Top": 309.046875,
+      "h1Bottom": 520.234375,
+      "h1Font": "48px",
+      "brokenImages": [],
+      "videos": [
+        {
+          "paused": true,
+          "autoplay": false,
+          "controls": true,
+          "muted": false
+        }
+      ],
+      "fixedOverlays": [],
+      "timing": [
+        {
+          "domContentLoadedMs": 24,
+          "loadMs": 24,
+          "transferBytes": 10044
+        }
+      ],
+      "paints": [
+        {
+          "name": "first-paint",
+          "ms": 48
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 48
+        }
+      ]
+    },
+    {
+      "name": "archive",
+      "route": "/archive.html",
+      "status": 200,
+      "width": 1440,
+      "scrollWidth": 1440,
+      "title": "All stories | Noteworthy News",
+      "h1": "All stories.",
+      "h1Top": 277,
+      "h1Bottom": 331.71875,
+      "h1Font": "48px",
+      "brokenImages": [],
+      "videos": [],
+      "fixedOverlays": [],
+      "timing": [
+        {
+          "domContentLoadedMs": 19,
+          "loadMs": 26,
+          "transferBytes": 394375
+        }
+      ],
+      "paints": [
+        {
+          "name": "first-paint",
+          "ms": 64
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 64
+        }
+      ]
+    },
+    {
+      "name": "usgs-article",
+      "route": "/article.html?id=usgs-us7000tgrk",
+      "status": 200,
+      "width": 1440,
+      "scrollWidth": 1440,
+      "title": "M6.6 Earthquake Near West Java, Indonesia | Noteworthy News",
+      "h1": "M6.6 Earthquake Near West Java, Indonesia",
+      "h1Top": 309.046875,
+      "h1Bottom": 414.640625,
+      "h1Font": "48px",
+      "brokenImages": [],
+      "videos": [],
+      "fixedOverlays": [],
+      "timing": [
+        {
+          "domContentLoadedMs": 23,
+          "loadMs": 23,
+          "transferBytes": 8086
+        }
+      ],
+      "paints": [
+        {
+          "name": "first-paint",
+          "ms": 52
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 52
+        }
+      ]
+    },
+    {
+      "name": "fda-article",
+      "route": "/article.html?id=fda-page-1b6014ef53e61d57",
+      "status": 200,
+      "width": 390,
+      "scrollWidth": 390,
+      "title": "editorial review notice | Noteworthy News",
+      "h1": "editorial review notice",
+      "h1Top": 269.875,
+      "h1Bottom": 308.28125,
+      "h1Font": "34px",
+      "brokenImages": [],
+      "videos": [],
+      "fixedOverlays": [],
+      "timing": [
+        {
+          "domContentLoadedMs": 14,
+          "loadMs": 15,
+          "transferBytes": 7773
+        }
+      ],
+      "paints": [
+        {
+          "name": "first-paint",
+          "ms": 40
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 40
+        }
+      ]
+    },
+    {
+      "name": "fda-recall",
+      "route": "/article.html?id=fda-page-cea1b405db7be04c",
+      "status": 200,
+      "width": 1440,
+      "scrollWidth": 1440,
+      "title": "Whole Foods Market recalls cheese over undeclared egg | Noteworthy News",
+      "h1": "Whole Foods Market recalls cheese over undeclared egg",
+      "h1Top": 309.046875,
+      "h1Bottom": 414.640625,
+      "h1Font": "48px",
+      "brokenImages": [],
+      "videos": [],
+      "fixedOverlays": [],
+      "timing": [
+        {
+          "domContentLoadedMs": 14,
+          "loadMs": 16,
+          "transferBytes": 9339
+        }
+      ],
+      "paints": [
+        {
+          "name": "first-paint",
+          "ms": 48
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 48
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

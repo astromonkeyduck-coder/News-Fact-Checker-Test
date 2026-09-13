@@ -1,0 +1,309 @@
+{
+  "environment": "Fresh headless Chromium; local saved-content preview; unthrottled; no user profile",
+  "checks": [
+    {
+      "name": "Copy confirmation settles",
+      "pass": true,
+      "detail": "Link copied."
+    },
+    {
+      "name": "masthead 375px no horizontal overflow",
+      "pass": true,
+      "detail": 375
+    },
+    {
+      "name": "masthead 375px resolved",
+      "pass": true,
+      "detail": 200
+    },
+    {
+      "name": "masthead 375px no automatic video playback",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "subscriptions 375px no horizontal overflow",
+      "pass": true,
+      "detail": 375
+    },
+    {
+      "name": "subscriptions 375px resolved",
+      "pass": true,
+      "detail": 200
+    },
+    {
+      "name": "subscriptions 375px no automatic video playback",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "contact 375px no horizontal overflow",
+      "pass": true,
+      "detail": 375
+    },
+    {
+      "name": "contact 375px resolved",
+      "pass": true,
+      "detail": 200
+    },
+    {
+      "name": "contact 375px no automatic video playback",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "resources 375px no horizontal overflow",
+      "pass": true,
+      "detail": 375
+    },
+    {
+      "name": "resources 375px resolved",
+      "pass": true,
+      "detail": 200
+    },
+    {
+      "name": "resources 375px no automatic video playback",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "privacy 375px no horizontal overflow",
+      "pass": true,
+      "detail": 375
+    },
+    {
+      "name": "privacy 375px resolved",
+      "pass": true,
+      "detail": 200
+    },
+    {
+      "name": "privacy 375px no automatic video playback",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "Failed dynamic archive images leave no broken reserved box",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "fda-recall 1440px no horizontal overflow",
+      "pass": true,
+      "detail": 1440
+    },
+    {
+      "name": "fda-recall 1440px resolved",
+      "pass": true,
+      "detail": 200
+    },
+    {
+      "name": "fda-recall 1440px no automatic video playback",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "FDA unknown illness count stays unknown",
+      "pass": true
+    },
+    {
+      "name": "No uncaught browser script errors",
+      "pass": true,
+      "detail": []
+    }
+  ],
+  "pages": [
+    {
+      "name": "masthead",
+      "route": "/masthead.html",
+      "status": 200,
+      "width": 375,
+      "scrollWidth": 375,
+      "title": "About Noteworthy News | Noteworthy News",
+      "h1": "Independent news.Accountable to readers.",
+      "h1Top": 238.828125,
+      "h1Bottom": 356.390625,
+      "h1Font": "35px",
+      "brokenImages": [],
+      "videos": [],
+      "fixedOverlays": [],
+      "timing": [
+        {
+          "domContentLoadedMs": 10,
+          "loadMs": 11,
+          "transferBytes": 5527
+        }
+      ],
+      "paints": [
+        {
+          "name": "first-paint",
+          "ms": 48
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 48
+        }
+      ]
+    },
+    {
+      "name": "subscriptions",
+      "route": "/subscriptions.html",
+      "status": 200,
+      "width": 375,
+      "scrollWidth": 375,
+      "title": "Newsletters and preferences | Noteworthy News",
+      "h1": "Choose how you stay informed.",
+      "h1Top": 238.828125,
+      "h1Bottom": 317.203125,
+      "h1Font": "35px",
+      "brokenImages": [],
+      "videos": [],
+      "fixedOverlays": [],
+      "timing": [
+        {
+          "domContentLoadedMs": 15,
+          "loadMs": 16,
+          "transferBytes": 5927
+        }
+      ],
+      "paints": [
+        {
+          "name": "first-paint",
+          "ms": 88
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 88
+        }
+      ]
+    },
+    {
+      "name": "contact",
+      "route": "/contact.html",
+      "status": 200,
+      "width": 375,
+      "scrollWidth": 375,
+      "title": "Contact | Noteworthy News",
+      "h1": "Talk to the newsroom.",
+      "h1Top": 216.9375,
+      "h1Bottom": 256.828125,
+      "h1Font": "35px",
+      "brokenImages": [],
+      "videos": [],
+      "fixedOverlays": [],
+      "timing": [
+        {
+          "domContentLoadedMs": 10,
+          "loadMs": 17,
+          "transferBytes": 16709
+        }
+      ],
+      "paints": [
+        {
+          "name": "first-paint",
+          "ms": 36
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 36
+        }
+      ]
+    },
+    {
+      "name": "resources",
+      "route": "/resources.html",
+      "status": 200,
+      "width": 375,
+      "scrollWidth": 375,
+      "title": "The reader’s toolkit | Noteworthy News",
+      "h1": "A better way to read the news.",
+      "h1Top": 238.828125,
+      "h1Bottom": 317.203125,
+      "h1Font": "35px",
+      "brokenImages": [],
+      "videos": [],
+      "fixedOverlays": [],
+      "timing": [
+        {
+          "domContentLoadedMs": 10,
+          "loadMs": 11,
+          "transferBytes": 4989
+        }
+      ],
+      "paints": [
+        {
+          "name": "first-paint",
+          "ms": 36
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 36
+        }
+      ]
+    },
+    {
+      "name": "privacy",
+      "route": "/privacy.html",
+      "status": 200,
+      "width": 375,
+      "scrollWidth": 375,
+      "title": "Privacy Policy | Noteworthy News",
+      "h1": "Privacy policy.",
+      "h1Top": 216.9375,
+      "h1Bottom": 256.828125,
+      "h1Font": "35px",
+      "brokenImages": [],
+      "videos": [],
+      "fixedOverlays": [],
+      "timing": [
+        {
+          "domContentLoadedMs": 18,
+          "loadMs": 18,
+          "transferBytes": 21867
+        }
+      ],
+      "paints": [
+        {
+          "name": "first-paint",
+          "ms": 48
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 48
+        }
+      ]
+    },
+    {
+      "name": "fda-recall",
+      "route": "/article.html?id=fda-page-cea1b405db7be04c",
+      "status": 200,
+      "width": 1440,
+      "scrollWidth": 1440,
+      "title": "Whole Foods Market recalls cheese over undeclared egg | Noteworthy News",
+      "h1": "Whole Foods Market recalls cheese over undeclared egg",
+      "h1Top": 309.046875,
+      "h1Bottom": 414.640625,
+      "h1Font": "48px",
+      "brokenImages": [],
+      "videos": [],
+      "fixedOverlays": [],
+      "timing": [
+        {
+          "domContentLoadedMs": 62,
+          "loadMs": 0,
+          "transferBytes": 9339
+        }
+      ],
+      "paints": [
+        {
+          "name": "first-paint",
+          "ms": 88
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 88
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

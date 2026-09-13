@@ -1,0 +1,219 @@
+{
+  "testedAt": "2026-09-13",
+  "surface": "Codex in-app browser; isolated preview",
+  "responsive": [
+    {
+      "claims": 3,
+      "h1": "Miami cargo-plane crash: the story so far",
+      "hasChange": true,
+      "hasUnknowns": true,
+      "overflow": false,
+      "path": "/story-so-far/miami-cargo-plane-crash-september-2026/",
+      "sourceLinks": 3,
+      "version": "1",
+      "width": 375
+    },
+    {
+      "claims": 3,
+      "h1": "Miami cargo-plane crash: the story so far",
+      "hasChange": true,
+      "hasUnknowns": true,
+      "overflow": false,
+      "path": "/story-so-far/miami-cargo-plane-crash-september-2026/",
+      "sourceLinks": 3,
+      "version": "1",
+      "width": 390
+    },
+    {
+      "claims": 3,
+      "h1": "Miami cargo-plane crash: the story so far",
+      "hasChange": true,
+      "hasUnknowns": true,
+      "overflow": false,
+      "path": "/story-so-far/miami-cargo-plane-crash-september-2026/",
+      "sourceLinks": 3,
+      "version": "1",
+      "width": 768
+    },
+    {
+      "claims": 3,
+      "h1": "Miami cargo-plane crash: the story so far",
+      "hasChange": true,
+      "hasUnknowns": true,
+      "overflow": false,
+      "path": "/story-so-far/miami-cargo-plane-crash-september-2026/",
+      "sourceLinks": 3,
+      "version": "1",
+      "width": 1280
+    },
+    {
+      "claims": 3,
+      "h1": "Miami cargo-plane crash: the story so far",
+      "hasChange": true,
+      "hasUnknowns": true,
+      "overflow": false,
+      "path": "/story-so-far/miami-cargo-plane-crash-september-2026/",
+      "sourceLinks": 3,
+      "version": "1",
+      "width": 1440
+    },
+    {
+      "claims": 3,
+      "h1": "UW-Whitewater: from campus alert to all-clear",
+      "hasChange": true,
+      "hasUnknowns": true,
+      "overflow": false,
+      "path": "/story-so-far/uw-whitewater-alert-september-2026/",
+      "sourceLinks": 3,
+      "version": "1",
+      "width": 375
+    },
+    {
+      "claims": 3,
+      "h1": "UW-Whitewater: from campus alert to all-clear",
+      "hasChange": true,
+      "hasUnknowns": true,
+      "overflow": false,
+      "path": "/story-so-far/uw-whitewater-alert-september-2026/",
+      "sourceLinks": 3,
+      "version": "1",
+      "width": 390
+    },
+    {
+      "claims": 3,
+      "h1": "UW-Whitewater: from campus alert to all-clear",
+      "hasChange": true,
+      "hasUnknowns": true,
+      "overflow": false,
+      "path": "/story-so-far/uw-whitewater-alert-september-2026/",
+      "sourceLinks": 3,
+      "version": "1",
+      "width": 768
+    },
+    {
+      "claims": 3,
+      "h1": "UW-Whitewater: from campus alert to all-clear",
+      "hasChange": true,
+      "hasUnknowns": true,
+      "overflow": false,
+      "path": "/story-so-far/uw-whitewater-alert-september-2026/",
+      "sourceLinks": 3,
+      "version": "1",
+      "width": 1280
+    },
+    {
+      "claims": 3,
+      "h1": "UW-Whitewater: from campus alert to all-clear",
+      "hasChange": true,
+      "hasUnknowns": true,
+      "overflow": false,
+      "path": "/story-so-far/uw-whitewater-alert-september-2026/",
+      "sourceLinks": 3,
+      "version": "1",
+      "width": 1440
+    },
+    {
+      "claims": 3,
+      "h1": "Clover Hill cheese recall: what the final FDA update says",
+      "hasChange": true,
+      "hasUnknowns": true,
+      "overflow": false,
+      "path": "/story-so-far/clover-hill-cheese-recall-2026/",
+      "sourceLinks": 3,
+      "version": "1",
+      "width": 375
+    },
+    {
+      "claims": 3,
+      "h1": "Clover Hill cheese recall: what the final FDA update says",
+      "hasChange": true,
+      "hasUnknowns": true,
+      "overflow": false,
+      "path": "/story-so-far/clover-hill-cheese-recall-2026/",
+      "sourceLinks": 3,
+      "version": "1",
+      "width": 390
+    },
+    {
+      "claims": 3,
+      "h1": "Clover Hill cheese recall: what the final FDA update says",
+      "hasChange": true,
+      "hasUnknowns": true,
+      "overflow": false,
+      "path": "/story-so-far/clover-hill-cheese-recall-2026/",
+      "sourceLinks": 3,
+      "version": "1",
+      "width": 768
+    },
+    {
+      "claims": 3,
+      "h1": "Clover Hill cheese recall: what the final FDA update says",
+      "hasChange": true,
+      "hasUnknowns": true,
+      "overflow": false,
+      "path": "/story-so-far/clover-hill-cheese-recall-2026/",
+      "sourceLinks": 3,
+      "version": "1",
+      "width": 1280
+    },
+    {
+      "claims": 3,
+      "h1": "Clover Hill cheese recall: what the final FDA update says",
+      "hasChange": true,
+      "hasUnknowns": true,
+      "overflow": false,
+      "path": "/story-so-far/clover-hill-cheese-recall-2026/",
+      "sourceLinks": 3,
+      "version": "1",
+      "width": 1440
+    }
+  ],
+  "interactionChecks": {
+    "mobileMenuToBriefIndex": true,
+    "rememberedMessage": "This briefing is remembered only in this browser. No alerts or account sync were enabled.",
+    "revisitMessage": "Remembered on this device. Last marked read: version 1, dated September 9, 2026.",
+    "noFalseUpdateOnRevisit": true,
+    "indexRememberedCount": 1,
+    "clearPersistedMessage": "No briefings remembered. This feature saves nothing until you choose Remember on a briefing.",
+    "recallContextBeforeOriginalHeadline": true,
+    "originalRecallPublicationPreserved": "2026-06-18T04:00:00.000Z",
+    "unknownsJumpWorked": true
+  },
+  "structure": {
+    "timeline": 1,
+    "memory": 1,
+    "footer": 1
+  },
+  "browserErrorLogs": [],
+  "limitations": [
+    "Same-day version increments and blocked/corrupt storage covered by unit/DOM harness tests, not a real source revision published during browser testing.",
+    "No live provider delivery, comparative user study, field performance or full screen-reader compliance audit."
+  ],
+  "indexResponsive": [
+    {
+      "cards": 3,
+      "overflow": false,
+      "width": 375
+    },
+    {
+      "cards": 3,
+      "overflow": false,
+      "width": 390
+    },
+    {
+      "cards": 3,
+      "overflow": false,
+      "width": 768
+    },
+    {
+      "cards": 3,
+      "overflow": false,
+      "width": 1280
+    },
+    {
+      "cards": 3,
+      "overflow": false,
+      "width": 1440
+    }
+  ]
+}

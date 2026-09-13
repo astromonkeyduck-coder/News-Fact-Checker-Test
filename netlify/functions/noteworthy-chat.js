@@ -12,6 +12,7 @@ try {
 
 // Shared grounding data (recent posts, live stories, page context)
 const aiGrounding = require('./lib/aiGrounding');
+const publicationGrounding = require('./lib/publicationAiGrounding');
 
 /**
  * Extract readable text from non-image documents (PDF, DOCX, TXT, MD, CSV).
@@ -780,6 +781,14 @@ exports.handler = async (event, context) => {
       // Continue without grounding - AI will still work
     }
 
+    // Apply the same read-time source safeguards as public articles. Do not
+    // offer draft, withheld or ambiguous records as evidence to the assistant.
+    recentPosts = recentPosts.map(publicationGrounding.projectArticle).filter(Boolean);
+    currentArticle = publicationGrounding.projectArticle(currentArticle);
+    liveStories = liveStories.filter(publicationGrounding.isPublicRecord);
+    if (currentLiveStory && !publicationGrounding.isPublicRecord(currentLiveStory.story)) currentLiveStory = null;
+    if (currentLiveStory) currentLiveStory.updates = (currentLiveStory.updates || []).filter(publicationGrounding.isPublicRecord);
+
     // Build messages array with chat history and current message
     let messages;
     let storedUploadedImages = [];
@@ -794,31 +803,30 @@ exports.handler = async (event, context) => {
     // to the widget as structured source chips.
     const groundingSources = [];
     
-    // Verified recent articles (last 14 days)
+    // Recent public records, with their actual format and source limitations.
     let currentEventsContext = '';
     if (recentPosts.length > 0) {
       const cutoff = Date.now() - 14 * 24 * 60 * 60 * 1000;
       const recentEvents = recentPosts
         .filter(post => {
-          const postDate = post.timestamp || post.createdAt || 0;
+          const postDate = post.publishedAt || post.datePosted || post.timestamp || post.createdAt || post.created_at || 0;
           if (!postDate) return false;
           return new Date(postDate).getTime() >= cutoff;
         })
         .slice(0, 8)
         .map(post => {
-          const id = post.id || post.postId || '';
-          const title = String(post.title || post.story || post.text || 'Untitled').replace(/\s+/g, ' ').substring(0, 160);
-          const date = post.timestamp || post.createdAt;
+          const detail = publicationGrounding.articleDetails(post, siteBase);
+          const { title, url } = detail;
+          const date = post.publishedAt || post.datePosted || post.timestamp || post.createdAt || post.created_at;
           const dateStr = date ? new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recent';
           const category = post.category || 'News';
           const summary = String(post.summary || post.text || '').replace(/\s+/g, ' ').substring(0, 240);
-          const url = `${siteBase}/article.html?id=${encodeURIComponent(id)}`;
-          groundingSources.push({ title, url, type: 'article', label: 'Noteworthy reporting' });
-          return `- [${title}](${url}) - ${category}, ${dateStr}${summary ? `\n  ${summary}` : ''}`;
+          groundingSources.push({ title, url, type: 'article', label: detail.label }, ...detail.references);
+          return `- [${title}](${url}) - ${category}, ${dateStr}; ${detail.label}\n  Claim status: ${detail.claimStatus}; coverage lifecycle: ${detail.lifecycle}.${summary ? `\n  ${summary}` : ''}\n  Limitation: ${detail.limitation}${detail.sourceText ? `\n  Linked sources:\n${detail.sourceText}` : ''}`;
         });
       
       if (recentEvents.length > 0) {
-        currentEventsContext = `\n\nVERIFIED NOTEWORTHY NEWS ARTICLES (real, published reporting - cite these with their exact URLs):
+        currentEventsContext = `\n\nRECENT PUBLIC NOTEWORTHY RECORDS (formats vary; agency summaries and source-limited updates are not independently verified reporting; cite exact URLs):
 ${recentEvents.join('\n')}`;
         console.log(`[Noteworthy Chat] ✅ Built current events context with ${recentEvents.length} events`);
       } else {
@@ -834,7 +842,7 @@ ${recentEvents.join('\n')}`;
         const title = String(s.title || 'Live story').substring(0, 160);
         groundingSources.push({ title, url, type: 'live', label: 'Live story' });
         const summary = String(s.summary || '').replace(/\s+/g, ' ').substring(0, 200);
-        return `- [${title}](${url}) - status: ${s.status || 'developing'}${s.severity ? `, severity: ${s.severity}` : ''}${summary ? `\n  ${summary}` : ''}`;
+        return `- [${title}](${url}) - coverage status: ${s.status || 'not supplied'}; claim status: ${s.claim_status || s.claimStatus || 'not supplied; do not infer confirmation'}${s.severity ? `, severity: ${s.severity}` : ''}${summary ? `\n  ${summary}` : ''}`;
       });
       liveStoriesContext = `\n\nLIVE STORIES WE ARE TRACKING RIGHT NOW (ongoing coverage - cite with their exact URLs):
 ${items.join('\n')}`;
@@ -851,25 +859,29 @@ ${items.join('\n')}`;
         .map(u => `  - ${u.created_at ? new Date(u.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''}${u.source_label ? ` (${u.source_label})` : ''}: ${String(u.body || '').replace(/\s+/g, ' ').substring(0, 260)}`)
         .join('\n');
       pageContextBlock = `\n\nTHE READER IS CURRENTLY ON THIS LIVE STORY PAGE:
-[${title}](${url}) - status: ${s.status || 'developing'}
+[${title}](${url}) - coverage status: ${s.status || 'not supplied'}; claim status: ${s.claim_status || s.claimStatus || 'not supplied; do not infer confirmation'}
 Summary: ${String(s.summary || '').substring(0, 300)}
 Latest updates (newest first):
 ${updates || '  (no updates yet)'}
 When the user says "this story", "this", or asks what's happening, they mean this live story.`;
     } else if (currentArticle) {
-      const id = currentArticle.id || currentArticle.postId || pageContext.articleId;
-      const url = `${siteBase}/article.html?id=${encodeURIComponent(id)}`;
-      const title = String(currentArticle.title || currentArticle.story || currentArticle.text || 'Article').replace(/\s+/g, ' ').substring(0, 160);
-      groundingSources.push({ title, url, type: 'article', label: 'Noteworthy reporting' });
-      const bodyText = String(currentArticle.story || currentArticle.text || currentArticle.summary || '').substring(0, 1800);
-      const date = currentArticle.timestamp || currentArticle.createdAt;
+      const detail = publicationGrounding.articleDetails(currentArticle, siteBase);
+      const { title, url } = detail;
+      groundingSources.push({ title, url, type: 'article', label: detail.label }, ...detail.references);
+      const bodyText = detail.text;
+      const date = currentArticle.publishedAt || currentArticle.datePosted || currentArticle.timestamp || currentArticle.createdAt || currentArticle.created_at;
       pageContextBlock = `\n\nTHE READER IS CURRENTLY ON THIS ARTICLE PAGE:
 [${title}](${url})${date ? ` - published ${new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : ''}
-Full text:
+Format: ${detail.label}
+Claim status: ${detail.claimStatus}; coverage lifecycle: ${detail.lifecycle}
+Available text excerpt (may be incomplete):
 ${bodyText}
+Sourcing limitation: ${detail.limitation}
+Linked sources:
+${detail.sourceText || 'No underlying source document supplied. Do not invent one.'}
 When the user says "this story", "this article", or "this", they mean the article above.`;
     } else if (pageContext && (pageContext.title || pageContext.url)) {
-      pageContextBlock = `\n\nTHE READER IS CURRENTLY ON: ${pageContext.title || pageContext.url}`;
+      pageContextBlock = `\n\nTHE READER IS CURRENTLY ON: ${pageContext.title || pageContext.url}\nNo eligible article content was loaded for this page. The page title alone is not evidence; do not repeat withheld claims from it.`;
     }
     
     // Get user email early (needed by personalization below); the full
@@ -906,15 +918,15 @@ When the user says "this story", "this article", or "this", they mean the articl
       // Build system prompt with current events context and personalization
       const { buildPersonalizationSystemMessage } = require("./get-ai-personalization");
       const todayStr = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-      const baseSystemPrompt = `You are Noteworthy News AI, the research assistant built into Noteworthy News (noteworthynews.co) - a fact-first breaking news site focused on verified reporting and media literacy. Motto: "Developing means developing. Confirmed means confirmed."
+      const baseSystemPrompt = `You are Noteworthy News AI, an optional research assistant built into Noteworthy News (noteworthynews.co). Your answers are generated, not edited publication content. Distinguish sourced reporting, automated agency summaries and unverified claims.
 
 TODAY'S DATE: ${todayStr}${aiGrounding.buildKnowledgeCorrections()}${aiGrounding.buildCutoffRules()}
 
 WHAT YOU CAN DO:
 - Explain and add context to news stories, headlines, and claims
 - Fact-check claims, viral posts, and screenshots; walk users through verification steps
-- Ground answers in Noteworthy News reporting (verified articles and live stories listed below)
-${isSpotlightRequest ? '' : '- Research current events with the search_web tool when the verified articles below do not cover the question\n'}- Analyze uploaded images and screenshots (context, plausibility, what to verify - you cannot definitively "detect fakes", so describe evidence, not verdicts)
+- Ground answers in eligible public records and the original sources listed below, preserving their attribution and limitations
+${isSpotlightRequest ? '' : '- Research current events with the search_web tool when the source material below does not cover the question\n'}- Analyze uploaded images and screenshots (context, plausibility, what to verify - you cannot definitively "detect fakes", so describe evidence, not verdicts)
 - Read uploaded documents - PDF, Word, and text files are extracted and included in the conversation as text
 - Generate or edit images on request (DALL-E, handled automatically)
 - Send an email for the user via the send_email tool (the user always confirms before anything is sent)
@@ -923,13 +935,16 @@ ${isSpotlightRequest ? '' : '- Research current events with the search_web tool 
 CITATIONS - REQUIRED:
 - When you use a Noteworthy article or live story listed below, cite it inline as a markdown link using its EXACT title and EXACT URL from the list
 - When you use web search results, cite them the same way: [Source name](URL)
+- Cite a source only for a claim it supports; a search result appearing in a list is not proof. Original distribution posts are distinct from underlying evidence.
 - Only link URLs that literally appear in this prompt or in tool results - NEVER invent, guess, or make up a URL
 - If nothing here covers the question, say so plainly instead of forcing a citation${groundingSources.length === 0 ? `
 - IMPORTANT: No Noteworthy articles or live stories are loaded in your context right now. If asked what Noteworthy News is covering or tracking, say you cannot pull up the current coverage list and point the reader to the homepage feed - do NOT invent stories or links` : ''}
 
 ACCURACY RULES:
 - NEVER fabricate events, quotes, numbers, or details
-- Clearly separate what is confirmed from what is developing or unverified
+- Keep coverage lifecycle (updating, paused, closed) separate from claim status (confirmed, attributed, disputed, not independently verified). An updating story can contain confirmed facts.
+- Do not describe agency summaries, unlabeled updates or the presence of a publication URL as human-verified reporting.
+- If neither the provided material nor search results support a news answer, state that you cannot verify it and ask for original documentation; do not fill the gap from model memory.
 ${isSpotlightRequest ? '- For country spotlight requests, use your knowledge base for cultural, geopolitical, and historical depth\n' : `- For breaking news or anything after your training data, call search_web with a specific query (location, event, date)
 - If search finds nothing, say: "I searched for current information but couldn't find verified details about that specific event."
 `}- If your answer relies on general knowledge that may be out of date, say so
@@ -1287,6 +1302,7 @@ RESPONSE STYLE:
     let searchQuery = '';
     // Web results that informed the answer (returned to the widget as sources)
     let webSources = [];
+    let groundingUnavailable = false;
     // Track email confirmation data for response (declared at function scope to avoid undefined errors)
     let emailConfirmationData = null;
     
@@ -1508,6 +1524,13 @@ RESPONSE STYLE:
 
       // Fix stale officeholder titles the model still emits despite prompts
       reply = aiGrounding.sanitizeOfficeholderTitles(reply);
+
+      groundingUnavailable = publicationGrounding.newsNeedsUnavailableFallback({
+        question: requestBody.message, pageContext, groundingSources, webSources, searchQuery, isSpotlightRequest,
+        hasAttachments: Array.isArray(requestBody.files) && requestBody.files.length > 0,
+        hasGeneratedImage: Boolean(imageData?.imageUrl), emailConfirmation: emailConfirmationData,
+      });
+      if (groundingUnavailable) reply = publicationGrounding.NO_SUPPORT_REPLY;
       
       if (!reply) {
         console.warn("[Noteworthy Chat] No reply content after tool handling:", JSON.stringify(data, null, 2));
@@ -2137,25 +2160,13 @@ This is an automated notification from your website.`;
     const responseBody = { 
       reply, 
       usage,
+      ...(groundingUnavailable ? { groundingUnavailable: true } : {}),
     };
     
-    // Structured sources for the widget: Noteworthy sources the reply actually
-    // cited, plus web results that informed a search-backed answer.
+    // Source chips only represent explicit citations to offered registry URLs.
+    // This checks citation membership, not factual entailment of every claim.
     try {
-      const seen = new Set();
-      const sources = [];
-      const push = (s) => {
-        if (s && s.url && !seen.has(s.url) && sources.length < 6) {
-          seen.add(s.url);
-          sources.push(s);
-        }
-      };
-      groundingSources.forEach(s => { if (reply.includes(s.url)) push(s); });
-      webSources.forEach(s => { if (reply.includes(s.url)) push(s); });
-      // Search happened but the model didn't paste URLs - still surface the top results
-      if (searchQuery && sources.filter(s => s.type === 'web').length === 0) {
-        webSources.slice(0, 3).forEach(push);
-      }
+      const sources = publicationGrounding.citedSources(reply, [...groundingSources, ...webSources]);
       if (sources.length > 0) {
         responseBody.sources = sources;
       }
@@ -2240,4 +2251,3 @@ This is an automated notification from your website.`;
     };
   }
 };
-

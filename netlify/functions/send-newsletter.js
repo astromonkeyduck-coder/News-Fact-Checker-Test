@@ -1347,7 +1347,7 @@ function getDefaultNewsletterHTML() {
           </tr>
           <tr>
             <td style="padding: 25px 30px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border-top: 2px solid #4a90e2; border-radius: 0 0 10px 10px;">
-              <p style="color: #333333; font-size: 16px; margin: 0 0 8px 0; line-height: 1.5;"><strong>The Noteworthy News Team</strong></p>
+              <p style="color: #333333; font-size: 16px; margin: 0 0 8px 0; line-height: 1.5;"><strong>Noteworthy News</strong></p>
               <p style="text-align: center; margin: 20px 0 0 0; padding-top: 20px; border-top: 1px solid #e0e0e0;">
                 <a href="{{{PREFERENCES_URL}}}" style="color: #999999; font-size: 12px; text-decoration: underline;">Manage preferences</a> · <a href="{{{UNSUBSCRIBE_URL}}}" style="color: #999999; font-size: 12px; text-decoration: underline;">Unsubscribe from this newsletter</a>
               </p>
@@ -1374,7 +1374,7 @@ Stay tuned for fact-checked news stories, media literacy tips, and updates from 
 
 Stay informed and stay curious!
 
-The Noteworthy News Team
+Noteworthy News
 
 ---
 Manage preferences: {{{PREFERENCES_URL}}}
@@ -1466,7 +1466,7 @@ function getNewsletterHTMLWithPosts(posts) {
                 <li style="margin:6px 0;display:flex;align-items:flex-start"><span style="color:#3b82f6!important;font-size:14px;line-height:1;margin-top:3px">★</span><span style="margin-left:8px;font-size:15px;color:#f9fafb!important;line-height:1.6"><strong>Motive and affiliation:</strong> Any evidence that clarifies whether this was a lone-actor attack or connected to a broader network or ideology.</span></li>
               </ul>
               <p style="margin:50px 0 20px 0;color:#f9fafb!important;font-size:16px;line-height:1.5">Thank you for reading Noteworthy News.</p>
-              <p style="margin:0;color:#f9fafb!important;font-size:16px;line-height:1.5">Stay informed,<br />The Noteworthy News Team</p>
+              <p style="margin:0;color:#f9fafb!important;font-size:16px;line-height:1.5">Stay informed,<br />Noteworthy News</p>
             </td>
           </tr>
         </table>
@@ -1523,7 +1523,7 @@ Here's what's happening in the world of fact-checked news:${postsText}
 
 Stay informed, stay curious.
 
-- The Noteworthy News Team
+- Noteworthy News
 
 ---
 Manage preferences: {{{PREFERENCES_URL}}}

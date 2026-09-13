@@ -39,35 +39,56 @@ function getPostStore(opts = {}) {
  * Normalises away any leading "post-" the caller might have included.
  */
 function postKey(id) {
-  const clean = id.startsWith("post-") ? id.slice(5) : id;
+  const normalized = normalizePostId(id);
+  const clean = normalized;
   const withExt = clean.endsWith(".json") ? clean : `${clean}.json`;
   return `post-${withExt}`;
 }
 
+function normalizePostId(id) {
+  const value = String(id == null ? '' : id).trim().replace(/^post-/, '').replace(/\.json$/, '');
+  if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,199}$/.test(value)) {
+    const error = new Error('Invalid post ID');
+    error.code = 'INVALID_POST_ID';
+    throw error;
+  }
+  return value;
+}
+
 function postIdFromKey(key) {
-  return key.replace(/^post-/, "").replace(/\.json$/, "");
+  return normalizePostId(key);
+}
+
+async function readPostById(store, id) {
+  const canonical = normalizePostId(id);
+  let post = await readPost(store, canonical, { strict: true });
+  if (!post && canonical.startsWith('usgs-')) post = await readPost(store, `eq-${canonical.slice(5)}`, { strict: true });
+  if (!post && canonical.startsWith('eq-')) post = await readPost(store, `usgs-${canonical.slice(3)}`, { strict: true });
+  return post;
 }
 
 // ---------------------------------------------------------------------------
 // Read operations
 // ---------------------------------------------------------------------------
 
-async function readIndex(store) {
+async function readIndex(store, { strict = false } = {}) {
   try {
     const blob = await store.get(INDEX_KEY, { type: "json" });
     if (blob && Array.isArray(blob.ids)) {
       return blob.ids;
     }
-  } catch (_) {
+  } catch (error) {
+    if (strict && error.status !== 404 && error.statusCode !== 404) throw error;
     // index doesn't exist yet
   }
   return [];
 }
 
-async function readPost(store, id) {
+async function readPost(store, id, { strict = false } = {}) {
   try {
     return await store.get(postKey(id), { type: "json" });
-  } catch (_) {
+  } catch (error) {
+    if (strict && error.status !== 404 && error.statusCode !== 404) throw error;
     return null;
   }
 }
@@ -148,6 +169,8 @@ module.exports = {
   MAX_INDEX_SIZE,
   getPostStore,
   postKey,
+  normalizePostId,
+  readPostById,
   postIdFromKey,
   readIndex,
   readPost,

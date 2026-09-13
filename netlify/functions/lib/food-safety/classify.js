@@ -59,6 +59,10 @@ const EXCLUDE_PATTERNS = [
 /** Hard excludes are never overridden by generic openFDA productType="Food". */
 const HARD_EXCLUDE_REASONS = new Set(['veterinary_or_pet_food']);
 
+// Product identity outranks a contradictory generic FDA taxonomy label.
+const NON_FOOD_PRODUCT_RE = /\b(epinephrine|injection|injectable|prescription|medical device|catheter|vaccine|sildenafil|tadalafil|dietary supplements?|canine milk|pet food|dog food|cat food)\b/i;
+const INFORMATIONAL_PAGE_RE = /\/(foodborne-pathogens|science-research|research|guidance-regulation)\/|(?:action-plan|research-action|prevention-plan)(?:$|[?#])/i;
+
 function isGenericFoodProductType(productType) {
   const pt = String(productType || '').trim().toLowerCase();
   return pt === 'food' || pt === 'foods';
@@ -106,7 +110,19 @@ const NON_ACTIONABLE_RE = /\b(annual report|advisory committee|meeting|workshop|
  * Scope filter: decide whether an FDA item belongs in the food-safety
  * pipeline. Returns { include: boolean, reason: string }.
  */
-function scopeFilter({ title = '', description = '', productType = '', url = '' }) {
+function scopeFilter({ title = '', description = '', productType = '', productDescription = '', url = '' }) {
+  if (INFORMATIONAL_PAGE_RE.test(url) || /\b(research action plan|prevention.*action plan|research and methodology)\b/i.test(title)) {
+    return { include: false, reason: 'non_actionable_source_document' };
+  }
+  if (matchesVeterinaryOrPetFood([title, description, productDescription].join(' '))) {
+    return { include: false, reason: 'excluded:veterinary_or_pet_food' };
+  }
+  if (NON_FOOD_PRODUCT_RE.test([title, productDescription].join(' '))) {
+    if (isSpecificHumanFoodProductType(productType) || isGenericFoodProductType(productType)) {
+      return { include: true, needsReview: true, reason: 'conflicting_product_type_non_food_identity' };
+    }
+    return { include: false, reason: 'excluded_non_food_product_identity' };
+  }
   const haystack = [title, description, productType].filter(Boolean).join('\n');
 
   // Product-type metadata from the recall table / canonical page is the
@@ -199,9 +215,9 @@ function classifyHazard(text) {
       result.hazardCategory = 'foreign_material';
       const m = text.match(/\b(plastic|metal|glass|wood|rock|rubber)\b/i);
       result.hazardName = m ? `Foreign material (${m[1].toLowerCase()})` : 'Foreign material';
-    } else if (/\b(lead|cadmium|arsenic|mercury|chromium|pesticide|chemical contaminat|elevated levels? of)\b/i.test(text)) {
+    } else if (/\b(cadmium|arsenic|mercury|chromium|pesticide|chemical contaminat|elevated levels? of)\b|\blead\b(?!\s+to\b)/i.test(text)) {
       result.hazardCategory = 'chemical';
-      const m = text.match(/\b(lead|cadmium|arsenic|mercury|chromium)\b/i);
+      const m = text.match(/\b(lead(?!\s+to\b)|cadmium|arsenic|mercury|chromium)\b/i);
       result.hazardName = m ? `Chemical contamination (${m[1].toLowerCase()})` : 'Chemical contamination';
     } else if (/\b(toxin|aflatoxin|histamine|scombroid|patulin|mycotoxin)\b/i.test(text)) {
       result.hazardCategory = 'toxin';
@@ -297,8 +313,7 @@ function buildDisplayTitle(event) {
 function shortProductName(name) {
   if (!name) return null;
   let n = String(name).trim();
-  // Trim to something card-safe
-  if (n.length > 80) n = `${n.slice(0, 77).trim()}…`;
+  // Headlines retain the complete product name; cards control visual wrapping.
   return n;
 }
 
@@ -339,6 +354,8 @@ function derivePublicAction(text) {
 
 module.exports = {
   MAJOR_ALLERGENS,
+  NON_FOOD_PRODUCT_RE,
+  INFORMATIONAL_PAGE_RE,
   scopeFilter,
   matchesVeterinaryOrPetFood,
   classifyHazard,

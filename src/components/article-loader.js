@@ -2039,6 +2039,7 @@
             console.log('[ArticleLoader] Extracted title:', title.substring(0, 100));
             const story = post.story || post.text || post.title || '';
             const datePosted = post.datePosted || post.createdAt || post.created_at || new Date().toISOString();
+            const category = post.category || 'Breaking News';
             
             // Get image - prioritize primary_image_url (generated earthquake images)
             // Also handle newsletter images stored as get-uploaded-image URLs
@@ -2063,8 +2064,6 @@
                     image = image.startsWith('/') ? `${SITE_URL}${image}` : `${SITE_URL}/${image}`;
                 }
             }
-            
-            const category = post.category || 'Breaking News';
             
             // Update SEO meta tags (prioritizes primary_image_url for generated earthquake images)
             updatePostMetaTags(post, articleId);

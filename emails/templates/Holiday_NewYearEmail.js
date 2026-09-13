@@ -129,7 +129,7 @@ function Holiday_NewYearEmail({
     marginBottom: 0 
   });
   content += EmailParagraph({ 
-    text: 'The Noteworthy News Team', 
+    text: 'Noteworthy News', 
     marginTop: 0, 
     marginBottom: 0 
   });

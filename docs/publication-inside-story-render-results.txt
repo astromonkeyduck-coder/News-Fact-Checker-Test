@@ -1,0 +1,82 @@
+TAP version 13
+# Subtest: the complete source history preserves real issue times and version-specific links without JavaScript
+ok 1 - the complete source history preserves real issue times and version-specific links without JavaScript
+  ---
+  duration_ms: 14.053459
+  type: 'test'
+  ...
+# Subtest: the published comparison uses the retained origin values rather than the occurrence-time catalogue
+ok 2 - the published comparison uses the retained origin values rather than the occurrence-time catalogue
+  ---
+  duration_ms: 2.76175
+  type: 'test'
+  ...
+# Subtest: static account states the limits of the real grid and bounded catalogue
+ok 3 - static account states the limits of the real grid and bounded catalogue
+  ---
+  duration_ms: 2.836625
+  type: 'test'
+  ...
+# Subtest: ordinary catalogue links remain readable when JavaScript is enabled but the enhancement fails
+ok 4 - ordinary catalogue links remain readable when JavaScript is enabled but the enhancement fails
+  ---
+  duration_ms: 2.600458
+  type: 'test'
+  ...
+# Subtest: native controls start hidden, have labels and expose an equivalent map description
+ok 5 - native controls start hidden, have labels and expose an equivalent map description
+  ---
+  duration_ms: 3.362541
+  type: 'test'
+  ...
+# Subtest: source strings and embedded JSON cannot introduce active HTML
+ok 6 - source strings and embedded JSON cannot introduce active HTML
+  ---
+  duration_ms: 5.057041
+  type: 'test'
+  ...
+# Subtest: missing dated origins fail the build or remove the unsupported revision comparison
+ok 7 - missing dated origins fail the build or remove the unsupported revision comparison
+  ---
+  duration_ms: 1.13525
+  type: 'test'
+  ...
+# Subtest: an unavailable shaking grid cannot leave an advertised rendered shaking layer
+ok 8 - an unavailable shaking grid cannot leave an advertised rendered shaking layer
+  ---
+  duration_ms: 0.8745
+  type: 'test'
+  ...
+# Subtest: the feature asset bundle is scoped to its route and carries the canonical preview contract
+ok 9 - the feature asset bundle is scoped to its route and carries the canonical preview contract
+  ---
+  duration_ms: 5.854083
+  type: 'test'
+  ...
+# Subtest: homepage and article feature links point to the reviewed event without carrying the interactive payload
+ok 10 - homepage and article feature links point to the reviewed event without carrying the interactive payload
+  ---
+  duration_ms: 33.013916
+  type: 'test'
+  ...
+# Subtest: the real static build publishes the canonical reconstruction and its sitemap entry
+ok 11 - the real static build publishes the canonical reconstruction and its sitemap entry
+  ---
+  duration_ms: 24.208875
+  type: 'test'
+  ...
+# Subtest: preview serves canonical reconstruction aliases with noindex and rejects missing stories
+ok 12 - preview serves canonical reconstruction aliases with noindex and rejects missing stories
+  ---
+  duration_ms: 12.535084
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 152.683416

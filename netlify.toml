@@ -25,15 +25,49 @@
 # Netlify automatically serves 404.html for 404 errors
 # Make sure 404.html is in the root directory (publish directory)
 
-# ── V2 Homepage Cutover (ACTIVE) ───────────────────────────────────
-# Serves V2 homepage at /. V2 uses absolute asset paths
-# (/v2/styles/..., /v2/js/...) so the rewrite is transparent.
-# V1 index.html remains accessible at /index.html as a fallback.
-# Rollback: comment out the rewrite below and redeploy.
+# Publication homepage: full HTML from current public records.
+# /index.html and /v2/index.html retain generated snapshot fallbacks.
+# Restore the previous release configuration to roll back this development change.
 [[redirects]]
   from = "/"
-  to = "/v2/index.html"
+  to = "/.netlify/functions/publication-index"
   status = 200
+  force = true
+
+# Publication archive is rendered from the same available dataset as pagination.
+[[redirects]]
+  from = "/archive.html"
+  to = "/.netlify/functions/publication-index?view=archive"
+  status = 200
+  force = true
+
+# Local editorial drafts are never public files.
+[[redirects]]
+  from = "/publication/editorial/records/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+# September 13, 2026 editorial revision: retired duplicate presentations.
+# mobile.html duplicated the homepage; the responsive homepage replaces it.
+[[redirects]]
+  from = "/mobile.html"
+  to = "/"
+  status = 301
+  force = true
+
+# educational-resources.html consolidated into the single resource hub.
+[[redirects]]
+  from = "/educational-resources.html"
+  to = "/resources.html"
+  status = 301
+  force = true
+
+# submit-fact-check.html consolidated into the contact flow.
+[[redirects]]
+  from = "/submit-fact-check.html"
+  to = "/contact.html"
+  status = 301
   force = true
 
 # TEMPORARY - Situation Monitor disabled until re-enabled
@@ -200,7 +234,7 @@
   force = true
 
 # Route ALL article.html requests to article-preview.js (force=true to override static file)
-# article-preview.js serves pre-rendered HTML for crawlers, interactive page for regular users
+# article-preview.js serves the same complete HTML for crawlers and readers
 [[redirects]]
   from = "/article.html"
   to = "/.netlify/functions/article-preview"

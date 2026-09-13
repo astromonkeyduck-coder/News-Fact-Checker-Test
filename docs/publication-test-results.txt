@@ -1,0 +1,1291 @@
+TAP version 13
+# [dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+# Subtest: Good & Gather retail trail mix is consumer-facing
+ok 1 - Good & Gather retail trail mix is consumer-facing
+  ---
+  duration_ms: 2.617334
+  type: 'test'
+  ...
+# Subtest: Utz retail chips are consumer-facing
+ok 2 - Utz retail chips are consumer-facing
+  ---
+  duration_ms: 0.757875
+  type: 'test'
+  ...
+# Subtest: Wawa bottled iced tea is consumer-facing
+ok 3 - Wawa bottled iced tea is consumer-facing
+  ---
+  duration_ms: 0.054916
+  type: 'test'
+  ...
+# Subtest: Market of Choice prepared salad is consumer-facing
+ok 4 - Market of Choice prepared salad is consumer-facing
+  ---
+  duration_ms: 0.048041
+  type: 'test'
+  ...
+# Subtest: retail rice package is consumer-facing
+ok 5 - retail rice package is consumer-facing
+  ---
+  duration_ms: 0.107042
+  type: 'test'
+  ...
+# Subtest: retail ice cream is consumer-facing
+ok 6 - retail ice cream is consumer-facing
+  ---
+  duration_ms: 0.040792
+  type: 'test'
+  ...
+# Subtest: restaurant prepared food sold to consumers is consumer-facing
+ok 7 - restaurant prepared food sold to consumers is consumer-facing
+  ---
+  duration_ms: 0.083167
+  type: 'test'
+  ...
+# Subtest: fortified milk is not treated as a supplement because of vitamin wording
+ok 8 - fortified milk is not treated as a supplement because of vitamin wording
+  ---
+  duration_ms: 0.039291
+  type: 'test'
+  ...
+# Subtest: 50 lb seasoning bag is excluded as industrial
+ok 9 - 50 lb seasoning bag is excluded as industrial
+  ---
+  duration_ms: 0.775875
+  type: 'test'
+  ...
+# Subtest: 25 kg dried milk powder is excluded as industrial
+ok 10 - 25 kg dried milk powder is excluded as industrial
+  ---
+  duration_ms: 0.464083
+  type: 'test'
+  ...
+# Subtest: industrial tote is excluded
+ok 11 - industrial tote is excluded
+  ---
+  duration_ms: 0.093208
+  type: 'test'
+  ...
+# Subtest: moringa capsules are excluded as supplements
+ok 12 - moringa capsules are excluded as supplements
+  ---
+  duration_ms: 0.03425
+  type: 'test'
+  ...
+# Subtest: green-superfood supplement is excluded
+ok 13 - green-superfood supplement is excluded
+  ---
+  duration_ms: 0.026958
+  type: 'test'
+  ...
+# Subtest: backfill requires both scopeFilter and consumerFacingFilter by default
+ok 14 - backfill requires both scopeFilter and consumerFacingFilter by default
+  ---
+  duration_ms: 1.893959
+  type: 'test'
+  ...
+# Subtest: --max-enqueue=10 never enqueues more than 10 qualifying records
+ok 15 - --max-enqueue=10 never enqueues more than 10 qualifying records
+  ---
+  duration_ms: 0.276292
+  type: 'test'
+  ...
+# Subtest: dry-run path does not require Supabase store module
+ok 16 - dry-run path does not require Supabase store module
+  ---
+  duration_ms: 0.119625
+  type: 'test'
+  ...
+# Subtest: parseOptions treats --include-industrial as consumerOnly false
+ok 17 - parseOptions treats --include-industrial as consumerOnly false
+  ---
+  duration_ms: 0.093334
+  type: 'test'
+  ...
+# Subtest: class filter accepts I and II only
+ok 18 - class filter accepts I and II only
+  ---
+  duration_ms: 0.03675
+  type: 'test'
+  ...
+# Subtest: absent illness numbers stay null, never zero
+ok 19 - absent illness numbers stay null, never zero
+  ---
+  duration_ms: 2.879083
+  type: 'test'
+  ...
+# Subtest: explicit "no illnesses reported" normalizes to zero with evidence
+ok 20 - explicit "no illnesses reported" normalizes to zero with evidence
+  ---
+  duration_ms: 1.088459
+  type: 'test'
+  ...
+# Subtest: "at least N" retains the qualifier instead of silently exact totals
+ok 21 - "at least N" retains the qualifier instead of silently exact totals
+  ---
+  duration_ms: 0.402083
+  type: 'test'
+  ...
+# Subtest: parseCountToken handles words and digits, rejects garbage
+ok 22 - parseCountToken handles words and digits, rejects garbage
+  ---
+  duration_ms: 0.137333
+  type: 'test'
+  ...
+# Subtest: state list extraction from explicit distribution sentences
+ok 23 - state list extraction from explicit distribution sentences
+  ---
+  duration_ms: 0.740917
+  type: 'test'
+  ...
+# Subtest: "Washington" is not blindly treated as a state without context
+ok 24 - "Washington" is not blindly treated as a state without context
+  ---
+  duration_ms: 0.262958
+  type: 'test'
+  ...
+# Subtest: nationwide is only explicit
+ok 25 - nationwide is only explicit
+  ---
+  duration_ms: 0.237125
+  type: 'test'
+  ...
+# Subtest: normalizeStateToken handles names, abbreviations, DC, PR
+ok 26 - normalizeStateToken handles names, abbreviations, DC, PR
+  ---
+  duration_ms: 0.049625
+  type: 'test'
+  ...
+# Subtest: all nine major allergens normalize from undeclared statements
+ok 27 - all nine major allergens normalize from undeclared statements
+  ---
+  duration_ms: 1.501542
+  type: 'test'
+  ...
+# Subtest: allergen in a product name without undeclared context is not a hazard
+ok 28 - allergen in a product name without undeclared context is not a hazard
+  ---
+  duration_ms: 0.327208
+  type: 'test'
+  ...
+# Subtest: drug and device recalls are excluded
+ok 29 - drug and device recalls are excluded
+  ---
+  duration_ms: 1.060375
+  type: 'test'
+  ...
+# Subtest: food product type overrides weak text exclusion matches
+ok 30 - food product type overrides weak text exclusion matches
+  ---
+  duration_ms: 0.516959
+  type: 'test'
+  ...
+# Subtest: wet dog food is excluded even when productType is generic Food
+ok 31 - wet dog food is excluded even when productType is generic Food
+  ---
+  duration_ms: 0.071291
+  type: 'test'
+  ...
+# Subtest: dog treats are excluded even with productType Food
+ok 32 - dog treats are excluded even with productType Food
+  ---
+  duration_ms: 0.027791
+  type: 'test'
+  ...
+# Subtest: cat food is excluded even with productType Food
+ok 33 - cat food is excluded even with productType Food
+  ---
+  duration_ms: 0.026209
+  type: 'test'
+  ...
+# Subtest: animal feed is excluded even with productType Food
+ok 34 - animal feed is excluded even with productType Food
+  ---
+  duration_ms: 0.024667
+  type: 'test'
+  ...
+# Subtest: hot dogs remain in scope
+ok 35 - hot dogs remain in scope
+  ---
+  duration_ms: 0.401459
+  type: 'test'
+  ...
+# Subtest: corn dogs remain in scope
+ok 36 - corn dogs remain in scope
+  ---
+  duration_ms: 0.128667
+  type: 'test'
+  ...
+# Subtest: catfish remains in scope
+ok 37 - catfish remains in scope
+  ---
+  duration_ms: 0.092083
+  type: 'test'
+  ...
+# Subtest: deaths force severity 5 with explainable reason
+ok 38 - deaths force severity 5 with explainable reason
+  ---
+  duration_ms: 0.1445
+  type: 'test'
+  ...
+# Subtest: hospitalizations force severity 4
+ok 39 - hospitalizations force severity 4
+  ---
+  duration_ms: 0.158167
+  type: 'test'
+  ...
+# Subtest: terminated updates cap severity at 2 without deleting data
+ok 40 - terminated updates cap severity at 2 without deleting data
+  ---
+  duration_ms: 0.047958
+  type: 'test'
+  ...
+# Subtest: "0 deaths" is never a severity-5 trigger
+ok 41 - "0 deaths" is never a severity-5 trigger
+  ---
+  duration_ms: 0.285417
+  type: 'test'
+  ...
+# Subtest: material update produces structured change entries
+ok 42 - material update produces structured change entries
+  ---
+  duration_ms: 0.550834
+  type: 'test'
+  ...
+# Subtest: cosmetic-only change does not report a material change
+ok 43 - cosmetic-only change does not report a material change
+  ---
+  duration_ms: 0.095584
+  type: 'test'
+  ...
+# Subtest: termination is a status change, not a deletion
+ok 44 - termination is a status change, not a deletion
+  ---
+  duration_ms: 0.175917
+  type: 'test'
+  ...
+# Subtest: stale data cannot overwrite newer official data
+ok 45 - stale data cannot overwrite newer official data
+  ---
+  duration_ms: 0.051
+  type: 'test'
+  ...
+# Subtest: review reasons force review state
+ok 46 - review reasons force review state
+  ---
+  duration_ms: 0.29975
+  type: 'test'
+  ...
+# Subtest: auto-publish disabled keeps new candidates in review but leaves published events published
+ok 47 - auto-publish disabled keeps new candidates in review but leaves published events published
+  ---
+  duration_ms: 0.083333
+  type: 'test'
+  ...
+# Subtest: suppressed events stay suppressed
+ok 48 - suppressed events stay suppressed
+  ---
+  duration_ms: 0.034667
+  type: 'test'
+  ...
+# Subtest: UPC extraction finds 12-14 digit codes, not dates or phone numbers
+ok 49 - UPC extraction finds 12-14 digit codes, not dates or phone numbers
+  ---
+  duration_ms: 0.159042
+  type: 'test'
+  ...
+# Subtest: cyclospora fixture extracts national subset context and possible extra distribution
+ok 50 - cyclospora fixture extracts national subset context and possible extra distribution
+  ---
+  duration_ms: 10.602083
+  type: 'test'
+  ...
+# Subtest: does not invent a national case count from subset language alone
+ok 51 - does not invent a national case count from subset language alone
+  ---
+  duration_ms: 0.195417
+  type: 'test'
+  ...
+# Subtest: detects possible additional distribution language
+ok 52 - detects possible additional distribution language
+  ---
+  duration_ms: 0.134959
+  type: 'test'
+  ...
+# Subtest: public geography fields keep outbreak cases and distribution separate
+ok 53 - public geography fields keep outbreak cases and distribution separate
+  ---
+  duration_ms: 0.170459
+  type: 'test'
+  ...
+# Subtest: outbreak map notice warns that cases are investigation-linked, not national
+ok 54 - outbreak map notice warns that cases are investigation-linked, not national
+  ---
+  duration_ms: 0.21525
+  type: 'test'
+  ...
+# Subtest: map notice omitted without national subset context
+ok 55 - map notice omitted without national subset context
+  ---
+  duration_ms: 0.040042
+  type: 'test'
+  ...
+# Subtest: map legend/tab labels use outbreak-specific wording
+ok 56 - map legend/tab labels use outbreak-specific wording
+  ---
+  duration_ms: 0.08325
+  type: 'test'
+  ...
+# Subtest: story text labels illnesses as linked to investigation; no invented national total
+ok 57 - story text labels illnesses as linked to investigation; no invented national total
+  ---
+  duration_ms: 8.946792
+  type: 'test'
+  ...
+# Subtest: peanut allergen recall: hazard, kind, explicit-zero illnesses
+ok 58 - peanut allergen recall: hazard, kind, explicit-zero illnesses
+  ---
+  duration_ms: 12.687417
+  type: 'test'
+  ...
+# Subtest: peanut allergen recall: passes scope filter and validation
+ok 59 - peanut allergen recall: passes scope filter and validation
+  ---
+  duration_ms: 3.916792
+  type: 'test'
+  ...
+# Subtest: expanded recall: status expanded, severity >= 4
+ok 60 - expanded recall: status expanded, severity >= 4
+  ---
+  duration_ms: 10.745
+  type: 'test'
+  ...
+# Subtest: sesame/wheat/soy recall: all major allergens normalize
+ok 61 - sesame/wheat/soy recall: all major allergens normalize
+  ---
+  duration_ms: 2.974458
+  type: 'test'
+  ...
+# Subtest: E. coli blueberries recall: pathogen identified, absent metrics stay null
+ok 62 - E. coli blueberries recall: pathogen identified, absent metrics stay null
+  ---
+  duration_ms: 2.543417
+  type: 'test'
+  ...
+# Subtest: listeria cottage cheese recall: unparseable distribution goes to review
+ok 63 - listeria cottage cheese recall: unparseable distribution goes to review
+  ---
+  duration_ms: 2.173208
+  type: 'test'
+  ...
+# Subtest: infant formula botulism recall: severity 5
+ok 64 - infant formula botulism recall: severity 5
+  ---
+  duration_ms: 2.659541
+  type: 'test'
+  ...
+# Subtest: cyclospora outbreak: metrics, states, action, explicit zero deaths
+ok 65 - cyclospora outbreak: metrics, states, action, explicit zero deaths
+  ---
+  duration_ms: 3.313
+  type: 'test'
+  ...
+# Subtest: salmonella cucumbers outbreak: conflicting official totals route to review
+ok 66 - salmonella cucumbers outbreak: conflicting official totals route to review
+  ---
+  duration_ms: 5.01675
+  type: 'test'
+  ...
+# Subtest: pet food recall is excluded by scope filter
+ok 67 - pet food recall is excluded by scope filter
+  ---
+  duration_ms: 2.407542
+  type: 'test'
+  ...
+# Subtest: cosmetic recall is excluded by scope filter
+ok 68 - cosmetic recall is excluded by scope filter
+  ---
+  duration_ms: 1.92475
+  type: 'test'
+  ...
+# Subtest: recall table parses structured rows
+ok 69 - recall table parses structured rows
+  ---
+  duration_ms: 1.573416
+  type: 'test'
+  ...
+# Subtest: CORE table parses rows with reference numbers
+ok 70 - CORE table parses rows with reference numbers
+  ---
+  duration_ms: 2.372584
+  type: 'test'
+  ...
+# Subtest: CORE unknown-product rows are detected and never used as product names
+ok 71 - CORE unknown-product rows are detected and never used as product names
+  ---
+  duration_ms: 1.076291
+  type: 'test'
+  ...
+# Subtest: food-safety recalls RSS yields canonical FDA candidates
+ok 72 - food-safety recalls RSS yields canonical FDA candidates
+  ---
+  duration_ms: 6.045584
+  type: 'test'
+  ...
+# Subtest: canonicalizeFdaUrl rejects non-FDA hostnames
+ok 73 - canonicalizeFdaUrl rejects non-FDA hostnames
+  ---
+  duration_ms: 0.054625
+  type: 'test'
+  ...
+# Subtest: same canonical page from RSS/table/email produces one canonical key
+ok 74 - same canonical page from RSS/table/email produces one canonical key
+  ---
+  duration_ms: 0.060833
+  type: 'test'
+  ...
+# Subtest: toPublicEvent strips every internal processing field
+ok 75 - toPublicEvent strips every internal processing field
+  ---
+  duration_ms: 2.191
+  type: 'test'
+  ...
+# Subtest: toPublicEvent strips internal image metadata and disallowed source links
+ok 76 - toPublicEvent strips internal image metadata and disallowed source links
+  ---
+  duration_ms: 0.239917
+  type: 'test'
+  ...
+# Subtest: toPublicProduct strips source evidence
+ok 77 - toPublicProduct strips source evidence
+  ---
+  duration_ms: 0.079083
+  type: 'test'
+  ...
+# Subtest: toPublicVersion exposes only version basics and material changes
+ok 78 - toPublicVersion exposes only version basics and material changes
+  ---
+  duration_ms: 0.061458
+  type: 'test'
+  ...
+# Subtest: metric summary omits unreported numbers; no fabricated "0 deaths"
+ok 79 - metric summary omits unreported numbers; no fabricated "0 deaths"
+  ---
+  duration_ms: 9.969167
+  type: 'test'
+  ...
+# Subtest: geography label never claims Nationwide without explicit scope
+ok 80 - geography label never claims Nationwide without explicit scope
+  ---
+  duration_ms: 0.09575
+  type: 'test'
+  ...
+# Subtest: compact summary is card-safe: no products, versions, or raw source
+ok 81 - compact summary is card-safe: no products, versions, or raw source
+  ---
+  duration_ms: 0.247833
+  type: 'test'
+  ...
+# Subtest: posts-read public field allowlist includes only compact food-safety fields
+ok 82 - posts-read public field allowlist includes only compact food-safety fields
+  ---
+  duration_ms: 0.99225
+  type: 'test'
+  ...
+# Subtest: tags derive from validated fields only
+ok 83 - tags derive from validated fields only
+  ---
+  duration_ms: 0.410458
+  type: 'test'
+  ...
+# [posts-read] Error: Error: Invalid post ID
+#     at normalizePostId (/private/tmp/noteworthy-publication-release/netlify/functions/lib/postStore.js:51:19)
+#     at readPostById (/private/tmp/noteworthy-publication-release/netlify/functions/lib/postStore.js:63:21)
+#     at exports.handler (/private/tmp/noteworthy-publication-release/netlify/functions/posts-read.js:98:26)
+#     at request (/private/tmp/noteworthy-publication-release/tests/publication-source.test.js:22:29)
+#     at TestContext.<anonymous> (/private/tmp/noteworthy-publication-release/tests/publication-source.test.js:40:23)
+#     at async Test.run (node:internal/test_runner/test:1054:7)
+#     at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+#   code: 'INVALID_POST_ID'
+# }
+# [posts-read] Error: Error: private service token diagnostics
+#     at TestContext.<anonymous> (/private/tmp/noteworthy-publication-release/tests/publication-source.test.js:41:20)
+#     at async Test.run (node:internal/test_runner/test:1054:7)
+#     at async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+# [posts-read] Error: Error: private service token diagnostics
+#     at TestContext.<anonymous> (/private/tmp/noteworthy-publication-release/tests/publication-source.test.js:41:20)
+#     at async Test.run (node:internal/test_runner/test:1054:7)
+#     at async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+# [posts-read] Fetching 2 posts (returning top 200)
+# [posts-read] Returning 0 of 0 valid posts
+# [posts-read] Fetching 1 posts (returning top 30)
+# [posts-read] Returning 0 of 0 valid posts
+# [posts-read] Fetching 1 posts (returning top 30)
+# [posts-read] Returning 0 of 0 valid posts
+# [posts-read] Fetching 1 posts (returning top 30)
+# [posts-read] Returning 0 of 0 valid posts
+# Subtest: legacy FDA, USGS and numeric IDs retain exact stable lookup keys
+ok 84 - legacy FDA, USGS and numeric IDs retain exact stable lookup keys
+  ---
+  duration_ms: 1.933208
+  type: 'test'
+  ...
+# Subtest: missing record, invalid ID and transient storage failure are distinct
+ok 85 - missing record, invalid ID and transient storage failure are distinct
+  ---
+  duration_ms: 0.685583
+  type: 'test'
+  ...
+# Subtest: complete lead headline is recovered from matching original body; no guessed endings
+ok 86 - complete lead headline is recovered from matching original body; no guessed endings
+  ---
+  duration_ms: 0.260625
+  type: 'test'
+  ...
+# Subtest: known bad FDA imports preserve inbound notices and cannot enter the feed
+ok 87 - known bad FDA imports preserve inbound notices and cannot enter the feed
+  ---
+  duration_ms: 0.768875
+  type: 'test'
+  ...
+# Subtest: unpublished draft/review records are private and lead evidence is transparent
+ok 88 - unpublished draft/review records are private and lead evidence is transparent
+  ---
+  duration_ms: 0.447416
+  type: 'test'
+  ...
+# Subtest: research page cannot manufacture a product from a Spanish webinar link
+ok 89 - research page cannot manufacture a product from a Spanish webinar link
+  ---
+  duration_ms: 1.377333
+  type: 'test'
+  ...
+# Subtest: contradictory FDA Food & Beverages label queues epinephrine for review
+ok 90 - contradictory FDA Food & Beverages label queues epinephrine for review
+  ---
+  duration_ms: 0.51975
+  type: 'test'
+  ...
+# Subtest: lead to health consequences does not mean lead contamination; absent counts stay null
+ok 91 - lead to health consequences does not mean lead contamination; absent counts stay null
+  ---
+  duration_ms: 9.374375
+  type: 'test'
+  ...
+# Subtest: legacy article no-image fallback renders FDA and USGS records without a TDZ error
+ok 92 - legacy article no-image fallback renders FDA and USGS records without a TDZ error
+  ---
+  duration_ms: 2.042542
+  type: 'test'
+  ...
+# Subtest: legacy FDA product headlines recover only complete matching source fields
+ok 93 - legacy FDA product headlines recover only complete matching source fields
+  ---
+  duration_ms: 0.693541
+  type: 'test'
+  ...
+# Subtest: truncated trailing URL fragments recover the original complete social headline
+ok 94 - truncated trailing URL fragments recover the original complete social headline
+  ---
+  duration_ms: 0.209125
+  type: 'test'
+  ...
+# Subtest: withheld FDA imports are projected and excluded without changing stored records
+ok 95 - withheld FDA imports are projected and excluded without changing stored records
+  ---
+  duration_ms: 0.655042
+  type: 'test'
+  ...
+# Subtest: all supported private workflow state fields are excluded, including mixed case
+ok 96 - all supported private workflow state fields are excluded, including mixed case
+  ---
+  duration_ms: 2.0125
+  type: 'test'
+  ...
+# Subtest: agency summary attribution stays distinct from claim status and lifecycle
+ok 97 - agency summary attribution stays distinct from claim status and lifecycle
+  ---
+  duration_ms: 0.97875
+  type: 'test'
+  ...
+# Subtest: ordinary updates do not acquire a verified label and distribution links remain distinct
+ok 98 - ordinary updates do not acquire a verified label and distribution links remain distinct
+  ---
+  duration_ms: 0.531625
+  type: 'test'
+  ...
+# Subtest: source chips require exact cited registry links, not URL substrings or uncited results
+ok 99 - source chips require exact cited registry links, not URL substrings or uncited results
+  ---
+  duration_ms: 0.790041
+  type: 'test'
+  ...
+# Subtest: citation parsing retains balanced parentheses in real source URLs
+ok 100 - citation parsing retains balanced parentheses in real source URLs
+  ---
+  duration_ms: 0.069083
+  type: 'test'
+  ...
+# Subtest: news with no publication or search material receives an explicit no-support state
+ok 101 - news with no publication or search material receives an explicit no-support state
+  ---
+  duration_ms: 0.351
+  type: 'test'
+  ...
+# Subtest: no-support news fallback preserves non-news and existing image/file/email tools
+ok 102 - no-support news fallback preserves non-news and existing image/file/email tools
+  ---
+  duration_ms: 0.054917
+  type: 'test'
+  ...
+# Subtest: source calendar dates keep their exact day and do not acquire a fabricated midnight
+ok 103 - source calendar dates keep their exact day and do not acquire a fabricated midnight
+  ---
+  duration_ms: 50.011125
+  type: 'test'
+  ...
+# Subtest: guide timelines preserve original article publication timestamps and distinguish source updates
+ok 104 - guide timelines preserve original article publication timestamps and distinguish source updates
+  ---
+  duration_ms: 13.313292
+  type: 'test'
+  ...
+# Subtest: current outcome and evidence precede the preserved early-alarm chronology
+ok 105 - current outcome and evidence precede the preserved early-alarm chronology
+  ---
+  duration_ms: 4.765
+  type: 'test'
+  ...
+# Subtest: known claims, sources, timeline links and correction route are available without JavaScript
+ok 106 - known claims, sources, timeline links and correction route are available without JavaScript
+  ---
+  duration_ms: 7.43125
+  type: 'test'
+  ...
+# Subtest: briefing jump navigation has unique real targets and optional controls start hidden
+ok 107 - briefing jump navigation has unique real targets and optional controls start hidden
+  ---
+  duration_ms: 8.245959
+  type: 'test'
+  ...
+# Subtest: briefing strings and supporting URLs cannot introduce active HTML
+ok 108 - briefing strings and supporting URLs cannot introduce active HTML
+  ---
+  duration_ms: 2.447375
+  type: 'test'
+  ...
+# Subtest: invalid briefing slugs fail closed before becoming HTML attributes or output paths
+ok 109 - invalid briefing slugs fail closed before becoming HTML attributes or output paths
+  ---
+  duration_ms: 0.322666
+  type: 'test'
+  ...
+# Subtest: article and homepage crosslinks use existing guides without loading reading-state JavaScript
+ok 110 - article and homepage crosslinks use existing guides without loading reading-state JavaScript
+  ---
+  duration_ms: 20.511167
+  type: 'test'
+  ...
+# Subtest: the real build generates each canonical guide and index within the publish root
+ok 111 - the real build generates each canonical guide and index within the publish root
+  ---
+  duration_ms: 25.307959
+  type: 'test'
+  ...
+# Subtest: rendered reading metadata supplies the explicit source version independently of source date
+ok 112 - rendered reading metadata supplies the explicit source version independently of source date
+  ---
+  duration_ms: 7.118583
+  type: 'test'
+  ...
+# Subtest: preview serves canonical guides and their index.html aliases as no-index source briefings
+ok 113 - preview serves canonical guides and their index.html aliases as no-index source briefings
+  ---
+  duration_ms: 16.947458
+  type: 'test'
+  ...
+# Subtest: drafts and unapproved reviews stay out of public exports
+ok 114 - drafts and unapproved reviews stay out of public exports
+  ---
+  duration_ms: 1.434375
+  type: 'test'
+  ...
+# Subtest: publication requires a matching preview and review of the actual content
+ok 115 - publication requires a matching preview and review of the actual content
+  ---
+  duration_ms: 0.720292
+  type: 'test'
+  ...
+# Subtest: independent lifecycle and claim status; full headlines and valid citations
+ok 116 - independent lifecycle and claim status; full headlines and valid citations
+  ---
+  duration_ms: 0.186625
+  type: 'test'
+  ...
+# Subtest: own distribution links are not evidence; explicitly limited sourcing can be published
+ok 117 - own distribution links are not evidence; explicitly limited sourcing can be published
+  ---
+  duration_ms: 1.027
+  type: 'test'
+  ...
+# Subtest: ambiguous imports require recorded human resolution and a fresh preview
+ok 118 - ambiguous imports require recorded human resolution and a fresh preview
+  ---
+  duration_ms: 0.290959
+  type: 'test'
+  ...
+# Subtest: research and unknown document pages cannot be represented as alert summaries
+ok 119 - research and unknown document pages cannot be represented as alert summaries
+  ---
+  duration_ms: 0.821959
+  type: 'test'
+  ...
+# Subtest: corrections preserve original date, original error and responsible editor
+ok 120 - corrections preserve original date, original error and responsible editor
+  ---
+  duration_ms: 1.207
+  type: 'test'
+  ...
+# Subtest: ordinary updates are separate and cannot refresh dates without a content change
+ok 121 - ordinary updates are separate and cannot refresh dates without a content change
+  ---
+  duration_ms: 0.539917
+  type: 'test'
+  ...
+# Subtest: identity, timezone, and duplicate export IDs fail explicitly
+ok 122 - identity, timezone, and duplicate export IDs fail explicitly
+  ---
+  duration_ms: 0.8135
+  type: 'test'
+  ...
+# Subtest: adopting a legacy article preserves its existing publication and update timestamps
+ok 123 - adopting a legacy article preserves its existing publication and update timestamps
+  ---
+  duration_ms: 0.418792
+  type: 'test'
+  ...
+# Subtest: export refuses direct changes to published content, timestamps or correction history
+ok 124 - export refuses direct changes to published content, timestamps or correction history
+  ---
+  duration_ms: 0.811125
+  type: 'test'
+  ...
+# Subtest: preview escapes imported HTML and dangerous source URLs
+ok 125 - preview escapes imported HTML and dangerous source URLs
+  ---
+  duration_ms: 0.260291
+  type: 'test'
+  ...
+# Subtest: CLI executes a local draft, review, preview, publication and export without service credentials
+ok 126 - CLI executes a local draft, review, preview, publication and export without service credentials
+  ---
+  duration_ms: 182.619
+  type: 'test'
+  ...
+# Subtest: public preferences landing makes no account API request and offers useful recovery
+ok 127 - public preferences landing makes no account API request and offers useful recovery
+  ---
+  duration_ms: 1.175875
+  type: 'test'
+  ...
+# Subtest: failed preference loading is visible and cannot overwrite unknown saved settings
+ok 128 - failed preference loading is visible and cannot overwrite unknown saved settings
+  ---
+  duration_ms: 3.828625
+  type: 'test'
+  ...
+# Subtest: failed preference saving restores last saved controls, preserves legacy link and reports failure
+ok 129 - failed preference saving restores last saved controls, preserves legacy link and reports failure
+  ---
+  duration_ms: 0.9975
+  type: 'test'
+  ...
+# Subtest: article correction links preselect the existing form and include the full story URL
+ok 130 - article correction links preselect the existing form and include the full story URL
+  ---
+  duration_ms: 0.589167
+  type: 'test'
+  ...
+# Subtest: initialization preserves the article and URL, with no autoplay and correct filtered button visibility
+ok 131 - initialization preserves the article and URL, with no autoplay and correct filtered button visibility
+  ---
+  duration_ms: 19.603333
+  type: 'test'
+  ...
+# Subtest: corrupt source data leaves static reporting readable and enhancement controls hidden
+ok 132 - corrupt source data leaves static reporting readable and enhancement controls hidden
+  ---
+  duration_ms: 0.579208
+  type: 'test'
+  ...
+# Subtest: source controls synchronize actual values and retain separate occurrence-time state
+ok 133 - source controls synchronize actual values and retain separate occurrence-time state
+  ---
+  duration_ms: 7.877542
+  type: 'test'
+  ...
+# Subtest: source markers use the base projection across cropped frames and never invent missing coordinates
+ok 134 - source markers use the base projection across cropped frames and never invent missing coordinates
+  ---
+  duration_ms: 8.635334
+  type: 'test'
+  ...
+# Subtest: delegated point selection handles nested SVG clicks, preserves modified clicks and uses real sources
+ok 135 - delegated point selection handles nested SVG clicks, preserves modified clicks and uses real sources
+  ---
+  duration_ms: 2.67775
+  type: 'test'
+  ...
+# Subtest: safe text construction leaves HTML-looking evidence inert and unknown values explicit
+ok 136 - safe text construction leaves HTML-looking evidence inert and unknown values explicit
+  ---
+  duration_ms: 1.81075
+  type: 'test'
+  ...
+# Subtest: unavailable history keeps controls usable and reports sharing limits truthfully
+ok 137 - unavailable history keeps controls usable and reports sharing limits truthfully
+  ---
+  duration_ms: 4.123375
+  type: 'test'
+  ...
+# Subtest: map-layer buttons keep caption, layer and detail visibility in agreement
+ok 138 - map-layer buttons keep caption, layer and detail visibility in agreement
+  ---
+  duration_ms: 4.610458
+  type: 'test'
+  ...
+# Subtest: reset and navigation restore validated state while retaining unrelated address data
+ok 139 - reset and navigation restore validated state while retaining unrelated address data
+  ---
+  duration_ms: 4.319458
+  type: 'test'
+  ...
+# Subtest: a partial shaking deep link shows the main record consistently in map and details
+ok 140 - a partial shaking deep link shows the main record consistently in map and details
+  ---
+  duration_ms: 2.043041
+  type: 'test'
+  ...
+# Subtest: saved source files retain byte-level provenance
+ok 141 - saved source files retain byte-level provenance
+  ---
+  duration_ms: 4.153083
+  type: 'test'
+  ...
+# Subtest: preferred hypocentre and bounded catalogue preserve official coordinates and occurrence times
+ok 142 - preferred hypocentre and bounded catalogue preserve official coordinates and occurrence times
+  ---
+  duration_ms: 0.474042
+  type: 'test'
+  ...
+# Subtest: then-and-now milestones match actual preserved product versions, not occurrence-time filtering
+ok 143 - then-and-now milestones match actual preserved product versions, not occurrence-time filtering
+  ---
+  duration_ms: 0.779333
+  type: 'test'
+  ...
+# Subtest: surface-shaking display represents every official grid sample exactly once
+ok 144 - surface-shaking display represents every official grid sample exactly once
+  ---
+  duration_ms: 3.151416
+  type: 'test'
+  ...
+# Subtest: geography stays within its documented bounds and every editorial claim has a listed source
+ok 145 - geography stays within its documented bounds and every editorial claim has a listed source
+  ---
+  duration_ms: 0.326833
+  type: 'test'
+  ...
+# Subtest: the saved official dataset retains its actual source chronology without mutation
+ok 146 - the saved official dataset retains its actual source chronology without mutation
+  ---
+  duration_ms: 3.94
+  type: 'test'
+  ...
+# Subtest: invalid essential story data fails closed while individual bad catalog rows are omitted honestly
+ok 147 - invalid essential story data fails closed while individual bad catalog rows are omitted honestly
+  ---
+  duration_ms: 3.093875
+  type: 'test'
+  ...
+# Subtest: source versions and overlays require valid registered source links
+ok 148 - source versions and overlays require valid registered source links
+  ---
+  duration_ms: 1.170625
+  type: 'test'
+  ...
+# Subtest: strict timestamps and bounded coordinates reject ambiguous input
+ok 149 - strict timestamps and bounded coordinates reject ambiguous input
+  ---
+  duration_ms: 12.426917
+  type: 'test'
+  ...
+# Subtest: projection fits the viewport consistently, including dateline crossing
+ok 150 - projection fits the viewport consistently, including dateline crossing
+  ---
+  duration_ms: 0.383958
+  type: 'test'
+  ...
+# Subtest: occurrence-time filtering changes only the catalog and clamps stepping
+ok 151 - occurrence-time filtering changes only the catalog and clamps stepping
+  ---
+  duration_ms: 0.627791
+  type: 'test'
+  ...
+# Subtest: source-version selection never simulates what was known at a catalog occurrence time
+ok 152 - source-version selection never simulates what was known at a catalog occurrence time
+  ---
+  duration_ms: 0.575125
+  type: 'test'
+  ...
+# Subtest: explicit map-layer choices use the corresponding explanation and event selection exits source comparison
+ok 153 - explicit map-layer choices use the corresponding explanation and event selection exits source comparison
+  ---
+  duration_ms: 1.518791
+  type: 'test'
+  ...
+# Subtest: returning to a main-quake map restores the matching detail after a regional selection
+ok 154 - returning to a main-quake map restores the matching detail after a regional selection
+  ---
+  duration_ms: 0.809208
+  type: 'test'
+  ...
+# Subtest: share URLs round-trip separate choices and preserve unrelated query and hash
+ok 155 - share URLs round-trip separate choices and preserve unrelated query and hash
+  ---
+  duration_ms: 1.594833
+  type: 'test'
+  ...
+# Subtest: unrecognized URL input cannot select an invented event, source, chapter or layer
+ok 156 - unrecognized URL input cannot select an invented event, source, chapter or layer
+  ---
+  duration_ms: 0.504625
+  type: 'test'
+  ...
+# Subtest: partial and invalid-layer deep links cannot pair the main-quake map with a regional detail record
+ok 157 - partial and invalid-layer deep links cannot pair the main-quake map with a regional detail record
+  ---
+  duration_ms: 0.662583
+  type: 'test'
+  ...
+# Subtest: the complete source history preserves real issue times and version-specific links without JavaScript
+ok 158 - the complete source history preserves real issue times and version-specific links without JavaScript
+  ---
+  duration_ms: 18.393416
+  type: 'test'
+  ...
+# Subtest: the published comparison uses the retained origin values rather than the occurrence-time catalogue
+ok 159 - the published comparison uses the retained origin values rather than the occurrence-time catalogue
+  ---
+  duration_ms: 3.358958
+  type: 'test'
+  ...
+# Subtest: static account states the limits of the real grid and bounded catalogue
+ok 160 - static account states the limits of the real grid and bounded catalogue
+  ---
+  duration_ms: 2.844167
+  type: 'test'
+  ...
+# Subtest: ordinary catalogue links remain readable when JavaScript is enabled but the enhancement fails
+ok 161 - ordinary catalogue links remain readable when JavaScript is enabled but the enhancement fails
+  ---
+  duration_ms: 5.203417
+  type: 'test'
+  ...
+# Subtest: native controls start hidden, have labels and expose an equivalent map description
+ok 162 - native controls start hidden, have labels and expose an equivalent map description
+  ---
+  duration_ms: 4.876666
+  type: 'test'
+  ...
+# Subtest: source strings and embedded JSON cannot introduce active HTML
+ok 163 - source strings and embedded JSON cannot introduce active HTML
+  ---
+  duration_ms: 7.004334
+  type: 'test'
+  ...
+# Subtest: missing dated origins fail the build or remove the unsupported revision comparison
+ok 164 - missing dated origins fail the build or remove the unsupported revision comparison
+  ---
+  duration_ms: 1.508792
+  type: 'test'
+  ...
+# Subtest: an unavailable shaking grid cannot leave an advertised rendered shaking layer
+ok 165 - an unavailable shaking grid cannot leave an advertised rendered shaking layer
+  ---
+  duration_ms: 1.566792
+  type: 'test'
+  ...
+# Subtest: the feature asset bundle is scoped to its route and carries the canonical preview contract
+ok 166 - the feature asset bundle is scoped to its route and carries the canonical preview contract
+  ---
+  duration_ms: 6.556209
+  type: 'test'
+  ...
+# Subtest: homepage and article feature links point to the reviewed event without carrying the interactive payload
+ok 167 - homepage and article feature links point to the reviewed event without carrying the interactive payload
+  ---
+  duration_ms: 37.698
+  type: 'test'
+  ...
+# Subtest: the real static build publishes the canonical reconstruction and its sitemap entry
+ok 168 - the real static build publishes the canonical reconstruction and its sitemap entry
+  ---
+  duration_ms: 26.164333
+  type: 'test'
+  ...
+# Subtest: preview serves canonical reconstruction aliases with noindex and rejects missing stories
+ok 169 - preview serves canonical reconstruction aliases with noindex and rejects missing stories
+  ---
+  duration_ms: 12.035041
+  type: 'test'
+  ...
+# Subtest: partial or conflicting deep links cannot pair the main shaking map with another earthquake’s details
+ok 170 - partial or conflicting deep links cannot pair the main shaking map with another earthquake’s details
+  ---
+  duration_ms: 0.848583
+  type: 'test'
+  ...
+# Subtest: normalizing a partial deep link produces a stable shareable state
+ok 171 - normalizing a partial deep link produces a stable shareable state
+  ---
+  duration_ms: 0.731958
+  type: 'test'
+  ...
+# Subtest: Miami yields exactly five records and no remaining page; zero results have no pagination
+ok 172 - Miami yields exactly five records and no remaining page; zero results have no pagination
+  ---
+  duration_ms: 29.025792
+  type: 'test'
+  ...
+# Subtest: combined topic, media and search use one dataset across pages; cleared filters restore it
+ok 173 - combined topic, media and search use one dataset across pages; cleared filters restore it
+  ---
+  duration_ms: 0.458917
+  type: 'test'
+  ...
+# Subtest: oldest sorting and URL state are reflected in server rendered archive without JS
+ok 174 - oldest sorting and URL state are reflected in server rendered archive without JS
+  ---
+  duration_ms: 4.48025
+  type: 'test'
+  ...
+# Subtest: every homepage article link resolves to a listed published record and has a complete title
+ok 175 - every homepage article link resolves to a listed published record and has a complete title
+  ---
+  duration_ms: 6.788125
+  type: 'test'
+  ...
+# Subtest: full article HTML is crawlable and canonical JSON-LD matches the visible headline and date
+ok 176 - full article HTML is crawlable and canonical JSON-LD matches the visible headline and date
+  ---
+  duration_ms: 0.521167
+  type: 'test'
+  ...
+# Subtest: unknown alert values remain unknown; source review records have notices and original links
+ok 177 - unknown alert values remain unknown; source review records have notices and original links
+  ---
+  duration_ms: 0.2955
+  type: 'test'
+  ...
+# Subtest: source text and attributes cannot inject script or javascript URLs into reader HTML
+ok 178 - source text and attributes cannot inject script or javascript URLs into reader HTML
+  ---
+  duration_ms: 0.186542
+  type: 'test'
+  ...
+# Subtest: shared page shell preserves contact form logic, privacy anchors and source links
+ok 179 - shared page shell preserves contact form logic, privacy anchors and source links
+  ---
+  duration_ms: 0.974083
+  type: 'test'
+  ...
+# Subtest: source-specific recall instructions supersede generic action without erasing the correction
+ok 180 - source-specific recall instructions supersede generic action without erasing the correction
+  ---
+  duration_ms: 2.069208
+  type: 'test'
+  ...
+# Subtest: validates real calendar dates and safe stable slugs
+ok 181 - validates real calendar dates and safe stable slugs
+  ---
+  duration_ms: 2.785125
+  type: 'test'
+  ...
+# Subtest: only explicit remembering or acknowledgement advances the saved revision
+ok 182 - only explicit remembering or acknowledgement advances the saved revision
+  ---
+  duration_ms: 0.686584
+  type: 'test'
+  ...
+# Subtest: same-date and older versions do not claim an update or downgrade a newer acknowledgement
+ok 183 - same-date and older versions do not claim an update or downgrade a newer acknowledgement
+  ---
+  duration_ms: 0.123
+  type: 'test'
+  ...
+# Subtest: a meaningful version increment within the same day is an unread update
+ok 184 - a meaningful version increment within the same day is an unread update
+  ---
+  duration_ms: 0.07025
+  type: 'test'
+  ...
+# Subtest: a later date without a version increment does not imply a meaningful update
+ok 185 - a later date without a version increment does not imply a meaningful update
+  ---
+  duration_ms: 0.070625
+  type: 'test'
+  ...
+# Subtest: an older tab cannot overwrite a higher stored version even if its displayed date is later
+ok 186 - an older tab cannot overwrite a higher stored version even if its displayed date is later
+  ---
+  duration_ms: 0.163583
+  type: 'test'
+  ...
+# Subtest: records contain only slug, revision date and version; forgetting one preserves the others
+ok 187 - records contain only slug, revision date and version; forgetting one preserves the others
+  ---
+  duration_ms: 5.841666
+  type: 'test'
+  ...
+# Subtest: corrupt or unknown schemas fail safely; no URLs or unknown fields are imported
+ok 188 - corrupt or unknown schemas fail safely; no URLs or unknown fields are imported
+  ---
+  duration_ms: 0.16475
+  type: 'test'
+  ...
+# Subtest: loading is read-only; explicit actions use only the dedicated storage key
+ok 189 - loading is read-only; explicit actions use only the dedicated storage key
+  ---
+  duration_ms: 0.35125
+  type: 'test'
+  ...
+# Subtest: blocked storage and failed writes never report persistence
+ok 190 - blocked storage and failed writes never report persistence
+  ---
+  duration_ms: 0.284041
+  type: 'test'
+  ...
+# Subtest: malformed saved state is not silently overwritten; explicit clear can recover
+ok 191 - malformed saved state is not silently overwritten; explicit clear can recover
+  ---
+  duration_ms: 0.114625
+  type: 'test'
+  ...
+# Subtest: date labels use UTC so date-only revisions do not shift to the previous day
+ok 192 - date labels use UTC so date-only revisions do not shift to the previous day
+  ---
+  duration_ms: 3.623
+  type: 'test'
+  ...
+# Subtest: guide revisit keeps old acknowledgement until the reader clicks Mark this version as read
+ok 193 - guide revisit keeps old acknowledgement until the reader clicks Mark this version as read
+  ---
+  duration_ms: 0.873
+  type: 'test'
+  ...
+# Subtest: a fresh guide requires explicit opt-in and displays truthful failed-write feedback
+ok 194 - a fresh guide requires explicit opt-in and displays truthful failed-write feedback
+  ---
+  duration_ms: 0.596916
+  type: 'test'
+  ...
+# Subtest: index shows only known-guide statuses and explicitly clears this feature only
+ok 195 - index shows only known-guide statuses and explicitly clears this feature only
+  ---
+  duration_ms: 0.230375
+  type: 'test'
+  ...
+# Subtest: cross-tab changes refresh visible status without writing or acknowledging a newer guide
+ok 196 - cross-tab changes refresh visible status without writing or acknowledging a newer guide
+  ---
+  duration_ms: 0.257083
+  type: 'test'
+  ...
+# Subtest: source review notices survive API-to-model projection without resurrecting claims
+ok 197 - source review notices survive API-to-model projection without resurrecting claims
+  ---
+  duration_ms: 14.671417
+  type: 'test'
+  ...
+# Subtest: own X status URL remains distribution while credited upstream reporting is evidence
+ok 198 - own X status URL remains distribution while credited upstream reporting is evidence
+  ---
+  duration_ms: 1.468917
+  type: 'test'
+  ...
+# Subtest: explicit editorial source kind survives publication
+ok 199 - explicit editorial source kind survives publication
+  ---
+  duration_ms: 0.167542
+  type: 'test'
+  ...
+# Subtest: FDA fact box uses the real event_kind and illnesses fields
+ok 200 - FDA fact box uses the real event_kind and illnesses fields
+  ---
+  duration_ms: 0.456
+  type: 'test'
+  ...
+# Subtest: official earthquake depth survives the public model
+ok 201 - official earthquake depth survives the public model
+  ---
+  duration_ms: 0.2465
+  type: 'test'
+  ...
+# Subtest: published sourcing limitations remain visible to readers
+ok 202 - published sourcing limitations remain visible to readers
+  ---
+  duration_ms: 0.165458
+  type: 'test'
+  ...
+# Subtest: article endpoint never serves a draft accidentally placed in the local export
+ok 203 - article endpoint never serves a draft accidentally placed in the local export
+  ---
+  duration_ms: 0.233708
+  type: 'test'
+  ...
+# Subtest: unpublished records cannot hide in serialized homepage hydration data
+ok 204 - unpublished records cannot hide in serialized homepage hydration data
+  ---
+  duration_ms: 2.25175
+  type: 'test'
+  ...
+# Subtest: curated story guides preserve exact real article IDs and chronology
+ok 205 - curated story guides preserve exact real article IDs and chronology
+  ---
+  duration_ms: 1.174208
+  type: 'test'
+  ...
+# Subtest: every known claim cites listed supporting evidence rather than own distribution
+ok 206 - every known claim cites listed supporting evidence rather than own distribution
+  ---
+  duration_ms: 0.358875
+  type: 'test'
+  ...
+# Subtest: guide dates use latest source evidence and never invented midnight or build timestamps
+ok 207 - guide dates use latest source evidence and never invented midnight or build timestamps
+  ---
+  duration_ms: 0.1645
+  type: 'test'
+  ...
+# Subtest: event outcomes are attributed and the safety guide preserves ended status and final counts
+ok 208 - event outcomes are attributed and the safety guide preserves ended status and final counts
+  ---
+  duration_ms: 0.104583
+  type: 'test'
+  ...
+# Subtest: What changed identifies a substantive dated development and supporting document
+ok 209 - What changed identifies a substantive dated development and supporting document
+  ---
+  duration_ms: 0.16225
+  type: 'test'
+  ...
+1..209
+# tests 209
+# suites 0
+# pass 209
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 243.980875

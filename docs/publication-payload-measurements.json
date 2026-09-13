@@ -1,0 +1,13 @@
+{
+  "condition": "Measured source/response bytes, no network throttling assumptions. Original working-copy V2 HTML vs release server-rendered home over the same public content snapshot. CSS is directly linked first-party CSS only.",
+  "before": {
+    "htmlBytes": 47833,
+    "gzipHtmlBytes": 10553,
+    "directCssBytes": 103236
+  },
+  "after": {
+    "htmlBytes": 13979,
+    "gzipHtmlBytes": 4411,
+    "directCssBytes": 20748
+  }
+}

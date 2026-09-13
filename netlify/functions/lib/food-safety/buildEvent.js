@@ -57,7 +57,7 @@ function buildEventCandidate(parse, context = {}) {
   if (!status) {
     if (coreRow && /ended|closed/i.test(coreRow.investigationStatus || '')) status = 'ended';
     else if (isExpansion) status = 'expanded';
-    else status = 'active';
+    else status = 'unknown';
   }
 
   const publicAction = derivePublicAction(parse.publicActionText || parse.announcementText || '');
@@ -147,7 +147,8 @@ function buildEventCandidate(parse, context = {}) {
     possibleAdditionalDistribution: possibleExtraDist ? true : null,
   });
 
-  event.display_title = buildDisplayTitle(event);
+  const ambiguous = warnings.some((warning) => /^(unrecognized_source_page_type|conflicting_product_type)/.test(warning));
+  event.display_title = ambiguous ? parse.title : buildDisplayTitle(event);
   event.short_dek = buildShortDek(event, parse);
 
   const { severity, reasons } = computeSeverity(event);

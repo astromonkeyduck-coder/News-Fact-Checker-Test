@@ -1,0 +1,6 @@
+
+  ../noteworthy-function-build/article-preview.js    103.7kb
+  ../noteworthy-function-build/publication-index.js  103.2kb
+
+⚡ Done in 18ms
+Both public HTML functions bundled successfully for Node 20.

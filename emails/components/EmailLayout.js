@@ -156,7 +156,7 @@ function EmailGraphicWarning({ message = 'The image below shows graphic content.
 function EmailClosing({ customMessage = null }) {
   const message = customMessage || 'Thank you for reading Noteworthy News.';
   return `<p style="margin:50px 0 20px 0;color:#f9fafb!important;font-size:16px;line-height:1.5">${message}</p>
-    <p style="margin:0;color:#f9fafb!important;font-size:16px;line-height:1.5">Stay informed,<br />The Noteworthy News Team</p>`;
+    <p style="margin:0;color:#f9fafb!important;font-size:16px;line-height:1.5">Stay informed,<br />Noteworthy News</p>`;
 }
 
 module.exports = {

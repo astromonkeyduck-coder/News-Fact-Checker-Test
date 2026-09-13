@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "environment": "isolated development preview; public read-only snapshot",
+  "source_url": "https://noteworthynews.co/.netlify/functions/posts-read?limit=200",
+  "captured_at": "2026-09-12T22:55:32.266Z",
+  "sha256": "fb7608aefb34b0fc0e0f8519aa22d82b69aa07f87dff9257dcad266378d24f0d",
+  "record_count": 190,
+  "production_records_modified": false,
+  "ingestion_jobs_triggered": false,
+  "projection": "lib/publicationSourceQuality.js",
+  "direct_lookup_checks": [
+    {
+      "id": "fda-page-1b6014ef53e61d57",
+      "url": "https://noteworthynews.co/.netlify/functions/posts-read?id=fda-page-1b6014ef53e61d57",
+      "http_status": 200,
+      "records_returned": 1
+    },
+    {
+      "id": "usgs-us7000tgrk",
+      "url": "https://noteworthynews.co/.netlify/functions/posts-read?id=usgs-us7000tgrk",
+      "http_status": 200,
+      "records_returned": 1
+    },
+    {
+      "id": "2096717577204502980",
+      "url": "https://noteworthynews.co/.netlify/functions/posts-read?id=2096717577204502980",
+      "http_status": 200,
+      "records_returned": 1
+    }
+  ],
+  "reviewed_sources": [
+    {
+      "url": "https://www.fda.gov/food/foodborne-pathogens/cyclospora-prevention-response-and-research-action-plan",
+      "finding": "Research and prevention plan; imported product is a Spanish webinar link label, not a named outbreak product."
+    },
+    {
+      "url": "https://www.fda.gov/safety/recalls-market-withdrawals-safety-alerts/american-regent-inc-issues-voluntary-nationwide-recall-three-lots-epinephrine-injection-usp-30-mg-30",
+      "finding": "FDA page taxonomy says Food & Beverages, but title and announcement describe epinephrine injection. Stated recall reasons are particulate matter and lack of sterility assurance. Wording lead to was misclassified as chemical lead contamination."
+    },
+    {
+      "url": "https://www.local10.com/news/local/2026/09/06/cargo-plane-crashes-after-going-off-miami-international-airport-runway/",
+      "finding": "Credited WPLG Local 10 reporting from the sheriff news conference supports the death and injury attribution in the sampled original Noteworthy update."
+    },
+    {
+      "url": "https://www.fda.gov/safety/recalls-market-withdrawals-safety-alerts/clover-hill-dairy-expands-recall-include-all-clover-hill-dairy-brand-cheese-due-possible-health-risk",
+      "finding": "Restored the exact complete source-page headline. Product description itself is truncated in FDA summary; do not reconstruct its missing ending."
+    }
+  ],
+  "limitations": [
+    "A public publication snapshot is not independent verification of every record.",
+    "No authenticated FDA source documents, raw ingestion logs or live editorial records were accessed.",
+    "Lead video upstream creator/rights credit is not present in the public record.",
+    "The source API returns at most 200 indexed records; this snapshot is not an exhaustive historical archive.",
+    "Older public earthquake assets contain algorithmic forecasts; those are not official agency evidence and must not be rendered as such."
+  ]
+}

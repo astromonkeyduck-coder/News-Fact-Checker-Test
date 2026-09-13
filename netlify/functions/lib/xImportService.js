@@ -19,8 +19,7 @@ const {
 function cleanTitle(text) {
   if (!text) return 'Untitled';
   const first = text.split(/\n/)[0].trim();
-  const capped = first.length <= 120 ? first : first.slice(0, 117) + '…';
-  return capped.replace(/\s+/g, ' ');
+  return require('../../../lib/contentNormalize').stripUrls(first).replace(/\s+/g, ' ');
 }
 
 function toSlug(title, xPostId) {

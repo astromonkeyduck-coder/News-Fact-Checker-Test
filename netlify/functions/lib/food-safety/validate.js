@@ -68,7 +68,7 @@ function validateEventCandidate(event, { products = [], parseWarnings = [] } = {
   if (event.event_kind !== 'outbreak' && !event.public_action) {
     reviewReasons.push('consumer_action_not_determined');
   }
-  const conflictWarnings = (parseWarnings || []).filter((w) => String(w).startsWith('conflicting_'));
+  const conflictWarnings = (parseWarnings || []).filter((w) => /^(conflicting_|unrecognized_source_page_type|ambiguous_)/.test(String(w)));
   if (conflictWarnings.length > 0) {
     reviewReasons.push(...conflictWarnings);
   }
