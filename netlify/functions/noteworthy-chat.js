@@ -13,6 +13,7 @@ try {
 // Shared grounding data (recent posts, live stories, page context)
 const aiGrounding = require('./lib/aiGrounding');
 const publicationGrounding = require('./lib/publicationAiGrounding');
+const articleCompanion = require('./lib/articleCompanion');
 
 /**
  * Extract readable text from non-image documents (PDF, DOCX, TXT, MD, CSV).
@@ -299,6 +300,12 @@ exports.handler = async (event, context) => {
         headers,
         body: JSON.stringify({ error: "Invalid JSON in request body" }),
       };
+    }
+
+    // Explicit article diagrams use only an eligible server-side article. They
+    // must not fall through to generic images, chat tools or unrelated feeds.
+    if (requestBody.articleImage === true) {
+      return await articleCompanion.createArticleImage({ pageContext, message, files, apiKey: process.env.OPENAI_API_KEY, headers });
     }
 
     // Allow empty message if files are provided

@@ -1,0 +1,31 @@
+{
+  "version": "atlas-wdi2024-20260713-ne512-v1",
+  "populationReferenceYear": 2024,
+  "populationLastUpdated": "2026-07-13",
+  "inclusionPolicy": "Rank numeric 2024 WDI population records after excluding World Bank aggregate rows, then retain country identities classified Sovereign country or Country in this Natural Earth edition. Dependencies, disputed and indeterminate map units are excluded. Take the first 50 by descending population; ISO3 breaks a tie. This is a documented game inclusion rule, not a political judgment.",
+  "geometry": "Natural Earth 50m admin0 v5.1.2, public domain; coordinates rounded to 0.001 degrees; polygon rings, holes and multipolygons retained. Border-neighbor hints derived from shared source edges, not guessed.",
+  "sources": [
+    {
+      "file": "atlas-population-source.json",
+      "url": "https://api.worldbank.org/v2/country/all/indicator/SP.POP.TOTL?date=2024&format=json&per_page=400",
+      "sha256": "adabba898d02d1e24eb749ce161fcba2d8567bfe4ecb493de5648370cff8439a",
+      "bytes": 53369,
+      "retrievedAt": "2026-09-13T18:46:51.377992+00:00"
+    },
+    {
+      "file": "atlas-country-metadata.json",
+      "url": "https://api.worldbank.org/v2/country?format=json&per_page=400",
+      "sha256": "d29d57f8adf954c5e2a1520a02fb2c7b45575d8db3bd327a9dff47d66914231c",
+      "bytes": 113590,
+      "retrievedAt": "2026-09-13T18:46:50.801906+00:00"
+    },
+    {
+      "file": null,
+      "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/v5.1.2/geojson/ne_50m_admin_0_countries.geojson",
+      "sha256": "3e458fc036ad0a66411f2c1e6cac49c5d7bfb81cb1123bc513b22511a2b7fdeb",
+      "bytes": 3083490,
+      "retrievedAt": "2026-09-13T18:46:49.187807+00:00"
+    }
+  ],
+  "datasetSha256": "7e0a4afa5695194b4ad789e755f140ee569e2c5a46090de8484c5afd611f30d5"
+}

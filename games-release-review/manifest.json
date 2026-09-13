@@ -1,0 +1,577 @@
+{
+  "status": "user-requested-checkpoint",
+  "implementation_directory": "/private/tmp/noteworthy-publication-release",
+  "original_checkout": "/Users/richarda/breaking-news-game",
+  "base_commit": "e8515712c64c3405a2092b64df2fe4abee9ca214",
+  "preview": "http://127.0.0.1:4173/games/",
+  "production_deployed_by_this_task": false,
+  "files": [
+    {
+      "path": "STATUS.md",
+      "status": "modified",
+      "base_sha256": "ccf00b2cb3b7ab8216443fded43a11751431470525343e2460d3184a4eab196c",
+      "sha256": "f8959881e3eb032c1145e9978200d63d0ad11bb9278533420b46e2fefb85215e",
+      "bytes": 5897
+    },
+    {
+      "path": "docs/games-atlas.md",
+      "status": "unchanged",
+      "base_sha256": "c7ba21063079df6eadbc7bf810b4715e81da0523ad631debc63a8c007e6d38f8",
+      "sha256": "c7ba21063079df6eadbc7bf810b4715e81da0523ad631debc63a8c007e6d38f8",
+      "bytes": 14364
+    },
+    {
+      "path": "docs/games-content.md",
+      "status": "modified",
+      "base_sha256": "55eb0ae5266dd24a92ab1c362d7830de16ee6a5b0702104feec13380bb71766d",
+      "sha256": "3d1704ae632aa6a38e6a6ddd96aff55fd0f3b9adb088c5b9c39e37deb50a9882",
+      "bytes": 6557
+    },
+    {
+      "path": "docs/games-design.md",
+      "status": "unchanged",
+      "base_sha256": "de2255a2a8f71ad3d9f081ec1aec5865bd864475fa3646c743303e19cca84b82",
+      "sha256": "de2255a2a8f71ad3d9f081ec1aec5865bd864475fa3646c743303e19cca84b82",
+      "bytes": 1549
+    },
+    {
+      "path": "docs/games-model.md",
+      "status": "unchanged",
+      "base_sha256": "394a160905f0ce0743763f501582f9474e9d2b2e33d3760e28a54bd33562ebe4",
+      "sha256": "394a160905f0ce0743763f501582f9474e9d2b2e33d3760e28a54bd33562ebe4",
+      "bytes": 21436
+    },
+    {
+      "path": "docs/games-validation.md",
+      "status": "modified",
+      "base_sha256": "da58ebc2031872bf194dede569fb1d08668b8d4de9383ee27e120c55e87e0301",
+      "sha256": "47cad9e3c328ce66f2d4a42f897017d3bf1f6040ad4a1a2c5e95f7312f89b85f",
+      "bytes": 9029
+    },
+    {
+      "path": "docs/screenshots/games-atlas-hard-1280.jpg",
+      "status": "unchanged",
+      "base_sha256": "b5e45a76bf3116402e0b42a19387474e3e62f787eed3ded7951bcba949d95bac",
+      "sha256": "b5e45a76bf3116402e0b42a19387474e3e62f787eed3ded7951bcba949d95bac",
+      "bytes": 72584
+    },
+    {
+      "path": "docs/screenshots/games-atlas-hard-375.jpg",
+      "status": "unchanged",
+      "base_sha256": "21e234f0fa304504e35d5f0fd958612543f3b8bc7cc51ee09fb1a0f6f58dc180",
+      "sha256": "21e234f0fa304504e35d5f0fd958612543f3b8bc7cc51ee09fb1a0f6f58dc180",
+      "bytes": 37950
+    },
+    {
+      "path": "docs/screenshots/games-atlas-hard-390.jpg",
+      "status": "unchanged",
+      "base_sha256": "5725b8f03c2a7b2ddb202abafc33777e05c0327519d034fac6b570f0b5ccb56f",
+      "sha256": "5725b8f03c2a7b2ddb202abafc33777e05c0327519d034fac6b570f0b5ccb56f",
+      "bytes": 41976
+    },
+    {
+      "path": "docs/screenshots/games-atlas-hard-768.jpg",
+      "status": "unchanged",
+      "base_sha256": "ab47a25d5590b8a13c8faa3aead6bca94df00bfa306f26a9eceb1e08cdf4fcfa",
+      "sha256": "ab47a25d5590b8a13c8faa3aead6bca94df00bfa306f26a9eceb1e08cdf4fcfa",
+      "bytes": 68131
+    },
+    {
+      "path": "docs/screenshots/games-atlas-hard-result-1440.jpg",
+      "status": "unchanged",
+      "base_sha256": "a423d679d05c3892e930fb565b7bbb308f610d7ac13c20821ffb70b73abf0812",
+      "sha256": "a423d679d05c3892e930fb565b7bbb308f610d7ac13c20821ffb70b73abf0812",
+      "bytes": 63594
+    },
+    {
+      "path": "docs/screenshots/games-before-fact-checker.png",
+      "status": "unchanged",
+      "base_sha256": "19a2f7d64e35cbad4f9c50d2ac13385b6d32cba909d8fb78e4372f87f71e2088",
+      "sha256": "19a2f7d64e35cbad4f9c50d2ac13385b6d32cba909d8fb78e4372f87f71e2088",
+      "bytes": 61768
+    },
+    {
+      "path": "docs/screenshots/games-before-geography.png",
+      "status": "unchanged",
+      "base_sha256": "29d350d029ac8fe699af96326397574fb550ec97a6e4172197db6bc9ce7540ad",
+      "sha256": "29d350d029ac8fe699af96326397574fb550ec97a6e4172197db6bc9ce7540ad",
+      "bytes": 64018
+    },
+    {
+      "path": "docs/screenshots/games-briefing-1280.jpg",
+      "status": "unchanged",
+      "base_sha256": "f71fe7619bc90ca4e362d066a15f7d6b9faa0a59d929e4a02e4df43d99c9b1a5",
+      "sha256": "f71fe7619bc90ca4e362d066a15f7d6b9faa0a59d929e4a02e4df43d99c9b1a5",
+      "bytes": 89030
+    },
+    {
+      "path": "docs/screenshots/games-briefing-390.jpg",
+      "status": "unchanged",
+      "base_sha256": "a11f7a5c703503aed67b82b81dca094c82de465131d1858c2133169d411e8461",
+      "sha256": "a11f7a5c703503aed67b82b81dca094c82de465131d1858c2133169d411e8461",
+      "bytes": 48355
+    },
+    {
+      "path": "docs/screenshots/games-briefing-graph-1280.jpg",
+      "status": "unchanged",
+      "base_sha256": "cdbe094ba035048a0c100c2d466f69533190e0f8dfb1731b70dac0d69f00f3bd",
+      "sha256": "cdbe094ba035048a0c100c2d466f69533190e0f8dfb1731b70dac0d69f00f3bd",
+      "bytes": 79301
+    },
+    {
+      "path": "docs/screenshots/games-briefing-map-1280.jpg",
+      "status": "unchanged",
+      "base_sha256": "a1a0d92aa71cf554e2b21ce0c292da80a87e9f1d854972cc2d3949ec1d434247",
+      "sha256": "a1a0d92aa71cf554e2b21ce0c292da80a87e9f1d854972cc2d3949ec1d434247",
+      "bytes": 68231
+    },
+    {
+      "path": "docs/screenshots/games-case-result.png",
+      "status": "unchanged",
+      "base_sha256": "fcac3d3b8140c91f193a0e2a2f6f1a09c8e6add8e406b14c0d79b1ec91e0b59b",
+      "sha256": "fcac3d3b8140c91f193a0e2a2f6f1a09c8e6add8e406b14c0d79b1ec91e0b59b",
+      "bytes": 60173
+    },
+    {
+      "path": "docs/screenshots/games-finale-briefing.png",
+      "status": "unchanged",
+      "base_sha256": "35b594d01918c7a11fcabeb48b05e87955dad0a917bafba81b8757edc18f2b7f",
+      "sha256": "35b594d01918c7a11fcabeb48b05e87955dad0a917bafba81b8757edc18f2b7f",
+      "bytes": 95513
+    },
+    {
+      "path": "docs/screenshots/games-first-investigation-result.png",
+      "status": "unchanged",
+      "base_sha256": "4f0356d5b5a22579151bb490b27decd59661d515cf9170a973f7b19a237923dd",
+      "sha256": "4f0356d5b5a22579151bb490b27decd59661d515cf9170a973f7b19a237923dd",
+      "bytes": 88203
+    },
+    {
+      "path": "docs/screenshots/games-sandbox-mobile-desk.png",
+      "status": "unchanged",
+      "base_sha256": "88aaea971c1cccc5f9e8f0057f19a0fd35fee2ee4279a2df2693487e794de82e",
+      "sha256": "88aaea971c1cccc5f9e8f0057f19a0fd35fee2ee4279a2df2693487e794de82e",
+      "bytes": 45698
+    },
+    {
+      "path": "game.html",
+      "status": "unchanged",
+      "base_sha256": "215008e9358ce86ff2e2b5633270c647d7bb29f1b5e6656204955c9e0baa683f",
+      "sha256": "215008e9358ce86ff2e2b5633270c647d7bb29f1b5e6656204955c9e0baa683f",
+      "bytes": 2234
+    },
+    {
+      "path": "game/index.html",
+      "status": "unchanged",
+      "base_sha256": "215008e9358ce86ff2e2b5633270c647d7bb29f1b5e6656204955c9e0baa683f",
+      "sha256": "215008e9358ce86ff2e2b5633270c647d7bb29f1b5e6656204955c9e0baa683f",
+      "bytes": 2234
+    },
+    {
+      "path": "games/CONTENT-CONTRACT.md",
+      "status": "unchanged",
+      "base_sha256": "3656cc28e1d348a3fcb288f7a54e4a27f5298d779b1287e52de9b6e7e5c35b70",
+      "sha256": "3656cc28e1d348a3fcb288f7a54e4a27f5298d779b1287e52de9b6e7e5c35b70",
+      "bytes": 13985
+    },
+    {
+      "path": "games/app.js",
+      "status": "modified",
+      "base_sha256": "099f20cfa4a356a8e001b39b9bb3c0d052fbac3b78833109e4c5b1381f797d19",
+      "sha256": "1460ab38b46f0e0f7dd2f115cdefb12f92ccb16398083e8669573663417d3b72",
+      "bytes": 37765
+    },
+    {
+      "path": "games/atlas-ui.js",
+      "status": "unchanged",
+      "base_sha256": "a80d9784ddb2eec159e79ccd730a334f497043009b11d63e1a93a76314f46563",
+      "sha256": "a80d9784ddb2eec159e79ccd730a334f497043009b11d63e1a93a76314f46563",
+      "bytes": 21153
+    },
+    {
+      "path": "games/atlas.css",
+      "status": "unchanged",
+      "base_sha256": "b8f3502df1f89ccf5ab0772d1a122196171977743b2775fad004830797f01b44",
+      "sha256": "b8f3502df1f89ccf5ab0772d1a122196171977743b2775fad004830797f01b44",
+      "bytes": 7898
+    },
+    {
+      "path": "games/atlas.js",
+      "status": "unchanged",
+      "base_sha256": "ef454fff4dc5faf66663cd3818ee1aa50d0e26e1a9bb4001568e2dff9ac0f12d",
+      "sha256": "ef454fff4dc5faf66663cd3818ee1aa50d0e26e1a9bb4001568e2dff9ac0f12d",
+      "bytes": 12831
+    },
+    {
+      "path": "games/base.css",
+      "status": "unchanged",
+      "base_sha256": "ce213a8fab0b8335dcbb8116474658799e4b9b212a50b148bc3ccdebb3497e8d",
+      "sha256": "ce213a8fab0b8335dcbb8116474658799e4b9b212a50b148bc3ccdebb3497e8d",
+      "bytes": 17954
+    },
+    {
+      "path": "games/briefing.css",
+      "status": "unchanged",
+      "base_sha256": "71e940aea3f4ca200c00cc704559ae5b251267ff0291a9503523908e5fd7cf47",
+      "sha256": "71e940aea3f4ca200c00cc704559ae5b251267ff0291a9503523908e5fd7cf47",
+      "bytes": 6482
+    },
+    {
+      "path": "games/briefing.js",
+      "status": "unchanged",
+      "base_sha256": "37c342c49de98a538e7a852e55f347711fc1b9fe326942ab2485306d4b912a46",
+      "sha256": "37c342c49de98a538e7a852e55f347711fc1b9fe326942ab2485306d4b912a46",
+      "bytes": 22760
+    },
+    {
+      "path": "games/content.js",
+      "status": "unchanged",
+      "base_sha256": "87914f737bbba76248fcdb667c7a0733db7a64978849587314b7cf37d80e87c5",
+      "sha256": "87914f737bbba76248fcdb667c7a0733db7a64978849587314b7cf37d80e87c5",
+      "bytes": 156388
+    },
+    {
+      "path": "games/data/atlas-build.py",
+      "status": "unchanged",
+      "base_sha256": "3ec687fd19c3d4daab43e2cb9c5bfcdeb51809514aa665abc676720b5f43c422",
+      "sha256": "3ec687fd19c3d4daab43e2cb9c5bfcdeb51809514aa665abc676720b5f43c422",
+      "bytes": 7584
+    },
+    {
+      "path": "games/data/atlas-country-metadata.json",
+      "status": "unchanged",
+      "base_sha256": "d29d57f8adf954c5e2a1520a02fb2c7b45575d8db3bd327a9dff47d66914231c",
+      "sha256": "d29d57f8adf954c5e2a1520a02fb2c7b45575d8db3bd327a9dff47d66914231c",
+      "bytes": 113590
+    },
+    {
+      "path": "games/data/atlas-data.js",
+      "status": "unchanged",
+      "base_sha256": "89f6d9dda8ef20e96a71fc6368960591f93727004d05e6ac061f210aa7ff3dc2",
+      "sha256": "89f6d9dda8ef20e96a71fc6368960591f93727004d05e6ac061f210aa7ff3dc2",
+      "bytes": 1703614
+    },
+    {
+      "path": "games/data/atlas-data.json",
+      "status": "unchanged",
+      "base_sha256": "7e0a4afa5695194b4ad789e755f140ee569e2c5a46090de8484c5afd611f30d5",
+      "sha256": "7e0a4afa5695194b4ad789e755f140ee569e2c5a46090de8484c5afd611f30d5",
+      "bytes": 1703463
+    },
+    {
+      "path": "games/data/atlas-population-source.json",
+      "status": "unchanged",
+      "base_sha256": "adabba898d02d1e24eb749ce161fcba2d8567bfe4ecb493de5648370cff8439a",
+      "sha256": "adabba898d02d1e24eb749ce161fcba2d8567bfe4ecb493de5648370cff8439a",
+      "bytes": 53369
+    },
+    {
+      "path": "games/data/atlas-provenance.json",
+      "status": "unchanged",
+      "base_sha256": "9e33dd379c273b833216dbbc9fbeb7d4da3323b767f622d928b47efc15ba2978",
+      "sha256": "9e33dd379c273b833216dbbc9fbeb7d4da3323b767f622d928b47efc15ba2978",
+      "bytes": 1818
+    },
+    {
+      "path": "games/evidence-visuals.js",
+      "status": "unchanged",
+      "base_sha256": "3a606cb04d3c4b08498e8e29ff8da576816743344b3eb5ae99c68f8214d5b62e",
+      "sha256": "3a606cb04d3c4b08498e8e29ff8da576816743344b3eb5ae99c68f8214d5b62e",
+      "bytes": 4949
+    },
+    {
+      "path": "games/evidence.js",
+      "status": "unchanged",
+      "base_sha256": "32ece67ecce36a96e4cb238a798f09fc88cc65c311b7a4f0a6d2a207d5e31c1e",
+      "sha256": "32ece67ecce36a96e4cb238a798f09fc88cc65c311b7a4f0a6d2a207d5e31c1e",
+      "bytes": 16301
+    },
+    {
+      "path": "games/gis.js",
+      "status": "unchanged",
+      "base_sha256": "469a4259ab2511a7c8fffeeb4571b09d9dd47ce78f3757de62837cfa68809347",
+      "sha256": "469a4259ab2511a7c8fffeeb4571b09d9dd47ce78f3757de62837cfa68809347",
+      "bytes": 10776
+    },
+    {
+      "path": "games/index.html",
+      "status": "unchanged",
+      "base_sha256": "5e21335fb342656a3e182918decb86c39314a67c78e4052e40c1f8cd1fa29222",
+      "sha256": "5e21335fb342656a3e182918decb86c39314a67c78e4052e40c1f8cd1fa29222",
+      "bytes": 2220
+    },
+    {
+      "path": "games/investigation-map.css",
+      "status": "unchanged",
+      "base_sha256": "7cc951d58171ce52068ff981b64b3cdb6ede63fba3fc8e69687b537d1ef92303",
+      "sha256": "7cc951d58171ce52068ff981b64b3cdb6ede63fba3fc8e69687b537d1ef92303",
+      "bytes": 4107
+    },
+    {
+      "path": "games/investigation-view.js",
+      "status": "unchanged",
+      "base_sha256": "9fbf82312699913b37ab753a4b327977fddb28cf2404c720a9960e4e1098e56e",
+      "sha256": "9fbf82312699913b37ab753a4b327977fddb28cf2404c720a9960e4e1098e56e",
+      "bytes": 23336
+    },
+    {
+      "path": "games/investigation.css",
+      "status": "unchanged",
+      "base_sha256": "06c0d3d170493b30dfb72e2f1251438a47a156513470f34a1413b84aa3b3b952",
+      "sha256": "06c0d3d170493b30dfb72e2f1251438a47a156513470f34a1413b84aa3b3b952",
+      "bytes": 10027
+    },
+    {
+      "path": "games/investigation.js",
+      "status": "modified",
+      "base_sha256": "31aa950619a1ce668efef5f5bd76cb6aceb7d7d25be8630160d8872ad9f003dc",
+      "sha256": "691b9fb80b1cae495eb227e46f42e5d14353f478fc626f32383b16f0b053d2ff",
+      "bytes": 45562
+    },
+    {
+      "path": "games/legacy-fact-checker.html",
+      "status": "unchanged",
+      "base_sha256": "da2706adb1e90413f167d860636d5970e8acb1c53451fa792893668d6595c3d0",
+      "sha256": "da2706adb1e90413f167d860636d5970e8acb1c53451fa792893668d6595c3d0",
+      "bytes": 93881
+    },
+    {
+      "path": "games/legacy-geography.html",
+      "status": "unchanged",
+      "base_sha256": "b07e58b7e6374b846a23f6a2efc56f480774928e6bc65bfd29e4266b61ec4915",
+      "sha256": "b07e58b7e6374b846a23f6a2efc56f480774928e6bc65bfd29e4266b61ec4915",
+      "bytes": 124854
+    },
+    {
+      "path": "games/mission-rubric.js",
+      "status": "unchanged",
+      "base_sha256": "3e1badb39698dcadb2fa2320c3d801d89d8d1ecca1453f5b76ad0ed08937bf3a",
+      "sha256": "3e1badb39698dcadb2fa2320c3d801d89d8d1ecca1453f5b76ad0ed08937bf3a",
+      "bytes": 24647
+    },
+    {
+      "path": "games/physics.js",
+      "status": "unchanged",
+      "base_sha256": "1e58acd30db34e917a18c540fab3decda554e6f5cc060b00fffc2ad07b281f4e",
+      "sha256": "1e58acd30db34e917a18c540fab3decda554e6f5cc060b00fffc2ad07b281f4e",
+      "bytes": 20224
+    },
+    {
+      "path": "games/session.js",
+      "status": "unchanged",
+      "base_sha256": "e90a3a72e9a10b1adf853042b4b8c958e42ce6e41bfe81ce6d15e533b9a4251d",
+      "sha256": "e90a3a72e9a10b1adf853042b4b8c958e42ce6e41bfe81ce6d15e533b9a4251d",
+      "bytes": 19019
+    },
+    {
+      "path": "games/shared.js",
+      "status": "modified",
+      "base_sha256": "9653966a9e9f2cef79d29f59169b05c3ee1137283b59aac54fb8936ed16cdb5d",
+      "sha256": "19c2a740fa4359258948a3f6ba2a2ed42840f019478af596ce40ae6344f1e16f",
+      "bytes": 3025
+    },
+    {
+      "path": "games/simulation-worker.js",
+      "status": "unchanged",
+      "base_sha256": "8c1c585a7747cb7bd762b22376257ccb01a383600cbf9331c3214780f6e77a38",
+      "sha256": "8c1c585a7747cb7bd762b22376257ccb01a383600cbf9331c3214780f6e77a38",
+      "bytes": 1414
+    },
+    {
+      "path": "games/world.js",
+      "status": "unchanged",
+      "base_sha256": "10c7a66a95d75d2f1f57ccd5a707b122f285fe0f76312ec6b9aafca750af65aa",
+      "sha256": "10c7a66a95d75d2f1f57ccd5a707b122f285fe0f76312ec6b9aafca750af65aa",
+      "bytes": 13054
+    },
+    {
+      "path": "geography-game.html",
+      "status": "unchanged",
+      "base_sha256": "e8da1b5f23199c9511d68d883499438fbc470c074ec4b67f7ae3c9aee1181a00",
+      "sha256": "e8da1b5f23199c9511d68d883499438fbc470c074ec4b67f7ae3c9aee1181a00",
+      "bytes": 2251
+    },
+    {
+      "path": "geography-game/index.html",
+      "status": "unchanged",
+      "base_sha256": "e8da1b5f23199c9511d68d883499438fbc470c074ec4b67f7ae3c9aee1181a00",
+      "sha256": "e8da1b5f23199c9511d68d883499438fbc470c074ec4b67f7ae3c9aee1181a00",
+      "bytes": 2251
+    },
+    {
+      "path": "package.json",
+      "status": "unchanged",
+      "base_sha256": "0938632b64949fb2a710fbe803049bcbdb74d87dd7476b86b1ba2c7d49556403",
+      "sha256": "0938632b64949fb2a710fbe803049bcbdb74d87dd7476b86b1ba2c7d49556403",
+      "bytes": 4698
+    },
+    {
+      "path": "publication/information.js",
+      "status": "unchanged",
+      "base_sha256": "8e23f2c4334013fadcdfee44073f80a7de1030a65464052db75c7bc79819d25e",
+      "sha256": "8e23f2c4334013fadcdfee44073f80a7de1030a65464052db75c7bc79819d25e",
+      "bytes": 11260
+    },
+    {
+      "path": "publication/render.js",
+      "status": "unchanged",
+      "base_sha256": "9c05f1fb23120becc1dce13e7a928533d91847d2001318a38b5cf31f98e905ea",
+      "sha256": "9c05f1fb23120becc1dce13e7a928533d91847d2001318a38b5cf31f98e905ea",
+      "bytes": 22667
+    },
+    {
+      "path": "scripts/build-games.js",
+      "status": "unchanged",
+      "base_sha256": "60c4aeecf8808efb20fec55611f1fb2838a1cdfd482326b60137bce57081d41d",
+      "sha256": "60c4aeecf8808efb20fec55611f1fb2838a1cdfd482326b60137bce57081d41d",
+      "bytes": 3050
+    },
+    {
+      "path": "scripts/build-publication.js",
+      "status": "unchanged",
+      "base_sha256": "e671c319df1254e27243e61739e2e7784b5692799b643e56ed5f4e79b9f63811",
+      "sha256": "e671c319df1254e27243e61739e2e7784b5692799b643e56ed5f4e79b9f63811",
+      "bytes": 2765
+    },
+    {
+      "path": "scripts/preview-publication.js",
+      "status": "unchanged",
+      "base_sha256": "bfe583575cde518bf6504bbab70530edcffa8acadedf6fe1f10548c10dc81c4e",
+      "sha256": "bfe583575cde518bf6504bbab70530edcffa8acadedf6fe1f10548c10dc81c4e",
+      "bytes": 5009
+    },
+    {
+      "path": "tests/games/atlas-browser-evidence.json",
+      "status": "unchanged",
+      "base_sha256": "c133c16aeabf8b6c4c15013f596d4bf5a2cbca2e5c1ec6743c8351f5928d7840",
+      "sha256": "c133c16aeabf8b6c4c15013f596d4bf5a2cbca2e5c1ec6743c8351f5928d7840",
+      "bytes": 25049
+    },
+    {
+      "path": "tests/games/atlas-data.test.js",
+      "status": "unchanged",
+      "base_sha256": "c0c5ad0e90c97cf7fdde89ff595633ac66a3384553cadb3fda344bc5ab276fde",
+      "sha256": "c0c5ad0e90c97cf7fdde89ff595633ac66a3384553cadb3fda344bc5ab276fde",
+      "bytes": 3623
+    },
+    {
+      "path": "tests/games/atlas-model.test.js",
+      "status": "unchanged",
+      "base_sha256": "881df8192064ea80469f41270fa4e49c9b3e95e14de085add75214b9beb3c6a8",
+      "sha256": "881df8192064ea80469f41270fa4e49c9b3e95e14de085add75214b9beb3c6a8",
+      "bytes": 6454
+    },
+    {
+      "path": "tests/games/atlas-preview.html",
+      "status": "unchanged",
+      "base_sha256": "a03b4c8efb9595a9f173fabc491be7352432db3a9bf1f3e9d4dc017f092c05f0",
+      "sha256": "a03b4c8efb9595a9f173fabc491be7352432db3a9bf1f3e9d4dc017f092c05f0",
+      "bytes": 1923
+    },
+    {
+      "path": "tests/games/briefing-preview.html",
+      "status": "unchanged",
+      "base_sha256": "37c01f469c5d49cc9888716c8cc47dde0250b8d8e0fbdf2f839490196ded437a",
+      "sha256": "37c01f469c5d49cc9888716c8cc47dde0250b8d8e0fbdf2f839490196ded437a",
+      "bytes": 910416
+    },
+    {
+      "path": "tests/games/briefing-sample.json",
+      "status": "unchanged",
+      "base_sha256": "d6d70d4bd84e996f40036f360725921763ded9d242382bd3f9df8f1c59cb8587",
+      "sha256": "d6d70d4bd84e996f40036f360725921763ded9d242382bd3f9df8f1c59cb8587",
+      "bytes": 331495
+    },
+    {
+      "path": "tests/games/briefing.test.js",
+      "status": "unchanged",
+      "base_sha256": "9fbb0d99a5a1fdb38240ae7a13a8db2575c7b14cf2653dfc381afca0f7319ee7",
+      "sha256": "9fbb0d99a5a1fdb38240ae7a13a8db2575c7b14cf2653dfc381afca0f7319ee7",
+      "bytes": 6237
+    },
+    {
+      "path": "tests/games/content.test.js",
+      "status": "unchanged",
+      "base_sha256": "a1837e7c8d627f96c718ea178d04ab4fd89339930b2b02e98e91d7cee75b5595",
+      "sha256": "a1837e7c8d627f96c718ea178d04ab4fd89339930b2b02e98e91d7cee75b5595",
+      "bytes": 11406
+    },
+    {
+      "path": "tests/games/evidence-visuals.test.js",
+      "status": "unchanged",
+      "base_sha256": "a182f299d2b945de59d324aa076e898b30c7928909384e5fee43f68446e4699d",
+      "sha256": "a182f299d2b945de59d324aa076e898b30c7928909384e5fee43f68446e4699d",
+      "bytes": 1357
+    },
+    {
+      "path": "tests/games/gis.test.js",
+      "status": "unchanged",
+      "base_sha256": "65bde1a0d648a23d8ceab972b0f9db8ec5fe15e57e9a47c6226516d7ac129f23",
+      "sha256": "65bde1a0d648a23d8ceab972b0f9db8ec5fe15e57e9a47c6226516d7ac129f23",
+      "bytes": 4204
+    },
+    {
+      "path": "tests/games/investigation-integration.test.js",
+      "status": "unchanged",
+      "base_sha256": "9b7370720bdb49e1bad1cc8348ae0983cfdea2de89b85eb0442f8a9c7569eac8",
+      "sha256": "9b7370720bdb49e1bad1cc8348ae0983cfdea2de89b85eb0442f8a9c7569eac8",
+      "bytes": 8291
+    },
+    {
+      "path": "tests/games/investigation-view.test.js",
+      "status": "unchanged",
+      "base_sha256": "72874790fa70d9312569655d99eb813d29150175ae14186795c37d2cfbe8d0f7",
+      "sha256": "72874790fa70d9312569655d99eb813d29150175ae14186795c37d2cfbe8d0f7",
+      "bytes": 7145
+    },
+    {
+      "path": "tests/games/mission-rubric.test.js",
+      "status": "unchanged",
+      "base_sha256": "8214fa090518b3bf776874e8ce2cc2903034f7ffb56e11e6af97a6511c611e53",
+      "sha256": "8214fa090518b3bf776874e8ce2cc2903034f7ffb56e11e6af97a6511c611e53",
+      "bytes": 9582
+    },
+    {
+      "path": "tests/games/physics-extremes.test.js",
+      "status": "unchanged",
+      "base_sha256": "d7ebbfd5b47b63f0e1637b7bd38c0c57be8d77113eafb86a7a56d18b97929a45",
+      "sha256": "d7ebbfd5b47b63f0e1637b7bd38c0c57be8d77113eafb86a7a56d18b97929a45",
+      "bytes": 6194
+    },
+    {
+      "path": "tests/games/physics-missions.test.js",
+      "status": "unchanged",
+      "base_sha256": "7f0fd42096876d2e2294b82beb0d1f191e14d6752f7528935bfa70e7052ddd51",
+      "sha256": "7f0fd42096876d2e2294b82beb0d1f191e14d6752f7528935bfa70e7052ddd51",
+      "bytes": 6221
+    },
+    {
+      "path": "tests/games/physics-worker.test.js",
+      "status": "unchanged",
+      "base_sha256": "a7086627e33d33737dd57bdb5ac37181d4e8ade1f2274f667485693f9f38f223",
+      "sha256": "a7086627e33d33737dd57bdb5ac37181d4e8ade1f2274f667485693f9f38f223",
+      "bytes": 2236
+    },
+    {
+      "path": "tests/games/physics.test.js",
+      "status": "unchanged",
+      "base_sha256": "c3f03344ef1b6d21620cfbad97bed35fc777197fc153352319bf36cab5269bfb",
+      "sha256": "c3f03344ef1b6d21620cfbad97bed35fc777197fc153352319bf36cab5269bfb",
+      "bytes": 7435
+    },
+    {
+      "path": "tests/games/season-physics.test.js",
+      "status": "unchanged",
+      "base_sha256": "dfa4e104ffa57cacaa79b43617a9ae69a404032587a1d38897e7787b0eb4afa0",
+      "sha256": "dfa4e104ffa57cacaa79b43617a9ae69a404032587a1d38897e7787b0eb4afa0",
+      "bytes": 11952
+    },
+    {
+      "path": "tests/games/session.test.js",
+      "status": "unchanged",
+      "base_sha256": "dac093bcb6293808181a6a29cab4946da9a1f93bb3bc8c9639f5d1e3e90efcd1",
+      "sha256": "dac093bcb6293808181a6a29cab4946da9a1f93bb3bc8c9639f5d1e3e90efcd1",
+      "bytes": 16020
+    }
+  ]
+}
