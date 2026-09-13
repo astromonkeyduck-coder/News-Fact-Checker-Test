@@ -87,15 +87,25 @@ function fixture(options = {}) {
   const windowListeners = {};
   const win = { ...timers, AbortController, CustomEvent: class { constructor(type, options) { this.type = type; this.detail = options.detail; } }, addEventListener(name, fn) { (windowListeners[name] ||= []).push(fn); }, fetch: options.fetch || (async (...args) => { requests.push(args); return response(); }),
     localStorage: { getItem: () => options.voiceOff ? 'off' : null, setItem() {} },
-    ...(options.speech ? { NoteworthyStorySpeech: options.speech, speechSynthesis: options.synthesis, SpeechSynthesisUtterance: options.Utterance } : {}),
+    ...(options.speech ? { NoteworthyStorySpeech: options.speech } : {}),
     sessionStorage: { getItem(key) { if (options.blockRead) throw Error('Storage denied'); return storage.get(key) ?? null; }, setItem(key, value) { if (options.blockWrite) throw Error('Storage denied'); storage.set(key, value); } } };
   return { doc, win, timers, storage, requests, root, panel, launcher, close, input, send, form, messages, status, scroll, articleLink, headerAsk, suggestions, sources, audio, speechStop, speechReplay, speechStatus, visual, windowListeners, el };
 }
 function audioFixture(options = {}) {
-  const spoken = []; let cancellations = 0;
-  const synthesis = { speak(utterance) { spoken.push(utterance); }, cancel() { cancellations++; }, getVoices: () => [] };
-  class Utterance { constructor(text) { this.text = text; } }
-  return { ...fixture({ ...options, speech: require('../../publication/story-speech'), synthesis, Utterance }), spoken, get cancellations() { return cancellations; } };
+  const spoken = []; let cancellations = 0, generation = 0;
+  const speech = { createSpeech({ window: win, preview, onChange }) {
+    assert.equal(typeof win?.fetch, 'function', 'The speech adapter receives its window dependency');
+    function stop() { cancellations++; generation++; onChange({ state: 'stopped' }); }
+    return { supported: true, stop, async speak(text) {
+      stop(); if (preview) { onChange({ state: 'preview', message: 'ElevenLabs audio is not connected in this local preview. No audio request was sent.' }); return false; }
+      const token = generation;
+      spoken.push({ text, onend() { if (token === generation) onChange({ state: 'ended' }); } });
+      onChange({ state: 'starting' }); return true;
+    } };
+  } };
+  const f = fixture({ ...options, speech });
+  Object.defineProperty(f.win, 'speechSynthesis', { get() { assert.fail('Browser speech is prohibited; use the ElevenLabs adapter'); } });
+  return { ...f, spoken, get cancellations() { return cancellations; } };
 }
 
 test('eligible article markup is nonmodal, hidden without JS, labeled and escaped', () => {
@@ -106,7 +116,8 @@ test('eligible article markup is nonmodal, hidden without JS, labeled and escape
   assert.match(html, /aria-controls="story-ai-panel"/); assert.match(html, /aria-expanded="false"/);
   assert.match(html, /role="log"/); assert.match(html, /aria-live="polite"/);
   assert.match(html, /<label for="story-ai-question">Your question<\/label>/);
-  assert.match(html, /AI can make mistakes/); assert.match(html, /Sending shares your question/);
+  assert.match(html, /AI can make mistakes/); assert.match(html, /Questions, chat and story context go to OpenAI and Noteworthy/);
+  assert.match(html, /ElevenLabs provides speech and voice calls/);
   assert.doesNotMatch(html, /aria-modal|autofocus|<img src=x|<script>/);
   const serialized = html.match(/data-context="([^"]+)"/)[1].replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
   assert.deepEqual(JSON.parse(serialized), { articleId: '\"<script>', title: '<img src=x onerror=alert(1)> & facts', url: context.url });
@@ -161,6 +172,19 @@ test('generated illustrations require safe URLs and carry a visible non-evidence
   assert.match(html, /AI-generated illustration/); assert.match(html, /not a news photograph or evidence/);
   assert.match(html, /alt="AI-generated explanatory illustration/); assert.match(html, /src="https:\/\/example.com\/image.png\?a=1&amp;b=2"/);
   assert.doesNotMatch(html, /<script>/);
+});
+
+test('generated inline images allow bounded PNG data with its signature, reject SVG and invalid payloads', () => {
+  const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jB9kAAAAASUVORK5CYII=';
+  const html = A.imageMarkup({ imageUrl: png });
+  assert.ok(html.includes(`src="${png}"`)); assert.match(html, /download="noteworthy-ai-explainer.png"/);
+  assert.match(html, /AI-generated illustration/); assert.match(html, /not a news photograph or evidence/);
+  for (const imageUrl of [
+    'data:image/svg+xml;base64,PHN2ZyBvbmxvYWQ9YWxlcnQoMSk+PC9zdmc+',
+    'data:image/png;base64,PHN2ZyBvbmxvYWQ9YWxlcnQoMSk+PC9zdmc+',
+    'data:image/png;base64,iVBORw0KGgo\" onerror=alert(1)',
+    'data:image/png;base64,iVBORw0KGgo' + 'A'.repeat(6000000)
+  ]) assert.equal(A.imageMarkup({ imageUrl }), '');
 });
 
 test('image generation is an explicit request option with a longer timeout; preview never fabricates an image', async () => {
@@ -388,10 +412,10 @@ test('a pending answer does not start audio after dismissal or backgrounding, an
   }
 });
 
-test('an explicit preview question can demonstrate speech while clearly saying no AI request was sent', async () => {
+test('an explicit preview question preserves the text answer and reports ElevenLabs unavailable without playing audio', async () => {
   const f = audioFixture({ preview: true }); A.mount(f.doc, f.win); f.timers.run(2400);
   assert.equal(f.spoken.length, 0); f.input.value = 'Explain this'; f.form.dispatch('submit'); await flush();
-  assert.equal(f.requests.length, 0); assert.equal(f.spoken.length, 1);
-  assert.match(f.spoken[0].text, /not connected in this local preview/);
+  assert.equal(f.requests.length, 0); assert.equal(f.spoken.length, 0);
+  assert.match(f.speechStatus.textContent, /ElevenLabs.*local preview.*No audio request was sent/);
   assert.match(f.status.textContent, /Preview only.*No AI request sent/);
 });

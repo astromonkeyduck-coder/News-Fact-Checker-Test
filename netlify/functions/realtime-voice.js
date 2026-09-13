@@ -4,7 +4,6 @@
 // (recent posts, live stories, and the page the listener is on).
 
 const aiGrounding = require("./lib/aiGrounding");
-const articleCompanion = require("./lib/articleCompanion");
 
 const SUPPORTED_VOICES = ["alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer", "verse", "marin", "cedar"];
 
@@ -109,7 +108,7 @@ function parsePageContext(raw) {
  * Create a GA ephemeral client secret for a realtime session.
  * Returns a Netlify-style response object.
  */
-async function createSession({ apiKey, voice, pageContext, headers, mode }) {
+async function createSession({ apiKey, voice, pageContext, headers }) {
   // ElevenLabs voices are synthesized on the frontend; the session itself
   // still needs a valid OpenAI voice.
   const isElevenLabsVoice = typeof voice === "string" && voice.startsWith("elevenlabs:");
@@ -119,26 +118,17 @@ async function createSession({ apiKey, voice, pageContext, headers, mode }) {
   }
   const openAIVoiceForSession = isElevenLabsVoice ? "marin" : voice;
 
-  let instructions;
-  if (mode === 'article') {
-    try {
-      const article = await articleCompanion.loadArticle(pageContext);
-      instructions = articleCompanion.voiceInstructions(article);
-    } catch (error) {
-      return articleCompanion.failureResponse(error, headers);
-    }
-  } else {
-    // Preserve the existing general widget's context and capabilities.
-    let groundingContext = "";
-    try {
-      const grounding = await aiGrounding.loadGrounding({ pageContext, postsLimit: 8, storiesLimit: 4 });
-      groundingContext = aiGrounding.buildVoiceContext(grounding, pageContext);
-      console.log(`[Realtime Voice] Grounding: ${grounding.recentPosts.length} posts, ${grounding.liveStories.length} live stories, article=${!!grounding.currentArticle}, liveStory=${!!grounding.currentLiveStory}`);
-    } catch (error) {
-      console.error("[Realtime Voice] Error building grounding:", error);
-    }
-    instructions = buildInstructions(groundingContext);
+  // Grounding: same sources as text chat, formatted for speech.
+  let groundingContext = "";
+  try {
+    const grounding = await aiGrounding.loadGrounding({ pageContext, postsLimit: 8, storiesLimit: 4 });
+    groundingContext = aiGrounding.buildVoiceContext(grounding, pageContext);
+    console.log(`[Realtime Voice] Grounding: ${grounding.recentPosts.length} posts, ${grounding.liveStories.length} live stories, article=${!!grounding.currentArticle}, liveStory=${!!grounding.currentLiveStory}`);
+  } catch (error) {
+    console.error("[Realtime Voice] Error building grounding:", error);
   }
+
+  const instructions = buildInstructions(groundingContext);
 
   // 12s timeout - leave buffer under Netlify's function cap
   const controller = new AbortController();
@@ -162,12 +152,11 @@ async function createSession({ apiKey, voice, pageContext, headers, mode }) {
           type: "realtime",
           model: "gpt-realtime",
           instructions,
-          tools: mode === 'article' ? [] : TOOLS,
+          tools: TOOLS,
           audio: {
             input: {
               format: { type: "audio/pcm", rate: 24000 },
               turn_detection: { type: "server_vad" },
-              ...(mode === 'article' ? { transcription: { model: 'gpt-4o-mini-transcribe' } } : {}),
             },
             output: {
               format: { type: "audio/pcm", rate: 24000 },
@@ -302,7 +291,6 @@ exports.handler = async (event) => {
         apiKey,
         voice: body.voice || "marin",
         pageContext: parsePageContext(body.pageContext),
-        mode: body.mode === 'article' ? 'article' : undefined,
         headers,
       });
     }

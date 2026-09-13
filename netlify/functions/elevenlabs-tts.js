@@ -83,6 +83,7 @@ exports.handler = async (event) => {
   let body;
   try {
     body = JSON.parse(event.body || '{}');
+    if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Error('Invalid body');
   } catch {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid JSON body.' }) };
   }
@@ -90,6 +91,12 @@ exports.handler = async (event) => {
   let text;
   let voiceId = DEFAULT_VOICE_ID;
   let cacheKey = null;
+
+  // Article answers arrive as ordered chunks from the companion. Reject a
+  // malformed/oversized chunk so it is never silently shortened in playback.
+  if (body.storyAnswer === true && (body.id || typeof body.text !== 'string' || !body.text.trim() || body.text.trim().length > SNIPPET_CHAR_CAP)) {
+    return { statusCode: 400, headers, body: JSON.stringify({ error: `Provide an answer chunk of 1–${SNIPPET_CHAR_CAP} characters without a story id.` }) };
+  }
 
   if (body.id) {
     // Article mode: server loads and caps the content; fixed voice.
@@ -129,19 +136,31 @@ exports.handler = async (event) => {
 
   console.log(`[ElevenLabs TTS] Generating ${text.length} characters, voice ${voiceId}${cacheKey ? `, key ${cacheKey}` : ''}`);
 
-  const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
-    method: 'POST',
-    headers: {
-      Accept: 'audio/mpeg',
-      'Content-Type': 'application/json',
-      'xi-api-key': apiKey,
-    },
-    body: JSON.stringify({
-      text,
-      model_id: DEFAULT_MODEL,
-      voice_settings: { stability: 0.5, similarity_boost: 0.75, style: 0.0, use_speaker_boost: true },
-    }),
-  });
+  const controller = body.storyAnswer === true ? new AbortController() : null;
+  const timeout = controller ? setTimeout(() => controller.abort(), 20000) : null;
+  let response;
+  let audioBuffer;
+  try {
+    response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+      method: 'POST',
+      headers: {
+        Accept: 'audio/mpeg',
+        'Content-Type': 'application/json',
+        'xi-api-key': apiKey,
+      },
+      ...(controller ? { signal: controller.signal } : {}),
+      body: JSON.stringify({
+        text,
+        model_id: DEFAULT_MODEL,
+        voice_settings: { stability: 0.5, similarity_boost: 0.75, style: 0.0, use_speaker_boost: true },
+      }),
+    });
+
+    if (response.ok) audioBuffer = await response.arrayBuffer();
+  } catch (error) {
+    if (body.storyAnswer !== true) throw error;
+    return { statusCode: error.name === 'AbortError' ? 504 : 502, headers, body: JSON.stringify({ error: error.name === 'AbortError' ? 'Answer audio timed out. Please try again.' : 'Answer audio is unavailable right now.' }) };
+  } finally { if (timeout) clearTimeout(timeout); }
 
   if (!response.ok) {
     const detail = await response.text().catch(() => '');
@@ -149,7 +168,6 @@ exports.handler = async (event) => {
     return { statusCode: 502, headers, body: JSON.stringify({ error: 'Audio narration is unavailable right now.' }) };
   }
 
-  const audioBuffer = await response.arrayBuffer();
   const payload = {
     audio: Buffer.from(audioBuffer).toString('base64'),
     format: 'mp3',

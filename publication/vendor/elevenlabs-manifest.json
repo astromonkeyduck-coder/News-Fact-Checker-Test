@@ -1,0 +1,28 @@
+{
+  "package": "@elevenlabs/client",
+  "version": "1.25.0",
+  "file": "elevenlabs-client-1.25.0.min.js",
+  "bytes": 613853,
+  "sha256": "ca43109dad1aa4fa7e21a0ad056dc3ea1795bb2f737f049759e050f5b787a668",
+  "documentation": "https://elevenlabs.io/docs/eleven-agents/libraries/java-script",
+  "source": "https://github.com/elevenlabs/packages/tree/main/packages/client",
+  "dependencies": [
+    "@bufbuild/protobuf@1.10.1",
+    "@elevenlabs/client@1.25.0",
+    "@elevenlabs/types@0.23.0",
+    "@livekit/mutex@1.1.1",
+    "@livekit/protocol@1.50.4",
+    "events@3.3.0",
+    "jose@6.2.2",
+    "livekit-client@2.22.3",
+    "loglevel@1.9.2",
+    "machina@7.0.1",
+    "sdp-transform@2.15.0",
+    "sdp@3.2.2",
+    "tslib@2.8.1",
+    "typed-emitter@2.1.0",
+    "webrtc-adapter@9.0.6"
+  ],
+  "licenses": "elevenlabs-LICENSES.txt",
+  "rebuild": "npm run build:story-voice"
+}
