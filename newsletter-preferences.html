@@ -274,19 +274,21 @@
         <h1>Email Preferences</h1>
         <p class="subtitle">Choose which emails you want to receive</p>
 
-        <div id="invalidLink" class="status-message error" style="display: none;">
-            Invalid link. Please use the preferences link from your email.
+        <div id="invalidLink" class="status-message" role="status" style="display: none;">
+            <p>To manage an existing subscription, open the preferences link in an email from Noteworthy News.</p>
+            <p><a href="/subscriptions.html">Explore newsletters and alerts</a>, or <a href="mailto:richard@noteworthynews.co?subject=Email%20preferences">contact us for help with your subscription</a>.</p>
         </div>
 
         <div id="preferencesContent" style="display: none;">
-            <div id="toast" class="status-message success" style="display: none;"></div>
+            <div id="toast" class="status-message" role="status" aria-live="polite" style="display: none;"></div>
+            <button type="button" id="preferencesRetry" class="btn-home" hidden>Retry loading preferences</button>
 
             <div class="pref-section">
                 <h3>Newsletter</h3>
                 <div class="newsletter-row">
                     <div class="pref-info">
                         <span class="label">Newsletter &amp; Breaking News</span>
-                        <p class="desc">Weekly digest and important news updates</p>
+                        <p class="desc">Editorial emails and important news updates share one subscription. Earthquake emails have a separate opt-in below.</p>
                     </div>
                     <a href="#" id="unsubscribeBtn" class="btn-unsubscribe">Unsubscribe</a>
                 </div>
@@ -301,7 +303,7 @@
                     </div>
                     <label class="toggle-wrap">
                         <span class="toggle">
-                            <input type="checkbox" id="toggleLeaderboard">
+                            <input type="checkbox" id="toggleLeaderboard" aria-label="Email leaderboard updates">
                             <span class="toggle-slider"></span>
                         </span>
                     </label>
@@ -313,7 +315,7 @@
                     </div>
                     <label class="toggle-wrap">
                         <span class="toggle">
-                            <input type="checkbox" id="toggleStreak">
+                            <input type="checkbox" id="toggleStreak" aria-label="Email streak reminders">
                             <span class="toggle-slider"></span>
                         </span>
                     </label>
@@ -325,7 +327,7 @@
                     </div>
                     <label class="toggle-wrap">
                         <span class="toggle">
-                            <input type="checkbox" id="toggleEarthquakeAlerts">
+                            <input type="checkbox" id="toggleEarthquakeAlerts" aria-label="Email earthquake alerts">
                             <span class="toggle-slider"></span>
                         </span>
                     </label>
@@ -335,7 +337,7 @@
                         <span class="label">Minimum magnitude</span>
                         <p class="desc">Only alerts for earthquakes this size or larger</p>
                     </div>
-                    <select id="magnitudeMin" class="magnitude-select">
+                    <select id="magnitudeMin" class="magnitude-select" aria-label="Minimum earthquake magnitude">
                         <option value="6">6.0+</option>
                         <option value="7">7.0+</option>
                     </select>
@@ -347,7 +349,7 @@
                     </div>
                     <label class="toggle-wrap">
                         <span class="toggle">
-                            <input type="checkbox" id="toggleLocation">
+                            <input type="checkbox" id="toggleLocation" aria-label="Email location alerts">
                             <span class="toggle-slider"></span>
                         </span>
                     </label>
@@ -369,10 +371,13 @@
     const content = document.getElementById('preferencesContent');
     const toast = document.getElementById('toast');
 
-    function showToast(msg) {
+    let toastTimer;
+    function showToast(msg, isError = false) {
+        clearTimeout(toastTimer);
         toast.textContent = msg;
+        toast.className = 'status-message ' + (isError ? 'error' : 'success');
         toast.style.display = 'block';
-        setTimeout(() => { toast.style.display = 'none'; }, 3500);
+        if (!isError) toastTimer = setTimeout(() => { toast.style.display = 'none'; }, 5000);
     }
 
     if (!encodedEmail) {
@@ -389,6 +394,20 @@
     const toggleLocation = document.getElementById('toggleLocation');
     const magnitudeMin = document.getElementById('magnitudeMin');
     const magnitudeRow = document.getElementById('magnitudeRow');
+    const retry = document.getElementById('preferencesRetry');
+    const controls = [toggleLeaderboard, toggleStreak, toggleEarthquakeAlerts, toggleLocation, magnitudeMin];
+    let loaded = false;
+    let savedPreferences = null;
+    function disableControls(disabled) { controls.forEach(control => { control.disabled = disabled; }); }
+    function applyPreferences(preferences) {
+        toggleLeaderboard.checked = preferences.leaderboard !== false;
+        toggleStreak.checked = preferences.streak !== false;
+        toggleEarthquakeAlerts.checked = preferences.earthquakeAlerts === true;
+        toggleLocation.checked = preferences.location === true;
+        magnitudeMin.value = String(Math.min(7, Math.max(6, Number(preferences.earthquakeMagnitudeMin) || 6)));
+        updateMagnitudeVisibility();
+    }
+    disableControls(true);
 
     function updateMagnitudeVisibility() {
         magnitudeRow.style.display = toggleEarthquakeAlerts?.checked ? 'flex' : 'none';
@@ -400,26 +419,28 @@
     });
 
     async function load() {
+        loaded = false;
+        disableControls(true);
+        retry.hidden = true;
+        showToast('Loading your saved preferences…');
         try {
             const r = await fetch('/.netlify/functions/email-preferences-link?email=' + encodeURIComponent(encodedEmail));
             const data = await r.json();
-            if (data.success && data.preferences) {
-                toggleLeaderboard.checked = data.preferences.leaderboard !== false;
-                toggleStreak.checked = data.preferences.streak !== false;
-                toggleEarthquakeAlerts.checked = data.preferences.earthquakeAlerts === true;
-                toggleLocation.checked = data.preferences.location === true;
-                if (magnitudeMin) {
-                    const clamped = Math.min(7, Math.max(6, Number(data.preferences.earthquakeMagnitudeMin) || 6));
-                    magnitudeMin.value = String(clamped);
-                }
-                updateMagnitudeVisibility();
-            }
+            if (!r.ok || !data.success || !data.preferences) throw new Error(r.status === 400 ? 'This email link is incomplete or invalid. Open the original preferences link from a Noteworthy email.' : 'Your preferences could not be loaded. Retry or contact richard@noteworthynews.co.');
+            savedPreferences = data.preferences;
+            applyPreferences(savedPreferences);
+            loaded = true;
+            disableControls(false);
+            showToast('Your saved preferences are ready.');
         } catch (e) {
-            console.error('Load preferences:', e);
+            showToast(e.message || 'Your preferences could not be loaded. Please retry.', true);
+            retry.hidden = false;
         }
     }
 
     async function save() {
+        if (!loaded) return;
+        disableControls(true);
         try {
             const prefs = {
                 leaderboard: toggleLeaderboard.checked,
@@ -434,12 +455,15 @@
                 body: JSON.stringify({ email: encodedEmail, preferences: prefs }),
             });
             const data = await r.json();
-            if (data.success) {
-                showToast('Preferences saved');
-            }
+            if (!r.ok || !data.success) throw new Error('Your changes were not saved. Please try again or contact richard@noteworthynews.co.');
+            savedPreferences = data.preferences || prefs;
+            applyPreferences(savedPreferences);
+            showToast('Preferences saved');
         } catch (e) {
-            console.error('Save preferences:', e);
-            showToast('Could not save. Please try again.');
+            if (savedPreferences) applyPreferences(savedPreferences);
+            showToast('Your changes were not saved. Your last saved preferences are shown. Please try again.', true);
+        } finally {
+            disableControls(false);
         }
     }
 
@@ -447,6 +471,7 @@
     toggleStreak.addEventListener('change', save);
     toggleLocation.addEventListener('change', save);
     magnitudeMin?.addEventListener('change', save);
+    retry.addEventListener('click', load);
 
     load();
 })();
@@ -468,7 +493,7 @@
         <div class="footer-grid">
           <div class="footer-brand">
             <p class="footer-brand-name">Noteworthy News</p>
-            <p class="footer-brand-tagline">Fact-checked journalism and media literacy tools. Think critically about the world.</p>
+            <p class="footer-brand-tagline">Independent news coverage and media literacy tools. Think critically about the world.</p>
           </div>
           <nav aria-label="Footer navigation">
             <p class="footer-nav-title">Explore</p>

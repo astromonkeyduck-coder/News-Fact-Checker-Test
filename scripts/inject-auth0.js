@@ -12,8 +12,21 @@
 const fs = require('fs');
 const path = require('path');
 
-const auth0Domain = process.env.AUTH0_DOMAIN || '';
-const auth0ClientId = process.env.AUTH0_CLIENT_ID || '';
+function usableSecret(value) {
+  if (!value || typeof value !== 'string') return '';
+  const v = value.trim();
+  // Never bake Netlify CLI redaction masks (****************.com) into HTML.
+  if (!v || /\*/.test(v) || v === 'null' || v === 'undefined') return '';
+  return v;
+}
+
+const auth0Domain = usableSecret(process.env.AUTH0_DOMAIN);
+const auth0ClientId = usableSecret(process.env.AUTH0_CLIENT_ID);
+
+if ((process.env.AUTH0_DOMAIN || process.env.AUTH0_CLIENT_ID)
+    && (!auth0Domain || !auth0ClientId)) {
+  console.warn('⚠️  AUTH0_DOMAIN/AUTH0_CLIENT_ID looked redacted or empty — injecting null (runtime get-auth0-config will supply real values)');
+}
 
 const markerStart = '<!-- Auth0 Configuration - Inject environment variables for production -->';
 const markerEnd = '<!-- /Auth0 Configuration -->';

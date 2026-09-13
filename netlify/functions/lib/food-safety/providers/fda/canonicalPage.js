@@ -27,7 +27,7 @@ const { extractStateList, isExplicitNationwide } = require('../../states');
 const { safeFetchWithRetry } = require('../../httpClient');
 const { canonicalizeFdaUrl } = require('./rss');
 
-const PARSER_VERSION = 'fda-canonical-1.0.0';
+const PARSER_VERSION = 'fda-canonical-1.1.0';
 
 async function fetchCanonicalPage(url) {
   const canonicalUrl = canonicalizeFdaUrl(url);
@@ -403,6 +403,8 @@ function parseCanonicalPage(html, canonicalUrl) {
     isInitialPressReleaseLinked: /Link to Initial Press Release/i.test(bodyText),
     bodyHash: normalizedBodyHash(html),
     rawTextHash: sha256(bodyText),
+    // Plain text of the page for geography-context extraction (not persisted raw).
+    fullText: bodyText,
     warnings: [],
   };
 
@@ -435,7 +437,11 @@ function parseCanonicalPage(html, canonicalUrl) {
     fullSizeUrl: img.isRecallPhoto || img.isFile ? fullSizeImageUrl(img.src) : img.src,
   }));
 
-  if (isRecallPage || result.layout === 'unknown') {
+  if (result.layout === 'unknown') result.warnings.push('unrecognized_source_page_type');
+
+  // Unknown pages may contain research, navigation or unrelated link labels.
+  // Never extract consumer product claims from those generic page bodies.
+  if (isRecallPage) {
     result.announcementText = parseAnnouncementText(html);
     const text = result.announcementText || bodyText;
     result.metrics = extractOutcomeMetrics(text);

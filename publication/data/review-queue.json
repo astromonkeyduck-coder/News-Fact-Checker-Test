@@ -1,0 +1,45 @@
+{
+  "environment": "development only",
+  "items": [
+    {
+      "id": "fda-page-1b6014ef53e61d57",
+      "state": "review",
+      "reason": "source_is_information_or_research",
+      "source_url": "https://www.fda.gov/food/foodborne-pathogens/cyclospora-prevention-response-and-research-action-plan",
+      "original_published_at": "2026-09-11T10:01:00+00:00",
+      "review_opened_at": "2026-09-12T22:55:32.266Z",
+      "live_record_modified": false,
+      "required_action": "Review original source and approve a supported replacement or a substantive correction before re-listing. Preserve the original ID and publication timestamp."
+    },
+    {
+      "id": "fda-page-f5513d560739abcc",
+      "state": "review",
+      "reason": "non_food_product_classified_as_food",
+      "source_url": "https://www.fda.gov/safety/recalls-market-withdrawals-safety-alerts/supplxcom-issues-voluntary-nationwide-recall-business-pill-and-branch-manager-men-due-undeclared",
+      "original_published_at": "2026-09-04T04:00:00+00:00",
+      "review_opened_at": "2026-09-12T22:55:32.266Z",
+      "live_record_modified": false,
+      "required_action": "Review original source and approve a supported replacement or a substantive correction before re-listing. Preserve the original ID and publication timestamp."
+    },
+    {
+      "id": "fda-page-be0db24ddef68063",
+      "state": "review",
+      "reason": "non_food_product_classified_as_food",
+      "source_url": "https://www.fda.gov/safety/recalls-market-withdrawals-safety-alerts/american-regent-inc-issues-voluntary-nationwide-recall-three-lots-epinephrine-injection-usp-30-mg-30",
+      "original_published_at": "2026-09-03T04:00:00+00:00",
+      "review_opened_at": "2026-09-12T22:55:32.266Z",
+      "live_record_modified": false,
+      "required_action": "Review original source and approve a supported replacement or a substantive correction before re-listing. Preserve the original ID and publication timestamp."
+    },
+    {
+      "id": "fda-page-28aab86ab4d3cb3a",
+      "state": "review",
+      "reason": "non_food_product_classified_as_food",
+      "source_url": "https://www.fda.gov/safety/recalls-market-withdrawals-safety-alerts/revival-animal-health-llc-voluntarily-recalls-canine-and-gm-milk-replacers-due-low-or-elevated",
+      "original_published_at": "2026-06-25T04:00:00+00:00",
+      "review_opened_at": "2026-09-12T22:55:32.266Z",
+      "live_record_modified": false,
+      "required_action": "Review original source and approve a supported replacement or a substantive correction before re-listing. Preserve the original ID and publication timestamp."
+    }
+  ]
+}

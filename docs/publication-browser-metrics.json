@@ -1,0 +1,93 @@
+{
+  "environment": "Fresh headless Chromium; local saved-content preview; unthrottled; no user profile; public production read-only comparison; all non-GET requests blocked; HTTP cache disabled; same viewport; origins/network paths differ, so timings are diagnostic rather than a deployment speed comparison",
+  "checks": [
+    {
+      "name": "No uncaught browser script errors",
+      "pass": true,
+      "detail": []
+    }
+  ],
+  "pages": [
+    {
+      "name": "production-before",
+      "url": "https://noteworthynews.co/",
+      "title": "Noteworthy News | Breaking news, followed through",
+      "width": 1440,
+      "metrics": {
+        "cls": 0.05369223092318562,
+        "lcpMs": 456
+      },
+      "navigation": [
+        {
+          "domContentLoadedMs": 844,
+          "loadMs": 846,
+          "transferBytes": 10658,
+          "encodedBodyBytes": 10358,
+          "decodedBodyBytes": 48254
+        }
+      ],
+      "paints": [
+        {
+          "name": "first-paint",
+          "ms": 420
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 420
+        }
+      ],
+      "resources": {
+        "count": 41,
+        "knownTransferredBytes": 10926981,
+        "byType": {
+          "link": 5,
+          "img": 7,
+          "script": 17,
+          "fetch": 6,
+          "other": 1,
+          "video": 5
+        }
+      }
+    },
+    {
+      "name": "local-release-after",
+      "url": "http://127.0.0.1:4173/",
+      "title": "Independent news, followed through | Noteworthy News",
+      "width": 1440,
+      "metrics": {
+        "cls": 0.009911901222825542,
+        "lcpMs": 144
+      },
+      "navigation": [
+        {
+          "domContentLoadedMs": 124,
+          "loadMs": 200,
+          "transferBytes": 14386,
+          "encodedBodyBytes": 14086,
+          "decodedBodyBytes": 14086
+        }
+      ],
+      "paints": [
+        {
+          "name": "first-paint",
+          "ms": 136
+        },
+        {
+          "name": "first-contentful-paint",
+          "ms": 136
+        }
+      ],
+      "resources": {
+        "count": 13,
+        "knownTransferredBytes": 55556,
+        "byType": {
+          "link": 2,
+          "script": 4,
+          "img": 6,
+          "other": 1
+        }
+      }
+    }
+  ],
+  "errors": []
+}

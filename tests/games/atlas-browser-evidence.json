@@ -1,0 +1,875 @@
+{
+  "checkedAt": "2026-09-13T19:19:06.482Z",
+  "origin": "http://127.0.0.1:4173",
+  "seed": "atlas-first-expedition",
+  "contentVersion": "atlas-wdi2024-20260713-ne512-v1",
+  "harness": {
+    "url": "/tests/games/atlas-preview.html",
+    "expedition": {
+      "score": 930,
+      "maxScore": 1000,
+      "targets": 10,
+      "reviewStops": 1,
+      "actions": [
+        {
+          "target": "Mexico",
+          "feedback": "Correct: Mexico. Continue when ready."
+        },
+        {
+          "target": "Canada",
+          "feedback": "Correct: Canada. Continue when ready."
+        },
+        {
+          "target": "Colombia",
+          "feedback": "Correct: Colombia. Continue when ready."
+        },
+        {
+          "target": "Mexico",
+          "feedback": "Correct: Mexico. Continue when ready."
+        },
+        {
+          "target": "Peru",
+          "feedback": "Correct: Peru. Continue when ready."
+        },
+        {
+          "target": "United Kingdom",
+          "feedback": "Correct: United Kingdom. Continue when ready."
+        },
+        {
+          "target": "Brazil",
+          "feedback": "Correct: Brazil. Continue when ready."
+        },
+        {
+          "target": "France",
+          "feedback": "Correct: France. Continue when ready."
+        },
+        {
+          "target": "Spain",
+          "feedback": "Correct: Spain. Continue when ready."
+        },
+        {
+          "target": "Germany",
+          "feedback": "Correct: Germany. Continue when ready."
+        }
+      ]
+    },
+    "classic": {
+      "score": 5000,
+      "maxScore": 5000,
+      "targets": 50,
+      "actions": [
+        {
+          "id": "SDN",
+          "feedback": "Correct: Sudan. Continue when ready."
+        },
+        {
+          "id": "BGD",
+          "feedback": "Correct: Bangladesh. Continue when ready."
+        },
+        {
+          "id": "GBR",
+          "feedback": "Correct: United Kingdom. Continue when ready."
+        },
+        {
+          "id": "KOR",
+          "feedback": "Correct: South Korea. Continue when ready."
+        },
+        {
+          "id": "ITA",
+          "feedback": "Correct: Italy. Continue when ready."
+        },
+        {
+          "id": "TUR",
+          "feedback": "Correct: Türkiye. Continue when ready."
+        },
+        {
+          "id": "THA",
+          "feedback": "Correct: Thailand. Continue when ready."
+        },
+        {
+          "id": "IRN",
+          "feedback": "Correct: Iran. Continue when ready."
+        },
+        {
+          "id": "POL",
+          "feedback": "Correct: Poland. Continue when ready."
+        },
+        {
+          "id": "DZA",
+          "feedback": "Correct: Algeria. Continue when ready."
+        },
+        {
+          "id": "YEM",
+          "feedback": "Correct: Yemen. Continue when ready."
+        },
+        {
+          "id": "COL",
+          "feedback": "Correct: Colombia. Continue when ready."
+        },
+        {
+          "id": "AFG",
+          "feedback": "Correct: Afghanistan. Continue when ready."
+        },
+        {
+          "id": "KEN",
+          "feedback": "Correct: Kenya. Continue when ready."
+        },
+        {
+          "id": "PHL",
+          "feedback": "Correct: Philippines. Continue when ready."
+        },
+        {
+          "id": "IDN",
+          "feedback": "Correct: Indonesia. Continue when ready."
+        },
+        {
+          "id": "CIV",
+          "feedback": "Correct: Côte d’Ivoire. Continue when ready."
+        },
+        {
+          "id": "CAN",
+          "feedback": "Correct: Canada. Continue when ready."
+        },
+        {
+          "id": "NGA",
+          "feedback": "Correct: Nigeria. Continue when ready."
+        },
+        {
+          "id": "ARG",
+          "feedback": "Correct: Argentina. Continue when ready."
+        },
+        {
+          "id": "IND",
+          "feedback": "Correct: India. Continue when ready."
+        },
+        {
+          "id": "USA",
+          "feedback": "Correct: United States. Continue when ready."
+        },
+        {
+          "id": "JPN",
+          "feedback": "Correct: Japan. Continue when ready."
+        },
+        {
+          "id": "FRA",
+          "feedback": "Correct: France. Continue when ready."
+        },
+        {
+          "id": "IRQ",
+          "feedback": "Correct: Iraq. Continue when ready."
+        },
+        {
+          "id": "GHA",
+          "feedback": "Correct: Ghana. Continue when ready."
+        },
+        {
+          "id": "AGO",
+          "feedback": "Correct: Angola. Continue when ready."
+        },
+        {
+          "id": "BRA",
+          "feedback": "Correct: Brazil. Continue when ready."
+        },
+        {
+          "id": "UKR",
+          "feedback": "Correct: Ukraine. Continue when ready."
+        },
+        {
+          "id": "PER",
+          "feedback": "Correct: Peru. Continue when ready."
+        },
+        {
+          "id": "VNM",
+          "feedback": "Correct: Vietnam. Continue when ready."
+        },
+        {
+          "id": "ZAF",
+          "feedback": "Correct: South Africa. Continue when ready."
+        },
+        {
+          "id": "TZA",
+          "feedback": "Correct: Tanzania. Continue when ready."
+        },
+        {
+          "id": "MEX",
+          "feedback": "Correct: Mexico. Continue when ready."
+        },
+        {
+          "id": "UGA",
+          "feedback": "Correct: Uganda. Continue when ready."
+        },
+        {
+          "id": "ESP",
+          "feedback": "Correct: Spain. Continue when ready."
+        },
+        {
+          "id": "COD",
+          "feedback": "Correct: Democratic Republic of the Congo. Continue when ready."
+        },
+        {
+          "id": "MMR",
+          "feedback": "Correct: Myanmar. Continue when ready."
+        },
+        {
+          "id": "MOZ",
+          "feedback": "Correct: Mozambique. Continue when ready."
+        },
+        {
+          "id": "UZB",
+          "feedback": "Correct: Uzbekistan. Continue when ready."
+        },
+        {
+          "id": "ETH",
+          "feedback": "Correct: Ethiopia. Continue when ready."
+        },
+        {
+          "id": "RUS",
+          "feedback": "Correct: Russia. Continue when ready."
+        },
+        {
+          "id": "EGY",
+          "feedback": "Correct: Egypt. Continue when ready."
+        },
+        {
+          "id": "DEU",
+          "feedback": "Correct: Germany. Continue when ready."
+        },
+        {
+          "id": "CHN",
+          "feedback": "Correct: China. Continue when ready."
+        },
+        {
+          "id": "MYS",
+          "feedback": "Correct: Malaysia. Continue when ready."
+        },
+        {
+          "id": "SAU",
+          "feedback": "Correct: Saudi Arabia. Continue when ready."
+        },
+        {
+          "id": "MAR",
+          "feedback": "Correct: Morocco. Continue when ready."
+        },
+        {
+          "id": "PAK",
+          "feedback": "Correct: Pakistan. Continue when ready."
+        },
+        {
+          "id": "MDG",
+          "feedback": "Correct: Madagascar. Continue when ready."
+        }
+      ]
+    },
+    "typing": {
+      "score": 5000,
+      "maxScore": 5000,
+      "targets": 50,
+      "actions": [
+        {
+          "id": "BGD",
+          "feedback": "Correct: Bangladesh. Continue when ready."
+        },
+        {
+          "id": "GBR",
+          "feedback": "Correct: United Kingdom. Continue when ready."
+        },
+        {
+          "id": "KOR",
+          "feedback": "Correct: South Korea. Continue when ready."
+        },
+        {
+          "id": "ITA",
+          "feedback": "Correct: Italy. Continue when ready."
+        },
+        {
+          "id": "TUR",
+          "feedback": "Correct: Türkiye. Continue when ready."
+        },
+        {
+          "id": "THA",
+          "feedback": "Correct: Thailand. Continue when ready."
+        },
+        {
+          "id": "IRN",
+          "feedback": "Correct: Iran. Continue when ready."
+        },
+        {
+          "id": "POL",
+          "feedback": "Correct: Poland. Continue when ready."
+        },
+        {
+          "id": "DZA",
+          "feedback": "Correct: Algeria. Continue when ready."
+        },
+        {
+          "id": "YEM",
+          "feedback": "Correct: Yemen. Continue when ready."
+        },
+        {
+          "id": "COL",
+          "feedback": "Correct: Colombia. Continue when ready."
+        },
+        {
+          "id": "AFG",
+          "feedback": "Correct: Afghanistan. Continue when ready."
+        },
+        {
+          "id": "KEN",
+          "feedback": "Correct: Kenya. Continue when ready."
+        },
+        {
+          "id": "PHL",
+          "feedback": "Correct: Philippines. Continue when ready."
+        },
+        {
+          "id": "IDN",
+          "feedback": "Correct: Indonesia. Continue when ready."
+        },
+        {
+          "id": "CIV",
+          "feedback": "Correct: Côte d’Ivoire. Continue when ready."
+        },
+        {
+          "id": "CAN",
+          "feedback": "Correct: Canada. Continue when ready."
+        },
+        {
+          "id": "NGA",
+          "feedback": "Correct: Nigeria. Continue when ready."
+        },
+        {
+          "id": "ARG",
+          "feedback": "Correct: Argentina. Continue when ready."
+        },
+        {
+          "id": "IND",
+          "feedback": "Correct: India. Continue when ready."
+        },
+        {
+          "id": "USA",
+          "feedback": "Correct: United States. Continue when ready."
+        },
+        {
+          "id": "JPN",
+          "feedback": "Correct: Japan. Continue when ready."
+        },
+        {
+          "id": "FRA",
+          "feedback": "Correct: France. Continue when ready."
+        },
+        {
+          "id": "IRQ",
+          "feedback": "Correct: Iraq. Continue when ready."
+        },
+        {
+          "id": "GHA",
+          "feedback": "Correct: Ghana. Continue when ready."
+        },
+        {
+          "id": "AGO",
+          "feedback": "Correct: Angola. Continue when ready."
+        },
+        {
+          "id": "BRA",
+          "feedback": "Correct: Brazil. Continue when ready."
+        },
+        {
+          "id": "UKR",
+          "feedback": "Correct: Ukraine. Continue when ready."
+        },
+        {
+          "id": "PER",
+          "feedback": "Correct: Peru. Continue when ready."
+        },
+        {
+          "id": "VNM",
+          "feedback": "Correct: Vietnam. Continue when ready."
+        },
+        {
+          "id": "ZAF",
+          "feedback": "Correct: South Africa. Continue when ready."
+        },
+        {
+          "id": "TZA",
+          "feedback": "Correct: Tanzania. Continue when ready."
+        },
+        {
+          "id": "MEX",
+          "feedback": "Correct: Mexico. Continue when ready."
+        },
+        {
+          "id": "UGA",
+          "feedback": "Correct: Uganda. Continue when ready."
+        },
+        {
+          "id": "ESP",
+          "feedback": "Correct: Spain. Continue when ready."
+        },
+        {
+          "id": "COD",
+          "feedback": "Correct: Democratic Republic of the Congo. Continue when ready."
+        },
+        {
+          "id": "MMR",
+          "feedback": "Correct: Myanmar. Continue when ready."
+        },
+        {
+          "id": "MOZ",
+          "feedback": "Correct: Mozambique. Continue when ready."
+        },
+        {
+          "id": "UZB",
+          "feedback": "Correct: Uzbekistan. Continue when ready."
+        },
+        {
+          "id": "ETH",
+          "feedback": "Correct: Ethiopia. Continue when ready."
+        },
+        {
+          "id": "RUS",
+          "feedback": "Correct: Russia. Continue when ready."
+        },
+        {
+          "id": "EGY",
+          "feedback": "Correct: Egypt. Continue when ready."
+        },
+        {
+          "id": "DEU",
+          "feedback": "Correct: Germany. Continue when ready."
+        },
+        {
+          "id": "CHN",
+          "feedback": "Correct: China. Continue when ready."
+        },
+        {
+          "id": "MYS",
+          "feedback": "Correct: Malaysia. Continue when ready."
+        },
+        {
+          "id": "SAU",
+          "feedback": "Correct: Saudi Arabia. Continue when ready."
+        },
+        {
+          "id": "MAR",
+          "feedback": "Correct: Morocco. Continue when ready."
+        },
+        {
+          "id": "PAK",
+          "feedback": "Correct: Pakistan. Continue when ready."
+        },
+        {
+          "id": "MDG",
+          "feedback": "Correct: Madagascar. Continue when ready."
+        }
+      ],
+      "restore": {
+        "target": 27,
+        "partialAnswer": "partial",
+        "zoom": 1.6,
+        "priorScore": 2600
+      }
+    }
+  },
+  "integrated": {
+    "url": "/geography-game.html?seed=atlas-first-expedition#/atlas/",
+    "hard": {
+      "score": 5000,
+      "maxScore": 5000,
+      "targets": 50,
+      "actions": [
+        {
+          "id": "SDN",
+          "method": "numeric latitude16 longitude30",
+          "before": "Map centered on the supplied coordinates. Use Select at crosshair to make a guess.",
+          "after": "Correct: Sudan. Continue when ready."
+        },
+        {
+          "id": "BGD",
+          "method": "map click",
+          "feedback": "Correct: Bangladesh. Continue when ready."
+        },
+        {
+          "id": "GBR",
+          "method": "map click",
+          "feedback": "Correct: United Kingdom. Continue when ready."
+        },
+        {
+          "id": "KOR",
+          "method": "map click",
+          "feedback": "Correct: South Korea. Continue when ready."
+        },
+        {
+          "id": "ITA",
+          "method": "map click",
+          "feedback": "Correct: Italy. Continue when ready."
+        },
+        {
+          "id": "TUR",
+          "method": "map click",
+          "feedback": "Correct: Türkiye. Continue when ready."
+        },
+        {
+          "id": "THA",
+          "method": "map click",
+          "feedback": "Correct: Thailand. Continue when ready."
+        },
+        {
+          "id": "IRN",
+          "method": "map click",
+          "feedback": "Correct: Iran. Continue when ready."
+        },
+        {
+          "id": "POL",
+          "method": "map click",
+          "feedback": "Correct: Poland. Continue when ready."
+        },
+        {
+          "id": "DZA",
+          "method": "map click",
+          "feedback": "Correct: Algeria. Continue when ready."
+        },
+        {
+          "id": "YEM",
+          "method": "map click",
+          "feedback": "Correct: Yemen. Continue when ready."
+        },
+        {
+          "id": "COL",
+          "method": "map click",
+          "feedback": "Correct: Colombia. Continue when ready."
+        },
+        {
+          "id": "AFG",
+          "method": "map click",
+          "feedback": "Correct: Afghanistan. Continue when ready."
+        },
+        {
+          "id": "KEN",
+          "method": "map click",
+          "feedback": "Correct: Kenya. Continue when ready."
+        },
+        {
+          "id": "PHL",
+          "method": "map click",
+          "feedback": "Correct: Philippines. Continue when ready."
+        },
+        {
+          "id": "IDN",
+          "method": "map click",
+          "feedback": "Correct: Indonesia. Continue when ready."
+        },
+        {
+          "id": "CIV",
+          "method": "map click",
+          "feedback": "Correct: Côte d’Ivoire. Continue when ready."
+        },
+        {
+          "id": "CAN",
+          "method": "map click",
+          "feedback": "Correct: Canada. Continue when ready."
+        },
+        {
+          "id": "NGA",
+          "method": "map click",
+          "feedback": "Correct: Nigeria. Continue when ready."
+        },
+        {
+          "id": "ARG",
+          "method": "map click",
+          "feedback": "Correct: Argentina. Continue when ready."
+        },
+        {
+          "id": "IND",
+          "method": "map click",
+          "feedback": "Correct: India. Continue when ready."
+        },
+        {
+          "id": "USA",
+          "method": "map click",
+          "feedback": "Correct: United States. Continue when ready."
+        },
+        {
+          "id": "JPN",
+          "method": "map click",
+          "feedback": "Correct: Japan. Continue when ready."
+        },
+        {
+          "id": "FRA",
+          "method": "map click",
+          "feedback": "Correct: France. Continue when ready."
+        },
+        {
+          "id": "IRQ",
+          "method": "map click",
+          "feedback": "Correct: Iraq. Continue when ready."
+        },
+        {
+          "id": "GHA",
+          "method": "map click",
+          "feedback": "Correct: Ghana. Continue when ready."
+        },
+        {
+          "id": "AGO",
+          "method": "map click",
+          "feedback": "Correct: Angola. Continue when ready."
+        },
+        {
+          "id": "BRA",
+          "method": "map click",
+          "feedback": "Correct: Brazil. Continue when ready."
+        },
+        {
+          "id": "UKR",
+          "method": "map click",
+          "feedback": "Correct: Ukraine. Continue when ready."
+        },
+        {
+          "id": "PER",
+          "method": "map click",
+          "feedback": "Correct: Peru. Continue when ready."
+        },
+        {
+          "id": "VNM",
+          "method": "map click",
+          "feedback": "Correct: Vietnam. Continue when ready."
+        },
+        {
+          "id": "ZAF",
+          "method": "map click",
+          "feedback": "Correct: South Africa. Continue when ready."
+        },
+        {
+          "id": "TZA",
+          "method": "map click",
+          "feedback": "Correct: Tanzania. Continue when ready."
+        },
+        {
+          "id": "MEX",
+          "method": "map click",
+          "feedback": "Correct: Mexico. Continue when ready."
+        },
+        {
+          "id": "UGA",
+          "method": "map click",
+          "feedback": "Correct: Uganda. Continue when ready."
+        },
+        {
+          "id": "ESP",
+          "method": "map click",
+          "feedback": "Correct: Spain. Continue when ready."
+        },
+        {
+          "id": "COD",
+          "method": "map click",
+          "feedback": "Correct: Democratic Republic of the Congo. Continue when ready."
+        },
+        {
+          "id": "MMR",
+          "method": "map click",
+          "feedback": "Correct: Myanmar. Continue when ready."
+        },
+        {
+          "id": "MOZ",
+          "method": "map click",
+          "feedback": "Correct: Mozambique. Continue when ready."
+        },
+        {
+          "id": "UZB",
+          "method": "map click",
+          "feedback": "Correct: Uzbekistan. Continue when ready."
+        },
+        {
+          "id": "ETH",
+          "method": "map click",
+          "feedback": "Correct: Ethiopia. Continue when ready."
+        },
+        {
+          "id": "RUS",
+          "method": "map click",
+          "feedback": "Correct: Russia. Continue when ready."
+        },
+        {
+          "id": "EGY",
+          "method": "map click",
+          "feedback": "Correct: Egypt. Continue when ready."
+        },
+        {
+          "id": "DEU",
+          "method": "map click",
+          "feedback": "Correct: Germany. Continue when ready."
+        },
+        {
+          "id": "CHN",
+          "method": "map click",
+          "feedback": "Correct: China. Continue when ready."
+        },
+        {
+          "id": "MYS",
+          "method": "map click",
+          "feedback": "Correct: Malaysia. Continue when ready."
+        },
+        {
+          "id": "SAU",
+          "method": "map click",
+          "feedback": "Correct: Saudi Arabia. Continue when ready."
+        },
+        {
+          "id": "MAR",
+          "method": "map click",
+          "feedback": "Correct: Morocco. Continue when ready."
+        },
+        {
+          "id": "PAK",
+          "method": "map click",
+          "feedback": "Correct: Pakistan. Continue when ready."
+        },
+        {
+          "id": "MDG",
+          "method": "map click",
+          "feedback": "Correct: Madagascar. Continue when ready."
+        }
+      ]
+    },
+    "reasoning": {
+      "score": 1000,
+      "maxScore": 1000,
+      "targets": 10,
+      "actions": [
+        {
+          "id": "USA",
+          "clue": "Name the country in Northern America. Mapped land neighbors include Canada, Mexico. It ranks 3 by population in this challenge’s frozen 2024 edition.",
+          "keyboardContinue": true
+        },
+        {
+          "id": "MEX",
+          "clue": "Name the country in Central America. Mapped land neighbors include Belize, Guatemala, United States of America. It ranks 11 by population in this challenge’s frozen 2024 edition.",
+          "keyboardContinue": true
+        },
+        {
+          "id": "CAN",
+          "clue": "Name the country in Northern America. Mapped land neighbors include United States of America. It ranks 37 by population in this challenge’s frozen 2024 edition.",
+          "keyboardContinue": true
+        },
+        {
+          "id": "COL",
+          "clue": "Name the country in South America. Mapped land neighbors include Brazil, Ecuador, Panama. It ranks 28 by population in this challenge’s frozen 2024 edition.",
+          "keyboardContinue": true
+        },
+        {
+          "id": "PER",
+          "clue": "Name the country in South America. Mapped land neighbors include Bolivia, Brazil, Chile. It ranks 48 by population in this challenge’s frozen 2024 edition.",
+          "keyboardContinue": true
+        },
+        {
+          "id": "GBR",
+          "clue": "Name the country in Northern Europe. Mapped land neighbors include Ireland. It ranks 21 by population in this challenge’s frozen 2024 edition.",
+          "keyboardContinue": true
+        },
+        {
+          "id": "BRA",
+          "clue": "Name the country in South America. Mapped land neighbors include Argentina, Bolivia, Colombia. It ranks 7 by population in this challenge’s frozen 2024 edition.",
+          "keyboardContinue": true
+        },
+        {
+          "id": "FRA",
+          "clue": "Name the country in Western Europe. Mapped land neighbors include Andorra, Belgium, Brazil. It ranks 23 by population in this challenge’s frozen 2024 edition.",
+          "keyboardContinue": true
+        },
+        {
+          "id": "ESP",
+          "clue": "Name the country in Southern Europe. Mapped land neighbors include Andorra, France, Portugal. It ranks 32 by population in this challenge’s frozen 2024 edition.",
+          "keyboardContinue": true
+        },
+        {
+          "id": "DEU",
+          "clue": "Name the country in Western Europe. Mapped land neighbors include Austria, Belgium, Switzerland. It ranks 19 by population in this challenge’s frozen 2024 edition.",
+          "keyboardContinue": true
+        }
+      ]
+    },
+    "expedition": {
+      "score": 1000,
+      "maxScore": 1000,
+      "targets": 10,
+      "actions": [
+        {
+          "id": "USA",
+          "feedback": "Correct: United States. Continue when ready."
+        },
+        {
+          "id": "MEX",
+          "feedback": "Correct: Mexico. Continue when ready."
+        },
+        {
+          "id": "CAN",
+          "feedback": "Correct: Canada. Continue when ready."
+        },
+        {
+          "id": "COL",
+          "feedback": "Correct: Colombia. Continue when ready."
+        },
+        {
+          "id": "PER",
+          "feedback": "Correct: Peru. Continue when ready."
+        },
+        {
+          "id": "GBR",
+          "feedback": "Correct: United Kingdom. Continue when ready."
+        },
+        {
+          "id": "BRA",
+          "feedback": "Correct: Brazil. Continue when ready."
+        },
+        {
+          "id": "FRA",
+          "feedback": "Correct: France. Continue when ready."
+        },
+        {
+          "id": "ESP",
+          "feedback": "Correct: Spain. Continue when ready."
+        },
+        {
+          "id": "DEU",
+          "feedback": "Correct: Germany. Continue when ready."
+        }
+      ],
+      "restoreBefore": {
+        "question": "Find Colombia",
+        "score": "300 / 1000",
+        "view": "202.5 101.25 675 337.5"
+      },
+      "restoreAfter": {
+        "question": "Find Colombia",
+        "score": "300 / 1000",
+        "view": "202.5 101.25 675 337.5"
+      }
+    }
+  },
+  "responsiveWidths": [
+    375,
+    390,
+    768,
+    1280,
+    1440
+  ],
+  "screenshots": [
+    "docs/screenshots/games-atlas-hard-1280.jpg",
+    "docs/screenshots/games-atlas-hard-375.jpg",
+    "docs/screenshots/games-atlas-hard-390.jpg",
+    "docs/screenshots/games-atlas-hard-768.jpg",
+    "docs/screenshots/games-atlas-hard-result-1440.jpg"
+  ],
+  "limitations": [
+    "Real physical mobile touch and pinch not tested",
+    "No VoiceOver or NVDA screen-reader test performed",
+    "No browser network/CPU throttling performed; no frame-rate claim",
+    "Screenshot images are local review artifacts, not production assets"
+  ],
+  "finalTouchControls": {
+    "viewportWidth": 375,
+    "documentScrollWidth": 375,
+    "zoomButtonWidth": 44,
+    "zoomButtonHeight": 44,
+    "surface": "/tests/games/atlas-preview.html?mode=hard&edition=touch-targets"
+  }
+}

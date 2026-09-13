@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-13T18:19:15.226Z",
+  "eventId": "us7000tgrk",
+  "dataFile": "java-sea-2026.json",
+  "dataSha256": "7f655e2ebbecc2fdcaab919543f4dc1127313902d9d9bb482e6f3a724b0cd9c8",
+  "sources": [
+    {
+      "file": "source/usgs-event-history.geojson",
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&eventid=us7000tgrk&includesuperseded=true",
+      "retrievedAt": "2026-09-13T18:13:29.537Z",
+      "sha256": "db0ebe402a4c20dcbe2be98afaa5fd46a18de2d81c690bee22c4783517260973",
+      "bytes": 308307,
+      "issuedAt": "2026-09-12T21:29:59.017Z"
+    },
+    {
+      "file": "source/origin-earlier.xml",
+      "url": "https://earthquake.usgs.gov/product/origin/us7000tgrk/us/1789162910040/quakeml.xml",
+      "retrievedAt": "2026-09-13T18:14:27.152Z",
+      "sha256": "0e4a5d33e3f929aefc543d58d82ccdaee44e9ef5c033defaabde7a7057886401",
+      "bytes": 3758,
+      "issuedAt": "2026-09-11T21:41:50.040Z"
+    },
+    {
+      "file": "source/origin-current.xml",
+      "url": "https://earthquake.usgs.gov/product/origin/us7000tgrk/us/1789217862040/quakeml.xml",
+      "retrievedAt": "2026-09-13T18:14:29.952Z",
+      "sha256": "e6b0493f6754defc1072f353a2efe27ae70fe9ec5d66aa23abb1fd02202dbfd1",
+      "bytes": 3853,
+      "issuedAt": "2026-09-12T12:57:42.040Z"
+    },
+    {
+      "file": "source/shaking-earlier-contours.geojson",
+      "url": "https://earthquake.usgs.gov/product/shakemap/us7000tgrk/us/1789163221069/download/cont_mmi.json",
+      "retrievedAt": "2026-09-13T18:14:28.975Z",
+      "sha256": "a4ea878139fd2da8a15e039037032e0d607f51ad489f89e0a11d9e4775ad3a80",
+      "bytes": 1443,
+      "issuedAt": "2026-09-11T21:47:01.069Z"
+    },
+    {
+      "file": "source/shaking-current-contours.geojson",
+      "url": "https://earthquake.usgs.gov/product/shakemap/us7000tgrk/us/1789248418779/download/cont_mmi.json",
+      "retrievedAt": "2026-09-13T18:14:29.597Z",
+      "sha256": "8a80b941946f4802c4a2af61fb7d397a94096b81811131e47b6bd1ff98a62b55",
+      "bytes": 278,
+      "issuedAt": "2026-09-12T21:26:58.779Z"
+    },
+    {
+      "file": "source/shaking-current-grid.covjson",
+      "url": "https://earthquake.usgs.gov/product/shakemap/us7000tgrk/us/1789248418779/download/coverage_mmi_low_res.covjson",
+      "retrievedAt": "2026-09-13T18:14:59.342Z",
+      "sha256": "444c4c9ce5c4c0376bd4c93451ae522e3e0ab43cbf950770d82546ba55c156e8",
+      "bytes": 11334,
+      "issuedAt": "2026-09-12T21:26:58.779Z"
+    },
+    {
+      "file": "source/shakemap-info.json",
+      "url": "https://earthquake.usgs.gov/product/shakemap/us7000tgrk/us/1789248418779/download/info.json",
+      "retrievedAt": "2026-09-13T18:14:29.597Z",
+      "sha256": "d45d1a861069187b6a47e9ba11a3ad4b517fda7a8fc3294e32aabdbfe73b469a",
+      "bytes": 5613,
+      "issuedAt": "2026-09-12T21:26:58.779Z"
+    },
+    {
+      "file": "source/catalogue.geojson",
+      "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=2026-09-01T00%3A00%3A00&endtime=2026-09-13T00%3A00%3A00&minlatitude=-10&maxlatitude=-2&minlongitude=102&maxlongitude=112&minmagnitude=3&orderby=time-asc",
+      "retrievedAt": "2026-09-13T18:15:03.051Z",
+      "sha256": "c4f28443bb71c200a5bc5f440f55dcf91f2551cea2af7eccb3f472571de66053",
+      "bytes": 3349,
+      "issuedAt": "2026-09-13T18:15:03.000Z"
+    }
+  ],
+  "geography": {
+    "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_land.geojson",
+    "retrievedAt": "2026-09-13T18:14:29.217Z",
+    "rawSha256": "e874b27a51d146452be360cafb3cc50c86001074a67d534113e6534682f9826b",
+    "rawBytes": 1636166,
+    "outputPolygons": 9,
+    "bounds": [
+      102,
+      -10,
+      112,
+      -2
+    ],
+    "transformation": "Polygon rings clipped to bounds by Sutherland-Hodgman; coordinates rounded to 5 decimal places. No tectonic interpretation.",
+    "licence": "Public domain",
+    "licenceUrl": "https://www.naturalearthdata.com/about/terms-of-use/"
+  },
+  "licensing": {
+    "USGS": {
+      "statement": "USGS-authored or produced data and information are in the U.S. public domain. Credit: U.S. Geological Survey. No third-party images used.",
+      "url": "https://www.usgs.gov/faqs/are-usgs-reportspublications-copyrighted"
+    },
+    "NaturalEarth": {
+      "statement": "Natural Earth vector data is in the public domain. Made with Natural Earth.",
+      "url": "https://www.naturalearthdata.com/about/terms-of-use/"
+    }
+  },
+  "timePolicy": "Product updateTime becomes issuedAt/evidence time. Origin eventtime becomes occurrence time. Catalogue generated is retrieval generation time, never publication time. Local filesystem write time records completed download retrieval time. The feature preparedAt is its local preparation time, not evidence of publication or deployment.",
+  "transformations": [
+    "Parsed preferred event and regional events from official GeoJSON. Preserved source IDs, coordinates and data timestamps.",
+    "Preserved both version-specific origin XML files and the full official superseded-product response.",
+    "Used all official 51x51 CoverageJSON MMI samples. Merged adjacent equal-value samples within each row into rectangles. Colors interpolate the source preferredPalette; no inferred contours.",
+    "Natural Earth polygon geometry clipped to display bounds; see geography metadata.",
+    "Text summarizes preserved data. No casualty, tsunami, damage or causal aftershock assertion created."
+  ]
+}

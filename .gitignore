@@ -86,3 +86,7 @@ videoplayback
 # Analytics CSV files with personal data
 emailaccount_analytics_*.csv
 *analytics_content*.csv
+
+# Local experiments and review bundles
+fable/
+publication-release-review/

@@ -4,12 +4,20 @@
  * never the low-latency trigger).
  *
  * Usage:
- *   npm run fda:backfill -- --since=2026-06-01 --dry-run
+ *   npm run fda:backfill -- --since=2026-05-01 --limit=250 --max-enqueue=10 --class=I,II --consumer-only --dry-run
  *   npm run fda:backfill -- --since=2026-06-01 --until=2026-07-01 --limit=50
- *   npm run fda:backfill -- --since=2026-06-01 --cursor=100   # resume at skip=100
+ *   npm run fda:backfill -- --since=2026-06-01 --cursor=100
+ *   npm run fda:backfill -- --since=2026-06-01 --include-industrial --print-skips
  *
  * --dry-run prints what would be enqueued without writing.
- * Without --dry-run, food enforcement records become pending
+ * --limit=N            maximum records scanned (default 100)
+ * --max-enqueue=N      stop after N qualifying records would be enqueued
+ * --consumer-only      require consumerFacingFilter (default true)
+ * --include-industrial override consumerFacingFilter
+ * --class=I or --class=I,II   recall classification filter
+ * --print-skips        log each skipped record with its exclusion reason
+ *
+ * Without --dry-run, qualifying food enforcement records become pending
  * food_safety_source_documents (source_kind=openfda_enforcement) that the
  * background processor reconciles. openFDA records alone never auto-publish
  * a new public alert (validate.js review rules enforce this downstream).
@@ -33,59 +41,134 @@ const flag = (name) => process.argv.includes(`--${name}`);
 
 const PAGE_SIZE = 100;
 
-async function main() {
-  const since = arg('since');
-  const until = arg('until');
-  const maxItems = parseInt(arg('limit', '100'), 10);
-  let cursor = parseInt(arg('cursor', '0'), 10);
-  const dryRun = flag('dry-run');
+function parseOptions(argv = process.argv) {
+  const since = argv.find((a) => a.startsWith('--since='))?.split('=').slice(1).join('=') || null;
+  const until = argv.find((a) => a.startsWith('--until='))?.split('=').slice(1).join('=') || null;
+  const maxScan = parseInt(
+    argv.find((a) => a.startsWith('--limit='))?.split('=')[1] || '100',
+    10,
+  );
+  const maxEnqueueRaw = argv.find((a) => a.startsWith('--max-enqueue='));
+  const maxEnqueue = maxEnqueueRaw ? parseInt(maxEnqueueRaw.split('=')[1], 10) : Infinity;
+  const cursor = parseInt(
+    argv.find((a) => a.startsWith('--cursor='))?.split('=')[1] || '0',
+    10,
+  );
+  const dryRun = argv.includes('--dry-run');
+  const printSkips = argv.includes('--print-skips');
+  const includeIndustrial = argv.includes('--include-industrial');
+  const consumerOnly = includeIndustrial ? false : (argv.includes('--consumer-only') || !argv.includes('--no-consumer-only'));
+  const classRaw = argv.find((a) => a.startsWith('--class='))?.split('=').slice(1).join('=') || null;
 
-  if (!since || !/^\d{4}-\d{2}-\d{2}$/.test(since)) {
-    console.error('Usage: fda:backfill -- --since=YYYY-MM-DD [--until=YYYY-MM-DD] [--limit=N] [--cursor=N] [--dry-run]');
+  const { parseClassFilter } = require(path.join(LIB, 'backfillSelect'));
+  return {
+    since,
+    until,
+    maxScan,
+    maxEnqueue,
+    cursor,
+    dryRun,
+    printSkips,
+    consumerOnly,
+    classFilter: parseClassFilter(classRaw),
+  };
+}
+
+function createStats() {
+  return {
+    scanned: 0,
+    food_safety_scope: 0,
+    consumer_facing: 0,
+    enqueued: 0,
+    excluded_scope: 0,
+    excluded_industrial: 0,
+    excluded_supplement: 0,
+    excluded_class: 0,
+  };
+}
+
+function printSummary(stats, nextCursor, dryRun) {
+  console.log(
+    `\nscanned=${stats.scanned}\n`
+    + `food_safety_scope=${stats.food_safety_scope}\n`
+    + `consumer_facing=${stats.consumer_facing}\n`
+    + `enqueued=${stats.enqueued}\n`
+    + `excluded_scope=${stats.excluded_scope}\n`
+    + `excluded_industrial=${stats.excluded_industrial}\n`
+    + `excluded_supplement=${stats.excluded_supplement}\n`
+    + `next_cursor=${nextCursor}`,
+  );
+  if (dryRun) console.log('(dry run: nothing written)');
+}
+
+async function main() {
+  const opts = parseOptions();
+  if (!opts.since || !/^\d{4}-\d{2}-\d{2}$/.test(opts.since)) {
+    console.error('Usage: fda:backfill -- --since=YYYY-MM-DD [--until=YYYY-MM-DD] [--limit=N] [--max-enqueue=N] [--class=I|I,II] [--consumer-only] [--include-industrial] [--cursor=N] [--print-skips] [--dry-run]');
     process.exit(1);
   }
 
-  const { queryEnforcement, normalizeEnforcementRecord } = require(path.join(LIB, 'providers/fda/openfda'));
+  const { queryEnforcement } = require(path.join(LIB, 'providers/fda/openfda'));
+  const { evaluateBackfillRecord } = require(path.join(LIB, 'backfillSelect'));
 
-  const from = since.replace(/-/g, '');
-  const to = until ? until.replace(/-/g, '') : '99991231';
+  const from = opts.since.replace(/-/g, '');
+  const to = opts.until ? opts.until.replace(/-/g, '') : '99991231';
   const search = `report_date:[${from} TO ${to}] AND product_type:"Food"`;
 
-  console.log(`openFDA backfill ${since} → ${until || 'now'} (limit ${maxItems}, cursor ${cursor}, ${dryRun ? 'DRY RUN' : 'LIVE'})`);
+  console.log(
+    `openFDA backfill ${opts.since} → ${opts.until || 'now'} `
+    + `(scan limit ${opts.maxScan}, max enqueue ${Number.isFinite(opts.maxEnqueue) ? opts.maxEnqueue : '∞'}, `
+    + `cursor ${opts.cursor}, consumer-only ${opts.consumerOnly}, `
+    + `class ${opts.classFilter ? [...opts.classFilter].join('|') : 'any'}, `
+    + `${opts.dryRun ? 'DRY RUN' : 'LIVE'})`,
+  );
 
   let upsertSourceDocument = null;
-  if (!dryRun) {
+  if (!opts.dryRun) {
     ({ upsertSourceDocument } = require(path.join(LIB, 'store')));
   }
 
-  let processed = 0; let enqueued = 0; let skippedScope = 0;
-  const { scopeFilter } = require(path.join(LIB, 'classify'));
+  const stats = createStats();
+  let cursor = opts.cursor;
 
-  while (processed < maxItems) {
-    const batch = Math.min(PAGE_SIZE, maxItems - processed);
+  while (stats.scanned < opts.maxScan && stats.enqueued < opts.maxEnqueue) {
+    const batch = Math.min(PAGE_SIZE, opts.maxScan - stats.scanned);
     const res = await queryEnforcement({ search, limit: batch, skip: cursor });
     const results = (res && res.results) || [];
     if (!results.length) break;
 
-    for (const raw of results) {
-      processed += 1;
-      cursor += 1;
-      const rec = normalizeEnforcementRecord(raw);
+    for (const rec of results) {
+      if (stats.scanned >= opts.maxScan || stats.enqueued >= opts.maxEnqueue) break;
 
-      const scope = scopeFilter({
-        title: rec.productDescription || '',
-        description: rec.reasonForRecall || '',
-        productType: raw.product_type || '',
+      stats.scanned += 1;
+      cursor += 1;
+
+      const result = evaluateBackfillRecord(rec, {
+        consumerOnly: opts.consumerOnly,
+        classFilter: opts.classFilter,
       });
-      if (!scope.include) {
-        skippedScope += 1;
+
+      if (result.scope.include) stats.food_safety_scope += 1;
+
+      const qualifies = result.scope.include
+        && result.statBucket !== 'excluded_class'
+        && (!opts.consumerOnly || (result.consumer && result.consumer.include));
+
+      if (qualifies) stats.consumer_facing += 1;
+
+      if (!result.enqueue) {
+        if (result.statBucket && stats[result.statBucket] != null) {
+          stats[result.statBucket] += 1;
+        }
+        if (opts.printSkips) {
+          console.log(`  skip: ${result.line} · ${result.skipReason}`);
+        }
         continue;
       }
 
-      const line = `${rec.recallNumber || '(no recall #)'} · ${rec.classification || '?'} · ${(rec.recallingFirm || '').slice(0, 40)} · ${(rec.productDescription || '').slice(0, 60)}`;
-      if (dryRun) {
-        console.log(`  would enqueue: ${line}`);
-        enqueued += 1;
+      if (opts.dryRun) {
+        console.log(`  would enqueue: ${result.line}`);
+        stats.enqueued += 1;
         continue;
       }
 
@@ -100,19 +183,26 @@ async function main() {
         processing_status: 'pending',
       });
       if (isNew) {
-        enqueued += 1;
-        console.log(`  enqueued: ${line}`);
+        stats.enqueued += 1;
+        console.log(`  enqueued: ${result.line}`);
       }
     }
 
     if (results.length < batch) break;
   }
 
-  console.log(`\nDone. scanned=${processed} enqueued=${enqueued} out_of_scope=${skippedScope} next_cursor=${cursor}`);
-  if (dryRun) console.log('(dry run: nothing written)');
+  printSummary(stats, cursor, opts.dryRun);
 }
 
-main().catch((e) => {
-  console.error('backfill failed:', e.message);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((e) => {
+    console.error('backfill failed:', e.message);
+    process.exit(1);
+  });
+}
+
+module.exports = {
+  parseOptions,
+  createStats,
+  printSummary,
+};

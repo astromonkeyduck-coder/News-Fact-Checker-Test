@@ -16,3 +16,5 @@ Allow: /media-literacy-guide.html
 Allow: /educational-resources.html
 Allow: /editorial-policy.html
 
+
+Sitemap: https://noteworthynews.co/publication-sitemap.xml

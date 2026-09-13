@@ -79,7 +79,7 @@ function diffEvents(previous, next, { previousProducts = [], nextProducts = [] }
     const before = new Set(changedFields.case_states.from || []);
     const added = (changedFields.case_states.to || []).filter((s) => !before.has(s));
     if (added.length) {
-      materialChanges.push({ type: 'new_case_states', states: added, label: `New states with cases: ${added.join(', ')}` });
+      materialChanges.push({ type: 'new_case_states', states: added, label: `New outbreak-associated case states: ${added.join(', ')}` });
     }
   }
   if (changedFields.distribution_states) {

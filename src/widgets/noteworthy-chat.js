@@ -3845,7 +3845,7 @@ class NoteworthyChat extends HTMLElement {
         
         <div class="voice-status-text-group">
           <div class="voice-status-primary" id="voiceStatusPrimary">Ready</div>
-          <div class="voice-status-secondary" id="voiceStatusSecondary">Secure link established</div>
+          <div class="voice-status-secondary" id="voiceStatusSecondary">Not connected</div>
         </div>
         
         <div class="voice-controls">
@@ -6524,7 +6524,7 @@ class NoteworthyChat extends HTMLElement {
             if (statusChipText) statusChipText.textContent = 'IDLE';
           }
           if (statusPrimary) statusPrimary.textContent = 'Ready';
-          if (statusSecondary) statusSecondary.textContent = 'Secure link established';
+          if (statusSecondary) statusSecondary.textContent = 'Not connected';
           if (processingRing) processingRing.style.display = 'none';
           if (listeningHalo) listeningHalo.style.display = 'none';
           if (waveformRings) waveformRings.style.display = 'none';

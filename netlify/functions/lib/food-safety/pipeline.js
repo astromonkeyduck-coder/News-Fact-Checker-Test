@@ -56,6 +56,8 @@ async function processSourceDocument(docRow, { logger = console, fetchPage = fet
       title: payload.title || '',
       description: payload.description || payload.excerpt || '',
       productType: payload.productType || '',
+      productDescription: payload.productDescription || '',
+      url: canonicalUrl || '',
     });
     // Filtered safety-net feeds must pass the scope filter at discovery
     // metadata level; primary feeds get a second chance from the page itself.
@@ -130,6 +132,8 @@ async function processSourceDocument(docRow, { logger = console, fetchPage = fet
       description: [parse.recallReason, parse.productDescription, (parse.announcementText || '').slice(0, 1500)]
         .filter(Boolean).join('\n'),
       productType: parse.productType || '',
+      productDescription: parse.productDescription || '',
+      url: canonicalUrl || '',
     });
     if (!fullScope.include) {
       await updateSourceDocument(docRow.id, {
@@ -142,6 +146,8 @@ async function processSourceDocument(docRow, { logger = console, fetchPage = fet
       outcome.status = `skipped:${fullScope.reason}`;
       return outcome;
     }
+
+    if (fullScope.needsReview) parse.warnings.push(fullScope.reason);
 
     // ---------------------------------------------------------------------
     // 5. Correlate to a canonical event
@@ -207,7 +213,7 @@ async function processSourceDocument(docRow, { logger = console, fetchPage = fet
     const previousProducts = existing ? await getProducts(existing.id) : [];
     const diff = diffEvents(existing, candidate, { previousProducts, nextProducts: products });
 
-    if (existing && !diff.hasMaterialChange && existing.publish_state === 'published') {
+    if (existing && !diff.hasMaterialChange && existing.publish_state === 'published' && reviewReasons.length === 0) {
       // Cosmetic change only: refresh last_seen, do not bump versions
       await updateEvent(existing.id, { last_seen_at: new Date().toISOString() });
       await updateSourceDocument(docRow.id, {

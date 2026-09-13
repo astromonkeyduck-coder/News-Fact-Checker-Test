@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unsubscribe Survey - Noteworthy News</title>
+    <title>You're unsubscribed | Noteworthy News</title>
+    <meta name="description" content="You are unsubscribed from Noteworthy News email updates. Feedback is optional.">
+    <meta name="robots" content="noindex">
     <!-- Favicon and Theme -->
     <link rel="icon" href="/favicon.ico" sizes="48x48">
     <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
@@ -21,17 +23,13 @@
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         html {
             background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%) !important;
             min-height: 100vh;
             overflow-x: hidden;
-            overscroll-behavior: none !important;
-            overscroll-behavior-x: none !important;
-            overscroll-behavior-y: none !important;
-            -webkit-overflow-scrolling: touch;
         }
-        
+
         body {
             font-family: 'Inter', sans-serif;
             background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%);
@@ -39,166 +37,141 @@
             min-height: 100vh;
             padding: 40px 20px;
         }
-        
+
         .survey-container {
             max-width: 600px;
             width: 100%;
             margin: 0 auto;
             background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
+            border-radius: 12px;
             padding: 40px;
             border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
         }
-        
-        .logo {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 20px;
-            border-radius: 50%;
-            overflow: hidden;
-        }
-        
-        .logo img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
+
         h1 {
-            font-size: 2rem;
-            font-weight: 900;
+            font-size: 1.75rem;
+            font-weight: 700;
             margin-bottom: 10px;
-            text-align: center;
             color: #ffffff;
         }
-        
-        h1 .emoji {
-            display: inline-block;
-            background: none;
-            -webkit-background-clip: unset;
-            -webkit-text-fill-color: unset;
-            background-clip: unset;
-        }
-        
+
         .subtitle {
-            text-align: center;
-            color: #aaaaaa;
-            margin-bottom: 30px;
+            color: #c5c9d4;
+            margin-bottom: 12px;
             font-size: 1rem;
+            line-height: 1.5;
         }
-        
-        .question {
+
+        .scope-note {
+            color: #9aa1b2;
             margin-bottom: 30px;
+            font-size: 0.875rem;
+            line-height: 1.5;
         }
-        
+
+        .scope-note a { color: #7fb0ec; }
+
+        .question { margin-bottom: 26px; }
+
         .question-label {
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             font-weight: 600;
-            margin-bottom: 15px;
+            margin-bottom: 14px;
             color: #ffffff;
             display: block;
         }
-        
+
         .option {
             display: block;
-            padding: 15px 20px;
+            padding: 13px 18px;
             margin-bottom: 10px;
             background: rgba(255, 255, 255, 0.05);
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
             color: white;
             cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 1rem;
+            font-size: 0.95rem;
         }
-        
-        .option:hover {
-            background: rgba(74, 144, 226, 0.2);
-            border-color: #4A90E2;
-            transform: translateX(5px);
-        }
-        
+
+        .option:hover { border-color: #4A90E2; }
+
         .option input[type="radio"] {
             margin-right: 10px;
             cursor: pointer;
         }
-        
-        .option input[type="radio"]:checked + label,
+
         .option:has(input[type="radio"]:checked) {
-            background: rgba(74, 144, 226, 0.3);
+            background: rgba(74, 144, 226, 0.2);
             border-color: #4A90E2;
-            box-shadow: 0 0 10px rgba(74, 144, 226, 0.3);
         }
-        
+
+        textarea[name="otherReason"] {
+            width: 100%;
+            padding: 13px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            resize: vertical;
+        }
+
         .submit-btn {
             width: 100%;
-            padding: 18px;
-            background: linear-gradient(135deg, #4A90E2 0%, #2A60B0 100%);
+            padding: 15px;
+            background: #2A60B0;
             color: white;
             border: none;
-            border-radius: 50px;
+            border-radius: 8px;
             font-weight: 600;
-            font-size: 1.1rem;
+            font-size: 1rem;
             cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 20px;
         }
-        
-        .submit-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(74, 144, 226, 0.3);
-        }
-        
+
+        .submit-btn:hover { background: #4A90E2; }
+
         .submit-btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
-            transform: none;
         }
-        
+
         .status-message {
-            padding: 20px;
-            border-radius: 10px;
-            margin: 20px 0;
-            font-size: 1rem;
-            line-height: 1.6;
-            text-align: center;
+            padding: 16px;
+            border-radius: 8px;
+            margin: 20px 0 0;
+            font-size: 0.95rem;
+            line-height: 1.5;
             display: none;
         }
-        
-        .status-message.show {
-            display: block;
-        }
-        
+
+        .status-message.show { display: block; }
+
         .status-message.success {
-            background: rgba(46, 204, 113, 0.2);
-            border: 2px solid rgba(46, 204, 113, 0.5);
-            color: #2ecc71;
+            background: rgba(46, 204, 113, 0.15);
+            border: 1px solid rgba(46, 204, 113, 0.5);
+            color: #7be0a8;
         }
-        
+
+        .status-message.error {
+            background: rgba(214, 88, 88, 0.15);
+            border: 1px solid rgba(214, 88, 88, 0.5);
+            color: #f0a3a3;
+        }
+
         .back-link {
             display: inline-block;
-            margin-top: 20px;
-            color: #4a90e2;
+            margin-top: 22px;
+            color: #7fb0ec;
             text-decoration: none;
             font-weight: 600;
-            text-align: center;
-            width: 100%;
         }
-        
-        .back-link:hover {
-            text-decoration: underline;
-        }
-        
+
+        .back-link:hover { text-decoration: underline; }
+
         @media (max-width: 600px) {
-            .survey-container {
-                padding: 30px 20px;
-            }
-            
-            h1 {
-                font-size: 1.5rem;
-            }
+            .survey-container { padding: 30px 20px; }
+            h1 { font-size: 1.4rem; }
         }
     </style>
 </head>
@@ -225,253 +198,105 @@
       </nav>
     </header>
     <div class="survey-container">
-        <div class="logo">
-            <a href="index.html" aria-label="Go to Noteworthy News homepage">
-                <img src="IMG_5992.PNG" alt="Noteworthy News Logo" loading="lazy">
-            </a>
-        </div>
-        <h1 id="surveyTitle">Why Are You Leaving? 😢</h1>
-        <p class="subtitle" id="surveySubtitle">Help us improve with this quick 30-second survey!</p>
-        
+        <h1>You're unsubscribed</h1>
+        <p class="subtitle">This page was linked from your unsubscribe confirmation. Your feedback is optional.</p>
+        <p class="scope-note">You will no longer receive newsletter and news update emails from Noteworthy News. Earthquake alert emails use a separate opt-in and are managed through <a href="/subscriptions.html">email preferences</a>.</p>
+
         <form id="surveyForm">
             <div class="question">
-                <label class="question-label">Why did you unsubscribe? 🎯</label>
+                <label class="question-label">What led you to unsubscribe?</label>
                 <label class="option">
                     <input type="radio" name="reason" value="too-many-emails" required>
-                    <span>Too many emails (I'm drowning in newsletters!) 📧</span>
+                    <span>Too many emails</span>
                 </label>
                 <label class="option">
                     <input type="radio" name="reason" value="not-relevant">
-                    <span>Content wasn't relevant to me 🎭</span>
+                    <span>The topics were not relevant to me</span>
                 </label>
                 <label class="option">
-                    <input type="radio" name="reason" value="too-serious">
-                    <span>Too serious (I need more fun!) 🎪</span>
+                    <input type="radio" name="reason" value="follow-elsewhere">
+                    <span>I prefer to follow the news elsewhere</span>
                 </label>
                 <label class="option">
-                    <input type="radio" name="reason" value="not-factual">
-                    <span>Didn't trust the fact-checking 🔍</span>
-                </label>
-                <label class="option">
-                    <input type="radio" name="reason" value="just-browsing">
-                    <span>Just browsing, not really interested 🚶</span>
+                    <input type="radio" name="reason" value="email-display-issues">
+                    <span>I had trouble viewing or using the emails</span>
                 </label>
                 <label class="option">
                     <input type="radio" name="reason" value="other">
-                    <span>Other reason (tell us below!) 💭</span>
+                    <span>Another reason</span>
                 </label>
             </div>
-            
-            <div class="question" id="otherReasonDiv" style="display: none;">
-                <label class="question-label">Tell us more! 💬</label>
-                <textarea name="otherReason" rows="3" style="width: 100%; padding: 15px; background: rgba(255, 255, 255, 0.1); border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 10px; color: white; font-family: 'Inter', sans-serif; font-size: 1rem; resize: vertical;" placeholder="What could we do better?"></textarea>
-            </div>
-            
+
             <div class="question">
-                <label class="question-label">How likely are you to come back? 🔮</label>
-                <label class="option">
-                    <input type="radio" name="comeback" value="definitely" required>
-                    <span>Definitely! (Just need a break) ✅</span>
-                </label>
-                <label class="option">
-                    <input type="radio" name="comeback" value="maybe">
-                    <span>Maybe (depends on improvements) 🤷</span>
-                </label>
-                <label class="option">
-                    <input type="radio" name="comeback" value="probably-not">
-                    <span>Probably not (but never say never!) 🚫</span>
-                </label>
-                <label class="option">
-                    <input type="radio" name="comeback" value="never">
-                    <span>Never (it's not you, it's me) 👋</span>
-                </label>
+                <label class="question-label" for="otherReason">Anything else you would like us to know? (optional)</label>
+                <textarea name="otherReason" id="otherReason" rows="3"></textarea>
             </div>
-            
-            <button type="submit" class="submit-btn" id="submitBtn">Submit Survey 🚀</button>
+
+            <button type="submit" class="submit-btn" id="submitBtn">Send feedback</button>
         </form>
-        
-        <div id="statusMessage" class="status-message"></div>
-        <a href="index.html" class="back-link" id="backLink" style="display: none;">Back to Home</a>
+
+        <div id="statusMessage" class="status-message" role="status"></div>
+        <a href="/" class="back-link">Return to Noteworthy News</a>
     </div>
-    
+
     <script>
         const form = document.getElementById('surveyForm');
         const statusMessage = document.getElementById('statusMessage');
         const submitBtn = document.getElementById('submitBtn');
-        const backLink = document.getElementById('backLink');
-        const otherReasonDiv = document.getElementById('otherReasonDiv');
-        const surveyTitle = document.getElementById('surveyTitle');
-        const surveySubtitle = document.getElementById('surveySubtitle');
-        
-        // Get email from URL and fetch name
-        (async function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const encodedEmail = urlParams.get('email');
-            
-            if (encodedEmail) {
-                try {
-                    // Decode email
-                    const decodedEmail = atob(decodeURIComponent(encodedEmail));
-                    
-                    // Fetch name from unsubscribe API (which has access to KNOWN_NAMES)
-                    const response = await fetch('/.netlify/functions/unsubscribe?email=' + encodeURIComponent(encodedEmail), {
-                        method: 'GET',
-                        headers: { 'Content-Type': 'application/json' },
-                    });
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data.firstName) {
-                            surveyTitle.textContent = `Hi ${data.firstName}, why are you leaving? 😢`;
-                            surveySubtitle.textContent = `Help us improve with this quick 30-second survey!`;
-                        }
-                    }
-                } catch (e) {
-                    console.log('Could not fetch name:', e);
-                }
-            }
-        })();
-        
-        // Show other reason textarea when "other" is selected
-        document.querySelectorAll('input[name="reason"]').forEach(radio => {
-            radio.addEventListener('change', function() {
-                if (this.value === 'other') {
-                    otherReasonDiv.style.display = 'block';
-                } else {
-                    otherReasonDiv.style.display = 'none';
-                }
-            });
-        });
-        
+
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Submitting...';
-            
-            // Get email from URL
+            submitBtn.textContent = 'Sending…';
+
+            // The unsubscribe confirmation email links here with a subscriber identifier.
             const urlParams = new URLSearchParams(window.location.search);
             const encodedEmail = urlParams.get('email');
-            
-            const formData = new FormData(form);
-            
-            // Decode base64 email in browser
             let decodedEmail = null;
             if (encodedEmail) {
                 try {
                     decodedEmail = atob(decodeURIComponent(encodedEmail));
                 } catch (e) {
-                    console.error('Error decoding email:', e);
+                    decodedEmail = null;
                 }
             }
-            
+
+            const formData = new FormData(form);
             const surveyData = {
                 email: decodedEmail,
                 reason: formData.get('reason'),
                 otherReason: formData.get('otherReason') || '',
-                comeback: formData.get('comeback'),
             };
-            
+
             try {
                 const response = await fetch('/.netlify/functions/submit-survey', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(surveyData),
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (response.ok && data.success) {
                     statusMessage.className = 'status-message success show';
-                    // Get name from URL if available
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const encodedEmail = urlParams.get('email');
-                    let firstName = null;
-                    if (encodedEmail) {
-                        try {
-                            const nameResponse = await fetch('/.netlify/functions/unsubscribe?email=' + encodeURIComponent(encodedEmail), {
-                                method: 'GET',
-                                headers: { 'Content-Type': 'application/json' },
-                            });
-                            if (nameResponse.ok) {
-                                const nameData = await nameResponse.json();
-                                firstName = nameData.firstName;
-                            }
-                        } catch (e) {
-                            // Ignore errors
-                        }
-                    }
-                    const thanksMessage = firstName 
-                        ? `✓ Thanks ${firstName} for your feedback! We really appreciate it. 🙏`
-                        : '✓ Thanks for your feedback! We really appreciate it. 🙏';
-                    statusMessage.textContent = thanksMessage;
+                    statusMessage.textContent = 'Thank you for your feedback.';
                     form.style.display = 'none';
-                    backLink.style.display = 'inline-block';
                 } else {
                     statusMessage.className = 'status-message error show';
-                    statusMessage.textContent = data.error || 'Failed to submit survey. Please try again.';
+                    statusMessage.textContent = 'Your feedback could not be sent. You remain unsubscribed.';
                     submitBtn.disabled = false;
-                    submitBtn.textContent = 'Submit Survey 🚀';
+                    submitBtn.textContent = 'Send feedback';
                 }
             } catch (error) {
-                console.error('Survey submission error:', error);
                 statusMessage.className = 'status-message error show';
-                statusMessage.textContent = 'An error occurred. Please try again later.';
+                statusMessage.textContent = 'Your feedback could not be sent. You remain unsubscribed.';
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Submit Survey 🚀';
+                submitBtn.textContent = 'Send feedback';
             }
         });
     </script>
-    
-    <!-- Background Music - Unsubscribe Theme -->
-    <audio id="unsubscribeMusic" preload="auto" loop style="display: none;">
-        <source src="UnsubscribedButStillinMyHeart.mp3" type="audio/mpeg">
-        Your browser does not support the audio element.
-    </audio>
-    
-    <script>
-        (function() {
-            const audio = document.getElementById('unsubscribeMusic');
-            if (!audio) return;
-            
-            audio.volume = 0.5;
-            
-            // Wait for audio to load, then play
-            function tryPlay() {
-                if (audio.readyState >= 2) { // HAVE_CURRENT_DATA or better
-                    audio.play().catch(function(err) {
-                        console.log('Autoplay blocked, will play on interaction');
-                        // Play on any user interaction
-                        const playOnInteraction = function() {
-                            audio.play().catch(function() {});
-                            document.removeEventListener('click', playOnInteraction);
-                            document.removeEventListener('touchstart', playOnInteraction);
-                            document.removeEventListener('keydown', playOnInteraction);
-                            document.removeEventListener('mousemove', playOnInteraction);
-                        };
-                        document.addEventListener('click', playOnInteraction, { once: true });
-                        document.addEventListener('touchstart', playOnInteraction, { once: true });
-                        document.addEventListener('keydown', playOnInteraction, { once: true });
-                        document.addEventListener('mousemove', playOnInteraction, { once: true });
-                    });
-                } else {
-                    // Wait for audio to load
-                    audio.addEventListener('canplay', tryPlay, { once: true });
-                    audio.load();
-                }
-            }
-            
-            // Start trying to play
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', tryPlay);
-            } else {
-                tryPlay();
-            }
-        })();
-    </script>
-    
+
     <script>
     (function(){
       var h=document.querySelector('.site-header'),t=document.querySelector('.nav-toggle'),m=document.querySelector('.nav-menu');
@@ -489,7 +314,7 @@
         <div class="footer-grid">
           <div class="footer-brand">
             <p class="footer-brand-name">Noteworthy News</p>
-            <p class="footer-brand-tagline">Fact-checked journalism and media literacy tools. Think critically about the world.</p>
+            <p class="footer-brand-tagline">Independent news coverage and media literacy tools. Think critically about the world.</p>
           </div>
           <nav aria-label="Footer navigation">
             <p class="footer-nav-title">Explore</p>
@@ -528,4 +353,3 @@
     <script src="src/components/cookie-banner.js"></script>
 </body>
 </html>
-

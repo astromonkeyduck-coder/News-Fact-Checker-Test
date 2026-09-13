@@ -95,7 +95,33 @@ async function correlateDocument({ sourceKind, canonicalUrl, referenceNumber, re
  * Detect an official relationship to another event (e.g. an expansion
  * announcement linking its initial press release). Returns related canonical
  * page URLs found in the parsed page's official links.
+ *
+ * Intentionally excludes FDA section index / resource / about pages that appear
+ * in every outbreak/recall sidebar — those polluted Source Trail with dozens of
+ * identical "fda.gov" chips.
  */
+const RELATED_URL_DENYLIST = [
+  /^https?:\/\/(?:www\.)?fda\.gov\/safety\/recalls-market-withdrawals-safety-alerts\/?$/i,
+  /^https?:\/\/(?:www\.)?fda\.gov\/food\/outbreaks-foodborne-illness\/?$/i,
+  /^https?:\/\/(?:www\.)?fda\.gov\/food\/outbreaks-foodborne-illness\/investigations-foodborne-illness-outbreaks\/?$/i,
+  /\/(recall-resources|enforcement-reports|industry-guidance-recalls|major-product-recalls)\/?$/i,
+  /\/(about-core-network|core-annual-reports|core-publications|outbreak-investigation-reports)\/?$/i,
+  /\/(post-outbreak-response|strengthening-food-safety|public-health-advisories|food-safety-tips|food-safety-resources|foodborne-illness-outbreak-executive|foodborne-outbreak-overview|foodborne-outbreak-response|foodborne-pathogens)(?:-[a-z0-9-]+)?\/?$/i,
+];
+
+function isPeerAnnouncementUrl(href) {
+  if (!href || typeof href !== 'string') return false;
+  const path = href.split('?')[0].split('#')[0];
+  if (!/\/(safety\/recalls-market-withdrawals-safety-alerts|food\/outbreaks-foodborne-illness)\/[a-z0-9-]{20,}/i.test(path)) {
+    return false;
+  }
+  if (RELATED_URL_DENYLIST.some((re) => re.test(path))) return false;
+  // Peer announcements are long editorial slugs, not short section names.
+  const slug = path.split('/').pop() || '';
+  if (slug.split('-').length < 4) return false;
+  return true;
+}
+
 function findRelatedOfficialUrls(parseResult, html) {
   const related = new Set();
   if (!html) return [];
@@ -106,8 +132,7 @@ function findRelatedOfficialUrls(parseResult, html) {
     let href = m[1];
     if (href.startsWith('/')) href = `https://www.fda.gov${href}`;
     href = href.split('?')[0].split('#')[0];
-    if (/\/(safety\/recalls-market-withdrawals-safety-alerts|food\/outbreaks-foodborne-illness)\/[a-z0-9-]{10,}/i.test(href)
-        && href !== parseResult.canonicalUrl) {
+    if (href !== parseResult.canonicalUrl && isPeerAnnouncementUrl(href)) {
       related.add(href);
     }
   }

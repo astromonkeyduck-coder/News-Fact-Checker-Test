@@ -205,7 +205,7 @@ Take our quick survey: ${surveyUrl}
 
 Thanks for your feedback!
 
-The Noteworthy News Team`,
+Noteworthy News`,
         html: `<!DOCTYPE html>
 <html>
 <head>
@@ -236,7 +236,7 @@ The Noteworthy News Team`,
           </tr>
           <tr>
             <td style="padding: 25px 30px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border-top: 2px solid #4a90e2; border-radius: 0 0 10px 10px;">
-              <p style="color: #333333; font-size: 16px; margin: 0 0 8px 0; line-height: 1.5;"><strong>The Noteworthy News Team</strong></p>
+              <p style="color: #333333; font-size: 16px; margin: 0 0 8px 0; line-height: 1.5;"><strong>Noteworthy News</strong></p>
             </td>
           </tr>
         </table>

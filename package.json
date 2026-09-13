@@ -9,7 +9,7 @@
     "dev": "npx netlify dev",
     "serve": "npx netlify dev",
     "test:webhook": "ts-node scripts/simulate-webhook.ts",
-    "build": "node scripts/update-last-modified.js && node scripts/inject-auth0.js && npm run minify",
+    "build": "node scripts/update-last-modified.js && node scripts/inject-auth0.js && npm run minify && npm run publication:build",
     "prebuild": "node scripts/update-last-modified.js && node scripts/inject-auth0.js",
     "minify": "webpack --config webpack.config.js",
     "update-timestamp": "node scripts/update-last-modified.js",
@@ -48,7 +48,12 @@
     "fda:replay": "node scripts/food-safety/replay.js",
     "fda:backfill": "node scripts/food-safety/backfill.js",
     "fda:reconcile": "node scripts/food-safety/reconcile.js",
-    "fda:build-geometry": "node scripts/food-safety/build-us-states.js"
+    "fda:build-geometry": "node scripts/food-safety/build-us-states.js",
+    "publication:build": "node scripts/build-publication.js",
+    "publication:preview": "node scripts/preview-publication.js",
+    "publication:test": "node --test tests/publication/*.test.js tests/publication-source.test.js",
+    "games:build": "node scripts/build-games.js",
+    "games:test": "node --test tests/games/*.test.js"
   },
   "dependencies": {
     "@auth0/auth0-spa-js": "^2.8.0",

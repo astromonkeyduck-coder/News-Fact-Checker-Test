@@ -1,0 +1,161 @@
+{
+  "responsive": [
+    {
+      "initialized": "true",
+      "overflow": false,
+      "view": "overview",
+      "width": 375
+    },
+    {
+      "initialized": "true",
+      "overflow": false,
+      "view": "sequence",
+      "width": 390
+    },
+    {
+      "initialized": "true",
+      "overflow": false,
+      "view": "shaking",
+      "width": 390
+    },
+    {
+      "initialized": "true",
+      "overflow": false,
+      "view": "evidence",
+      "width": 390
+    },
+    {
+      "initialized": "true",
+      "overflow": false,
+      "view": "overview",
+      "width": 768
+    },
+    {
+      "initialized": "true",
+      "overflow": false,
+      "view": "sequence",
+      "width": 768
+    },
+    {
+      "initialized": "true",
+      "overflow": false,
+      "view": "shaking",
+      "width": 768
+    },
+    {
+      "initialized": "true",
+      "overflow": false,
+      "view": "evidence",
+      "width": 768
+    },
+    {
+      "initialized": "true",
+      "overflow": false,
+      "view": "overview",
+      "width": 1280
+    },
+    {
+      "initialized": "true",
+      "overflow": false,
+      "view": "sequence",
+      "width": 1280
+    },
+    {
+      "initialized": "true",
+      "overflow": false,
+      "view": "shaking",
+      "width": 1280
+    },
+    {
+      "initialized": "true",
+      "overflow": false,
+      "view": "evidence",
+      "width": 1280
+    },
+    {
+      "height": 1500,
+      "overflow": false,
+      "view": "overview",
+      "visibleMapLayers": [
+        "epicentre"
+      ],
+      "width": 1440
+    },
+    {
+      "height": 1500,
+      "overflow": false,
+      "view": "sequence",
+      "visibleMapLayers": [
+        "sequence"
+      ],
+      "width": 1440
+    },
+    {
+      "height": 1500,
+      "overflow": false,
+      "view": "shaking",
+      "visibleMapLayers": [
+        "shaking",
+        "epicentre"
+      ],
+      "width": 1440
+    },
+    {
+      "height": 1500,
+      "overflow": false,
+      "view": "evidence",
+      "visibleMapLayers": [
+        "epicentre"
+      ],
+      "width": 1440
+    },
+    {
+      "initialized": "true",
+      "overflow": false,
+      "view": "sequence",
+      "width": 375
+    },
+    {
+      "initialized": "true",
+      "overflow": false,
+      "view": "shaking",
+      "width": 375
+    },
+    {
+      "initialized": "true",
+      "overflow": false,
+      "view": "evidence",
+      "width": 375
+    },
+    {
+      "initialized": "true",
+      "overflow": false,
+      "view": "overview",
+      "width": 390
+    }
+  ],
+  "interactions": [
+    {
+      "chapter": "evidence",
+      "evidence": "origin-earlier",
+      "markerVisible": true,
+      "test": "Selected source state survives navigation"
+    },
+    {
+      "chapter": "shaking",
+      "detail": "M6.5 · USGS record",
+      "test": "Partial shaking link keeps main event context"
+    },
+    {
+      "chapter": "overview",
+      "test": "Reset preserves unrelated URL parameters",
+      "url": "http://127.0.0.1:4173/inside-the-story/java-sea-2026/?utm_source=review"
+    }
+  ],
+  "keyboardChecks": {
+    "occurrenceRange": "Home selected first record; ArrowRight and End moved between real records",
+    "sourceRange": "ArrowRight selected ShakeMap v1; Home restored earlier origin and its marker"
+  },
+  "consoleErrors": [],
+  "note": "Browser checks against the local development preview; no production performance or native screen-reader certification."
+}

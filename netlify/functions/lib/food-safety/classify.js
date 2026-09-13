@@ -42,6 +42,9 @@ const PATHOGEN_PATTERNS = [
 
 const SEROTYPE_RE = /\b(O\d{2,3}(?::?H\d{1,2})?|Typhimurium|Enteritidis|Newport|Infantis|Thompson|Oranienburg|Braenderup|Javiana|Saintpaul|Muenchen|Montevideo|Senftenberg|Mbandaka|Virchow|Hartford|Anatum|Stanley)\b/;
 
+// Animal-only products: must never be admitted because productType is generic "Food".
+const VETERINARY_OR_PET_FOOD_RE = /\b(pet food|dog food|cat food|wet dog food|wet cat food|puppy food|kitten food|animal food|animal feed|livestock feed|pet treats?|dog treats?|cat treats?|veterinary\b|for dogs\b|for cats\b|for pets\b|(dog|cat|pet)\s+(kibble|formula|snack|nutrition|wet food))\b/i;
+
 // Non-food FDA material that must be excluded even from the general feeds.
 const EXCLUDE_PATTERNS = [
   { reason: 'drug', re: /\b(tablets?|capsules?|injection|injectable|prescription|rx only|otc drug|drug products?|api\b|mg\b.*(tablet|capsule)|sildenafil|tadalafil|losartan|metformin|valsartan|eye ?drops?|nasal spray|hand sanitizer)\b/i },
@@ -49,9 +52,46 @@ const EXCLUDE_PATTERNS = [
   { reason: 'biologic', re: /\b(vaccine|blood products?|plasma-derived|biologics?)\b/i },
   { reason: 'cosmetic', re: /\b(cosmetics?|shampoo|lotion|mascara|eyeliner|skin cream|sunscreen|tattoo ink)\b/i },
   { reason: 'tobacco', re: /\b(tobacco|e-?cigarettes?|vap(e|ing)|nicotine)\b/i },
-  { reason: 'veterinary_or_pet_food', re: /\b(pet food|dog food|cat food|animal food|animal feed|veterinary|pet treats?|dog treats?|cat treats?|livestock feed)\b/i },
+  { reason: 'veterinary_or_pet_food', re: VETERINARY_OR_PET_FOOD_RE },
   { reason: 'dietary_supplement', re: /\b(dietary supplements?|weight[- ]loss (pills?|capsules?|supplements?)|male enhancement|kratom|pre-?workout)\b/i },
 ];
+
+/** Hard excludes are never overridden by generic openFDA productType="Food". */
+const HARD_EXCLUDE_REASONS = new Set(['veterinary_or_pet_food']);
+
+// Product identity outranks a contradictory generic FDA taxonomy label.
+const NON_FOOD_PRODUCT_RE = /\b(epinephrine|injection|injectable|prescription|medical device|catheter|vaccine|sildenafil|tadalafil|dietary supplements?|canine milk|pet food|dog food|cat food)\b/i;
+const INFORMATIONAL_PAGE_RE = /\/(foodborne-pathogens|science-research|research|guidance-regulation)\/|(?:action-plan|research-action|prevention-plan)(?:$|[?#])/i;
+
+function isGenericFoodProductType(productType) {
+  const pt = String(productType || '').trim().toLowerCase();
+  return pt === 'food' || pt === 'foods';
+}
+
+function isSpecificHumanFoodProductType(productType) {
+  if (!productType || isGenericFoodProductType(productType)) return false;
+  return /food|beverage|allergen/i.test(productType);
+}
+
+function productTypeOverridesExclusion(reason, productType) {
+  if (HARD_EXCLUDE_REASONS.has(reason)) return false;
+  return isSpecificHumanFoodProductType(productType);
+}
+
+function matchesVeterinaryOrPetFood(text) {
+  if (!text) return false;
+  // Human-food phrases that contain animal words but are not pet products.
+  if (/\bhot dogs?\b/i.test(text) && !/\b(pet food|dog food|wet dog food|dog treats?|for dogs)\b/i.test(text)) {
+    return false;
+  }
+  if (/\bcorn dogs?\b/i.test(text) && !/\b(pet food|dog food|dog treats?|for dogs)\b/i.test(text)) {
+    return false;
+  }
+  if (/\bcatfish\b/i.test(text) && !/\b(pet food|cat food|cat treats?|for cats)\b/i.test(text)) {
+    return false;
+  }
+  return VETERINARY_OR_PET_FOOD_RE.test(text);
+}
 
 // Signals that this is an actionable consumer food-safety item.
 const FOOD_SAFETY_INCLUDE_RE = new RegExp([
@@ -70,7 +110,19 @@ const NON_ACTIONABLE_RE = /\b(annual report|advisory committee|meeting|workshop|
  * Scope filter: decide whether an FDA item belongs in the food-safety
  * pipeline. Returns { include: boolean, reason: string }.
  */
-function scopeFilter({ title = '', description = '', productType = '', url = '' }) {
+function scopeFilter({ title = '', description = '', productType = '', productDescription = '', url = '' }) {
+  if (INFORMATIONAL_PAGE_RE.test(url) || /\b(research action plan|prevention.*action plan|research and methodology)\b/i.test(title)) {
+    return { include: false, reason: 'non_actionable_source_document' };
+  }
+  if (matchesVeterinaryOrPetFood([title, description, productDescription].join(' '))) {
+    return { include: false, reason: 'excluded:veterinary_or_pet_food' };
+  }
+  if (NON_FOOD_PRODUCT_RE.test([title, productDescription].join(' '))) {
+    if (isSpecificHumanFoodProductType(productType) || isGenericFoodProductType(productType)) {
+      return { include: true, needsReview: true, reason: 'conflicting_product_type_non_food_identity' };
+    }
+    return { include: false, reason: 'excluded_non_food_product_identity' };
+  }
   const haystack = [title, description, productType].filter(Boolean).join('\n');
 
   // Product-type metadata from the recall table / canonical page is the
@@ -87,10 +139,14 @@ function scopeFilter({ title = '', description = '', productType = '', url = '' 
   }
 
   for (const { reason, re } of EXCLUDE_PATTERNS) {
-    if (re.test(haystack)) {
-      // A food product-type wins over a weak text match (e.g. "milk" appears
-      // in cosmetics too, but productType told us it's food already).
-      if (productType && /food|beverage|allergen/i.test(productType)) break;
+    const matched = reason === 'veterinary_or_pet_food'
+      ? matchesVeterinaryOrPetFood(haystack)
+      : re.test(haystack);
+    if (matched) {
+      // Specific human food product types (e.g. "Food & Beverages") can override
+      // weak text matches such as "milk" in a cosmetic false positive — but generic
+      // openFDA productType="Food" must never override pet/animal exclusions.
+      if (productTypeOverridesExclusion(reason, productType)) continue;
       return { include: false, reason: `excluded:${reason}` };
     }
   }
@@ -159,9 +215,9 @@ function classifyHazard(text) {
       result.hazardCategory = 'foreign_material';
       const m = text.match(/\b(plastic|metal|glass|wood|rock|rubber)\b/i);
       result.hazardName = m ? `Foreign material (${m[1].toLowerCase()})` : 'Foreign material';
-    } else if (/\b(lead|cadmium|arsenic|mercury|chromium|pesticide|chemical contaminat|elevated levels? of)\b/i.test(text)) {
+    } else if (/\b(cadmium|arsenic|mercury|chromium|pesticide|chemical contaminat|elevated levels? of)\b|\blead\b(?!\s+to\b)/i.test(text)) {
       result.hazardCategory = 'chemical';
-      const m = text.match(/\b(lead|cadmium|arsenic|mercury|chromium)\b/i);
+      const m = text.match(/\b(lead(?!\s+to\b)|cadmium|arsenic|mercury|chromium)\b/i);
       result.hazardName = m ? `Chemical contamination (${m[1].toLowerCase()})` : 'Chemical contamination';
     } else if (/\b(toxin|aflatoxin|histamine|scombroid|patulin|mycotoxin)\b/i.test(text)) {
       result.hazardCategory = 'toxin';
@@ -257,8 +313,7 @@ function buildDisplayTitle(event) {
 function shortProductName(name) {
   if (!name) return null;
   let n = String(name).trim();
-  // Trim to something card-safe
-  if (n.length > 80) n = `${n.slice(0, 77).trim()}…`;
+  // Headlines retain the complete product name; cards control visual wrapping.
   return n;
 }
 
@@ -299,7 +354,10 @@ function derivePublicAction(text) {
 
 module.exports = {
   MAJOR_ALLERGENS,
+  NON_FOOD_PRODUCT_RE,
+  INFORMATIONAL_PAGE_RE,
   scopeFilter,
+  matchesVeterinaryOrPetFood,
   classifyHazard,
   classifyEventKind,
   buildDisplayTitle,

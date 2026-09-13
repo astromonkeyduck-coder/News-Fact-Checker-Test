@@ -27,7 +27,7 @@ const EVENT_ID = '11111111-2222-3333-4444-555555555555';
 const FS_OUTBREAK_POST = {
   id: 'fda-page-8112f1c198094a43',
   title: 'Cyclospora outbreak linked to Iceberg Lettuce',
-  story: 'The FDA is investigating a Cyclospora outbreak linked to Iceberg Lettuce.\n\nFDA reports 1,644 illnesses, 94 hospitalizations, 0 deaths across 5 states.\n\nWhat to do: Do not eat.',
+  story: 'The FDA is investigating a Cyclospora outbreak linked to Iceberg Lettuce.\n\nFDA reports 1,644 illnesses linked to this investigation, 94 hospitalizations linked to this investigation, 0 deaths linked to this investigation across 5 states reporting outbreak-associated cases.\n\nFDA says these illnesses are a subset of Cyclospora illnesses identified nationwide.\n\nWhat to do: Do not eat.',
   text: 'The FDA is investigating a Cyclospora outbreak linked to Iceberg Lettuce.',
   summary: 'Cyclospora · Do not eat',
   category: 'Food Safety',
@@ -139,7 +139,20 @@ const DETAIL = {
     deaths: 0,
     geographic_scope: 'multistate',
     case_states: ['IN', 'KY', 'MI', 'OH', 'WV'],
+    outbreak_case_states: ['IN', 'KY', 'MI', 'OH', 'WV'],
     distribution_states: ['IN', 'KY', 'MI', 'OH', 'WV'],
+    confirmed_distribution_states: ['IN', 'KY', 'MI', 'OH', 'WV'],
+    possible_additional_distribution: true,
+    national_surveillance_context: {
+      outbreak_is_subset_of_national: true,
+      pathogen_label: 'Cyclospora',
+      national_case_count: null,
+      statements: [
+        'FDA says these illnesses are a subset of Cyclospora illnesses identified nationwide.',
+        'CDC national surveillance includes this outbreak and illnesses not part of it.',
+        'State counts may include probable cases or cases not yet reported to CDC.',
+      ],
+    },
     retailers: ['Taco Bell'],
     recommendations: ['Do not eat shredded iceberg lettuce served at implicated locations.'],
     source_links: [
@@ -160,12 +173,22 @@ const DETAIL = {
   timeline: [
     { version_number: 1, observed_at: '2026-07-10T14:05:00Z', source_updated_at: '2026-07-10T14:00:00Z', material_changes: [] },
     { version_number: 2, observed_at: '2026-07-14T10:05:00Z', source_updated_at: '2026-07-14T10:00:00Z', material_changes: [{ type: 'illness_total', from: 1500, to: 1644, label: 'Illness total updated: 1500 → 1644' }] },
-    { version_number: 3, observed_at: '2026-07-16T20:05:00Z', source_updated_at: '2026-07-16T20:00:00Z', material_changes: [{ type: 'product_identified', label: 'Food source identified: Iceberg Lettuce' }, { type: 'new_case_states', states: ['IN'], label: 'New states with cases: IN' }] },
+    { version_number: 3, observed_at: '2026-07-16T20:05:00Z', source_updated_at: '2026-07-16T20:00:00Z', material_changes: [{ type: 'product_identified', label: 'Food source identified: Iceberg Lettuce' }, { type: 'new_case_states', states: ['IN'], label: 'New outbreak-associated case states: IN' }] },
   ],
   map: {
     mode_case_data: true,
     mode_distribution_data: true,
     nationwide_distribution: false,
+    outbreak_case_states: [
+      { abbr: 'IN', name: 'Indiana' }, { abbr: 'KY', name: 'Kentucky' },
+      { abbr: 'MI', name: 'Michigan' }, { abbr: 'OH', name: 'Ohio' },
+      { abbr: 'WV', name: 'West Virginia' },
+    ],
+    confirmed_distribution_states: [
+      { abbr: 'IN', name: 'Indiana' }, { abbr: 'KY', name: 'Kentucky' },
+      { abbr: 'MI', name: 'Michigan' }, { abbr: 'OH', name: 'Ohio' },
+      { abbr: 'WV', name: 'West Virginia' },
+    ],
     case_states: [
       { abbr: 'IN', name: 'Indiana' }, { abbr: 'KY', name: 'Kentucky' },
       { abbr: 'MI', name: 'Michigan' }, { abbr: 'OH', name: 'Ohio' },
@@ -178,6 +201,16 @@ const DETAIL = {
     ],
     case_counts_by_state: null,
     distribution_text: null,
+    possible_additional_distribution: true,
+    outbreak_case_map_notice: 'Cyclospora illnesses have been reported beyond these 5 states. This map shows only states reporting cases currently linked by FDA and CDC to this specific Taco Bell iceberg-lettuce investigation.',
+    labels: {
+      tab_cases: 'Cases linked to this outbreak',
+      tab_distribution: 'Confirmed product distribution',
+      caption_cases: 'States reporting outbreak-associated cases',
+      caption_distribution: 'Confirmed product distribution',
+      legend_cases: 'Outbreak-associated cases reported',
+      legend_distribution: 'Confirmed product distribution',
+    },
     as_of: '2026-07-16T20:00:00Z',
   },
 };

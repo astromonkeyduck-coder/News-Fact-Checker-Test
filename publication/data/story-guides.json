@@ -1,0 +1,250 @@
+{
+  "version": 1,
+  "reviewedAt": "2026-09-13",
+  "datePolicy": "Guide dates describe the latest dated source included, not the date this presentation was built. Date-only values must remain calendar dates. Timeline entries link original publication records and preserve their timestamps.",
+  "guides": [
+    {
+      "slug": "miami-cargo-plane-crash-september-2026",
+      "title": "Miami cargo-plane crash: the story so far",
+      "updatedAt": "2026-09-09",
+      "updatedAtPrecision": "date",
+      "articleIds": [
+        "2096684114694856768",
+        "2096717577204502980"
+      ],
+      "intro": "A cargo flight overran a runway at Miami International Airport on September 6. The sheriff reported five deaths. Investigators have released preliminary recorder findings; the cited update does not determine a final cause.",
+      "known": [
+        {
+          "text": "The FAA says 21 Air Flight 7598, a Boeing 767-300 cargo aircraft arriving from San Juan, overran a Miami International Airport runway around 2 p.m. local time on September 6.",
+          "sourceUrl": "https://www.faa.gov/newsroom/statements/accident_incidents",
+          "label": "FAA · September 6 incident statement"
+        },
+        {
+          "text": "WPLG Local 10 reported from the September 6 news conference that the Miami-Dade sheriff said five people had died and five others were hospitalized.",
+          "sourceUrl": "https://www.local10.com/news/local/2026/09/06/cargo-plane-crashes-after-going-off-miami-international-airport-runway/",
+          "label": "WPLG Local 10 · Sheriff’s news conference"
+        },
+        {
+          "text": "The NTSB identifies the runway as Runway 30 and lists investigation DCA26MA352 as ongoing. Its September 9 recorder-data update is preliminary and may change.",
+          "sourceUrl": "https://www.ntsb.gov/investigations/Pages/DCA26MA352.aspx",
+          "label": "NTSB · Investigation DCA26MA352"
+        }
+      ],
+      "unknown": [
+        {
+          "text": "The cited NTSB update does not establish a final probable cause. Preliminary recorder observations should not be treated as a finding of responsibility."
+        },
+        {
+          "text": "These early updates do not establish the injured people’s later conditions. The casualty report above is attributed to the September 6 news conference."
+        }
+      ],
+      "timeline": [
+        {
+          "articleId": "2096684114694856768",
+          "label": "First video update: runway overrun and rescue response"
+        },
+        {
+          "articleId": "2096717577204502980",
+          "label": "Follow-up: the sheriff’s reported death and injury toll"
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://www.faa.gov/newsroom/statements/accident_incidents",
+          "label": "FAA — September 6, 2026, Commercial Aviation / Miami, Florida",
+          "kind": "primary",
+          "publishedAt": "2026-09-06",
+          "datePrecision": "date"
+        },
+        {
+          "url": "https://www.ntsb.gov/investigations/Pages/DCA26MA352.aspx",
+          "label": "NTSB — Runway Overrun of 21 Air Flight 7598",
+          "kind": "primary",
+          "updatedAt": "2026-09-09",
+          "datePrecision": "date"
+        },
+        {
+          "url": "https://www.local10.com/news/local/2026/09/06/cargo-plane-crashes-after-going-off-miami-international-airport-runway/",
+          "label": "WPLG Local 10 — Cargo plane crash and sheriff’s news conference",
+          "kind": "credited-reporting",
+          "publishedAt": "2026-09-06",
+          "updatedAt": "2026-09-07",
+          "datePrecision": "date"
+        },
+        {
+          "url": "https://x.com/i/status/2096684114694856768",
+          "label": "Noteworthy News — Original video update",
+          "kind": "distribution",
+          "publishedAt": "2026-09-06T19:37:02.000Z",
+          "datePrecision": "timestamp"
+        },
+        {
+          "url": "https://x.com/i/status/2096717577204502980",
+          "label": "Noteworthy News — Original casualty update",
+          "kind": "distribution",
+          "publishedAt": "2026-09-06T21:50:00.000Z",
+          "datePrecision": "timestamp"
+        }
+      ],
+      "sourcingNote": "This guide connects existing Noteworthy updates with the cited agency documents and credited reporting. The original X posts are distribution records, not independent evidence. The timeline shows when Noteworthy published its updates, not the time each event occurred.",
+      "change": {
+        "title": "NTSB adds preliminary recorder evidence",
+        "text": "The September 9 NTSB update adds a preliminary sequence from the cockpit voice and flight data recorders. It is an investigative update, not a final determination of cause.",
+        "sourceUrl": "https://www.ntsb.gov/investigations/Pages/DCA26MA352.aspx",
+        "label": "NTSB · Investigative update, September 9"
+      },
+      "version": 1
+    },
+    {
+      "slug": "uw-whitewater-alert-september-2026",
+      "title": "UW-Whitewater: from campus alert to all-clear",
+      "updatedAt": "2026-09-02",
+      "updatedAtPrecision": "date",
+      "articleIds": [
+        "2095187297503183302",
+        "2095190238230372510"
+      ],
+      "intro": "The September 2 warning was followed by an all-clear. Statements from UW-Whitewater and the city say police investigated the report and found no threat. The initial alert should be read alongside that resolution.",
+      "known": [
+        {
+          "text": "UW-Whitewater says its emergency system was activated while police responded to a report that a person believed to have a weapon had entered Andersen Hall.",
+          "sourceUrl": "https://announcements.uww.edu/Announcement/Details/18939",
+          "label": "UW-Whitewater · Chancellor and police chief’s statement"
+        },
+        {
+          "text": "The university says officers later located a person matching the description, found no weapon and determined that there was no threat.",
+          "sourceUrl": "https://announcements.uww.edu/Announcement/Details/18939",
+          "label": "UW-Whitewater · Account of the police response"
+        },
+        {
+          "text": "The City of Whitewater’s September 2 statement also reports that police found no threat and the university issued the all-clear.",
+          "sourceUrl": "https://www.whitewater-wi.gov/article/3109350",
+          "label": "City of Whitewater · Police chief and city manager’s statement"
+        }
+      ],
+      "unknown": [
+        {
+          "text": "The official statements cited here do not specify the exact interval between the initial alert and the all-clear. The timeline below uses our posts’ publication times, not official alert timestamps."
+        }
+      ],
+      "timeline": [
+        {
+          "articleId": "2095187297503183302",
+          "label": "Initial update: campus alert reported"
+        },
+        {
+          "articleId": "2095190238230372510",
+          "label": "Resolution update: the university says there is no threat"
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://announcements.uww.edu/Announcement/Details/18939",
+          "label": "UW-Whitewater — Message regarding activation of the emergency alert system",
+          "kind": "primary",
+          "publishedAt": "2026-09-02",
+          "datePrecision": "date"
+        },
+        {
+          "url": "https://www.whitewater-wi.gov/article/3109350",
+          "label": "City of Whitewater — Statement regarding the emergency response at UW-Whitewater",
+          "kind": "primary",
+          "publishedAt": "2026-09-02",
+          "datePrecision": "date"
+        },
+        {
+          "url": "https://x.com/i/status/2095187297503183302",
+          "label": "Noteworthy News — Original campus-alert update",
+          "kind": "distribution",
+          "publishedAt": "2026-09-02T16:29:13.000Z",
+          "datePrecision": "timestamp"
+        },
+        {
+          "url": "https://x.com/i/status/2095190238230372510",
+          "label": "Noteworthy News — Original all-clear update",
+          "kind": "distribution",
+          "publishedAt": "2026-09-02T16:40:54.000Z",
+          "datePrecision": "timestamp"
+        }
+      ],
+      "sourcingNote": "The outcome is attributed to the university and city statements. This guide does not establish that an armed attack occurred: those statements describe a reported threat that police ruled out. The two Noteworthy posts preserve the sequence of the publication’s coverage.",
+      "change": {
+        "title": "The reported threat was ruled out",
+        "text": "After the initial campus alert, UW-Whitewater said police located the person, found no weapon and determined there was no threat. That all-clear supersedes the earlier warning.",
+        "sourceUrl": "https://announcements.uww.edu/Announcement/Details/18939",
+        "label": "UW-Whitewater · September 2 statement"
+      },
+      "version": 1
+    },
+    {
+      "slug": "clover-hill-cheese-recall-2026",
+      "title": "Clover Hill cheese recall: what the final FDA update says",
+      "updatedAt": "2026-08-26",
+      "updatedAtPrecision": "date",
+      "articleIds": [
+        "fda-page-d51a22246d293688",
+        "fda-core-1380"
+      ],
+      "intro": "The June recall and final August update concern the same outbreak. FDA marks it ended while advising consumers about recalled cheese still in storage.",
+      "known": [
+        {
+          "text": "Clover Hill Dairy expanded its recall on June 18 to include all of its cheese products because of possible Listeria contamination, according to the company announcement posted by FDA.",
+          "sourceUrl": "https://www.fda.gov/safety/recalls-market-withdrawals-safety-alerts/clover-hill-dairy-expands-recall-include-all-clover-hill-dairy-brand-cheese-due-possible-health-risk",
+          "label": "FDA-hosted company announcement · June 18"
+        },
+        {
+          "text": "The FDA’s August 26 update marks the investigation complete and reports 15 illnesses across four states, 14 hospitalizations and one death.",
+          "sourceUrl": "https://www.fda.gov/food/outbreaks-foodborne-illness/outbreak-investigation-listeria-monocytogenes-soft-cheese-june-2026",
+          "label": "FDA · Final outbreak update, August 26"
+        },
+        {
+          "text": "FDA advises consumers not to eat or serve recalled cheese, and to discard frozen cheese if missing packaging makes it impossible to tell whether it was recalled.",
+          "sourceUrl": "https://www.fda.gov/food/outbreaks-foodborne-illness/outbreak-investigation-listeria-monocytogenes-soft-cheese-june-2026",
+          "label": "FDA · Recommendations and product identifiers"
+        }
+      ],
+      "unknown": [
+        {
+          "text": "FDA notes that recalled products may have reached locations beyond the listed distribution states. States reporting illnesses and places receiving products are different measures."
+        },
+        {
+          "text": "This brief cannot determine whether a particular package is affected. Compare its identifying information with the FDA’s recalled-product details."
+        }
+      ],
+      "timeline": [
+        {
+          "articleId": "fda-page-d51a22246d293688",
+          "label": "June 18: expanded recall announcement"
+        },
+        {
+          "articleId": "fda-core-1380",
+          "label": "Agency coverage record: published June 29; source updated August 26"
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://www.fda.gov/safety/recalls-market-withdrawals-safety-alerts/clover-hill-dairy-expands-recall-include-all-clover-hill-dairy-brand-cheese-due-possible-health-risk",
+          "label": "FDA — Clover Hill Dairy expanded recall announcement",
+          "kind": "primary",
+          "publishedAt": "2026-06-18",
+          "datePrecision": "date"
+        },
+        {
+          "url": "https://www.fda.gov/food/outbreaks-foodborne-illness/outbreak-investigation-listeria-monocytogenes-soft-cheese-june-2026",
+          "label": "FDA — Soft cheese outbreak investigation and final update",
+          "kind": "primary",
+          "updatedAt": "2026-08-26",
+          "datePrecision": "date"
+        }
+      ],
+      "sourcingNote": "This guide concerns an ended outbreak. Outcome counts come from the final FDA advisory; earlier automated descriptions may be outdated. No counts from different updates have been added together.",
+      "change": {
+        "title": "FDA closes the outbreak investigation",
+        "text": "The August 26 advisory marks the investigation complete and supplies the final reported outcomes. The earlier ongoing-investigation description is historical; the totals are not cumulative additions across updates.",
+        "sourceUrl": "https://www.fda.gov/food/outbreaks-foodborne-illness/outbreak-investigation-listeria-monocytogenes-soft-cheese-june-2026",
+        "label": "FDA · Final outbreak update, August 26"
+      },
+      "version": 1
+    }
+  ]
+}

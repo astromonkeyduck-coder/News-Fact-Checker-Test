@@ -123,16 +123,33 @@ function buildStoryText(event, products = []) {
   paragraphs.push(what.join(' '));
 
   if (typeof event.illnesses === 'number') {
-    const metricBits = [`${event.illnesses.toLocaleString('en-US')} illnesses`];
-    if (typeof event.hospitalizations === 'number') metricBits.push(`${event.hospitalizations.toLocaleString('en-US')} hospitalizations`);
-    if (typeof event.deaths === 'number') metricBits.push(`${event.deaths.toLocaleString('en-US')} deaths`);
-    paragraphs.push(`FDA reports ${metricBits.join(', ')}${event.case_states && event.case_states.length ? ` across ${event.case_states.length} state${event.case_states.length > 1 ? 's' : ''}` : ''}.`);
+    const linked = event.event_kind === 'outbreak' ? ' linked to this investigation' : '';
+    const metricBits = [`${event.illnesses.toLocaleString('en-US')} illnesses${linked}`];
+    if (typeof event.hospitalizations === 'number') {
+      metricBits.push(`${event.hospitalizations.toLocaleString('en-US')} hospitalizations${linked}`);
+    }
+    if (typeof event.deaths === 'number') {
+      metricBits.push(`${event.deaths.toLocaleString('en-US')} deaths${linked}`);
+    }
+    const caseStates = event.outbreak_case_states || event.case_states;
+    paragraphs.push(`FDA reports ${metricBits.join(', ')}${caseStates && caseStates.length ? ` across ${caseStates.length} state${caseStates.length > 1 ? 's' : ''} reporting outbreak-associated cases` : ''}.`);
+  }
+
+  const nationalCtx = event.national_surveillance_context
+    || (event.other_outcomes && event.other_outcomes.national_surveillance_context);
+  if (nationalCtx && nationalCtx.outbreak_is_subset_of_national && Array.isArray(nationalCtx.statements)) {
+    paragraphs.push(nationalCtx.statements.join(' '));
   }
 
   if (event.distribution_text) {
-    paragraphs.push(`Distribution: ${event.distribution_text}`);
+    paragraphs.push(`Confirmed product distribution: ${event.distribution_text}`);
   } else if (event.geographic_scope === 'nationwide') {
     paragraphs.push('The product was distributed nationwide, according to FDA.');
+  }
+  const possibleExtra = event.possible_additional_distribution
+    || (event.other_outcomes && event.other_outcomes.possible_additional_distribution);
+  if (possibleExtra) {
+    paragraphs.push('FDA says implicated product may have been distributed beyond the states currently confirmed.');
   }
 
   if (event.public_action) {
@@ -200,7 +217,9 @@ async function publishPost(event, { products = [], hasMapData = false, logger = 
     link: event.source_url,
     url: event.source_url,
     source_url: event.source_url,
-    source_urls: (event.source_links || []).map((l) => l.url).filter(Boolean),
+    // Public source chips: canonical announcement (+ CORE table when present).
+    // Never dump sidebar "related" FDA resource links — they all render as "fda.gov".
+    source_urls: buildPublicSourceUrls(event),
     datePosted: existing ? existing.datePosted : (event.fda_publish_date || new Date().toISOString()),
     createdAt: existing ? existing.createdAt : (event.fda_publish_date || new Date().toISOString()),
     created_at: existing ? existing.created_at : (event.fda_publish_date || new Date().toISOString()),
@@ -311,6 +330,30 @@ function firstImageUrl(event) {
   return hero ? absolutize(hero.url) : null;
 }
 
+/**
+ * Compact public source list for article chips / Source Trail.
+ * Objects with {url, display} so the UI does not collapse every FDA link to "fda.gov".
+ */
+function buildPublicSourceUrls(event) {
+  const links = Array.isArray(event.source_links) ? event.source_links : [];
+  const preferred = links.filter((l) => l && l.url && (l.role === 'canonical' || l.role === 'core_table'));
+  const seen = new Set();
+  const out = [];
+  for (const link of preferred) {
+    const url = String(link.url).split('?')[0].split('#')[0];
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    out.push({
+      url,
+      display: link.label || (link.role === 'core_table' ? 'FDA CORE investigation table' : 'FDA'),
+    });
+  }
+  if (!out.length && event.source_url) {
+    out.push({ url: event.source_url, display: 'FDA' });
+  }
+  return out;
+}
+
 module.exports = {
   postIdForEvent,
   eventTypeForEvent,
@@ -321,4 +364,5 @@ module.exports = {
   publishPost,
   upsertVerifiedEvent,
   buildTags,
+  buildPublicSourceUrls,
 };

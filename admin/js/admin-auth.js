@@ -11,12 +11,47 @@ import { setTokenProvider } from './lib/api.js';
 
 const AUTH0_SDK_URL = 'https://cdn.auth0.com/js/auth0-spa-js/2.4/auth0-spa-js.production.js';
 let _auth0Client = null;
+let _configFetchPromise = null;
 
-function getConfig() {
-  const domain = window.AUTH0_DOMAIN;
-  const clientId = window.AUTH0_CLIENT_ID;
-  if (!domain || !clientId) return null;
-  return { domain, clientId };
+/** Reject null/empty/redacted build placeholders (e.g. ****************.com). */
+function isUsableAuth0Value(value) {
+  if (typeof value !== 'string') return false;
+  const v = value.trim();
+  if (!v || v === 'null' || v === 'undefined') return false;
+  if (/\*/.test(v)) return false;
+  return true;
+}
+
+async function ensureAuth0Config() {
+  if (isUsableAuth0Value(window.AUTH0_DOMAIN) && isUsableAuth0Value(window.AUTH0_CLIENT_ID)) {
+    return { domain: window.AUTH0_DOMAIN.trim(), clientId: window.AUTH0_CLIENT_ID.trim() };
+  }
+  if (!_configFetchPromise) {
+    _configFetchPromise = (async () => {
+      const res = await fetch('/.netlify/functions/get-auth0-config');
+      if (!res.ok) throw new Error(`get-auth0-config HTTP ${res.status}`);
+      const data = await res.json();
+      if (!data.domain || !data.clientId || data.error) {
+        throw new Error(data.message || data.error || 'Auth0 config incomplete');
+      }
+      if (!isUsableAuth0Value(data.domain) || !isUsableAuth0Value(data.clientId)) {
+        throw new Error('Auth0 config from server looked redacted or invalid');
+      }
+      window.AUTH0_DOMAIN = data.domain;
+      window.AUTH0_CLIENT_ID = data.clientId;
+      return { domain: data.domain, clientId: data.clientId };
+    })();
+  }
+  return _configFetchPromise;
+}
+
+async function getConfig() {
+  try {
+    return await ensureAuth0Config();
+  } catch (err) {
+    console.error('[AdminAuth] Auth0 config load failed:', err);
+    return null;
+  }
 }
 
 /** SDK v2.4 exposes createAuth0Client on window.auth0, not as a bare global. */
@@ -72,9 +107,9 @@ export async function initAdminAuth() {
 
   setStatus('Initializing\u2026', false);
 
-  const config = getConfig();
+  const config = await getConfig();
   if (!config) {
-    setStatus('Auth0 configuration missing. Set AUTH0_DOMAIN and AUTH0_CLIENT_ID.', true);
+    setStatus('Auth0 configuration missing. Could not load AUTH0_DOMAIN / AUTH0_CLIENT_ID.', true);
     return null;
   }
 

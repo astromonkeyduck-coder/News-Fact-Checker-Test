@@ -59,6 +59,77 @@ exports.handler = async (event) => {
     return { statusCode: 401, body: JSON.stringify({ error: 'unauthorized' }) };
   }
 
+  let requestBody = {};
+  try {
+    requestBody = JSON.parse(event.body || '{}');
+  } catch (_) { /* empty body is fine for normal runs */ }
+
+  if (Array.isArray(requestBody.publish_ids) && requestBody.publish_ids.length) {
+    const { publishEventIds } = require('./lib/food-safety/publishBatch');
+    const results = await publishEventIds(requestBody.publish_ids, {
+      force: requestBody.force === true,
+    });
+    logger.info('Internal publish_ids complete', { results });
+    return { statusCode: 200, body: JSON.stringify({ ok: true, publish: results }) };
+  }
+
+  if (requestBody.publish_ready) {
+    const { publishReadyEvents } = require('./lib/food-safety/publishBatch');
+    const results = await publishReadyEvents();
+    logger.info('Internal publish_ready complete', { results });
+    return { statusCode: 200, body: JSON.stringify({ ok: true, publish: results }) };
+  }
+
+  if (
+    requestBody.rewrite_sources === true
+    || requestBody.rewrite_posts === true
+    || (Array.isArray(requestBody.rewrite_ids) && requestBody.rewrite_ids.length)
+  ) {
+    const supabase = require('./lib/supabaseClient');
+    const { getEventById, getProducts, updateEvent } = require('./lib/food-safety/store');
+    const { publishPost, upsertVerifiedEvent, postIdForEvent } = require('./lib/food-safety/publish');
+    const { buildPublicGeographyFields } = require('./lib/food-safety/geographyContext');
+
+    let ids = Array.isArray(requestBody.rewrite_ids) ? requestBody.rewrite_ids.map(String) : [];
+    if ((requestBody.rewrite_sources === true || requestBody.rewrite_posts === true) && !ids.length) {
+      const { data, error } = await supabase
+        .from('food_safety_events')
+        .select('id')
+        .eq('publish_state', 'published')
+        .not('post_id', 'is', null)
+        .limit(100);
+      if (error) throw new Error(error.message);
+      ids = (data || []).map((r) => r.id);
+    }
+
+    const results = [];
+    for (const id of ids) {
+      try {
+        const eventRow = await getEventById(id);
+        if (!eventRow || eventRow.publish_state === 'suppressed') {
+          results.push({ id, status: eventRow ? 'suppressed' : 'not_found' });
+          continue;
+        }
+        const products = await getProducts(id);
+        const geo = buildPublicGeographyFields(eventRow);
+        const eventForPublish = { ...eventRow, ...geo };
+        const hasMapData = Boolean(
+          (eventForPublish.outbreak_case_states && eventForPublish.outbreak_case_states.length)
+          || (eventForPublish.confirmed_distribution_states && eventForPublish.confirmed_distribution_states.length)
+          || eventRow.geographic_scope === 'nationwide',
+        );
+        const { postId } = await publishPost(eventForPublish, { products, hasMapData });
+        await updateEvent(id, { post_id: postId, publish_state: 'published', review_reason: null });
+        await upsertVerifiedEvent({ ...eventForPublish, post_id: postId });
+        results.push({ id, status: 'rewritten', post_id: postId || postIdForEvent(eventRow) });
+      } catch (e) {
+        results.push({ id, status: 'error', error: e.message });
+      }
+    }
+    logger.info('Internal rewrite_posts complete', { results });
+    return { statusCode: 200, body: JSON.stringify({ ok: true, rewrite: results }) };
+  }
+
   const { claimPendingDocuments } = require('./lib/food-safety/store');
   const { processSourceDocument } = require('./lib/food-safety/pipeline');
 

@@ -68,12 +68,13 @@ exports.handler = async (event, context) => {
 
     const { email, reason, otherReason, comeback } = surveyData;
 
-    // Validate required fields
-    if (!reason || !comeback) {
+    // Validate required fields. The revised survey sends reason only;
+    // comeback remains accepted from older cached pages.
+    if (!reason) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: 'Please answer all required questions' }),
+        body: JSON.stringify({ error: 'Please select a reason' }),
       };
     }
 
@@ -86,12 +87,14 @@ exports.handler = async (event, context) => {
 
     // Map reason values to friendly text
     const reasonMap = {
-      'too-many-emails': 'Too many emails (drowning in newsletters!)',
-      'not-relevant': 'Content wasn\'t relevant',
-      'too-serious': 'Too serious (needs more fun!)',
-      'not-factual': 'Didn\'t trust the fact-checking',
-      'just-browsing': 'Just browsing, not really interested',
-      'other': 'Other reason',
+      'too-many-emails': 'Too many emails',
+      'not-relevant': 'Topics were not relevant',
+      'follow-elsewhere': 'Prefers to follow the news elsewhere',
+      'email-display-issues': 'Had trouble viewing or using the emails',
+      'too-serious': 'Preferred lighter content (legacy option)',
+      'not-factual': 'Did not trust the fact-checking (legacy option)',
+      'just-browsing': 'Just browsing (legacy option)',
+      'other': 'Another reason',
     };
 
     const comebackMap = {
@@ -110,14 +113,14 @@ exports.handler = async (event, context) => {
       from: fromEmail,
       to: adminEmail,
       replyTo: email || 'noreply@noteworthynews.co',
-      subject: 'Unsubscribe Survey Response 📝',
+      subject: 'Unsubscribe survey response',
       clickTracking: false,
       text: `Unsubscribe Survey Response
 
 Email: ${email || 'Anonymous'}
 Reason: ${reasonMap[reason] || reason}
-${otherReason ? `Other Reason: ${otherReason}` : ''}
-Comeback Likelihood: ${comebackMap[comeback] || comeback}
+${otherReason ? `Comment: ${otherReason}` : ''}
+${comeback ? `Comeback likelihood: ${comebackMap[comeback] || comeback}` : ''}
 
 Submitted: ${new Date().toLocaleString()}`,
       html: `<!DOCTYPE html>
@@ -159,12 +162,14 @@ Submitted: ${new Date().toLocaleString()}`,
                   </td>
                 </tr>
                 ` : ''}
+                ${comeback ? `
                 <tr>
                   <td style="padding: 10px 0;">
-                    <strong style="color: #4a90e2;">🔮 Likelihood to Come Back:</strong>
+                    <strong style="color: #4a90e2;">Likelihood to come back:</strong>
                     <p style="color: #333333; margin: 5px 0;">${comebackMap[comeback] || comeback}</p>
                   </td>
                 </tr>
+                ` : ''}
                 <tr>
                   <td style="padding: 10px 0;">
                     <strong style="color: #4a90e2;">📅 Submitted:</strong>

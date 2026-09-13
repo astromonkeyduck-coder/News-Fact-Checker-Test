@@ -31,16 +31,30 @@ const AUTH0_SDK_CDN =
 /** One shared fetch per page load (initAuth0 may run from profile + timers). */
 let auth0ConfigFetchPromise = null;
 
-/** Fill domain/client from Netlify when HTML has null placeholders (e.g. profile.html). */
+function isUsableAuth0Value(value) {
+  if (typeof value !== 'string') return false;
+  const v = value.trim();
+  if (!v || v === 'null' || v === 'undefined') return false;
+  // Netlify/CLI redaction sometimes bakes ****************.com into HTML.
+  if (/\*/.test(v)) return false;
+  return true;
+}
+
+/** Fill domain/client from Netlify when HTML has null/redacted placeholders. */
 async function mergeAuth0ConfigFromServer() {
-  if (window.AUTH0_DOMAIN && window.AUTH0_CLIENT_ID) return;
+  if (isUsableAuth0Value(window.AUTH0_DOMAIN) && isUsableAuth0Value(window.AUTH0_CLIENT_ID)) {
+    return;
+  }
   if (!auth0ConfigFetchPromise) {
     auth0ConfigFetchPromise = (async () => {
       try {
         const res = await fetch('/.netlify/functions/get-auth0-config');
         if (!res.ok) return;
         const data = await res.json();
-        if (data.domain && data.clientId && !data.error) {
+        if (
+          data.domain && data.clientId && !data.error
+          && isUsableAuth0Value(data.domain) && isUsableAuth0Value(data.clientId)
+        ) {
           window.AUTH0_DOMAIN = data.domain;
           window.AUTH0_CLIENT_ID = data.clientId;
         }

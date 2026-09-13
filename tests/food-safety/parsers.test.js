@@ -142,6 +142,9 @@ test('cyclospora outbreak: metrics, states, action, explicit zero deaths', () =>
   // Case states and distribution states extracted separately.
   assert.deepEqual([...event.case_states].sort(), ['IN', 'KY', 'MI', 'OH', 'WV']);
   assert.ok(Array.isArray(event.distribution_states));
+  assert.ok(event.national_surveillance_context?.outbreak_is_subset_of_national);
+  assert.equal(event.national_surveillance_context.national_case_count, null);
+  assert.equal(event.possible_additional_distribution, true);
 
   assert.ok(event.severity >= 4);
 });

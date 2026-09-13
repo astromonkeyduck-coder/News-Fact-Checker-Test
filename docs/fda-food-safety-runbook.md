@@ -58,9 +58,21 @@ with a review reason still waits. Publish a queued item manually with
   `npm run fda:replay -- --url=https://www.fda.gov/safety/recalls-market-withdrawals-safety-alerts/...`
 - Re-enqueue a stuck source document:
   `POST admin-food-safety {"action":"reprocess","document_id":"<doc-id>"}`
-- openFDA historical backfill (bounded, resumable):
-  `npm run fda:backfill -- --since=2026-06-01 --dry-run`
-  then re-run without `--dry-run`. Use `--limit=N` and `--cursor=N` to resume.
+- openFDA historical backfill (bounded, resumable; consumer-facing retail alerts only by default):
+  ```bash
+  npm run fda:backfill -- \
+    --since=2026-05-01 \
+    --limit=250 \
+    --max-enqueue=10 \
+    --class=I,II \
+    --consumer-only \
+    --dry-run
+  ```
+  Review the summary (`food_safety_scope`, `consumer_facing`, `excluded_industrial`,
+  `excluded_supplement`). Add `--print-skips` to see each exclusion reason.
+  Remove `--dry-run` only after the filtered set looks right. Use `--cursor=N`
+  from `next_cursor=` to resume scanning. Use `--include-industrial` to override
+  the consumer-facing gate (not recommended for initial import).
 - Status reconciliation (terminations, classifications):
   `npm run fda:reconcile -- --dry-run`
 
